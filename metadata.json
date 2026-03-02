@@ -1,0 +1,8 @@
+{
+  "name": "Docka Workspace",
+  "description": "A proprietary, minimalist, high-performance corporate workspace focused on email productivity.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
