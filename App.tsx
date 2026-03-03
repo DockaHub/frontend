@@ -231,7 +231,7 @@ const AppContent: React.FC = () => {
           <Route path="/sign/:dealId" element={<ContractSignaturePage dealId={location.pathname.split('/')[2]} />} />
 
           {/* Protected Routes */}
-          <Route path="/dashboard/*" element={<DashboardLayout currentOrg={currentOrg} userOrgs={userOrgs} />} />
+          <Route path="/dashboard/*" element={<DashboardLayout currentOrg={currentOrg} userOrgs={userOrgs} user={user!} onLogout={handleLogout} onOpenProfile={handleOpenProfile} onOpenPreferences={handleOpenPreferences} theme={theme} onToggleTheme={toggleTheme} />} />
           <Route path="/mail" element={<MailLayout currentOrg={currentOrg} />} />
           <Route path="/chat" element={<ChatLayout currentOrg={currentOrg} />} />
           <Route path="/tasks" element={<TasksLayout />} />

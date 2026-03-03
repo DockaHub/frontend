@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Organization } from '../../types';
-import { CURRENT_USER } from '../../constants';
+
 import FauvesDashboard from './components/FauvesDashboard';
 import TokyonDashboard from './components/TokyonDashboard';
 import AsteryskoDashboard from './components/AsteryskoDashboard';
@@ -16,9 +16,15 @@ import UnifiedSidebar from '../../components/UnifiedSidebar';
 interface DashboardLayoutProps {
     currentOrg: Organization;
     userOrgs: Organization[];
+    user: any;
+    onLogout: () => void;
+    onOpenProfile: () => void;
+    onOpenPreferences: () => void;
+    theme: string;
+    onToggleTheme: () => void;
 }
 
-const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOrg, userOrgs = [] }) => {
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOrg, userOrgs = [], user, onLogout, onOpenProfile, onOpenPreferences, theme, onToggleTheme }) => {
     // Local state for the Dashboard Module. 
     // It starts with the app's global org, but allows switching independently in the sidebar.
     const [searchParams, setSearchParams] = useSearchParams();
@@ -83,12 +89,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
 
         // Routing by Organization Type (More robust for real data)
         if (selectedOrg.type === 'AGENCY') {
-            return <AsteryskoDashboard user={CURRENT_USER} activeView={activeView} organization={selectedOrg} />;
+            return <AsteryskoDashboard user={user} activeView={activeView} organization={selectedOrg} />;
         }
         if (selectedOrg.type === 'EVENT_TECH') {
             return (
                 <FauvesDashboard
-                    user={CURRENT_USER}
+                    user={user}
                     activeView={activeView}
                     onNavigate={handleViewChange}
                     viewData={viewData}
@@ -99,12 +105,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
         if (selectedOrg.type === 'INFRASTRUCTURE') {
             // Check for specific overrides if needed, otherwise default infra dashboard
             if (selectedOrg.slug.includes('hostizi')) {
-                return <HostiziDashboard user={CURRENT_USER} activeView={activeView} organization={selectedOrg} />;
+                return <HostiziDashboard user={user} activeView={activeView} organization={selectedOrg} />;
             }
-            return <TokyonDashboard user={CURRENT_USER} activeView={activeView} organization={selectedOrg} />;
+            return <TokyonDashboard user={user} activeView={activeView} organization={selectedOrg} />;
         }
         if (selectedOrg.slug === 'umachave') {
-            return <UmaChaveDashboard user={CURRENT_USER} activeView={activeView} organization={selectedOrg} />;
+            return <UmaChaveDashboard user={user} activeView={activeView} organization={selectedOrg} />;
         }
 
         // Default / SAAS
@@ -138,11 +144,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
                     currentOrg={selectedOrg}
                     onOrgChange={handleOrgChange}
                     userOrgs={userOrgs}
-                    user={CURRENT_USER}
-                    onLogout={() => window.location.href = '/login'}
-                    onOpenProfile={() => console.log('Open Profile')}
-                    theme="light"
-                    onToggleTheme={() => document.body.classList.toggle('dark')}
+                    user={user}
+                    onLogout={onLogout}
+                    onOpenProfile={onOpenProfile}
+                    onOpenPreferences={onOpenPreferences}
+                    theme={theme as any}
+                    onToggleTheme={onToggleTheme}
                 />
             </div>
 
@@ -157,11 +164,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
                             className="w-full border-none"
                             onClose={() => setIsMobileMenuOpen(false)}
                             userOrgs={userOrgs}
-                            user={CURRENT_USER}
-                            onLogout={() => window.location.href = '/login'}
-                            onOpenProfile={() => console.log('Open Profile')}
-                            theme="light"
-                            onToggleTheme={() => document.body.classList.toggle('dark')}
+                            user={user}
+                            onLogout={onLogout}
+                            onOpenProfile={onOpenProfile}
+                            onOpenPreferences={onOpenPreferences}
+                            theme={theme as any}
+                            onToggleTheme={onToggleTheme}
                         />
                     </div>
                 </div>
