@@ -59,6 +59,42 @@ const AppContent: React.FC = () => {
   const [currentOrg, setCurrentOrg] = useState<Organization>(ORGANIZATIONS[0]);
   const [userOrgs, setUserOrgs] = useState<Organization[]>([]);
 
+  // Domain Routing State
+  const [isTenantDomain, setIsTenantDomain] = useState(false);
+  const [resolvingDomain, setResolvingDomain] = useState(true);
+
+  // Check Custom Domain
+  useEffect(() => {
+    const checkCustomDomain = async () => {
+      const hostname = window.location.hostname;
+      // Skip for default development and platform domains
+      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('dockahub') || hostname.includes('vercel.app')) {
+        setResolvingDomain(false);
+        return;
+      }
+
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const response = await fetch(`${apiUrl}/organizations/public/resolve-domain?domain=${hostname}`);
+        if (response.ok) {
+          setIsTenantDomain(true);
+        }
+      } catch (error) {
+        console.error('Domain resolution failed', error);
+      } finally {
+        setResolvingDomain(false);
+      }
+    };
+    checkCustomDomain();
+  }, []);
+
+  // Enforce Tenant Routing
+  useEffect(() => {
+    if (isTenantDomain && !resolvingDomain && !location.pathname.startsWith('/portal')) {
+      navigate('/portal', { replace: true });
+    }
+  }, [isTenantDomain, resolvingDomain, location.pathname, navigate]);
+
   // Fetch real organizations for the user
   useEffect(() => {
     const fetchUserOrgs = async () => {
@@ -190,6 +226,14 @@ const AppContent: React.FC = () => {
 
 
   // ... (inside AppContent)
+
+  if (resolvingDomain) {
+    return (
+      <div className="flex items-center justify-center h-screen w-screen bg-white dark:bg-zinc-950">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     if (location.pathname.startsWith('/portal/welcome')) {

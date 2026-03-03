@@ -30,6 +30,24 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
     const { addToast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
+    const [clientPortalDomain, setClientPortalDomain] = useState(organization?.clientPortalDomain || '');
+
+    useEffect(() => {
+        if (organization?.clientPortalDomain !== undefined) {
+            setClientPortalDomain(organization.clientPortalDomain || '');
+        }
+    }, [organization]);
+
+    const handleUpdateDomain = async () => {
+        if (!organization) return;
+        try {
+            await api.patch(`/organizations/${organization.id}`, { clientPortalDomain });
+            addToast({ type: 'success', title: 'Salvo', message: 'Domínio atualizado com sucesso.' });
+        } catch (error) {
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao atualizar o domínio.' });
+        }
+    };
+
     const categories = [
         { id: 'registration', label: 'Registro de Marca' },
         { id: 'monitoring', label: 'Acompanhamento' },
@@ -269,7 +287,38 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             </div>
 
                             <div>
-                                <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-2">Personalização</h4>
+                                <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-2">Personalização e Domínio</h4>
+
+                                <div className="mb-6">
+                                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Domínio Customizado (White-Label)</label>
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
+                                                placeholder="Ex: cliente.asterysko.com"
+                                                value={clientPortalDomain}
+                                                onChange={(e) => setClientPortalDomain(e.target.value)}
+                                                onBlur={handleUpdateDomain}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        handleUpdateDomain();
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={handleUpdateDomain}
+                                                className="px-4 py-2 bg-docka-100 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 rounded-lg text-sm font-bold hover:bg-docka-200 dark:hover:bg-zinc-700 transition-colors"
+                                            >
+                                                Salvar
+                                            </button>
+                                        </div>
+                                        <p className="text-[10px] text-docka-500 dark:text-zinc-500 italic">
+                                            Atenção: Você precisa apontar o registro CNAME deste domínio para <code className="bg-docka-100 dark:bg-zinc-900 px-1 py-0.5 rounded">cname.vercel-dns.com</code> nas configurações do seu provedor (Hostinger, GoDaddy, etc).
+                                        </p>
+                                    </div>
+                                </div>
+
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Cor Primária</label>
