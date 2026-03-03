@@ -238,6 +238,70 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
     const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
 
+    const renderDescription = () => {
+        try {
+            if (formData.description && formData.description.trim().startsWith('{')) {
+                const parsed = JSON.parse(formData.description);
+                if (typeof parsed === 'object' && parsed !== null) {
+                    const labels: Record<string, string> = {
+                        brandName: 'Marca',
+                        activity: 'Atividades',
+                        cpf: 'CPF',
+                        cnpj: 'CNPJ',
+                        address: 'Endereço',
+                        city: 'Cidade',
+                        state: 'Estado',
+                        name: 'Nome Contato',
+                        email: 'E-mail',
+                        phone: 'Telefone',
+                        entityType: 'Tipo',
+                        cep: 'CEP',
+                        number: 'Número',
+                        complement: 'Complemento',
+                        neighborhood: 'Bairro',
+                        subject: 'Assunto',
+                        message: 'Mensagem',
+                        hasLogo: 'Possui Logo?'
+                    };
+
+                    return (
+                        <div className="bg-docka-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-200 dark:border-zinc-700 mt-2 shadow-sm">
+                            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-docka-200 dark:border-zinc-700">
+                                <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Dados do Formulário</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                {Object.entries(parsed).map(([key, value]) => {
+                                    if (!value || value === '') return null;
+                                    const label = labels[key] || key;
+                                    const displayVal = value === 'pf' ? 'Pessoa Física' : value === 'pj' ? 'Pessoa Jurídica' : value === 'yes' ? 'Sim' : value === 'no' ? 'Não' : String(value);
+
+                                    return (
+                                        <div key={key} className="flex flex-col border-b border-docka-100 dark:border-zinc-700/50 pb-2 last:border-0 md:last:border-b md:last:pb-2">
+                                            <span className="text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">{label}</span>
+                                            <span className="text-sm font-medium text-docka-900 dark:text-zinc-100 whitespace-pre-wrap">{displayVal}</span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                }
+            }
+        } catch (e) {
+            // Not a valid JSON, fallback to textarea
+        }
+
+        return (
+            <textarea
+                className="w-full text-sm text-docka-600 dark:text-zinc-300 bg-transparent border border-transparent hover:border-docka-200 dark:hover:border-zinc-700 rounded-lg p-3 -ml-3 min-h-[120px] outline-none focus:border-docka-400 focus:bg-white dark:focus:bg-zinc-800 transition-all resize-none placeholder:text-docka-400"
+                placeholder="Adicione uma descrição mais detalhada sobre este lead..."
+                value={formData.description || ''}
+                onChange={e => setFormData({ ...formData, description: e.target.value })}
+                onBlur={e => handleBlur('description', e.target.value)}
+            />
+        );
+    };
+
     return (
         <Modal
             isOpen={isOpen}
@@ -271,13 +335,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         <div className="flex items-center gap-2 text-sm font-bold text-docka-700 dark:text-zinc-300">
                             <AlignLeft size={16} /> Descrição
                         </div>
-                        <textarea
-                            className="w-full text-sm text-docka-600 dark:text-zinc-300 bg-transparent border border-transparent hover:border-docka-200 dark:hover:border-zinc-700 rounded-lg p-3 -ml-3 min-h-[120px] outline-none focus:border-docka-400 focus:bg-white dark:focus:bg-zinc-800 transition-all resize-none placeholder:text-docka-400"
-                            placeholder="Adicione uma descrição mais detalhada sobre este lead..."
-                            value={formData.description || ''}
-                            onChange={e => setFormData({ ...formData, description: e.target.value })}
-                            onBlur={e => handleBlur('description', e.target.value)}
-                        />
+                        {renderDescription()}
                     </div>
 
                     {/* Activity Feed / Comments */}
