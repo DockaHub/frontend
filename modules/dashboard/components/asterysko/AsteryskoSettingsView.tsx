@@ -313,9 +313,38 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                                 Salvar
                                             </button>
                                         </div>
-                                        <p className="text-[10px] text-docka-500 dark:text-zinc-500 italic">
-                                            Atenção: Você precisa apontar o registro CNAME deste domínio para <code className="bg-docka-100 dark:bg-zinc-900 px-1 py-0.5 rounded">cname.vercel-dns.com</code> nas configurações do seu provedor (Hostinger, GoDaddy, etc).
-                                        </p>
+                                        {clientPortalDomain && (
+                                            <div className="mt-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-200 dark:border-zinc-700/50">
+                                                <h5 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2 flex items-center gap-2">
+                                                    Configuração de Zona DNS
+                                                    <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-bold">Pendente</span>
+                                                </h5>
+                                                <p className="text-[10px] text-slate-500 dark:text-zinc-500 mb-4">Adicione o registro abaixo no seu provedor de domínio (Cloudflare, Hostinger, Registro.br, etc) para ativar o redirecionamento. A propagação pode levar alguns minutos.</p>
+
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div>
+                                                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 mb-1">Tipo</span>
+                                                        <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100">CNAME</div>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
+                                                            Nome / Host
+                                                        </span>
+                                                        <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate" title={clientPortalDomain}>
+                                                            {clientPortalDomain.split('.').length > 2 ? clientPortalDomain.split('.')[0] : '@'}
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
+                                                            Valor / Destino
+                                                        </span>
+                                                        <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate">
+                                                            cname.vercel-dns.com
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
