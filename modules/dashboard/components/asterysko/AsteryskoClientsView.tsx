@@ -59,6 +59,14 @@ const AsteryskoClientsView: React.FC = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<Partial<Client>>({});
     const [isLoading, setIsLoading] = useState(false);
+    const [newClient, setNewClient] = useState({
+        company: '',
+        name: '',
+        email: '',
+        phone: '',
+        cnpj: '',
+        sendWelcomeEmail: true
+    });
 
     useEffect(() => {
         if (selectedClient) {
@@ -80,6 +88,35 @@ const AsteryskoClientsView: React.FC = () => {
         } catch (error: any) {
             console.error('Failed to update client', error);
             alert(error.response?.data?.error || 'Erro ao atualizar cliente');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCreateClient = async () => {
+        if (!newClient.name || !newClient.email) {
+            addToast({ type: 'error', title: 'Erro', message: 'Nome e email são obrigatórios.' });
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            await api.post('/asterysko/clients', {
+                type: newClient.cnpj.length > 14 ? 'PJ' : 'PF',
+                cpfCnpj: newClient.cnpj,
+                name: newClient.name,
+                email: newClient.email,
+                phone: newClient.phone,
+                organizationId: 'org_1' // Temporary fallback
+            });
+
+            await fetchClients();
+            setIsCreateModalOpen(false);
+            setNewClient({ company: '', name: '', email: '', phone: '', cnpj: '', sendWelcomeEmail: true });
+            addToast({ type: 'success', title: 'Sucesso', message: 'Cliente cadastrado com sucesso!' });
+        } catch (error: any) {
+            console.error('Failed to create client', error);
+            addToast({ type: 'error', title: 'Erro', message: error.response?.data?.error || 'Erro ao cadastrar cliente' });
         } finally {
             setIsLoading(false);
         }
@@ -709,7 +746,9 @@ const AsteryskoClientsView: React.FC = () => {
                     footer={
                         <>
                             <button onClick={() => setIsCreateModalOpen(false)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">Cancelar</button>
-                            <button onClick={() => setIsCreateModalOpen(false)} className="px-6 py-2 text-sm font-bold text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm">Salvar Cliente</button>
+                            <button onClick={handleCreateClient} disabled={isLoading} className="px-6 py-2 text-sm font-bold text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm disabled:opacity-50">
+                                {isLoading ? 'Salvando...' : 'Salvar Cliente'}
+                            </button>
                         </>
                     }
                 >
@@ -717,30 +756,60 @@ const AsteryskoClientsView: React.FC = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Empresa / Razão Social</label>
-                                <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100" placeholder="Ex: Minha Empresa LTDA" />
+                                <input
+                                    value={newClient.company}
+                                    onChange={e => setNewClient({ ...newClient, company: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100"
+                                    placeholder="Ex: Minha Empresa LTDA"
+                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Nome do Contato</label>
-                                <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100" placeholder="Nome completo" />
+                                <input
+                                    value={newClient.name}
+                                    onChange={e => setNewClient({ ...newClient, name: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100"
+                                    placeholder="Nome completo"
+                                />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">E-mail Principal</label>
-                                <input type="email" className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100" placeholder="cliente@email.com" />
+                                <input
+                                    type="email"
+                                    value={newClient.email}
+                                    onChange={e => setNewClient({ ...newClient, email: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100"
+                                    placeholder="cliente@email.com"
+                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Telefone / WhatsApp</label>
-                                <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100" placeholder="(00) 00000-0000" />
+                                <input
+                                    value={newClient.phone}
+                                    onChange={e => setNewClient({ ...newClient, phone: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100"
+                                    placeholder="(00) 00000-0000"
+                                />
                             </div>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">CNPJ / CPF</label>
-                            <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100" />
+                            <input
+                                value={newClient.cnpj}
+                                onChange={e => setNewClient({ ...newClient, cnpj: e.target.value })}
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100"
+                            />
                         </div>
                         <div className="pt-2">
                             <label className="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" className="accent-docka-900 dark:accent-zinc-100" defaultChecked />
+                                <input
+                                    type="checkbox"
+                                    checked={newClient.sendWelcomeEmail}
+                                    onChange={e => setNewClient({ ...newClient, sendWelcomeEmail: e.target.checked })}
+                                    className="accent-docka-900 dark:accent-zinc-100"
+                                />
                                 <span className="text-sm text-docka-600 dark:text-zinc-400">Enviar e-mail de boas-vindas com acesso ao portal</span>
                             </label>
                         </div>
