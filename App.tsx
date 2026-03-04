@@ -79,7 +79,7 @@ const AppContent: React.FC = () => {
         if (response.ok) {
           setIsTenantDomain(true);
 
-          document.title = 'Asterysko | Portal';
+          document.title = 'Portal do Cliente - Asterysko';
 
           // Clear old default favicon
           const oldIcons = document.querySelectorAll("link[rel~='icon']");
