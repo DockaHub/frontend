@@ -117,7 +117,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
 
                     {/* CONTRACT PAPER */}
                     <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl overflow-hidden min-h-[800px] border border-gray-100 print:shadow-none print:border-none print:rounded-none">
-                        <div className="p-8 md:p-14 text-gray-900" dangerouslySetInnerHTML={{ __html: contractHtml }} />
+                        <div className="text-gray-900" dangerouslySetInnerHTML={{ __html: contractHtml }} />
 
                         {signed && deal && (
                             <div className="mt-8 border-t-2 border-dashed border-gray-200 p-8 md:p-12 bg-gray-50 print:bg-white">
