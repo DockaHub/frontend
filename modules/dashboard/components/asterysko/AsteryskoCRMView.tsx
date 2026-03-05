@@ -150,10 +150,21 @@ const AsteryskoCRMViewContent: React.FC = () => {
         setSelectedCard(card);
         setIsDealDetailsModalOpen(true);
 
-        try {
-            await api.patch(`/asterysko/crm/deals/${card.id}/read`);
-        } catch (error) {
-            console.error('Falhou ao marcar o card como lido', error);
+        if (card.unread) {
+            try {
+                await api.patch(`/asterysko/crm/deals/${card.id}/read`);
+
+                // Atualiza o estado da UI para evitar clicks duplos
+                setColumns(prev => prev.map(col => ({
+                    ...col,
+                    cards: col.cards.map(c => c.id === card.id ? { ...c, unread: false } : c)
+                })));
+
+                // Dispara o evento pro Sidebar Navigation descontar
+                window.dispatchEvent(new CustomEvent('asterysko-lead-read'));
+            } catch (error) {
+                console.error('Falhou ao marcar o card como lido', error);
+            }
         }
     };
 

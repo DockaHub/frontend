@@ -301,14 +301,15 @@ export interface KanbanCardData {
   title: string; // Company Name or Project Name
   subtitle?: string; // Contact person or Next Step
   value?: string; // Deal value
-  tags?: KanbanTag[];
-  members?: string[]; // Avatar URLs
   date?: string; // Due date or last interaction
   priority?: 'low' | 'medium' | 'high';
+  status?: string;
+  tags?: { label: string; color: string }[];
+  members?: { id: string; name: string; avatar?: string }[];
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
-  status?: string;
+  unread?: boolean;
 }
 
 export interface KanbanColumnData {

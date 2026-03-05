@@ -36,7 +36,17 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
             fetchUnread();
             // Polling every 30 seconds
             const interval = setInterval(fetchUnread, 30000);
-            return () => clearInterval(interval);
+
+            // Escutando eventos customizados para desconto imediato pós-leitura
+            const handleLeadRead = () => {
+                setUnreadLeads(prev => Math.max(0, prev - 1));
+            };
+            window.addEventListener('asterysko-lead-read', handleLeadRead);
+
+            return () => {
+                clearInterval(interval);
+                window.removeEventListener('asterysko-lead-read', handleLeadRead);
+            };
         } else {
             setUnreadLeads(0);
         }
