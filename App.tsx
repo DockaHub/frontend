@@ -149,13 +149,34 @@ const AppContent: React.FC = () => {
     fetchUserOrgs();
   }, [user]);
 
-  // Apply Theme Effect
+  // Apply Theme Effect & Base Favicon (Docka)
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     localStorage.setItem('docka-theme', theme);
-  }, [theme]);
+
+    // Dynamic Favicon for Docka (runs only if not Asterysko Tenant)
+    if (!isTenantDomain && !resolvingDomain) {
+      document.title = 'Docka Workspace';
+
+      const oldIcons = document.querySelectorAll("link[rel~='icon']");
+      oldIcons.forEach(icon => icon.remove());
+
+      // Icon paths from DockaLogo (variant='icon')
+      // Original color was dark, so for dark theme we use white, and for light theme we use dark
+      const dockaPath1 = `<path d="M201.569 0L86.6709 113.697H314.998L315.267 0H201.569Z" />`;
+      const dockaPath2 = `<path d="M86.671 113.698C86.671 177.505 138.024 228.793 200.834 228.793C263.645 228.793 314.998 177.505 314.998 113.698H401.669C401.669 224.889 311.993 315.464 200.834 315.464C89.676 315.464 0 224.889 0 113.698H86.671Z" />`;
+
+      const fillColor = theme === 'dark' ? '%23FFFFFF' : '%2318181b'; // zinc-900 for light
+
+      const dockaFavicon = document.createElement('link');
+      dockaFavicon.rel = 'icon';
+      dockaFavicon.href = `data:image/svg+xml;utf8,<svg viewBox="0 0 402 316" fill="none" xmlns="http://www.w3.org/2000/svg"><g fill="${fillColor}">${dockaPath1}${dockaPath2}</g></svg>`;
+
+      document.head.appendChild(dockaFavicon);
+    }
+  }, [theme, isTenantDomain, resolvingDomain]);
 
   // Global Keyboard Shortcut for Command Palette
   useEffect(() => {
