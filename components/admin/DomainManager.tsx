@@ -19,6 +19,12 @@ const DomainManager: React.FC<DomainManagerProps> = ({ organizations }) => {
     const { addToast } = useToast();
 
     useEffect(() => {
+        if (!selectedOrgId && organizations.length > 0) {
+            setSelectedOrgId(organizations[0].id);
+        }
+    }, [organizations, selectedOrgId]);
+
+    useEffect(() => {
         if (selectedOrgId) {
             loadDomains();
         }
