@@ -70,48 +70,48 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     };
 
     return (
-        <div className="h-full overflow-y-auto custom-scrollbar bg-gray-100 dark:bg-zinc-950 flex flex-col transition-colors duration-300 print:bg-white print:overflow-visible">
+        <div className="h-full min-h-screen w-full overflow-y-auto custom-scrollbar bg-slate-50 flex flex-col print:bg-white print:overflow-visible">
             {/* Header */}
-            <header className="bg-white dark:bg-zinc-900 border-b border-gray-200 dark:border-zinc-800 py-4 px-6 fixed top-0 w-full z-10 shadow-sm transition-colors duration-300 print:hidden">
+            <header className="bg-white border-b border-gray-200 py-4 px-6 fixed top-0 w-full z-10 shadow-sm print:hidden">
                 <div className="max-w-5xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-2">
-                        <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+                    <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-indigo-200 shadow-lg">
                             <FileText className="text-white h-5 w-5" />
                         </div>
-                        <span className="font-bold text-xl text-gray-900 dark:text-zinc-100">Asterysko Sign</span>
+                        <span className="font-bold text-xl tracking-tight text-gray-900">Asterysko Sign</span>
                     </div>
                     {signed && (
                         <button
                             onClick={handlePrint}
-                            className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-4 py-2 rounded-lg font-bold text-sm hover:bg-indigo-100 transition-colors"
+                            className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-colors"
                         >
-                            <Smartphone size={16} /> Imprimir / PDF
+                            <Smartphone size={16} /> Salvar PDF
                         </button>
                     )}
-                    <div className="hidden sm:block text-sm text-gray-500 dark:text-zinc-400">
-                        {signed ? 'Documento Assinado' : 'Visualizando contrato seguro'}
+                    <div className="hidden sm:block text-sm font-medium text-gray-500">
+                        {signed ? 'Documento Assinado e Validado' : 'Ambiente Seguro de Assinatura'}
                     </div>
                 </div>
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 pt-20 pb-32 px-4 print:pt-0 print:pb-0 print:px-0">
-                <div className="max-w-4xl mx-auto space-y-6 print:space-y-0">
+            <main className="flex-1 pt-24 pb-40 px-4 print:pt-0 print:pb-0 print:px-0">
+                <div className="max-w-5xl mx-auto space-y-6 print:space-y-0">
                     {signed && (
-                        <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 p-4 rounded-xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 print:hidden">
-                            <div className="h-10 w-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center shrink-0">
-                                <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-500" />
+                        <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 shadow-sm print:hidden">
+                            <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
+                                <CheckCircle className="h-6 w-6 text-emerald-600" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-emerald-900 dark:text-emerald-400 text-sm">Contrato Assinado Digitalmente</h3>
-                                <p className="text-xs text-emerald-700 dark:text-emerald-500/80">Este documento possui validade jurídica e foi formalizado eletronicamente.</p>
+                                <h3 className="font-bold text-emerald-900 text-sm">Contrato Assinado Digitalmente</h3>
+                                <p className="text-xs text-emerald-700 mt-1">Este documento possui validade jurídica equivalente e foi formalizado eletronicamente em nosso sistema.</p>
                             </div>
                         </div>
                     )}
 
                     {/* CONTRACT PAPER */}
-                    <div className="bg-white shadow-xl rounded-xl overflow-hidden min-h-[800px] border border-gray-200 dark:border-zinc-800 print:shadow-none print:border-none print:rounded-none">
-                        <div className="p-8 md:p-12 text-gray-900" dangerouslySetInnerHTML={{ __html: contractHtml }} />
+                    <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl overflow-hidden min-h-[800px] border border-gray-100 print:shadow-none print:border-none print:rounded-none">
+                        <div className="p-8 md:p-14 text-gray-900" dangerouslySetInnerHTML={{ __html: contractHtml }} />
 
                         {signed && deal && (
                             <div className="mt-8 border-t-2 border-dashed border-gray-200 p-8 md:p-12 bg-gray-50 print:bg-white">
@@ -148,41 +148,60 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                 </div>
             </main>
 
-            {/* Signature Bar */}
+            {/* Floating Signature Pill */}
             {!signed && (
-                <footer className="fixed bottom-0 w-full bg-white dark:bg-zinc-900 border-t border-gray-200 dark:border-zinc-800 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 z-20 transition-colors duration-300">
-                    <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex-1 w-full md:w-auto">
-                            <div className="flex items-center gap-2 mb-2">
+                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[95%] max-w-2xl z-50 animate-in slide-in-from-bottom-8 duration-500">
+                    <div className="bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] rounded-[2rem] p-4 flex flex-col sm:flex-row items-center gap-4 transition-all">
+                        <div className="flex-1 w-full flex flex-col gap-3 px-2">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className="relative flex items-center justify-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={agreed}
+                                        onChange={(e) => setAgreed(e.target.checked)}
+                                        className="peer sr-only"
+                                    />
+                                    <div className="w-5 h-5 rounded-md border-2 border-gray-300 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-all"></div>
+                                    <CheckCircle className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
+                                </div>
+                                <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+                                    Li e concordo com os Termos
+                                </span>
+                            </label>
+
+                            <div className="relative">
                                 <input
-                                    type="checkbox"
-                                    id="agree"
-                                    checked={agreed}
-                                    onChange={(e) => setAgreed(e.target.checked)}
-                                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-zinc-600 rounded bg-white dark:bg-zinc-800"
+                                    type="text"
+                                    placeholder="Digite seu nome completo para assinar eletronicamente"
+                                    value={signatureName}
+                                    onChange={(e) => setSignatureName(e.target.value)}
+                                    className="w-full bg-gray-50/80 placeholder:text-gray-400 border border-gray-200 text-gray-900 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:border-transparent outline-none transition-all font-medium text-sm"
                                 />
-                                <label htmlFor="agree" className="text-sm text-gray-700 dark:text-zinc-300">Li e concordo com os termos do contrato acima.</label>
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Digite seu nome completo para assinar"
-                                value={signatureName}
-                                onChange={(e) => setSignatureName(e.target.value)}
-                                className="w-full border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-zinc-100 rounded-lg px-4 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-colors"
-                            />
                         </div>
+
                         <button
                             onClick={handleSign}
                             disabled={signing || !agreed || !signatureName}
-                            className={`w-full md:w-auto px-8 py-3 rounded-lg font-bold text-white shadow-md transition-all ${signing || !agreed || !signatureName
-                                ? 'bg-gray-400 dark:bg-zinc-700 cursor-not-allowed'
-                                : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-lg transform hover:-translate-y-0.5'
+                            className={`w-full sm:w-auto px-8 py-4 sm:py-8 rounded-2xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${signing || !agreed || !signatureName
+                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                    : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/25 transform hover:-translate-y-0.5'
                                 }`}
                         >
-                            {signing ? 'Assinando...' : 'Assinar Documento'}
+                            {signing ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    <span>Processando...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <FileText size={18} />
+                                    <span>Assinar Contrato</span>
+                                </>
+                            )}
                         </button>
                     </div>
-                </footer>
+                </div>
             )}
         </div>
     );
