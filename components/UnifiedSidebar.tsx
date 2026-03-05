@@ -247,6 +247,14 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                 {!isCollapsed && hasChildren && (
                                     <ChevronDown size={14} className={`text-docka-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                 )}
+                                {!isCollapsed && item.badgeCount && item.badgeCount > 0 && (
+                                    <span className={`ml-auto px-2 py-0.5 text-[10px] font-bold text-white rounded-full ${item.badgeColor || 'bg-docka-500'}`}>
+                                        {item.badgeCount}
+                                    </span>
+                                )}
+                                {isCollapsed && item.badgeCount && item.badgeCount > 0 && (
+                                    <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${item.badgeColor || 'bg-docka-500'}`} />
+                                )}
                             </button>
                         );
 

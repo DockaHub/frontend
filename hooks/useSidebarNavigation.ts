@@ -5,16 +5,43 @@ import {
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
     Network, FileInput, Server, Search, MessageSquare, Book
 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { Organization } from '../types';
+import api from '../services/api';
 
 export interface MenuItem {
     id: string;
     label: string;
     icon: any;
+    badgeCount?: number;
+    badgeColor?: string;
     children?: { id: string; label: string; icon?: any }[];
 }
 
 export const useSidebarNavigation = (currentOrg: Organization) => {
+    const [unreadLeads, setUnreadLeads] = useState(0);
+
+    // Fetch unread leads specifically for Asterysko
+    useEffect(() => {
+        if (currentOrg?.slug === 'asterysko') {
+            const fetchUnread = async () => {
+                try {
+                    const res = await api.get('/asterysko/crm/deals/unread-count');
+                    setUnreadLeads(res.data.count || 0);
+                } catch (error) {
+                    console.error('Failed to fetch unread leads count', error);
+                }
+            };
+
+            fetchUnread();
+            // Polling every 30 seconds
+            const interval = setInterval(fetchUnread, 30000);
+            return () => clearInterval(interval);
+        } else {
+            setUnreadLeads(0);
+        }
+    }, [currentOrg?.slug]);
+
     const getOrgMenu = (): MenuItem[] => {
         if (!currentOrg) return [];
 
@@ -63,7 +90,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
                 { id: 'research', label: 'Pesquisa & Viabilidade', icon: Search },
                 { id: 'clients', label: 'Clientes', icon: Briefcase },
-                { id: 'crm', label: 'CRM & Leads', icon: Users },
+                { id: 'crm', label: 'CRM & Leads', icon: Users, badgeCount: unreadLeads > 0 ? unreadLeads : undefined, badgeColor: 'bg-red-500' },
                 { id: 'processes', label: 'Processos INPI', icon: Scale },
                 { id: 'financial', label: 'Financeiro', icon: CreditCard },
                 { id: 'settings', label: 'Configurações', icon: Settings },

@@ -146,9 +146,15 @@ const AsteryskoCRMViewContent: React.FC = () => {
 
     console.log('Rendering MAIN state. Columns:', columns.length, 'ViewMode:', viewMode);
 
-    const handleCardClick = (card: KanbanCardData) => {
+    const handleCardClick = async (card: KanbanCardData) => {
         setSelectedCard(card);
         setIsDealDetailsModalOpen(true);
+
+        try {
+            await api.patch(`/asterysko/crm/deals/${card.id}/read`);
+        } catch (error) {
+            console.error('Falhou ao marcar o card como lido', error);
+        }
     };
 
 
