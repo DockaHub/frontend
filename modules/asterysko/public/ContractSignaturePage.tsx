@@ -49,10 +49,16 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
 
         setSigning(true);
         try {
-            await api.post(`/asterysko/public/deals/${dealId}/sign`, {
+            const response = await api.post(`/asterysko/public/deals/${dealId}/sign`, {
                 signatureName,
                 agreed: true
             });
+            // Tenta obter o deal atualizado do response ou refetch explícito
+            if (response.data && response.data.deal) {
+                setDeal(response.data.deal);
+            } else {
+                await fetchDeal();
+            }
             setSigned(true);
             addToast({ type: 'success', title: 'Assinado!', message: 'Contrato assinado com sucesso.' });
         } catch (error) {
@@ -70,9 +76,9 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     };
 
     return (
-        <div className="h-full min-h-screen w-full overflow-y-auto custom-scrollbar bg-slate-50 flex flex-col print:bg-white print:overflow-visible">
+        <div className="h-full w-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-50 flex flex-col relative print:bg-white print:overflow-visible">
             {/* Header */}
-            <header className="bg-white border-b border-gray-200 py-4 px-6 fixed top-0 w-full z-10 shadow-sm print:hidden">
+            <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-10 shadow-sm print:hidden">
                 <div className="max-w-5xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-indigo-200 shadow-lg">
@@ -95,7 +101,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 pt-24 pb-40 px-4 print:pt-0 print:pb-0 print:px-0">
+            <main className="flex-1 pt-8 pb-40 px-4 print:pt-0 print:pb-0 print:px-0">
                 <div className="max-w-5xl mx-auto space-y-6 print:space-y-0">
                     {signed && (
                         <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 shadow-sm print:hidden">
@@ -184,8 +190,8 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                             onClick={handleSign}
                             disabled={signing || !agreed || !signatureName}
                             className={`w-full sm:w-auto px-8 py-4 sm:py-8 rounded-2xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${signing || !agreed || !signatureName
-                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                                    : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/25 transform hover:-translate-y-0.5'
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
+                                : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/25 transform hover:-translate-y-0.5'
                                 }`}
                         >
                             {signing ? (
