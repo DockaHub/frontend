@@ -281,6 +281,10 @@ const AppContent: React.FC = () => {
     if (location.pathname.startsWith('/portal/welcome')) {
       return <WelcomePage theme={theme} onToggleTheme={toggleTheme} />;
     }
+    if (location.pathname.startsWith('/sign')) {
+      const dealId = location.pathname.split('/')[2];
+      return <ContractSignaturePage dealId={dealId} />;
+    }
     if (location.pathname.startsWith('/portal')) {
       return <AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />;
     }
