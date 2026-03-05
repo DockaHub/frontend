@@ -270,13 +270,15 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
 
 
             {/* MAIN SCROLLABLE AREA */}
-            <div className="flex-1 overflow-y-auto relative custom-scrollbar">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
 
                 {/* HEADER BACKGROUND & CONTENT */}
                 {/* Removing Z-Index from parent container to allow children to stack properly against the next sibling (Cards) */}
                 <div className="bg-blue-700 dark:bg-blue-900 pb-32 pt-8 px-6 relative transition-colors">
                     {/* Background Decor */}
-                    <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                        <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                    </div>
 
                     <div className="max-w-4xl mx-auto">
                         {/* Navbar-Increased Z-Index to stay above cards */}
