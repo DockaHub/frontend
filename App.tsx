@@ -111,7 +111,7 @@ const AppContent: React.FC = () => {
 
   // Enforce Tenant Routing
   useEffect(() => {
-    if (isTenantDomain && !resolvingDomain && !location.pathname.startsWith('/portal')) {
+    if (isTenantDomain && !resolvingDomain && !location.pathname.startsWith('/portal') && !location.pathname.startsWith('/sign')) {
       navigate('/portal', { replace: true });
     }
   }, [isTenantDomain, resolvingDomain, location.pathname, navigate]);
