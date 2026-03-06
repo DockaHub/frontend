@@ -27,6 +27,8 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedFee, setSelectedFee] = useState<Partial<Fee> | null>(null);
     const [saving, setSaving] = useState(false);
+    const [inpiHistory, setInpiHistory] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
     const { addToast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -58,7 +60,20 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
 
     useEffect(() => {
         fetchFees();
+        fetchInpiHistory();
     }, []);
+
+    const fetchInpiHistory = async () => {
+        try {
+            setLoadingHistory(true);
+            const response = await api.get('/asterysko/inpi/history');
+            setInpiHistory(response.data);
+        } catch (error) {
+            console.error('Error fetching INPI history:', error);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
 
     const fetchFees = async () => {
         try {
@@ -212,6 +227,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                             } finally {
                                                 // Limpa o input
                                                 e.target.value = '';
+                                                setTimeout(fetchInpiHistory, 1500); // refresh list
                                             }
                                         }}
                                     />
@@ -230,6 +246,42 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                             <input type="password" className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="********" disabled />
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* History List */}
+                            <div className="mt-8 pt-6 border-t border-docka-100 dark:border-zinc-800">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase flex items-center gap-2">Histórico de Processamento</h4>
+                                    <button onClick={fetchInpiHistory} className="text-xs px-3 py-1 bg-docka-100 dark:bg-zinc-800 text-docka-600 dark:text-zinc-300 rounded-md hover:bg-docka-200 dark:hover:bg-zinc-700 font-bold transition-colors">Atualizar</button>
+                                </div>
+                                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                                    {loadingHistory ? (
+                                        <div className="text-sm text-center text-docka-400 py-4">Carregando histórico...</div>
+                                    ) : inpiHistory.length === 0 ? (
+                                        <div className="text-sm border-2 border-dashed border-docka-200 dark:border-zinc-800 p-6 rounded-xl text-center text-docka-500 dark:text-zinc-500 flex flex-col items-center">
+                                            <Info size={20} className="mb-2 opacity-50" />
+                                            Nenhum histórico de Revista do INPI encontrado. Faça seu primeiro Upload.
+                                        </div>
+                                    ) : (
+                                        inpiHistory.map((log: any) => (
+                                            <div key={log.id} className="flex items-center justify-between p-3 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm transition-colors hover:border-docka-300">
+                                                <div className="flex flex-col">
+                                                    <span className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                                        RPI {log.rpiNumber}
+                                                        {log.status === 'PROCESSING' && <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
+                                                        {log.status === 'COMPLETED' && <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
+                                                        {log.status === 'FAILED' && <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold" title={log.errorMessage}>Falhou</span>}
+                                                    </span>
+                                                    <span className="text-[10px] text-docka-500 uppercase mt-1">Data da Edição: {new Date(log.rpiDate).toLocaleDateString('pt-BR')} • {log.fileName}</span>
+                                                </div>
+                                                <div className="text-right flex flex-col items-end">
+                                                    <span className="font-mono font-bold text-docka-700 dark:text-zinc-300">{log.totalExtracted.toLocaleString('pt-BR')}</span>
+                                                    <span className="text-[10px] text-docka-400 uppercase">Marcas extraídas</span>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
 
