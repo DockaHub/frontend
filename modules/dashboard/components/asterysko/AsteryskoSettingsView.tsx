@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -160,27 +160,79 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
 
                 <div className="space-y-8">
 
-                    {/* INPI Integration */}
+                    {/* INPI Integration & RPI Upload */}
                     <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                         <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30">
                             <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-                                <Shield size={16} /> Credenciais INPI (e-INPI)
+                                <Shield size={16} /> Motor INPI (Revista da Propriedade Industrial)
                             </h3>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-lg text-xs text-blue-700 dark:text-blue-300 mb-4">
-                                Estas credenciais são usadas para consultar automaticamente o status dos processos na base do INPI.
+                                <strong>Importante:</strong> Faça o upload do arquivo XML das Revistas (RPI) semanais ou históricas do INPI para alimentar o nosso Motor de Busca de Viabilidade interno.
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Upload Box */}
                                 <div>
-                                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Login (GRU/e-INPI)</label>
-                                    <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100" defaultValue="asterysko_pi" />
+                                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Processar Revista (XML)</label>
+                                    <div
+                                        onClick={() => document.getElementById('rpi-upload')?.click()}
+                                        className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors"
+                                    >
+                                        <Upload size={24} className="text-docka-400 dark:text-zinc-500 mb-2" />
+                                        <p className="text-sm font-bold text-docka-700 dark:text-zinc-300">Clique para selecionar o XML</p>
+                                        <p className="text-[10px] text-docka-500 dark:text-zinc-500 mt-1 text-center">Tamanho máx recomendado: 100MB<br />O processamento rodará em segundo plano.</p>
+                                    </div>
+                                    <input
+                                        id="rpi-upload"
+                                        type="file"
+                                        className="hidden"
+                                        accept=".xml"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+
+                                            try {
+                                                const formData = new FormData();
+                                                formData.append('file', file);
+                                                // Exemplo: Usamos o timestamp atual como número genérico caso não venha no nome
+                                                formData.append('rpiNumber', file.name.replace(/[^0-9]/g, '') || String(Date.now()));
+
+                                                addToast({ type: 'success', title: 'Upload Iniciado', message: `Enviando ${file.name} ao servidor...` });
+
+                                                await api.post('/asterysko/inpi/parse', formData, {
+                                                    headers: { 'Content-Type': 'multipart/form-data' }
+                                                });
+
+                                                addToast({ type: 'success', title: 'Processamento Iniciado', message: 'O arquivo XML está sendo indexado no Motor de Busca em segundo plano.' });
+                                            } catch (err: any) {
+                                                console.error(err);
+                                                addToast({ type: 'error', title: 'Falha no Envio', message: err.response?.data?.error || 'Erro ao comunicar com a API.' });
+                                            } finally {
+                                                // Limpa o input
+                                                e.target.value = '';
+                                            }
+                                        }}
+                                    />
                                 </div>
+
+                                {/* Legacy Credentials info */}
                                 <div>
-                                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Senha</label>
-                                    <input type="password" className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100" defaultValue="********" />
+                                    <p className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Acesso API Automática (Futuro)</p>
+                                    <div className="space-y-4 opacity-50 pointer-events-none">
+                                        <div>
+                                            <label className="block text-[10px] uppercase font-bold text-docka-500 mb-1">Login e-INPI</label>
+                                            <input className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="asterysko_pi" disabled />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] uppercase font-bold text-docka-500 mb-1">Senha</label>
+                                            <input type="password" className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="********" disabled />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
 
