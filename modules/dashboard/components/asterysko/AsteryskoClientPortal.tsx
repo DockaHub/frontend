@@ -1140,7 +1140,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                 isOpen={isPaymentModalOpen}
                 onClose={() => { setIsPaymentModalOpen(false); setPaymentMethod(null); setCheckoutUrl(null); }}
                 title="Pagar Fatura"
-                size={checkoutUrl ? "xl" : "md"}
+                size="md"
             >
                 {selectedInvoice && (
                     <div className="space-y-6">
@@ -1268,8 +1268,30 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                 <p className="text-sm font-bold text-slate-600 dark:text-zinc-400">Ambiente Seguro...</p>
                             </div>
                         ) : checkoutUrl ? (
-                            <div className="w-full h-[600px] rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-                                <iframe src={checkoutUrl} className="w-full h-full border-0" allow="payment" title="Checkout de Pagamento na InfinitePay" />
+                            <div className="flex flex-col items-center text-center space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-300 py-4">
+                                <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center">
+                                    <ShieldCheck size={32} />
+                                </div>
+                                <div>
+                                    <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Ambiente Seguro</h4>
+                                    <p className="text-sm text-slate-500 dark:text-zinc-400 max-w-sm mx-auto">
+                                        Sua fatura está pronta! Você será redirecionado para o ambiente criptografado da InfinitePay para concluir o pagamento via Pix ou Cartão.
+                                    </p>
+                                </div>
+                                <a
+                                    href={checkoutUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full flex items-center justify-center gap-2 py-4 mt-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98]"
+                                >
+                                    Ir para o Pagamento <ExternalLink size={18} />
+                                </a>
+                                <button
+                                    onClick={() => { setIsPaymentModalOpen(false); setCheckoutUrl(null); }}
+                                    className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
+                                >
+                                    Pagar mais tarde
+                                </button>
                             </div>
                         ) : !paymentMethod ? (
                             <div className="space-y-3">
