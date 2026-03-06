@@ -64,6 +64,12 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
     // Navigation State: 'home' (Processes), 'profile', 'contracts', 'financial', 'support'
     const [currentView, setCurrentView] = useState<'home' | 'profile' | 'contracts' | 'financial' | 'support'>('home');
 
+    // Profile Edit State
+    const [editName, setEditName] = useState('');
+    const [editRg, setEditRg] = useState('');
+    const [editAddress, setEditAddress] = useState('');
+    const [isSavingProfile, setIsSavingProfile] = useState(false);
+
     // ... (existing helper functions)
 
     // Helper for Status Translation
@@ -101,6 +107,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                 const { invoices, contracts } = financialsRes.data;
 
                 setClientData(client);
+                setEditName(client.name || '');
+                setEditRg(client.rg || '');
+                setEditAddress(client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.state ? `-${client.state}` : ''}` : '');
                 setNotifications(notifications);
                 setFinancials({ invoices, contracts });
 
@@ -192,6 +201,25 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
             setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         } catch (err) {
             console.error('Error marking all as read:', err);
+        }
+    };
+
+    const handleUpdateProfile = async () => {
+        try {
+            setIsSavingProfile(true);
+            const response = await api.put('/asterysko/portal/profile', {
+                name: editName,
+                rg: editRg,
+                address: editAddress
+            });
+
+            setClientData(response.data.profile);
+            alert('Perfil atualizado com sucesso!');
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Erro ao atualizar perfil. Tente novamente.');
+        } finally {
+            setIsSavingProfile(false);
         }
     };
 
@@ -742,7 +770,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div className="md:col-span-2">
                                                         <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">Razão Social/Nome</label>
-                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" defaultValue={clientData?.name} />
+                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" value={editName} onChange={(e) => setEditName(e.target.value)} />
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">CPF/CNPJ</label>
@@ -750,11 +778,11 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                     </div>
                                                     <div>
                                                         <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">RG/IE</label>
-                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" defaultValue={clientData?.rg || 'Não informado'} />
+                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" value={editRg} onChange={(e) => setEditRg(e.target.value)} />
                                                     </div>
                                                     <div className="md:col-span-2">
                                                         <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">Endereço</label>
-                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" defaultValue={`${clientData?.address || ''}, ${clientData?.city || ''}-${clientData?.state || ''}`} />
+                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
                                                     </div>
                                                 </div>
                                             </div>
@@ -783,8 +811,13 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                             <button className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 text-sm font-medium flex items-center gap-2">
                                                 <Lock size={16} /> Alterar Senha
                                             </button>
-                                            <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md shadow-blue-900/10 transition-colors">
-                                                Salvar Alterações
+                                            <button
+                                                onClick={handleUpdateProfile}
+                                                disabled={isSavingProfile}
+                                                className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md shadow-blue-900/10 transition-colors flex items-center gap-2 ${isSavingProfile ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                            >
+                                                {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : null}
+                                                {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
                                             </button>
                                         </div>
                                     </div>
