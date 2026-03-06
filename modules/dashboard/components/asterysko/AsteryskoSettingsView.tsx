@@ -271,9 +271,12 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                                         RPI {log.rpiNumber}
                                                         {log.status === 'PROCESSING' && <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
                                                         {log.status === 'COMPLETED' && <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
-                                                        {log.status === 'FAILED' && <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold" title={log.errorMessage}>Falhou</span>}
+                                                        {log.status === 'FAILED' && <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold">Falhou</span>}
                                                     </span>
                                                     <span className="text-[10px] text-docka-500 uppercase mt-1">Data da Edição: {new Date(log.rpiDate).toLocaleDateString('pt-BR')} • {log.fileName}</span>
+                                                    {log.status === 'FAILED' && log.errorMessage && (
+                                                        <span className="text-[10px] text-red-600 dark:text-red-400 mt-1 font-bold">{log.errorMessage}</span>
+                                                    )}
                                                 </div>
                                                 <div className="text-right flex flex-col items-end">
                                                     <span className="font-mono font-bold text-docka-700 dark:text-zinc-300">{log.totalExtracted.toLocaleString('pt-BR')}</span>
