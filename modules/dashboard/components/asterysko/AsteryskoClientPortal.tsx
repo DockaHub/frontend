@@ -83,7 +83,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
         if (invoice.type !== 'TAX') {
             setIsGeneratingPayment(true);
             try {
-                const targetId = invoice.invoiceId || invoice.id;
+                const targetId = invoice.invoiceId || invoice.dealId || invoice.id;
                 const res = await api.post(`/asterysko/portal/payments/${targetId}/infinitepay`);
                 if (res.data.paymentUrl) {
                     setCheckoutUrl(res.data.paymentUrl);
