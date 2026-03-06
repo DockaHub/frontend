@@ -60,6 +60,8 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
     const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card' | null>(null);
     const [installments, setInstallments] = useState(1);
     const [isUploading, setIsUploading] = useState(false);
+    const [isGeneratingPayment, setIsGeneratingPayment] = useState(false);
+    const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
 
     // Navigation State: 'home' (Processes), 'profile', 'contracts', 'financial', 'support'
     const [currentView, setCurrentView] = useState<'home' | 'profile' | 'contracts' | 'financial' | 'support'>('home');
@@ -72,6 +74,31 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
 
     // ... (existing helper functions)
 
+    const handleOpenPaymentModal = async (invoice: any) => {
+        setSelectedInvoice(invoice);
+        setCheckoutUrl(null);
+        setPaymentMethod(null);
+        setIsPaymentModalOpen(true);
+
+        if (invoice.type !== 'TAX') {
+            setIsGeneratingPayment(true);
+            try {
+                const res = await api.post(`/asterysko/portal/payments/${invoice.id}/infinitepay`);
+                if (res.data.paymentUrl) {
+                    setCheckoutUrl(res.data.paymentUrl);
+                } else {
+                    alert('Erro ao gerar cobrança pela operadora.');
+                    setIsPaymentModalOpen(false);
+                }
+            } catch (error: any) {
+                console.error('Erro gerando pagamento', error);
+                alert(error.response?.data?.error || 'Erro interno ao gerar o link de pagamento.');
+                setIsPaymentModalOpen(false);
+            } finally {
+                setIsGeneratingPayment(false);
+            }
+        }
+    };
     // Helper for Status Translation
     const formatStatus = (status: string) => {
         const map: Record<string, string> = {
@@ -939,7 +966,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                     <div className="flex flex-col items-end gap-2">
                                                                         {invoice.status === 'pending' && (
                                                                             <button
-                                                                                onClick={() => { setSelectedInvoice(invoice); setIsPaymentModalOpen(true); }}
+                                                                                onClick={() => handleOpenPaymentModal(invoice)}
                                                                                 className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium text-xs bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg transition-colors border border-blue-100 dark:border-blue-800"
                                                                             >
                                                                                 Pagar Agora
@@ -982,8 +1009,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                         className="p-4 flex flex-col gap-3 hover:bg-slate-50 dark:hover:bg-zinc-800/30 transition-colors cursor-pointer active:bg-slate-100 dark:active:bg-zinc-800"
                                                         onClick={() => {
                                                             if (invoice.status === 'pending') {
-                                                                setSelectedInvoice(invoice);
-                                                                setIsPaymentModalOpen(true);
+                                                                handleOpenPaymentModal(invoice);
                                                             }
                                                         }}
                                                     >
@@ -1015,8 +1041,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                     <button
                                                                         onClick={(e) => {
                                                                             e.stopPropagation();
-                                                                            setSelectedInvoice(invoice);
-                                                                            setIsPaymentModalOpen(true);
+                                                                            handleOpenPaymentModal(invoice);
                                                                         }}
                                                                         className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold text-xs bg-blue-50 dark:bg-blue-900/30 px-4 py-2 rounded-lg transition-colors border border-blue-100 dark:border-blue-800 shadow-sm"
                                                                     >
@@ -1112,9 +1137,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
             {/* PAYMENT MODAL */}
             <Modal
                 isOpen={isPaymentModalOpen}
-                onClose={() => { setIsPaymentModalOpen(false); setPaymentMethod(null); }}
-                title="Pagamento de Fatura"
-                size="md"
+                onClose={() => { setIsPaymentModalOpen(false); setPaymentMethod(null); setCheckoutUrl(null); }}
+                title="Pagar Fatura"
+                size={checkoutUrl ? "xl" : "md"}
             >
                 {selectedInvoice && (
                     <div className="space-y-6">
@@ -1235,6 +1260,15 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                         </div>
                                     )}
                                 </div>
+                            </div>
+                        ) : isGeneratingPayment ? (
+                            <div className="flex flex-col items-center justify-center py-16 space-y-4 animate-in fade-in duration-300">
+                                <Loader2 size={48} className="animate-spin text-blue-600" />
+                                <p className="text-sm font-bold text-slate-600 dark:text-zinc-400">Ambiente Seguro...</p>
+                            </div>
+                        ) : checkoutUrl ? (
+                            <div className="w-full h-[600px] rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                                <iframe src={checkoutUrl} className="w-full h-full border-0" allow="payment" title="Checkout de Pagamento na InfinitePay" />
                             </div>
                         ) : !paymentMethod ? (
                             <div className="space-y-3">
