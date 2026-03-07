@@ -151,6 +151,7 @@ const AsteryskoFinancialView: React.FC = () => {
 
     const rawMetrics = stats?.metrics || {};
     const metrics = {
+        ...rawMetrics,
         monthlyRevenue: Number(rawMetrics.monthlyRevenue || 0),
         receivables: Number(rawMetrics.receivables || 0),
         pendingPaymentsCount: Number(rawMetrics.pendingPaymentsCount || 0),
@@ -296,14 +297,14 @@ const AsteryskoFinancialView: React.FC = () => {
                     {/* Cashflow Mini */}
                     <div className="space-y-6">
                         <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
-                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm mb-4">Fluxo de Caixa (Março)</h3>
+                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm mb-4">Fluxo de Caixa (Mensal)</h3>
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full"><ArrowUpRight size={16} /></div>
                                         <div>
                                             <div className="text-xs text-docka-500 dark:text-zinc-500">Entradas</div>
-                                            <div className="font-bold text-docka-900 dark:text-zinc-100">R$ 52.400</div>
+                                            <div className="font-bold text-docka-900 dark:text-zinc-100">R$ {(Number(metrics?.cashflow?.entradas) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -313,7 +314,7 @@ const AsteryskoFinancialView: React.FC = () => {
                                         <div className="p-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full"><ArrowDownLeft size={16} /></div>
                                         <div>
                                             <div className="text-xs text-docka-500 dark:text-zinc-500">Saídas</div>
-                                            <div className="font-bold text-docka-900 dark:text-zinc-100">R$ 12.850</div>
+                                            <div className="font-bold text-docka-900 dark:text-zinc-100">R$ {(Number(metrics?.cashflow?.saidas) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -321,7 +322,9 @@ const AsteryskoFinancialView: React.FC = () => {
                             <div className="mt-6 pt-4 border-t border-docka-100 dark:border-zinc-800">
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs font-bold text-docka-400 dark:text-zinc-500 uppercase">Saldo Estimado</span>
-                                    <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">+ R$ 39.550</span>
+                                    <span className={`text-lg font-bold ${(Number(metrics?.cashflow?.saldo) || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {(Number(metrics?.cashflow?.saldo) || 0) >= 0 ? '+ ' : '- '} R$ {Math.abs(Number(metrics?.cashflow?.saldo) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -329,13 +332,15 @@ const AsteryskoFinancialView: React.FC = () => {
                         <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6 shadow-sm">
                             <h3 className="font-bold text-blue-900 dark:text-blue-300 text-sm mb-2">Meta Q1 2026</h3>
                             <div className="flex items-end justify-between mb-2">
-                                <span className="text-2xl font-bold text-blue-900 dark:text-blue-300">R$ 150k</span>
-                                <span className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">74% atingido</span>
+                                <span className="text-2xl font-bold text-blue-900 dark:text-blue-300">R$ {((Number(metrics?.goals?.target) || 150000) / 1000).toFixed(0)}k</span>
+                                <span className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">{Number(metrics?.goals?.percentage) || 0}% atingido</span>
                             </div>
                             <div className="w-full h-2 bg-white dark:bg-zinc-800 rounded-full overflow-hidden border border-blue-100 dark:border-blue-900/30">
-                                <div className="h-full bg-blue-600 w-[74%]" />
+                                <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${Number(metrics?.goals?.percentage) || 0}%` }} />
                             </div>
-                            <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mt-3">Faltam R$ 39k para bater a meta trimestral.</p>
+                            <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mt-3">
+                                Faltam R$ {((Number(metrics?.goals?.target) || 150000) - (Number(metrics?.goals?.achieved) || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} para bater a meta trimestral.
+                            </p>
                         </div>
                     </div>
                 </div>
