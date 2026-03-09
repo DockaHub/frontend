@@ -729,7 +729,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                             <a href={selectedProcess.proxyUrl} target="_blank" className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800"><Download size={14} /> Ver Cópia</a>
                                                         )}
                                                         {event.internalState !== 'VALIDATED' && event.internalState !== 'SIGNED' && (
-                                                            <button onClick={() => handleGenerateProxy(selectedProcess.id)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
+                                                            <button onClick={() => handleGenerateProxy(selectedProcess)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
                                                         )}
                                                         <label className="text-xs font-bold text-docka-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 hover:bg-docka-100 cursor-pointer">
                                                             <Upload size={14} /> Anexar Manualmente
