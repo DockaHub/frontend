@@ -752,7 +752,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                 {/* CUSTOM RENDER FOR PROXY */}
                                                                                 {step.type === 'proxy' && step.status !== 'VALIDATED' && step.status !== 'SIGNED' && (
                                                                                     <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                                                                                        <a href={proc.proxyUrl ? `${getBackendUrl()}${proc.proxyUrl}` : '#'} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center justify-center gap-1 font-bold text-blue-600 border border-blue-200 bg-blue-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-100 transition-colors shadow-sm">
+                                                                                        <a href={proc.id ? `${getBackendUrl()}/api/asterysko/processes/${proc.id}/proxy/download-pdf` : '#'} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center justify-center gap-1 font-bold text-blue-600 border border-blue-200 bg-blue-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-100 transition-colors shadow-sm">
                                                                                             <Download size={14} /> 1. Baixar Procuração
                                                                                         </a>
                                                                                         {isUploading ? (
@@ -787,7 +787,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                 )}
                                                                                 {step.type === 'proxy' && (step.status === 'VALIDATED' || step.status === 'SIGNED') && (
                                                                                     <div className="mt-3">
-                                                                                        <a href={proc.proxySignedUrl ? `${getBackendUrl()}${proc.proxySignedUrl}` : proc.proxyUrl ? `${getBackendUrl()}${proc.proxyUrl}` : '#'} target="_blank" className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors">
+                                                                                        <a href={proc.proxySignedUrl ? `${getBackendUrl()}${proc.proxySignedUrl}` : `${getBackendUrl()}/api/asterysko/processes/${proc.id}/proxy/download-pdf`} target="_blank" className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors">
                                                                                             <Download size={14} /> Baixar Cópia
                                                                                         </a>
                                                                                     </div>
@@ -904,7 +904,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
-                                                                            <a href={proc.proxySignedUrl ? `${getBackendUrl()}${proc.proxySignedUrl}` : `${getBackendUrl()}${proc.proxyUrl}`} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
+                                                                            <a href={proc.proxySignedUrl ? `${getBackendUrl()}${proc.proxySignedUrl}` : `${getBackendUrl()}/api/asterysko/processes/${proc.id}/proxy/download-pdf`} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
                                                                                 <ExternalLink size={20} />
                                                                             </a>
                                                                         </div>

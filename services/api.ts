@@ -6,7 +6,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
  * Strips /api from the base URL to get the backend root (useful for static file access like /uploads)
  */
 export const getBackendUrl = () => {
-    return API_BASE_URL.replace(/\/api$/, '');
+    return API_BASE_URL.replace(/\/+$/, '').replace(/\/api$/, '');
 };
 
 // Create axios instance with default config
