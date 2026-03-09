@@ -200,6 +200,21 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         updateDealPartial('tags', currentTags);
     };
 
+    const maskPhone = (value: string) => {
+        return value
+            .replace(/\D/g, '')
+            .replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{5})(\d)/, '$1-$2')
+            .replace(/(-\d{4})\d+?$/, '$1');
+    };
+
+    const maskCurrency = (value: string) => {
+        const numericValue = value.replace(/\D/g, '');
+        if (!numericValue) return '';
+        const floatValue = parseFloat(numericValue) / 100;
+        return floatValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+    };
+
     const updateDealPartial = async (field: string, value: any) => {
         if (!deal) return;
         try {
@@ -574,40 +589,43 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     </div>
 
                     {/* CONTACT INFO */}
-                    <div className="space-y-4">
+                    <div className="space-y-4 bg-white dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-200 dark:border-zinc-700">
                         <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <User size={14} /> Contato Principal
+                            <User size={14} className="text-blue-500" /> Dados do Contrato (Principal)
                         </label>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">Nome</label>
+                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Nome do Contato / Decisor</label>
                                 <input
-                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
-                                    placeholder="Adicionar nome"
+                                    className="w-full text-sm bg-indigo-50/30 dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-all placeholder:text-docka-300"
+                                    placeholder="Nome completo"
                                     value={formData.subtitle || ''}
                                     onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
                                     onBlur={e => handleBlur('contactName', e.target.value)}
                                 />
                             </div>
-                            <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">Email</label>
-                                <input
-                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
-                                    placeholder="Adicionar email"
-                                    value={formData.contactEmail || ''}
-                                    onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
-                                    onBlur={e => handleBlur('contactEmail', e.target.value)}
-                                />
-                            </div>
-                            <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">Telefone</label>
-                                <input
-                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
-                                    placeholder="Adicionar telefone"
-                                    value={formData.contactPhone || ''}
-                                    onChange={e => setFormData({ ...formData, contactPhone: e.target.value })}
-                                    onBlur={e => handleBlur('contactPhone', e.target.value)}
-                                />
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="group">
+                                    <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">E-mail</label>
+                                    <input
+                                        className="w-full text-sm bg-indigo-50/30 dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-all placeholder:text-docka-300"
+                                        placeholder="email@empresa.com"
+                                        value={formData.contactEmail || ''}
+                                        onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
+                                        onBlur={e => handleBlur('contactEmail', e.target.value)}
+                                    />
+                                </div>
+                                <div className="group">
+                                    <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Telefone / WhatsApp</label>
+                                    <input
+                                        className="w-full text-sm bg-indigo-50/30 dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-all placeholder:text-docka-300"
+                                        placeholder="(00) 00000-0000"
+                                        value={formData.contactPhone || ''}
+                                        onChange={e => setFormData({ ...formData, contactPhone: maskPhone(e.target.value) })}
+                                        onBlur={e => handleBlur('contactPhone', e.target.value)}
+                                        maxLength={15}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -638,7 +656,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 <input
                                     className="w-full text-lg font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-green-500 focus:border-green-600 pl-7 py-1 outline-none transition-colors placeholder:text-docka-300"
                                     value={formData.value || ''}
-                                    onChange={e => setFormData({ ...formData, value: e.target.value })}
+                                    onChange={e => setFormData({ ...formData, value: maskCurrency(e.target.value) })}
                                     onBlur={e => handleBlur('value', e.target.value)}
                                     placeholder="0,00"
                                 />
@@ -647,15 +665,15 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     </div>
 
                     {/* COMPANY INFO (FOR PROCURACAO) */}
-                    <div className="space-y-4">
-                        <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Tag size={14} /> Dados para Procuração
+                    <div className="space-y-4 bg-indigo-50/20 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
+                        <label className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Tag size={14} /> Dados para Procuração (Empresa)
                         </label>
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">Razão Social</label>
+                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Razão Social</label>
                                 <input
-                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
+                                    className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-all placeholder:text-docka-300"
                                     placeholder="Razão Social completa"
                                     value={formData.razaoSocial || ''}
                                     onChange={e => setFormData({ ...formData, razaoSocial: e.target.value })}
@@ -663,9 +681,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 />
                             </div>
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">CNPJ / CPF</label>
+                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">CNPJ / CPF</label>
                                 <input
-                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
+                                    className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-all placeholder:text-docka-300"
                                     placeholder="00.000.000/0001-00"
                                     value={formData.cnpj || ''}
                                     onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
@@ -673,15 +691,48 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 />
                             </div>
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">Endereço</label>
-                                <input
-                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
-                                    placeholder="Endereço Comercial"
+                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Endereço Completo</label>
+                                <textarea
+                                    className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-all placeholder:text-docka-300 min-h-[60px] resize-none"
+                                    placeholder="Rua, Número, Bairro, Cidade/UF - CEP"
                                     value={formData.address || ''}
                                     onChange={e => setFormData({ ...formData, address: e.target.value })}
                                     onBlur={e => updateTagValue('address', e.target.value)}
                                 />
                             </div>
+                        </div>
+                    </div>
+
+                    {/* TAGS */}
+                    <div className="space-y-3">
+                        <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Tag size={14} /> Tags
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                            {formData.tags?.map((tag: any, idx: number) => {
+                                // Don't show the virtualized tags in the general list if they are handled by inputs
+                                if (tag.label?.startsWith('CNPJ:') || tag.label?.startsWith('Razão Social:') || tag.label?.startsWith('Endereço:')) return null;
+                                return (
+                                    <span key={idx} className={`px-2 py-1 rounded text-xs font-bold uppercase ${tag.color} flex items-center gap-1`}>
+                                        {tag.label}
+                                        <button className="hover:opacity-75" onClick={() => {
+                                            const newTags = formData.tags.filter((_: any, i: number) => i !== idx);
+                                            handleAutoSave('tags', newTags);
+                                        }}>
+                                            ×
+                                        </button>
+                                    </span>
+                                );
+                            })}
+                            <button
+                                className="px-2 py-1 rounded text-xs border border-dashed border-docka-300 text-docka-500 hover:bg-docka-50 transition-colors"
+                                onClick={() => {
+                                    const newTag = { label: 'Nova Tag', color: 'bg-gray-100 text-gray-700' };
+                                    handleAutoSave('tags', [...(formData.tags || []), newTag]);
+                                }}
+                            >
+                                + Tag
+                            </button>
                         </div>
                     </div>
 

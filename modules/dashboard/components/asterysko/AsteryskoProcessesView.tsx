@@ -61,7 +61,7 @@ const getTimelineEvents = (process: any) => {
     return events;
 };
 
-import api from '../../../../services/api';
+import api, { getBackendUrl } from '../../../../services/api';
 
 const AsteryskoProcessesView: React.FC = () => {
     const [processes, setProcesses] = useState<any[]>([]);
@@ -726,7 +726,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 {event.type === 'proxy' && (
                                                     <div className="mt-3 flex flex-wrap gap-2">
                                                         {(event.internalState === 'VALIDATED' || event.internalState === 'SIGNED') && selectedProcess.proxyUrl && (
-                                                            <a href={selectedProcess.proxyUrl} target="_blank" className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800"><Download size={14} /> Ver Cópia</a>
+                                                            <a href={`${getBackendUrl()}${selectedProcess.proxyUrl}`} target="_blank" className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800"><Download size={14} /> Ver Cópia</a>
                                                         )}
                                                         {event.internalState !== 'VALIDATED' && event.internalState !== 'SIGNED' && (
                                                             <button onClick={() => handleGenerateProxy(selectedProcess)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
@@ -793,7 +793,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                             </div>
                                             {selectedProcess.proxyUrl ? (
                                                 <button
-                                                    onClick={() => window.open(selectedProcess.proxyUrl, '_blank')}
+                                                    onClick={() => window.open(`${getBackendUrl()}${selectedProcess.proxyUrl}`, '_blank')}
                                                     className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700"
                                                 >
                                                     <Download size={12} /> Baixar Procuração
@@ -810,9 +810,15 @@ const AsteryskoProcessesView: React.FC = () => {
                                         </div>
 
                                         {/* Upload/Status Area */}
-                                        {!selectedProcess.proxyUrl && (
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-2 px-1">
+                                                <div className="h-px flex-1 bg-docka-100 dark:bg-zinc-700" />
+                                                <span className="text-[10px] font-bold text-docka-400 uppercase">Ou Anexar Manualmente</span>
+                                                <div className="h-px flex-1 bg-docka-100 dark:bg-zinc-700" />
+                                            </div>
+
                                             <div
-                                                className={`relative border-2 border-dashed border-docka-300 dark:border-zinc-600 rounded-xl bg-docka-50 dark:bg-zinc-800/50 p-8 flex flex-col items-center justify-center text-center transition-colors hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group overflow-hidden ${uploadingProxy ? 'opacity-70 pointer-events-none' : 'cursor-pointer'}`}
+                                                className={`relative border-2 border-dashed border-docka-300 dark:border-zinc-600 rounded-xl bg-docka-50 dark:bg-zinc-800/50 p-6 flex flex-col items-center justify-center text-center transition-colors hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group overflow-hidden ${uploadingProxy ? 'opacity-70 pointer-events-none' : 'cursor-pointer'}`}
                                             >
                                                 <input
                                                     type="file"
@@ -820,17 +826,17 @@ const AsteryskoProcessesView: React.FC = () => {
                                                     onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)}
                                                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                 />
-                                                <div className="w-12 h-12 bg-white dark:bg-zinc-700 rounded-full shadow-sm flex items-center justify-center text-docka-400 dark:text-zinc-400 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all">
-                                                    <Upload size={20} />
+                                                <div className="w-10 h-10 bg-white dark:bg-zinc-700 rounded-full shadow-sm flex items-center justify-center text-docka-400 dark:text-zinc-400 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all">
+                                                    <Upload size={18} />
                                                 </div>
-                                                <h5 className="text-sm font-bold text-docka-800 dark:text-zinc-200">
-                                                    {uploadingProxy ? 'Enviando documento...' : 'Anexar Procuração Assinada'}
+                                                <h5 className="text-xs font-bold text-docka-800 dark:text-zinc-200">
+                                                    {uploadingProxy ? 'Enviando documento...' : selectedProcess.proxyUrl ? 'Substituir Procuração Final' : 'Anexar Procuração Assinada'}
                                                 </h5>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">
-                                                    Arraste o arquivo PDF ou clique para selecionar.
+                                                <p className="text-[10px] text-docka-500 dark:text-zinc-400 mt-1">
+                                                    PDF assinado pelo cliente.
                                                 </p>
                                             </div>
-                                        )}
+                                        </div>
                                     </div>
 
                                     {/* Files List - Dynamic or Empty */}

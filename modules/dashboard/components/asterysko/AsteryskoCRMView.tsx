@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import KanbanBoard from '../kanban/KanbanBoard';
 import { KanbanColumnData, KanbanCardData } from '../../../../types';
-import { Plus, Users, Search, Filter, Kanban, List, ChevronDown } from 'lucide-react';
+import { Plus, Users, Search, Filter, Kanban, List, ChevronDown, Tag } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import DealDetailsModal from './DealDetailsModal';
 import api from '../../../../services/api';
@@ -462,15 +462,15 @@ const AsteryskoCRMViewContent: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="p-4 bg-docka-50 dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-700 space-y-4">
-                        <h4 className="text-[10px] font-bold text-docka-400 uppercase tracking-wider">Dados da Empresa (Para Procuração)</h4>
+                    <div className="p-4 bg-indigo-50/20 dark:bg-indigo-900/10 rounded-xl border border-indigo-100 dark:border-indigo-900/30 space-y-4">
+                        <h4 className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5"><Tag size={12} /> Dados da Empresa (Para Procuração)</h4>
 
                         <div>
                             <label className="block text-[10px] font-bold text-docka-600 dark:text-zinc-500 uppercase mb-1">Razão Social</label>
                             <input
                                 value={newLead.razaoSocial}
                                 onChange={(e) => setNewLead({ ...newLead, razaoSocial: e.target.value })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 text-docka-900 dark:text-zinc-100"
                                 placeholder="Nome Completo da Empresa"
                             />
                         </div>
@@ -481,7 +481,7 @@ const AsteryskoCRMViewContent: React.FC = () => {
                                 <input
                                     value={newLead.cnpj}
                                     onChange={(e) => setNewLead({ ...newLead, cnpj: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 text-docka-900 dark:text-zinc-100"
                                     placeholder="00.000.000/0001-00"
                                 />
                             </div>
@@ -490,8 +490,8 @@ const AsteryskoCRMViewContent: React.FC = () => {
                                 <input
                                     value={newLead.address}
                                     onChange={(e) => setNewLead({ ...newLead, address: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                    placeholder="Rua, Número, Bairro, Cidade/UF"
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 text-docka-900 dark:text-zinc-100"
+                                    placeholder="Rua, Número, CEP..."
                                 />
                             </div>
                         </div>
