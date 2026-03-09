@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown } from 'lucide-react';
+import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 
 interface Client {
@@ -13,24 +13,49 @@ interface Client {
 const getTimelineEvents = (process: any) => {
     const events = [];
 
-    // Add Dispatches from DB
+    // 1. Add Dispatches from DB
     if (process.dispatches && process.dispatches.length > 0) {
-        process.dispatches.forEach((d: any) => {
+        const sorted = [...process.dispatches].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        sorted.forEach((d: any) => {
             events.push({
-                title: d.description,
-                date: new Date(d.rpiDate).toLocaleDateString('pt-BR'),
+                type: 'dispatch',
+                title: d.isVirtual ? d.description : `${d.code} - ${d.description}`,
+                date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
                 status: 'completed',
                 desc: d.details || `Publicado na RPI ${d.rpiNumber}`
             });
         });
     }
 
-    // Add Creation Event
+    // 2. Depósito do Pedido
+    if (process.inpiProcessNumber || process.status !== 'NEW') {
+        events.push({
+            type: 'dispatch',
+            title: 'Depósito do Pedido',
+            date: new Date(process.createdAt).toLocaleDateString('pt-BR'),
+            status: 'completed',
+            desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Pendente'}`
+        });
+    }
+
+    // 3. Procuração Event
     events.push({
-        title: 'Depósito do Pedido',
-        date: new Date(process.createdAt).toLocaleDateString('pt-BR'),
-        status: 'completed',
-        desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Pendente'}`
+        type: 'proxy',
+        title: 'Procuração INPI',
+        date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
+        desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada' : 'Aguardando envio da Procuração'),
+        status: process.proxySignStatus === 'VALIDATED' || process.proxySignStatus === 'SIGNED' ? 'completed' : 'pending',
+        internalState: process.proxySignStatus
+    });
+
+    // 4. Contrato Event
+    events.push({
+        type: 'contract',
+        title: 'Contrato Assinado',
+        date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
+        desc: process.contractSignStatus === 'SIGNED' ? 'Contrato assinado.' : 'Aguardando assinatura.',
+        status: process.contractSignStatus === 'SIGNED' ? 'completed' : 'pending',
+        internalState: process.contractSignStatus
     });
 
     return events;
@@ -206,6 +231,93 @@ const AsteryskoProcessesView: React.FC = () => {
                 console.error('Failed to delete process', error);
                 alert('Erro ao excluir processo.');
             }
+        }
+    };
+
+    // ==========================================
+    // MODULE: Process Details Actions (Phase 6)
+    // ==========================================
+    const [isStatusEditOpen, setIsStatusEditOpen] = useState(false);
+    const [newStatusData, setNewStatusData] = useState({ status: '', description: '', details: '' });
+    const [uploadingProxy, setUploadingProxy] = useState(false);
+
+    const handleDownloadContract = async (process: any) => {
+        try {
+            if (!process.contractUrl) return alert('Contrato ainda não assinado.');
+            if (process.contractUrl.startsWith('/api')) {
+                // Endpoint returns { contract: base64 } or triggers direct DL. 
+                const res = await api.get(process.contractUrl);
+                if (res.data.contract) {
+                    // If it's pure base64 pdf data string returned
+                    const link = document.createElement('a');
+                    link.href = res.data.contract.startsWith('data:') ? res.data.contract : `data:application/pdf;base64,${res.data.contract}`;
+                    link.download = `Contrato_${process.title}.pdf`;
+                    link.click();
+                } else {
+                    alert(res.data.message || 'Contrato requisitado com sucesso.');
+                }
+            } else {
+                window.open(process.contractUrl, '_blank');
+            }
+        } catch (err: any) {
+            console.error(err);
+            alert('Falha ao baixar o contrato.');
+        }
+    };
+
+    const handleGenerateProxy = async (process: any) => {
+        if (!confirm('Deseja gerar e enviar o documento de Procuração modelo para o cliente?')) return;
+        try {
+            const res = await api.post(`/asterysko/processes/${process.id}/proxy/generate`);
+            alert(res.data.message);
+            setSelectedProcess({ ...process, proxySignStatus: 'PENDING', _forceRerender: Date.now() });
+        } catch (err: any) {
+            alert('Erro ao gerar Procuração.');
+        }
+    };
+
+    const handleProxyFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingProxy(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData);
+            alert('Enviado com sucesso!');
+            setSelectedProcess((prev: any) => prev ? { ...prev, proxyUrl: res.data.proxyUrl } : null);
+            // Also update main list silently
+            setProcesses((prev: any[]) => prev.map((p: any) => p.id === processId ? { ...p, proxyUrl: res.data.proxyUrl } : p));
+        } catch (error) {
+            console.error('Proxy upload error', error);
+            alert('Erro no envio da Procuração.');
+        } finally {
+            setUploadingProxy(false);
+        }
+    };
+
+    const handleUpdateStatus = async () => {
+        if (!selectedProcess || !newStatusData.status || !newStatusData.description) return alert('Preencha pelo menos Status e Descrição do Despacho.');
+        try {
+            const res = await api.post(`/asterysko/processes/${selectedProcess.id}/status-update`, {
+                status: newStatusData.status,
+                dispatchDescription: newStatusData.description,
+                dispatchDetails: newStatusData.details
+            });
+            alert('Evolução lançada no histórico com sucesso!');
+            // Prepend new dispatch to Timeline visually
+            const newProcessObj = {
+                ...selectedProcess,
+                status: newStatusData.status,
+                nextStep: getNextStep(newStatusData.status),
+                dispatches: [res.data.dispatch, ...(selectedProcess.dispatches || [])]
+            };
+            setSelectedProcess(newProcessObj);
+            setProcesses(prev => prev.map(p => p.id === selectedProcess.id ? newProcessObj : p));
+            setIsStatusEditOpen(false);
+            setNewStatusData({ status: '', description: '', details: '' });
+        } catch (error) {
+            alert('Erro ao evoluir status.');
         }
     };
 
@@ -476,6 +588,59 @@ const AsteryskoProcessesView: React.FC = () => {
                     title={`Processo: ${selectedProcess.title}`}
                     size="xl"
                 >
+                    {isStatusEditOpen ? (
+                        <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 p-4 border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-6">
+                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                <Activity size={18} className="text-blue-600" /> Evoluir Processo
+                            </h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-docka-700 dark:text-zinc-300 mb-1 block">Novo Status</label>
+                                    <select
+                                        className="w-full bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-docka-900 dark:text-zinc-100"
+                                        value={newStatusData.status}
+                                        onChange={e => setNewStatusData({ ...newStatusData, status: e.target.value })}
+                                    >
+                                        <option value="">Selecione...</option>
+                                        <option value="WAITING_PAYMENT">Aguardando Pagto.</option>
+                                        <option value="PROTOCOL_PENDING">Aguardando Protocolo</option>
+                                        <option value="PUBLISHED">Publicado RPI</option>
+                                        <option value="OPPOSITION_OPEN">Oposição Aberta</option>
+                                        <option value="WAITING_MERIT">Aguardando Exame de Mérito</option>
+                                        <option value="DEFERRED">Processo Deferido</option>
+                                        <option value="REJECTED">Processo Indeferido</option>
+                                        <option value="CONCESSAO_EMITIDA">Concessão Emitida</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-docka-700 dark:text-zinc-300 mb-1 block">Título do Andamento</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Ex: Protocolo Realizado"
+                                        className="w-full bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-docka-900 dark:text-zinc-100"
+                                        value={newStatusData.description}
+                                        onChange={e => setNewStatusData({ ...newStatusData, description: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="text-xs font-bold text-docka-700 dark:text-zinc-300 mb-1 block">Detalhes Adicionais (Público)</label>
+                                <textarea
+                                    className="w-full bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-docka-900 dark:text-zinc-100 min-h-[80px]"
+                                    placeholder="Descreva o que ocorreu ou instruções para o cliente..."
+                                    value={newStatusData.details}
+                                    onChange={e => setNewStatusData({ ...newStatusData, details: e.target.value })}
+                                ></textarea>
+                            </div>
+                            <div className="flex justify-end gap-2 mt-2">
+                                <button onClick={() => setIsStatusEditOpen(false)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg">Cancelar</button>
+                                <button onClick={handleUpdateStatus} className="px-4 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2">
+                                    <CheckCircle2 size={16} /> Salvar Evolução
+                                </button>
+                            </div>
+                        </div>
+                    ) : null}
+
                     <div className="flex flex-col h-[600px] -mt-2">
 
                         {/* Header Info */}
@@ -500,6 +665,12 @@ const AsteryskoProcessesView: React.FC = () => {
                                 <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30">
                                     <Clock size={16} /> {selectedProcess.nextStep}
                                 </div>
+                                <button
+                                    onClick={() => setIsStatusEditOpen(true)}
+                                    className="mt-3 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 flex items-center gap-1 rounded uppercase tracking-wider hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                >
+                                    <Activity size={12} /> Evoluir Status
+                                </button>
                             </div>
                         </div>
 
@@ -529,11 +700,11 @@ const AsteryskoProcessesView: React.FC = () => {
                                         <div key={idx} className="relative flex gap-6 group">
                                             {/* Icon */}
                                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 z-10 bg-white dark:bg-zinc-900 transition-colors
-                                            ${event.status === 'completed' ? 'border-emerald-500 text-emerald-500' :
+                                            ${event.type === 'contract' || event.type === 'proxy' || event.status === 'completed' ? 'border-emerald-500 text-emerald-500' :
                                                     event.status === 'current' ? 'border-blue-500 text-blue-500 ring-4 ring-blue-50 dark:ring-blue-900/30' :
                                                         'border-docka-300 dark:border-zinc-700 text-docka-300 dark:text-zinc-600'}
                                         `}>
-                                                {event.status === 'completed' ? <CheckCircle2 size={14} /> :
+                                                {event.type === 'contract' ? <FileSignature size={12} /> : event.type === 'proxy' ? <Shield size={12} /> : event.status === 'completed' ? <CheckCircle2 size={14} /> :
                                                     event.status === 'current' ? <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse" /> :
                                                         <div className="w-2 h-2 bg-docka-300 dark:bg-zinc-600 rounded-full" />}
                                             </div>
@@ -545,6 +716,27 @@ const AsteryskoProcessesView: React.FC = () => {
                                                     <span className="text-xs font-mono text-docka-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-docka-100 dark:border-zinc-700">{event.date}</span>
                                                 </div>
                                                 <p className="text-xs text-docka-500 dark:text-zinc-400 leading-relaxed">{event.desc}</p>
+
+                                                {/* IN-TIMELINE ACTIONS FOR DOCS */}
+                                                {event.type === 'contract' && event.status === 'completed' && selectedProcess.contractUrl && (
+                                                    <div className="mt-2">
+                                                        <button onClick={() => handleDownloadContract(selectedProcess)} className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1"><Download size={14} /> Baixar Cópia</button>
+                                                    </div>
+                                                )}
+                                                {event.type === 'proxy' && (
+                                                    <div className="mt-3 flex flex-wrap gap-2">
+                                                        {(event.internalState === 'VALIDATED' || event.internalState === 'SIGNED') && selectedProcess.proxyUrl && (
+                                                            <a href={selectedProcess.proxyUrl} target="_blank" className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800"><Download size={14} /> Ver Cópia</a>
+                                                        )}
+                                                        {event.internalState !== 'VALIDATED' && event.internalState !== 'SIGNED' && (
+                                                            <button onClick={() => handleGenerateProxy(selectedProcess.id)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
+                                                        )}
+                                                        <label className="text-xs font-bold text-docka-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 hover:bg-docka-100 cursor-pointer">
+                                                            <Upload size={14} /> Anexar Manualmente
+                                                            <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)} />
+                                                        </label>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
@@ -570,12 +762,15 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 </div>
                                             </div>
                                             {selectedProcess.contractUrl ? (
-                                                <button className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700">
+                                                <button
+                                                    onClick={() => handleDownloadContract(selectedProcess)}
+                                                    className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700"
+                                                >
                                                     <Download size={12} /> Baixar PDF
                                                 </button>
                                             ) : (
                                                 <button
-                                                    onClick={() => alert('Em breve: Gerador de Contrato Automático')}
+                                                    onClick={() => alert('Em breve: Gerador de Contrato Automático do Processo (Isolado)')}
                                                     className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:border-blue-200 transition-colors"
                                                 >
                                                     <FilePlus size={14} /> Gerar Contrato
@@ -597,15 +792,19 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 </div>
                                             </div>
                                             {selectedProcess.proxyUrl ? (
-                                                <button className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700">
+                                                <button
+                                                    onClick={() => window.open(selectedProcess.proxyUrl, '_blank')}
+                                                    className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700"
+                                                >
                                                     <Download size={12} /> Baixar Procuração
                                                 </button>
                                             ) : (
                                                 <button
-                                                    onClick={() => alert('Em breve: Gerador de Procuração Automático')}
-                                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:border-blue-200 transition-colors"
+                                                    onClick={() => handleGenerateProxy(selectedProcess)}
+                                                    className={`text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:border-blue-200 transition-colors ${selectedProcess.proxySignStatus === 'PENDING' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    disabled={selectedProcess.proxySignStatus === 'PENDING'}
                                                 >
-                                                    <FileText size={14} /> Gerar Modelo
+                                                    <FileText size={14} /> {selectedProcess.proxySignStatus === 'PENDING' ? 'Enviado ao Cliente' : 'Gerar Modelo'}
                                                 </button>
                                             )}
                                         </div>
@@ -613,14 +812,23 @@ const AsteryskoProcessesView: React.FC = () => {
                                         {/* Upload/Status Area */}
                                         {!selectedProcess.proxyUrl && (
                                             <div
-                                                onClick={() => alert('Em breve: Upload de Arquivos')}
-                                                className="border-2 border-dashed border-docka-300 dark:border-zinc-600 rounded-xl bg-docka-50 dark:bg-zinc-800/50 p-8 flex flex-col items-center justify-center text-center transition-colors hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group cursor-pointer"
+                                                className={`relative border-2 border-dashed border-docka-300 dark:border-zinc-600 rounded-xl bg-docka-50 dark:bg-zinc-800/50 p-8 flex flex-col items-center justify-center text-center transition-colors hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group overflow-hidden ${uploadingProxy ? 'opacity-70 pointer-events-none' : 'cursor-pointer'}`}
                                             >
+                                                <input
+                                                    type="file"
+                                                    accept="application/pdf"
+                                                    onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                />
                                                 <div className="w-12 h-12 bg-white dark:bg-zinc-700 rounded-full shadow-sm flex items-center justify-center text-docka-400 dark:text-zinc-400 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all">
                                                     <Upload size={20} />
                                                 </div>
-                                                <h5 className="text-sm font-bold text-docka-800 dark:text-zinc-200">Anexar Procuração Assinada</h5>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">Arraste o arquivo PDF ou clique para selecionar.</p>
+                                                <h5 className="text-sm font-bold text-docka-800 dark:text-zinc-200">
+                                                    {uploadingProxy ? 'Enviando documento...' : 'Anexar Procuração Assinada'}
+                                                </h5>
+                                                <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">
+                                                    Arraste o arquivo PDF ou clique para selecionar.
+                                                </p>
                                             </div>
                                         )}
                                     </div>

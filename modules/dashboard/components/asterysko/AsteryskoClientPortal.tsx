@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, CheckCircle2, Download, Menu, User, Bell, Shield, ShieldCheck, ExternalLink, LogOut, HelpCircle, ChevronDown, Share2, Building2, Lock, Mail, MessageSquare, AlertCircle, Loader2, Briefcase, CreditCard, Smartphone, Copy, Upload, UploadCloud, Sun, Moon } from 'lucide-react';
+import { FileSignature, FileText, CheckCircle2, Download, Menu, User, Bell, Shield, ShieldCheck, ExternalLink, LogOut, HelpCircle, ChevronDown, Share2, Building2, Lock, Mail, MessageSquare, AlertCircle, Loader2, Briefcase, CreditCard, Smartphone, Copy, Upload, UploadCloud, Sun, Moon } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 
@@ -37,6 +37,86 @@ const AsteryskoLogoSVG = () => (
         </defs>
     </svg>
 );
+
+// Timeline Data for a specific process (Helper)
+const getTimelineEvents = (process: any, invoices: any[] = []) => {
+    const events = [];
+
+    // 1. Add Dispatches from DB
+    if (process.dispatches && process.dispatches.length > 0) {
+        const sorted = [...process.dispatches].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        sorted.forEach((d: any) => {
+            events.push({
+                id: d.id,
+                type: 'dispatch',
+                title: d.isVirtual ? d.description : `${d.code} - ${d.description} `,
+                date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
+                desc: d.details || `Publicado na RPI ${d.rpiNumber}`
+            });
+        });
+    }
+
+    // 2. Depósito do Pedido
+    if (process.inpiProcessNumber || process.status !== 'NEW' && process.status !== 'WAITING_PAYMENT') {
+        events.push({
+            id: 'deposito',
+            type: 'dispatch',
+            title: 'Depósito do Pedido',
+            date: new Date(process.createdAt).toLocaleDateString('pt-BR'),
+            desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Aguardando'}`
+        });
+    }
+
+    // 3. Taxa INPI (Federal Tax)
+    const taxInvoice = invoices.find(i => i.type === 'TAX' && (i.processId === process.id || i.description?.includes(process.brandName)));
+    if (taxInvoice) {
+        events.push({
+            id: 'tax-payment',
+            type: 'invoice',
+            title: 'Taxa Federal (INPI)',
+            date: taxInvoice.dueDate ? new Date(taxInvoice.dueDate).toLocaleDateString('pt-BR') : '',
+            desc: taxInvoice.status === 'paid' ? 'Taxa do INPI paga com sucesso.' : 'Aguardando pagamento da taxa federal do INPI.',
+            status: taxInvoice.status,
+            invoice: taxInvoice
+        });
+    }
+
+    // 4. Honorários (Service Payment)
+    const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || i.description?.includes(process.brandName)));
+    if (serviceInvoice || process.paymentStatus) {
+        events.push({
+            id: 'service-payment',
+            type: 'invoice',
+            title: 'Honorários Profissionais',
+            date: serviceInvoice?.dueDate ? new Date(serviceInvoice.dueDate).toLocaleDateString('pt-BR') : '',
+            desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
+            status: serviceInvoice?.status || process.paymentStatus,
+            invoice: serviceInvoice
+        });
+    }
+
+    // 5. Procuração Event
+    events.push({
+        id: 'proxy',
+        type: 'proxy',
+        title: 'Procuração INPI',
+        date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
+        desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
+        status: process.proxySignStatus
+    });
+
+    // 6. Contrato Event
+    events.push({
+        id: 'contract',
+        type: 'contract',
+        title: 'Contrato Assinado',
+        date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
+        desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
+        status: process.contractSignStatus
+    });
+
+    return events;
+};
 
 const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, theme, onToggleTheme }) => {
     const [loading, setLoading] = useState(true);
@@ -209,6 +289,26 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
         } catch (error) {
             console.error('Error uploading receipt:', error);
             alert('Erro ao enviar comprovante. Tente novamente.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleProxyFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData);
+            alert('Procuração enviada com sucesso!');
+
+            // Update main processes list silently
+            setProcesses((prev: any[]) => prev.map((p: any) => p.id === processId ? { ...p, proxyUrl: res.data.proxyUrl, proxySignStatus: 'SIGNED' } : p));
+        } catch (error) {
+            console.error('Proxy upload error', error);
+            alert('Erro no envio da Procuração.');
         } finally {
             setIsUploading(false);
         }
@@ -612,50 +712,96 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                     {/* TAB: TIMELINE */}
                                                     {activeTab === 'timeline' && (
                                                         <div className="relative pl-2 animate-in fade-in duration-300">
-                                                            {(!proc.dispatches || proc.dispatches.length === 0) ? (
-                                                                <div className="relative flex gap-6 pb-8">
-                                                                    <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 bg-white dark:bg-zinc-900 border-blue-600 dark:border-blue-500 animate-pulse">
-                                                                        <div className="w-2.5 h-2.5 bg-blue-600 dark:bg-blue-500 rounded-full" />
+                                                            {getTimelineEvents(proc, financials.invoices).map((step: any, idx: number, arr: any[]) => (
+                                                                <div key={step.id || idx} className="relative flex gap-6 pb-8 last:pb-0">
+                                                                    {/* Connector Line */}
+                                                                    {idx !== arr.length - 1 && (
+                                                                        <div className={`absolute left-[11px] top-8 bottom-0 w-0.5 ${step.type === 'contract' || step.type === 'proxy' || step.status === 'SIGNED' ? 'bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500'}`} />
+                                                                    )}
+
+                                                                    {/* Status Icon */}
+                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 text-white ${step.type === 'contract' || step.type === 'proxy' || step.status === 'SIGNED' ? 'bg-emerald-500 border-emerald-500' : 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500'}`}>
+                                                                        {step.type === 'contract' ? <FileSignature size={12} /> : step.type === 'proxy' ? <Shield size={12} /> : <CheckCircle2 size={14} />}
                                                                     </div>
+
+                                                                    {/* Content */}
                                                                     <div className="flex-1 -mt-1">
-                                                                        <h4 className="font-bold text-sm text-slate-900 dark:text-zinc-100">Processo Iniciado</h4>
-                                                                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">Aguardando a primeira movimentação oficial do INPI.</p>
+                                                                        <div className="flex flex-wrap justify-between items-start gap-4">
+                                                                            <div className="flex-1">
+                                                                                <h4 className="font-bold text-sm text-slate-900 dark:text-zinc-100">
+                                                                                    {step.title}
+                                                                                </h4>
+                                                                                {step.desc && (
+                                                                                    <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                                                                                        {step.desc}
+                                                                                    </p>
+                                                                                )}
+
+                                                                                {/* CUSTOM RENDER FOR INVOICES */}
+                                                                                {step.type === 'invoice' && (step.status === 'pending' || step.status === 'PENDING') && (
+                                                                                    <div className="mt-3">
+                                                                                        <button
+                                                                                            onClick={() => handleOpenPaymentModal(step.invoice)}
+                                                                                            className="text-xs flex items-center justify-center gap-1 font-bold text-white border border-blue-600 bg-blue-600 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-700 transition-colors shadow-sm"
+                                                                                        >
+                                                                                            <CreditCard size={14} /> Pagar Fatura
+                                                                                        </button>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* CUSTOM RENDER FOR PROXY */}
+                                                                                {step.type === 'proxy' && step.status !== 'VALIDATED' && step.status !== 'SIGNED' && (
+                                                                                    <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                                                                                        <a href={proc.proxyUrl || '#'} target="_blank" className="text-xs flex items-center justify-center gap-1 font-bold text-blue-600 border border-blue-200 bg-blue-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-100 transition-colors shadow-sm">
+                                                                                            <Download size={14} /> 1. Baixar Procuração
+                                                                                        </a>
+                                                                                        {isUploading ? (
+                                                                                            <div className="text-xs text-slate-500 flex justify-center items-center gap-2 mt-1 px-3 py-1.5 border border-transparent">
+                                                                                                <Loader2 className="animate-spin" size={14} /> Enviando...
+                                                                                            </div>
+                                                                                        ) : (
+                                                                                            <label className="text-xs flex items-center justify-center gap-1 font-bold text-white border border-blue-600 bg-blue-600 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-700 cursor-pointer transition-colors shadow-sm">
+                                                                                                <Upload size={14} /> 2. Enviar Procuração Assinada
+                                                                                                <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleProxyFileUpload(e, proc.id)} />
+                                                                                            </label>
+                                                                                        )}
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* CUSTOM RENDER FOR CONTRACT PENDING */}
+                                                                                {step.type === 'contract' && step.status === 'PENDING' && (
+                                                                                    <div className="mt-3">
+                                                                                        <a href={proc.contractUrl || '#'} target="_blank" className="text-xs flex items-center justify-center gap-1 font-bold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-amber-100 transition-colors shadow-sm">
+                                                                                            <FileSignature size={14} /> Assinar Contrato
+                                                                                        </a>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* CUSTOM RENDER FOR COMPLETE DOCUMENTS */}
+                                                                                {step.type === 'contract' && step.status === 'SIGNED' && (
+                                                                                    <div className="mt-3">
+                                                                                        <a href={proc.contractUrl || '#'} target="_blank" className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors">
+                                                                                            <Download size={14} /> Baixar Cópia
+                                                                                        </a>
+                                                                                    </div>
+                                                                                )}
+                                                                                {step.type === 'proxy' && (step.status === 'VALIDATED' || step.status === 'SIGNED') && (
+                                                                                    <div className="mt-3">
+                                                                                        <a href={proc.proxySignedUrl || proc.proxyUrl || '#'} target="_blank" className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors">
+                                                                                            <Download size={14} /> Baixar Cópia
+                                                                                        </a>
+                                                                                    </div>
+                                                                                )}
+                                                                            </div>
+                                                                            {step.date && (
+                                                                                <span className="text-xs font-mono px-2 py-0.5 rounded whitespace-nowrap bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400">
+                                                                                    {step.date}
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
                                                                     </div>
                                                                 </div>
-                                                            ) : (
-                                                                proc.dispatches.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((step: any, idx: number) => (
-                                                                    <div key={idx} className="relative flex gap-6 pb-8 last:pb-0">
-                                                                        {/* Connector Line */}
-                                                                        {idx !== proc.dispatches.length - 1 && (
-                                                                            <div className={`absolute left-[11px] top-8 bottom-0 w-0.5 bg-blue-600 dark:bg-blue-500`} />
-                                                                        )}
-
-                                                                        {/* Status Icon */}
-                                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500 text-white`}>
-                                                                            <CheckCircle2 size={14} />
-                                                                        </div>
-
-                                                                        {/* Content */}
-                                                                        <div className="flex-1 -mt-1">
-                                                                            <div className="flex flex-wrap justify-between items-start gap-4">
-                                                                                <div>
-                                                                                    <h4 className="font-bold text-sm text-slate-900 dark:text-zinc-100">
-                                                                                        {step.isVirtual ? step.description : `${step.code}-${step.description} `}
-                                                                                    </h4>
-                                                                                    {step.details && (
-                                                                                        <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1 leading-relaxed">
-                                                                                            {step.details}
-                                                                                        </p>
-                                                                                    )}
-                                                                                </div>
-                                                                                <span className="text-xs font-mono px-2 py-0.5 rounded whitespace-nowrap bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-600 dark:text-zinc-400">
-                                                                                    {new Date(step.createdAt).toLocaleDateString()}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                ))
-                                                            )}
+                                                            ))}
                                                         </div>
                                                     )}
 
