@@ -6,6 +6,26 @@ import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { useToast } from '../../../../context/ToastContext';
 
+const extractInfoFromTags = (tags: any[]) => {
+    const info: { cnpj?: string, address?: string, razaoSocial?: string } = {};
+    if (!tags || !Array.isArray(tags)) return info;
+
+    tags.forEach(tag => {
+        const tagName = typeof tag === 'string' ? tag : (tag.label || '');
+        const lowerTag = tagName.toLowerCase();
+
+        if (lowerTag.includes('cnpj:') || lowerTag.includes('cpf:')) {
+            info.cnpj = tagName.split(':')[1]?.trim();
+        } else if (lowerTag.includes('endereço:') || lowerTag.includes('endereco:')) {
+            info.address = tagName.split(':')[1]?.trim();
+        } else if (lowerTag.includes('razão social:') || lowerTag.includes('razao social:')) {
+            info.razaoSocial = tagName.split(':')[1]?.trim();
+        }
+    });
+
+    return info;
+};
+
 interface DealComment {
     id: string;
     content: string;
@@ -63,6 +83,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     useEffect(() => {
         if (deal && isOpen) {
             setShowConfirmConvert(false); // Reset confirmation state on open
+            const tags = (deal as any).tags || [];
+            const info = extractInfoFromTags(tags);
             setFormData({
                 title: deal.title,
                 subtitle: deal.subtitle,
@@ -72,7 +94,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 status: deal.status || '',
                 description: (deal as any).description || '',
                 signedAt: (deal as any).signedAt || null,
-                tags: (deal as any).tags || []
+                tags,
+                cnpj: info.cnpj || '',
+                razaoSocial: info.razaoSocial || '',
+                address: info.address || ''
             });
             fetchDealDetails();
         }
@@ -85,18 +110,22 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             const response = await api.get(`/asterysko/crm/deals/${deal.id}`);
             if (response.data) {
                 setComments(response.data.comments || []);
+                const tags = response.data.tags || [];
+                const info = extractInfoFromTags(tags);
                 setFormData((prev: any) => ({
                     ...prev,
                     description: response.data.description || '',
-                    // Ensure we have the latest of everything else too
                     title: response.data.title,
                     subtitle: response.data.subtitle,
-                    status: response.data.status, // Ensure status is synced
+                    status: response.data.status,
                     value: response.data.value,
                     contactPhone: response.data.contactPhone,
                     contactEmail: response.data.contactEmail,
                     signedAt: response.data.signedAt,
-                    tags: response.data.tags || []
+                    tags,
+                    cnpj: info.cnpj || '',
+                    razaoSocial: info.razaoSocial || '',
+                    address: info.address || ''
                 }));
             }
         } catch (error) {
@@ -147,6 +176,28 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
     const handleBlur = (field: string, value: any) => {
         handleAutoSave(field, value);
+    };
+
+    const updateTagValue = (field: string, newValue: string) => {
+        const prefix = field === 'cnpj' ? 'CNPJ:' : field === 'razaoSocial' ? 'Razão Social:' : 'Endereço:';
+        const color = field === 'cnpj' ? 'bg-indigo-100 text-indigo-700' : field === 'razaoSocial' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700';
+
+        const currentTags = [...(formData.tags || [])];
+        const existingIdx = currentTags.findIndex((t: any) => t.label?.startsWith(prefix));
+
+        if (newValue.trim()) {
+            const newTag = { label: `${prefix} ${newValue}`, color };
+            if (existingIdx > -1) {
+                currentTags[existingIdx] = newTag;
+            } else {
+                currentTags.push(newTag);
+            }
+        } else if (existingIdx > -1) {
+            currentTags.splice(existingIdx, 1);
+        }
+
+        setFormData((prev: any) => ({ ...prev, [field]: newValue, tags: currentTags }));
+        updateDealPartial('tags', currentTags);
     };
 
     const updateDealPartial = async (field: string, value: any) => {
@@ -595,27 +646,69 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
                     </div>
 
+                    {/* COMPANY INFO (FOR PROCURACAO) */}
+                    <div className="space-y-4">
+                        <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <Tag size={14} /> Dados para Procuração
+                        </label>
+                        <div className="space-y-3">
+                            <div className="group">
+                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">Razão Social</label>
+                                <input
+                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
+                                    placeholder="Razão Social completa"
+                                    value={formData.razaoSocial || ''}
+                                    onChange={e => setFormData({ ...formData, razaoSocial: e.target.value })}
+                                    onBlur={e => updateTagValue('razaoSocial', e.target.value)}
+                                />
+                            </div>
+                            <div className="group">
+                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">CNPJ / CPF</label>
+                                <input
+                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
+                                    placeholder="00.000.000/0001-00"
+                                    value={formData.cnpj || ''}
+                                    onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
+                                    onBlur={e => updateTagValue('cnpj', e.target.value)}
+                                />
+                            </div>
+                            <div className="group">
+                                <label className="text-[10px] text-docka-400 uppercase font-semibold mb-1 block">Endereço</label>
+                                <input
+                                    className="w-full text-sm bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-docka-400 focus:border-docka-600 dark:focus:border-zinc-500 py-1 outline-none transition-colors placeholder:text-docka-300"
+                                    placeholder="Endereço Comercial"
+                                    value={formData.address || ''}
+                                    onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                    onBlur={e => updateTagValue('address', e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {/* TAGS */}
                     <div className="space-y-3">
                         <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                             <Tag size={14} /> Tags
                         </label>
                         <div className="flex flex-wrap gap-2">
-                            {formData.tags?.map((tag: any, idx: number) => (
-                                <span key={idx} className={`px-2 py-1 rounded text-xs font-bold uppercase ${tag.color} flex items-center gap-1`}>
-                                    {tag.label}
-                                    <button className="hover:opacity-75" onClick={() => {
-                                        const newTags = formData.tags.filter((_: any, i: number) => i !== idx);
-                                        handleAutoSave('tags', newTags);
-                                    }}>
-                                        ×
-                                    </button>
-                                </span>
-                            ))}
+                            {formData.tags?.map((tag: any, idx: number) => {
+                                // Don't show the virtualized tags in the general list if they are handled by inputs
+                                if (tag.label?.startsWith('CNPJ:') || tag.label?.startsWith('Razão Social:') || tag.label?.startsWith('Endereço:')) return null;
+                                return (
+                                    <span key={idx} className={`px-2 py-1 rounded text-xs font-bold uppercase ${tag.color} flex items-center gap-1`}>
+                                        {tag.label}
+                                        <button className="hover:opacity-75" onClick={() => {
+                                            const newTags = formData.tags.filter((_: any, i: number) => i !== idx);
+                                            handleAutoSave('tags', newTags);
+                                        }}>
+                                            ×
+                                        </button>
+                                    </span>
+                                );
+                            })}
                             <button
                                 className="px-2 py-1 rounded text-xs border border-dashed border-docka-300 text-docka-500 hover:bg-docka-50 transition-colors"
                                 onClick={() => {
-                                    // Simple generic tag for now, can be improved to a tag selector later
                                     const newTag = { label: 'Nova Tag', color: 'bg-gray-100 text-gray-700' };
                                     handleAutoSave('tags', [...(formData.tags || []), newTag]);
                                 }}

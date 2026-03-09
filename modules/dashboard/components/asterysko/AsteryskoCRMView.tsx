@@ -69,8 +69,11 @@ const AsteryskoCRMViewContent: React.FC = () => {
         source: 'Site (Orgânico)',
         value: '',
         status: 'leads',
-        clientId: '', // New field for linking
-        feeId: '' // Field for standardized fee
+        clientId: '',
+        feeId: '',
+        cnpj: '',
+        address: '',
+        razaoSocial: ''
     });
 
     const [fees, setFees] = useState<any[]>([]);
@@ -175,23 +178,43 @@ const AsteryskoCRMViewContent: React.FC = () => {
 
     const handleCreateLead = async () => {
         try {
+            const tags = [
+                { label: newLead.service, color: 'bg-blue-100 text-blue-700' },
+                { label: newLead.source, color: 'bg-gray-100 text-gray-700' }
+            ];
+
+            if (newLead.cnpj) tags.push({ label: `CNPJ: ${newLead.cnpj}`, color: 'bg-indigo-100 text-indigo-700' });
+            if (newLead.razaoSocial) tags.push({ label: `Razão Social: ${newLead.razaoSocial}`, color: 'bg-purple-100 text-purple-700' });
+            if (newLead.address) tags.push({ label: `Endereço: ${newLead.address}`, color: 'bg-amber-100 text-amber-700' });
+
             await api.post('/asterysko/crm/deals', {
                 title: newLead.title,
-                subtitle: newLead.contactName, // Using contact name as subtitle for now
+                subtitle: newLead.contactName,
                 contactName: newLead.contactName,
                 contactEmail: newLead.contactEmail,
                 contactPhone: newLead.contactPhone,
                 value: newLead.value ? parseFloat(newLead.value.replace('R$', '').replace('.', '').replace(',', '.')) : 0,
                 priority: 'medium',
                 status: newLead.status,
-                clientId: newLead.clientId, // Pass clientId
-                tags: [
-                    { label: newLead.service, color: 'bg-blue-100 text-blue-700' },
-                    { label: newLead.source, color: 'bg-gray-100 text-gray-700' }
-                ]
+                clientId: newLead.clientId,
+                tags
             });
             setIsNewLeadModalOpen(false);
-            setNewLead({ title: '', contactName: '', contactPhone: '', contactEmail: '', service: 'Registro de Marca (Mista)', source: 'Site (Orgânico)', value: '', status: 'leads', clientId: '', feeId: '' });
+            setNewLead({
+                title: '',
+                contactName: '',
+                contactPhone: '',
+                contactEmail: '',
+                service: 'Registro de Marca (Mista)',
+                source: 'Site (Orgânico)',
+                value: '',
+                status: 'leads',
+                clientId: '',
+                feeId: '',
+                cnpj: '',
+                address: '',
+                razaoSocial: ''
+            });
             fetchDeals(); // Refresh board
         } catch (error) {
             console.error('Error creating lead', error);
@@ -428,7 +451,7 @@ const AsteryskoCRMViewContent: React.FC = () => {
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Marca / Empresa / Título do Lead</label>
+                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Marca / Título do Lead</label>
                         <div className="relative">
                             <input
                                 value={newLead.title}
@@ -436,6 +459,41 @@ const AsteryskoCRMViewContent: React.FC = () => {
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
                                 placeholder="Ex: Marca Exemplo"
                             />
+                        </div>
+                    </div>
+
+                    <div className="p-4 bg-docka-50 dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-700 space-y-4">
+                        <h4 className="text-[10px] font-bold text-docka-400 uppercase tracking-wider">Dados da Empresa (Para Procuração)</h4>
+
+                        <div>
+                            <label className="block text-[10px] font-bold text-docka-600 dark:text-zinc-500 uppercase mb-1">Razão Social</label>
+                            <input
+                                value={newLead.razaoSocial}
+                                onChange={(e) => setNewLead({ ...newLead, razaoSocial: e.target.value })}
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
+                                placeholder="Nome Completo da Empresa"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-docka-600 dark:text-zinc-500 uppercase mb-1">CNPJ / CPF</label>
+                                <input
+                                    value={newLead.cnpj}
+                                    onChange={(e) => setNewLead({ ...newLead, cnpj: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
+                                    placeholder="00.000.000/0001-00"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-docka-600 dark:text-zinc-500 uppercase mb-1">Endereço Completo</label>
+                                <input
+                                    value={newLead.address}
+                                    onChange={(e) => setNewLead({ ...newLead, address: e.target.value })}
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
+                                    placeholder="Rua, Número, Bairro, Cidade/UF"
+                                />
+                            </div>
                         </div>
                     </div>
 
