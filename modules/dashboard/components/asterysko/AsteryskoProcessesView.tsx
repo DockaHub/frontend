@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity } from 'lucide-react';
+import axios from 'axios';
+import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity, Loader2 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 
 interface Client {
@@ -71,6 +72,39 @@ const AsteryskoProcessesView: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [clientSearch, setClientSearch] = useState('');
     const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+
+    const [isDownloadingPdf, setIsDownloadingPdf] = useState<string | null>(null);
+
+    const handleDownloadProxyPdf = async (procId: string, brandName: string) => {
+        try {
+            setIsDownloadingPdf(procId);
+            const token = localStorage.getItem('token');
+            const url = `${getBackendUrl()}/api/asterysko/processes/${procId}/proxy/download-pdf?token=${token}`;
+
+            const response = await axios({
+                url,
+                method: 'GET',
+                responseType: 'blob',
+            });
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', `Procuracao_${brandName.replace(/\s+/g, '_')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (err: any) {
+            console.error('Download failed:', err);
+            // Fallback
+            const token = localStorage.getItem('token');
+            window.open(`${getBackendUrl()}/api/asterysko/processes/${procId}/proxy/download-pdf?token=${token}`, '_blank');
+        } finally {
+            setIsDownloadingPdf(null);
+        }
+    };
 
     // Helper for Status Translation
     const formatStatus = (status: string) => {
@@ -726,7 +760,14 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 {event.type === 'proxy' && (
                                                     <div className="mt-3 flex flex-wrap gap-2">
                                                         {(event.internalState === 'VALIDATED' || event.internalState === 'SIGNED') && selectedProcess.proxyUrl && (
-                                                            <a href={selectedProcess.proxySignedUrl ? `${getBackendUrl()}${selectedProcess.proxySignedUrl}` : `${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/proxy/download-pdf?token=${localStorage.getItem('token')}`} target="_blank" className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800"><Download size={14} /> Ver Cópia</a>
+                                                            <button
+                                                                onClick={() => selectedProcess.proxySignedUrl ? window.open(`${getBackendUrl()}${selectedProcess.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title || 'Marca')}
+                                                                disabled={isDownloadingPdf === selectedProcess.id}
+                                                                className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800 disabled:opacity-50"
+                                                            >
+                                                                {isDownloadingPdf === selectedProcess.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                                                Ver Cópia
+                                                            </button>
                                                         )}
                                                         {event.internalState !== 'VALIDATED' && event.internalState !== 'SIGNED' && (
                                                             <button onClick={() => handleGenerateProxy(selectedProcess)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
@@ -792,14 +833,14 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 </div>
                                             </div>
                                             {selectedProcess.proxyUrl ? (
-                                                <a
-                                                    href={selectedProcess.id ? `${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/proxy/download-pdf?token=${localStorage.getItem('token')}` : '#'}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700"
+                                                <button
+                                                    onClick={() => handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title || 'Marca')}
+                                                    disabled={isDownloadingPdf === selectedProcess.id}
+                                                    className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700 disabled:opacity-50"
                                                 >
-                                                    <Download size={12} /> Baixar Procuração
-                                                </a>
+                                                    {isDownloadingPdf === selectedProcess.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
+                                                    Baixar Procuração
+                                                </button>
                                             ) : (
                                                 <button
                                                     onClick={() => handleGenerateProxy(selectedProcess)}

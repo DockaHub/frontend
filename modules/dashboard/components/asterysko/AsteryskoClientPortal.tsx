@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { FileSignature, FileText, CheckCircle2, Download, Menu, User, Bell, Shield, ShieldCheck, ExternalLink, LogOut, HelpCircle, ChevronDown, Share2, Building2, Lock, Mail, MessageSquare, AlertCircle, Loader2, Briefcase, CreditCard, Smartphone, Copy, Upload, UploadCloud, Sun, Moon } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
@@ -151,6 +152,38 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
     const [editRg, setEditRg] = useState('');
     const [editAddress, setEditAddress] = useState('');
     const [isSavingProfile, setIsSavingProfile] = useState(false);
+    const [isDownloadingPdf, setIsDownloadingPdf] = useState<string | null>(null);
+
+    const handleDownloadProxyPdf = async (procId: string, brandName: string) => {
+        try {
+            setIsDownloadingPdf(procId);
+            const token = localStorage.getItem('token');
+            const url = `${getBackendUrl()}/api/asterysko/processes/${procId}/proxy/download-pdf?token=${token}`;
+
+            const response = await axios({
+                url,
+                method: 'GET',
+                responseType: 'blob',
+            });
+
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', `Procuracao_${brandName.replace(/\s+/g, '_')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(downloadUrl);
+        } catch (err: any) {
+            console.error('Download failed:', err);
+            // Fallback to trying window.open as a last resort
+            const token = localStorage.getItem('token');
+            window.open(`${getBackendUrl()}/api/asterysko/processes/${procId}/proxy/download-pdf?token=${token}`, '_blank');
+        } finally {
+            setIsDownloadingPdf(null);
+        }
+    };
 
     // ... (existing helper functions)
 
@@ -752,9 +785,14 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                 {/* CUSTOM RENDER FOR PROXY */}
                                                                                 {step.type === 'proxy' && step.status !== 'VALIDATED' && step.status !== 'SIGNED' && (
                                                                                     <div className="mt-3 flex flex-col sm:flex-row gap-2">
-                                                                                        <a href={proc.id ? `${getBackendUrl()}/api/asterysko/processes/${proc.id}/proxy/download-pdf?token=${localStorage.getItem('token')}` : '#'} target="_blank" rel="noopener noreferrer" className="text-xs flex items-center justify-center gap-1 font-bold text-blue-600 border border-blue-200 bg-blue-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-100 transition-colors shadow-sm">
-                                                                                            <Download size={14} /> 1. Baixar Procuração
-                                                                                        </a>
+                                                                                        <button
+                                                                                            onClick={() => handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca')}
+                                                                                            disabled={isDownloadingPdf === proc.id}
+                                                                                            className="text-xs flex items-center justify-center gap-1 font-bold text-blue-600 border border-blue-200 bg-blue-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-100 transition-colors shadow-sm disabled:opacity-50"
+                                                                                        >
+                                                                                            {isDownloadingPdf === proc.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                                                                            1. Baixar Procuração
+                                                                                        </button>
                                                                                         {isUploading ? (
                                                                                             <div className="text-xs text-slate-500 flex justify-center items-center gap-2 mt-1 px-3 py-1.5 border border-transparent">
                                                                                                 <Loader2 className="animate-spin" size={14} /> Enviando...
@@ -787,9 +825,14 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                 )}
                                                                                 {step.type === 'proxy' && (step.status === 'VALIDATED' || step.status === 'SIGNED') && (
                                                                                     <div className="mt-3">
-                                                                                        <a href={proc.proxySignedUrl ? `${getBackendUrl()}${proc.proxySignedUrl}` : `${getBackendUrl()}/api/asterysko/processes/${proc.id}/proxy/download-pdf?token=${localStorage.getItem('token')}`} target="_blank" className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors">
-                                                                                            <Download size={14} /> Baixar Cópia
-                                                                                        </a>
+                                                                                        <button
+                                                                                            onClick={() => proc.proxySignedUrl ? window.open(`${getBackendUrl()}${proc.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca')}
+                                                                                            disabled={isDownloadingPdf === proc.id}
+                                                                                            className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors disabled:opacity-50"
+                                                                                        >
+                                                                                            {isDownloadingPdf === proc.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                                                                                            Baixar Cópia
+                                                                                        </button>
                                                                                     </div>
                                                                                 )}
                                                                             </div>
@@ -904,9 +947,13 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
-                                                                            <a href={proc.proxySignedUrl ? `${getBackendUrl()}${proc.proxySignedUrl}` : `${getBackendUrl()}/api/asterysko/processes/${proc.id}/proxy/download-pdf?token=${localStorage.getItem('token')}`} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
-                                                                                <ExternalLink size={20} />
-                                                                            </a>
+                                                                            <button
+                                                                                onClick={() => proc.proxySignedUrl ? window.open(`${getBackendUrl()}${proc.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca')}
+                                                                                className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border"
+                                                                                title="Baixar Procuração"
+                                                                            >
+                                                                                {isDownloadingPdf === proc.id ? <Loader2 size={20} className="animate-spin" /> : <ExternalLink size={20} />}
+                                                                            </button>
                                                                         </div>
                                                                     )}
 
