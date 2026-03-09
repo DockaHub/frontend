@@ -726,7 +726,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 {event.type === 'proxy' && (
                                                     <div className="mt-3 flex flex-wrap gap-2">
                                                         {(event.internalState === 'VALIDATED' || event.internalState === 'SIGNED') && selectedProcess.proxyUrl && (
-                                                            <a href={selectedProcess.proxySignedUrl ? `${getBackendUrl()}${selectedProcess.proxySignedUrl}` : `${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/proxy/download-pdf`} target="_blank" className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800"><Download size={14} /> Ver Cópia</a>
+                                                            <a href={selectedProcess.proxySignedUrl ? `${getBackendUrl()}${selectedProcess.proxySignedUrl}` : `${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/proxy/download-pdf?token=${localStorage.getItem('token')}`} target="_blank" className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800"><Download size={14} /> Ver Cópia</a>
                                                         )}
                                                         {event.internalState !== 'VALIDATED' && event.internalState !== 'SIGNED' && (
                                                             <button onClick={() => handleGenerateProxy(selectedProcess)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
@@ -793,7 +793,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                             </div>
                                             {selectedProcess.proxyUrl ? (
                                                 <a
-                                                    href={selectedProcess.id ? `${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/proxy/download-pdf` : '#'}
+                                                    href={selectedProcess.id ? `${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/proxy/download-pdf?token=${localStorage.getItem('token')}` : '#'}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700"
