@@ -149,6 +149,20 @@ const AsteryskoFinancialView: React.FC = () => {
         }
     };
 
+    const handleDeleteInvoice = async (id: string) => {
+        if (!confirm('Tem certeza que deseja excluir esta fatura? Esta ação não pode ser desfeita.')) return;
+
+        try {
+            await api.delete(`/asterysko/financial/invoices/${id}`);
+            addToast({ type: 'success', title: 'Sucesso', message: 'Fatura excluída com sucesso.' });
+            fetchData();
+            setSelectedInvoice(null);
+        } catch (error) {
+            console.error('Error deleting invoice:', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível excluir a fatura.' });
+        }
+    };
+
     const rawMetrics = stats?.metrics || {};
     const metrics = {
         ...rawMetrics,
@@ -369,6 +383,13 @@ const AsteryskoFinancialView: React.FC = () => {
                                 </button>
                             </div>
                             <div className="flex gap-2">
+                                <button
+                                    onClick={() => handleDeleteInvoice(selectedInvoice.id)}
+                                    className="p-2 text-docka-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center gap-1 text-xs"
+                                    title="Excluir Fatura"
+                                >
+                                    <Trash2 size={16} /> Excluir
+                                </button>
                                 <button onClick={() => setSelectedInvoice(null)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg">Fechar</button>
                                 {selectedInvoice && selectedInvoice.status !== 'PAID' && (
                                     <button
