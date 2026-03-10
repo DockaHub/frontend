@@ -334,7 +334,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const res = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData);
+            const res = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             alert('Procuração enviada com sucesso!');
 
             // Update main processes list silently

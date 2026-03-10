@@ -317,7 +317,9 @@ const AsteryskoProcessesView: React.FC = () => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const res = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData);
+            const res = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             alert('Enviado com sucesso!');
             setSelectedProcess((prev: any) => prev ? { ...prev, proxyUrl: res.data.proxyUrl } : null);
             // Also update main list silently
