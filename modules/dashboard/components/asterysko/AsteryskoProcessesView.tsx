@@ -837,7 +837,16 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg"><FileText size={20} /></div>
                                                 <div>
                                                     <h4 className="font-bold text-sm text-docka-900 dark:text-zinc-100">Procuração INPI</h4>
-                                                    <p className="text-xs text-docka-500 dark:text-zinc-400 max-w-sm mt-1">Necessário para representar a empresa junto ao órgão federal.</p>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${selectedProcess.proxySignStatus === 'VALIDATED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                                                                selectedProcess.proxySignStatus === 'SIGNED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                            }`}>
+                                                            {selectedProcess.proxySignStatus === 'VALIDATED' ? 'Validada' :
+                                                                selectedProcess.proxySignStatus === 'SIGNED' ? 'Enviada' : 'Pendente'}
+                                                        </span>
+                                                        <p className="text-[10px] text-docka-500 dark:text-zinc-400">Representação junto ao INPI</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                             {selectedProcess.proxyUrl ? (
@@ -862,31 +871,51 @@ const AsteryskoProcessesView: React.FC = () => {
 
                                         {/* Upload/Status Area */}
                                         <div className="space-y-3">
-                                            <div className="flex items-center gap-2 px-1">
-                                                <div className="h-px flex-1 bg-docka-100 dark:bg-zinc-700" />
-                                                <span className="text-[10px] font-bold text-docka-400 uppercase">Ou Anexar Manualmente</span>
-                                                <div className="h-px flex-1 bg-docka-100 dark:bg-zinc-700" />
-                                            </div>
-
-                                            <div
-                                                className={`relative border-2 border-dashed border-docka-300 dark:border-zinc-600 rounded-xl bg-docka-50 dark:bg-zinc-800/50 p-6 flex flex-col items-center justify-center text-center transition-colors hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group overflow-hidden ${uploadingProxy ? 'opacity-70 pointer-events-none' : 'cursor-pointer'}`}
-                                            >
-                                                <input
-                                                    type="file"
-                                                    accept="application/pdf"
-                                                    onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)}
-                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                />
-                                                <div className="w-10 h-10 bg-white dark:bg-zinc-700 rounded-full shadow-sm flex items-center justify-center text-docka-400 dark:text-zinc-400 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all">
-                                                    <Upload size={18} />
+                                            {selectedProcess.proxyUrl ? (
+                                                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 rounded-xl p-4 flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center">
+                                                            <CheckCircle2 size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <h5 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">Documento Disponível</h5>
+                                                            <p className="text-xs text-emerald-600 dark:text-emerald-400">Recebido e aguardando processamento interno.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <label className="text-[11px] font-bold text-docka-600 dark:text-zinc-400 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors">
+                                                            Substituir
+                                                            <input type="file" className="hidden" accept="application/pdf" onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)} />
+                                                        </label>
+                                                        <button
+                                                            onClick={() => selectedProcess.proxySignedUrl ? window.open(`${getBackendUrl()}${selectedProcess.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title || 'Marca')}
+                                                            className="text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-sm"
+                                                        >
+                                                            <Download size={14} /> Ver Cópia
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <h5 className="text-xs font-bold text-docka-800 dark:text-zinc-200">
-                                                    {uploadingProxy ? 'Enviando documento...' : selectedProcess.proxyUrl ? 'Substituir Procuração Final' : 'Anexar Procuração Assinada'}
-                                                </h5>
-                                                <p className="text-[10px] text-docka-500 dark:text-zinc-400 mt-1">
-                                                    PDF assinado pelo cliente.
-                                                </p>
-                                            </div>
+                                            ) : (
+                                                <div
+                                                    className={`relative border-2 border-dashed border-docka-300 dark:border-zinc-600 rounded-xl bg-docka-50 dark:bg-zinc-800/50 p-6 flex flex-col items-center justify-center text-center transition-colors hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group overflow-hidden ${uploadingProxy ? 'opacity-70 pointer-events-none' : 'cursor-pointer'}`}
+                                                >
+                                                    <input
+                                                        type="file"
+                                                        accept="application/pdf"
+                                                        onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)}
+                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    />
+                                                    <div className="w-10 h-10 bg-white dark:bg-zinc-700 rounded-full shadow-sm flex items-center justify-center text-docka-400 dark:text-zinc-400 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all">
+                                                        <Upload size={18} />
+                                                    </div>
+                                                    <h5 className="text-xs font-bold text-docka-800 dark:text-zinc-200">
+                                                        {uploadingProxy ? 'Enviando documento...' : 'Anexar Procuração Assinada'}
+                                                    </h5>
+                                                    <p className="text-[10px] text-docka-500 dark:text-zinc-400 mt-1">
+                                                        PDF assinado pelo cliente.
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
 
