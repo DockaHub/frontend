@@ -3,19 +3,20 @@ import React, { useState, useEffect } from 'react';
 import { CheckSquare, Clock, Calendar as CalendarIcon, ArrowRight, Building2, Plus, Search } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { Organization } from '../../../../types';
-import { ORGANIZATIONS } from '../../../../constants';
+import { api } from '../../../../services/api';
 
-// Placeholder for tasks - normally fetched from API
-const DEMO_TASKS = [
-    { id: 1, title: 'Revisar contrato da Asterysko', due: 'Hoje, 14:00', priority: 'high', done: false },
-    { id: 2, title: 'Aprovar layout do Fauves Scan', due: 'Amanhã, 10:00', priority: 'medium', done: false },
-    { id: 3, title: 'Atualizar DNS do cliente Tokyon', due: 'Sex, 16:00', priority: 'low', done: true },
-];
+interface HomeData {
+    organizations: Organization[];
+    tasks: any[];
+    agenda: any[];
+    activity: any[];
+}
 
 const UserHomeView: React.FC = () => {
     const { user } = useAuth();
     const [greeting, setGreeting] = useState('');
-    const [userOrgs, setUserOrgs] = useState<Organization[]>([]);
+    const [data, setData] = useState<HomeData | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const hour = new Date().getHours();
@@ -23,10 +24,18 @@ const UserHomeView: React.FC = () => {
         else if (hour < 18) setGreeting('Boa tarde');
         else setGreeting('Boa noite');
 
-        // In real app, we use context or prop, but here we filter from constants + mock
-        // Assuming current user has access to some.
-        // For demo, let's just show all except 'generic' ones if any.
-        setUserOrgs(ORGANIZATIONS.filter(o => o.slug !== 'docka'));
+        const fetchHomeData = async () => {
+            try {
+                const response = await api.get('/dashboard/home');
+                setData(response.data);
+            } catch (error) {
+                console.error('Error fetching home data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHomeData();
     }, []);
 
     const currentDate = new Date().toLocaleDateString('pt-BR', {
@@ -46,7 +55,7 @@ const UserHomeView: React.FC = () => {
                             {greeting}, {user?.name?.split(' ')[0] || 'Visitante'}. <span className="text-2xl">👋</span>
                         </h1>
                         <p className="text-docka-500 dark:text-zinc-400 mt-1 capitalize">
-                            {currentDate} • Você tem <strong className="text-docka-800 dark:text-zinc-200">{DEMO_TASKS.filter(t => !t.done).length} tarefas pendentes</strong> para hoje.
+                            {currentDate} • Você tem <strong className="text-docka-800 dark:text-zinc-200">{data?.tasks.length || 0} tarefas pendentes</strong> para hoje.
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -75,7 +84,7 @@ const UserHomeView: React.FC = () => {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {userOrgs.map(org => (
+                                {data?.organizations.map(org => (
                                     <div key={org.id} className="group bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 hover:border-indigo-300 dark:hover:border-indigo-700/50 hover:shadow-md transition-all cursor-pointer relative overflow-hidden"
                                         onClick={() => window.location.href = `/dashboard?org=${org.id}&view=overview`}>
                                         <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -83,7 +92,7 @@ const UserHomeView: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-4 mb-4">
-                                            <div className={`w-12 h-12 rounded-lg ${org.logoColor} flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0`}>
+                                            <div className={`w-12 h-12 rounded-lg ${org.logoColor || 'bg-docka-500'} flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0`}>
                                                 {org.name.substring(0, 1)}
                                             </div>
                                             <div>
@@ -94,10 +103,10 @@ const UserHomeView: React.FC = () => {
 
                                         <div className="flex items-center gap-4 text-xs text-docka-500 dark:text-zinc-500">
                                             <div className="flex items-center gap-1.5 bg-docka-50 dark:bg-zinc-800 px-2 py-1 rounded">
-                                                <CheckSquare size={12} /> <span>12 Tarefas</span>
+                                                <CheckSquare size={12} /> <span>{org.features ? (org as any)._count?.tasks || 0 : 0} Tarefas</span>
                                             </div>
                                             <div className="flex items-center gap-1.5 bg-docka-50 dark:bg-zinc-800 px-2 py-1 rounded">
-                                                <Clock size={12} /> <span>3 Pendentes</span>
+                                                <Clock size={12} /> <span>Ativo</span>
                                             </div>
                                         </div>
                                     </div>
@@ -119,19 +128,25 @@ const UserHomeView: React.FC = () => {
                                 <Clock size={18} className="text-docka-400 dark:text-zinc-500" /> Atividade Recente
                             </h2>
                             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 divide-y divide-docka-100 dark:divide-zinc-800">
-                                {[1, 2, 3].map((_, i) => (
+                                {(data?.activity || []).length > 0 ? data?.activity.map((act, i) => (
                                     <div key={i} className="p-4 flex gap-4 hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors">
                                         <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
                                             <CheckSquare size={14} />
                                         </div>
                                         <div>
                                             <p className="text-sm text-docka-800 dark:text-zinc-200">
-                                                <span className="font-bold">Ana Silva</span> completou a tarefa <span className="font-medium">Atualizar Homepage</span> em <span className="text-indigo-600 dark:text-indigo-400">Asterysko</span>.
+                                                {act.message}
                                             </p>
-                                            <p className="text-xs text-docka-400 dark:text-zinc-500 mt-1">Há 2 horas</p>
+                                            <p className="text-xs text-docka-400 dark:text-zinc-500 mt-1">
+                                                {new Date(act.time).toLocaleDateString()} {new Date(act.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </p>
                                         </div>
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="p-8 text-center text-docka-400 dark:text-zinc-500 italic text-sm">
+                                        Nenhuma atividade recente encontrada.
+                                    </div>
+                                )}
                             </div>
                         </section>
                     </div>
@@ -148,25 +163,29 @@ const UserHomeView: React.FC = () => {
                                 <button className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Ver todas</button>
                             </div>
                             <div className="divide-y divide-docka-100 dark:divide-zinc-800">
-                                {DEMO_TASKS.map(task => (
+                                {(data?.tasks || []).length > 0 ? data?.tasks.map(task => (
                                     <div key={task.id} className="p-4 hover:bg-docka-50 dark:hover:bg-zinc-800/30 transition-colors flex gap-3 group">
-                                        <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${task.done ? 'bg-emerald-500 border-emerald-500' : 'border-docka-300 dark:border-zinc-600 hover:border-indigo-500'}`}>
-                                            {task.done && <CheckSquare size={10} className="text-white" />}
+                                        <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center cursor-pointer transition-colors ${task.status === 'DONE' ? 'bg-emerald-500 border-emerald-500' : 'border-docka-300 dark:border-zinc-600 hover:border-indigo-500'}`}>
+                                            {task.status === 'DONE' && <CheckSquare size={10} className="text-white" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-medium truncate ${task.done ? 'text-docka-400 line-through' : 'text-docka-800 dark:text-zinc-200'}`}>{task.title}</p>
+                                            <p className={`text-sm font-medium truncate ${task.status === 'DONE' ? 'text-docka-400 line-through' : 'text-docka-800 dark:text-zinc-200'}`}>{task.title}</p>
                                             <div className="flex items-center gap-2 mt-1">
-                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase ${task.priority === 'high' ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
-                                                    task.priority === 'medium' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase ${task.priority === 'HIGH' ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400' :
+                                                    task.priority === 'MEDIUM' ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400' :
                                                         'bg-docka-100 text-docka-600 dark:bg-zinc-800 dark:text-zinc-400'
                                                     }`}>{task.priority}</span>
                                                 <span className="text-xs text-docka-400 dark:text-zinc-500 flex items-center gap-1">
-                                                    <Clock size={10} /> {task.due}
+                                                    <Clock size={10} /> {task.dueDate ? new Date(task.dueDate).toLocaleDateString([], { day: '2-digit', month: 'short' }) : 'S/ data'}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
-                                ))}
+                                )) : (
+                                    <div className="p-6 text-center text-docka-400 dark:text-zinc-500 italic text-sm">
+                                        Nenhuma tarefa pendente.
+                                    </div>
+                                )}
                             </div>
                             <button className="w-full py-2 text-xs text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors border-t border-docka-100 dark:border-zinc-800">
                                 + Adicionar rápida
@@ -181,30 +200,26 @@ const UserHomeView: React.FC = () => {
                             <h3 className="font-bold text-lg mb-4 relative z-10">Agenda de Hoje</h3>
 
                             <div className="space-y-4 relative z-10">
-                                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="font-bold text-sm">Review de Design</p>
-                                            <p className="text-xs text-indigo-100">Com Equipe de Produto</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-sm">15:00</p>
-                                            <p className="text-xs text-indigo-100">Zoom</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="bg-white/5 rounded-lg p-3 border border-white/5">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <p className="font-bold text-sm opacity-80">Daily</p>
-                                            <p className="text-xs text-indigo-200">Squad Asterysko</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-bold text-sm opacity-80">09:00</p>
-                                            <p className="text-xs text-indigo-200">Meet</p>
+                                {(data?.agenda || []).length > 0 ? data?.agenda.map((event, i) => (
+                                    <div key={i} className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/10">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <p className="font-bold text-sm">{event.title}</p>
+                                                <p className="text-xs text-indigo-100">{event.organization?.name || 'Evento'}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="font-bold text-sm">
+                                                    {new Date(event.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                                <p className="text-xs text-indigo-100 capitalize">{event.type}</p>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )) : (
+                                    <div className="py-4 text-center text-indigo-100/60 italic text-sm">
+                                        Agenda livre para hoje!
+                                    </div>
+                                )}
                             </div>
 
                             <button className="w-full mt-4 py-2 bg-white text-indigo-600 rounded-lg text-sm font-bold hover:bg-indigo-50 transition-colors relative z-10">
@@ -215,6 +230,11 @@ const UserHomeView: React.FC = () => {
                     </div>
                 </div>
 
+                {loading && (
+                    <div className="fixed inset-0 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm flex items-center justify-center z-50">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"></div>
+                    </div>
+                )}
             </div>
         </div>
     );
