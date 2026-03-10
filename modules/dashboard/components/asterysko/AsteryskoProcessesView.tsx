@@ -162,6 +162,7 @@ const AsteryskoProcessesView: React.FC = () => {
                     dispatches: p.dispatches,
                     createdAt: p.createdAt,
                     proxyUrl: p.proxyUrl,
+                    proxySignedUrl: p.proxySignedUrl,
                     proxySignStatus: p.proxySignStatus,
                     contractUrl: p.contractUrl,
                     contractSignStatus: p.contractSignStatus,
@@ -246,6 +247,7 @@ const AsteryskoProcessesView: React.FC = () => {
                 dispatches: p.dispatches,
                 createdAt: p.createdAt,
                 proxyUrl: p.proxyUrl,
+                proxySignedUrl: p.proxySignedUrl,
                 proxySignStatus: p.proxySignStatus,
                 contractUrl: p.contractUrl,
                 contractSignStatus: p.contractSignStatus,
@@ -804,7 +806,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 <div>
                                                     <h4 className="font-bold text-sm text-docka-900 dark:text-zinc-100">Contrato de Prestação de Serviços</h4>
                                                     <p className="text-xs text-docka-500 dark:text-zinc-400">
-                                                        Status: {selectedProcess.contractUrl
+                                                        Status: {(selectedProcess.contractSignStatus === 'SIGNED' || selectedProcess.contractUrl)
                                                             ? <span className="text-emerald-600 dark:text-emerald-400 font-bold">Assinado</span>
                                                             : <span className="text-amber-600 dark:text-amber-400 font-bold">Pendente</span>}
                                                     </p>
@@ -839,8 +841,8 @@ const AsteryskoProcessesView: React.FC = () => {
                                                     <h4 className="font-bold text-sm text-docka-900 dark:text-zinc-100">Procuração INPI</h4>
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${selectedProcess.proxySignStatus === 'VALIDATED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                                selectedProcess.proxySignStatus === 'SIGNED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                                    'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                                            selectedProcess.proxySignStatus === 'SIGNED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
+                                                                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                                             }`}>
                                                             {selectedProcess.proxySignStatus === 'VALIDATED' ? 'Validada' :
                                                                 selectedProcess.proxySignStatus === 'SIGNED' ? 'Enviada' : 'Pendente'}
