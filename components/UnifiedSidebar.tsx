@@ -91,14 +91,14 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
 
     // Global Apps Configuration
     const globalApps = [
-        { id: 'home', label: 'Início', icon: Home, path: '/dashboard?view=home' },
-        { id: 'mail', label: 'E-mail', icon: Mail, path: '/mail' },
-        { id: 'chat', label: 'Chat', icon: MessageSquare, path: '/chat' },
-        { id: 'meet', label: 'Meet', icon: Phone, path: '/meet' },
-        { id: 'tasks', label: 'Tarefas', icon: CheckSquare, path: '/tasks' },
-        { id: 'calendar', label: 'Agenda', icon: Calendar, path: '/calendar' },
-        { id: 'drive', label: 'Drive', icon: HardDrive, path: '/drive' },
-        { id: 'contacts', label: 'Pessoas', icon: Users, path: '/contacts' },
+        { id: 'home', label: 'Início', icon: Home, path: `/dashboard?view=home&org=${currentOrg.id}` },
+        { id: 'mail', label: 'E-mail', icon: Mail, path: `/mail?org=${currentOrg.id}` },
+        { id: 'chat', label: 'Chat', icon: MessageSquare, path: `/chat?org=${currentOrg.id}` },
+        { id: 'meet', label: 'Meet', icon: Phone, path: `/meet?org=${currentOrg.id}` },
+        { id: 'tasks', label: 'Tarefas', icon: CheckSquare, path: `/tasks?org=${currentOrg.id}` },
+        { id: 'calendar', label: 'Agenda', icon: Calendar, path: `/calendar?org=${currentOrg.id}` },
+        { id: 'drive', label: 'Drive', icon: HardDrive, path: `/drive?org=${currentOrg.id}` },
+        { id: 'contacts', label: 'Pessoas', icon: Users, path: `/contacts?org=${currentOrg.id}` },
     ];
 
     return (
@@ -231,7 +231,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                         const ButtonContent = (
                             <button
                                 onClick={() => {
-                                    navigate(`/dashboard?view=${item.id}`);
+                                    navigate(`/dashboard?view=${item.id}&org=${currentOrg.id}`);
                                     if (onClose && !hasChildren) onClose();
                                 }}
                                 className={`w-full flex items-center px-2 py-2 text-sm rounded-lg transition-all duration-200 group ${isSelected
@@ -278,7 +278,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                                     key={child.id}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        navigate(`/dashboard?view=${child.id}`);
+                                                        navigate(`/dashboard?view=${child.id}&org=${currentOrg.id}`);
                                                         if (onClose) onClose();
                                                     }}
                                                     className={`w-full flex items-center px-2 py-1.5 text-xs rounded-md transition-colors ${isChildSelected

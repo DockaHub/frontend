@@ -138,7 +138,17 @@ const AppContent: React.FC = () => {
 
             if (enhancedOrgs.length > 0) {
               setUserOrgs(enhancedOrgs);
-              setCurrentOrg(enhancedOrgs[0]);
+
+              // CHECK URL FOR PERSISTENCE
+              const params = new URLSearchParams(window.location.search);
+              const orgId = params.get('org');
+              const savedOrg = enhancedOrgs.find(o => o.id === orgId);
+
+              if (savedOrg) {
+                setCurrentOrg(savedOrg);
+              } else {
+                setCurrentOrg(enhancedOrgs[0]);
+              }
             }
           }
         } catch (error) {
@@ -233,14 +243,14 @@ const AppContent: React.FC = () => {
   // Command Palette Actions Definition
   const commandActions = [
     // Navigation
-    { id: 'nav-mail', label: 'Ir para E-mail', icon: Mail, section: 'Navegação', perform: () => navigate('/mail') },
-    { id: 'nav-chat', label: 'Ir para Chat', icon: MessageSquare, section: 'Navegação', perform: () => navigate('/chat') },
-    { id: 'nav-calendar', label: 'Ir para Agenda', icon: Calendar, section: 'Navegação', perform: () => navigate('/calendar') },
-    { id: 'nav-drive', label: 'Ir para Drive', icon: HardDrive, section: 'Navegação', perform: () => navigate('/drive') },
-    { id: 'nav-tasks', label: 'Ir para Tarefas', icon: CheckSquare, section: 'Navegação', perform: () => navigate('/tasks') },
-    { id: 'nav-people', label: 'Ir para Pessoas', icon: Users, section: 'Navegação', perform: () => navigate('/contacts') },
-    { id: 'nav-meet', label: 'Ir para Meet', icon: Video, section: 'Navegação', perform: () => navigate('/meet') },
-    { id: 'nav-dash', label: 'Ir para Painel', icon: LayoutDashboard, section: 'Navegação', perform: () => navigate('/dashboard') },
+    { id: 'nav-mail', label: 'Ir para E-mail', icon: Mail, section: 'Navegação', perform: () => navigate(`/mail?org=${currentOrg.id}`) },
+    { id: 'nav-chat', label: 'Ir para Chat', icon: MessageSquare, section: 'Navegação', perform: () => navigate(`/chat?org=${currentOrg.id}`) },
+    { id: 'nav-calendar', label: 'Ir para Agenda', icon: Calendar, section: 'Navegação', perform: () => navigate(`/calendar?org=${currentOrg.id}`) },
+    { id: 'nav-drive', label: 'Ir para Drive', icon: HardDrive, section: 'Navegação', perform: () => navigate(`/drive?org=${currentOrg.id}`) },
+    { id: 'nav-tasks', label: 'Ir para Tarefas', icon: CheckSquare, section: 'Navegação', perform: () => navigate(`/tasks?org=${currentOrg.id}`) },
+    { id: 'nav-people', label: 'Ir para Pessoas', icon: Users, section: 'Navegação', perform: () => navigate(`/contacts?org=${currentOrg.id}`) },
+    { id: 'nav-meet', label: 'Ir para Meet', icon: Video, section: 'Navegação', perform: () => navigate(`/meet?org=${currentOrg.id}`) },
+    { id: 'nav-dash', label: 'Ir para Painel', icon: LayoutDashboard, section: 'Navegação', perform: () => navigate(`/dashboard?org=${currentOrg.id}`) },
 
     // Organizations
     ...(userOrgs.length > 0 ? userOrgs : ORGANIZATIONS).map(org => ({
@@ -250,7 +260,7 @@ const AppContent: React.FC = () => {
       section: 'Workspaces',
       perform: () => {
         setCurrentOrg(org);
-        navigate('/dashboard');
+        navigate(`/dashboard?org=${org.id}`);
         addToast({
           type: 'success',
           title: `Workspace Alterado`,
@@ -299,6 +309,12 @@ const AppContent: React.FC = () => {
           currentOrg={currentOrg}
           onOrgChange={(org) => {
             setCurrentOrg(org);
+
+            // Update URL to persist on refresh
+            const params = new URLSearchParams(window.location.search);
+            params.set('org', org.id);
+            navigate({ search: params.toString() }, { replace: true });
+
             addToast({
               type: 'success',
               title: `Workspace Alterado`,
@@ -337,7 +353,7 @@ const AppContent: React.FC = () => {
           <Route path="/portal/*" element={<AsteryskoClientPortal theme={theme} onToggleTheme={toggleTheme} onExit={() => navigate('/')} />} />
 
           {/* Default Route */}
-          <Route path="/" element={<Navigate to="/dashboard?view=home" replace />} />
+          <Route path="/" element={<Navigate to={`/dashboard?view=home&org=${currentOrg.id}`} replace />} />
         </Routes>
       </div>
 
