@@ -162,7 +162,10 @@ const AsteryskoProcessesView: React.FC = () => {
                     dispatches: p.dispatches,
                     createdAt: p.createdAt,
                     proxyUrl: p.proxyUrl,
+                    proxySignStatus: p.proxySignStatus,
                     contractUrl: p.contractUrl,
+                    contractSignStatus: p.contractSignStatus,
+                    contractSignDate: p.contractSignDate,
                     logoUrl: p.brand?.logoUrl
                 }));
                 setProcesses(mapped);
@@ -243,7 +246,10 @@ const AsteryskoProcessesView: React.FC = () => {
                 dispatches: p.dispatches,
                 createdAt: p.createdAt,
                 proxyUrl: p.proxyUrl,
+                proxySignStatus: p.proxySignStatus,
                 contractUrl: p.contractUrl,
+                contractSignStatus: p.contractSignStatus,
+                contractSignDate: p.contractSignDate,
                 logoUrl: p.brand?.logoUrl
             }));
             setProcesses(mapped);
@@ -321,9 +327,9 @@ const AsteryskoProcessesView: React.FC = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             alert('Enviado com sucesso!');
-            setSelectedProcess((prev: any) => prev ? { ...prev, proxyUrl: res.data.proxyUrl } : null);
+            setSelectedProcess((prev: any) => prev ? { ...prev, proxyUrl: res.data.proxyUrl, proxySignStatus: 'SIGNED' } : null);
             // Also update main list silently
-            setProcesses((prev: any[]) => prev.map((p: any) => p.id === processId ? { ...p, proxyUrl: res.data.proxyUrl } : p));
+            setProcesses((prev: any[]) => prev.map((p: any) => p.id === processId ? { ...p, proxyUrl: res.data.proxyUrl, proxySignStatus: 'SIGNED' } : p));
         } catch (error) {
             console.error('Proxy upload error', error);
             alert('Erro no envio da Procuração.');
