@@ -92,21 +92,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
                                         value={apiUrl}
                                         onChange={(e) => setApiUrl(e.target.value)}
                                         className="w-full pl-9 pr-4 py-2 bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-indigo-400 dark:focus:border-indigo-500 text-docka-900 dark:text-zinc-100 transition-colors"
-                                        placeholder="https://sua-api.railway.app/api"
+                                        placeholder="Deixe vazio para usar o Proxy (Recomendado)"
                                     />
                                 </div>
                                 <button
                                     onClick={testConnection}
-                                    disabled={isTestLoading || !apiUrl}
+                                    disabled={isTestLoading}
                                     className="px-4 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-medium text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-700 disabled:opacity-50 transition-colors flex items-center gap-2"
                                 >
                                     {isTestLoading ? <RotateCw size={14} className="animate-spin" /> : 'Testar'}
                                 </button>
                             </div>
+                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-2 italic">
+                                **Recomendação:** Deixe este campo vazio para usar o proxy do backend da Docka. Isso resolve problemas de CORS e URLs desatualizadas.
+                            </p>
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Token de Acesso (Bearer)</label>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Token de Acesso Admin (Bearer)</label>
                             <div className="relative">
                                 <ShieldCheck size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" />
                                 <input
@@ -114,11 +117,11 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
                                     value={apiToken}
                                     onChange={(e) => setApiToken(e.target.value)}
                                     className="w-full pl-9 pr-4 py-2 bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-indigo-400 dark:focus:border-indigo-500 text-docka-900 dark:text-zinc-100 transition-colors"
-                                    placeholder="Cole aqui seu token JWT se necessário"
+                                    placeholder="Cole aqui seu token JWT de longa duração"
                                 />
                             </div>
                             <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-2 italic">
-                                Útil para acessar dados protegidos (Usuários, Vendas, etc) se o token do Docka não for válido no Fauves.
+                                Este token é obrigatório para acessar dados protegidos (Usuários, Vendas, etc).
                             </p>
                         </div>
 
