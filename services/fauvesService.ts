@@ -5,18 +5,24 @@ const getBaseURL = () => {
         const savedUrl = localStorage.getItem('FAUVES_DYNAMIC_API_URL');
         if (savedUrl) {
             let url = savedUrl.trim();
-            // Remove trailing slash temporarily to check for /api
-            if (url.endsWith('/')) url = url.slice(0, -1);
 
-            // If it doesn't end with /api, append it
-            if (!url.toLowerCase().endsWith('/api')) {
-                url += '/api';
+            // Check if the saved URL is the old, broken domain
+            if (url.includes('fauves-api-production.up.railway.app')) {
+                console.warn(`[FauvesAPI] Ignoring stale domain in localStorage: ${url}. Switching to Proxy.`);
+            } else {
+                // Remove trailing slash temporarily to check for /api
+                if (url.endsWith('/')) url = url.slice(0, -1);
+
+                // If it doesn't end with /api, append it
+                if (!url.toLowerCase().endsWith('/api')) {
+                    url += '/api';
+                }
+
+                // Always return with trailing slash for Axios consistency
+                const finalUrl = `${url}/`;
+                console.log(`[FauvesAPI] Base URL configured from localStorage: ${finalUrl}`);
+                return finalUrl;
             }
-
-            // Always return with trailing slash for Axios consistency
-            const finalUrl = `${url}/`;
-            console.log(`[FauvesAPI] Base URL configured from localStorage: ${finalUrl}`);
-            return finalUrl;
         }
     }
 

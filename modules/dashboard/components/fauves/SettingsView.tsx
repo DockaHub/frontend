@@ -23,8 +23,18 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
     }, []);
 
     const handleSave = () => {
-        localStorage.setItem('FAUVES_DYNAMIC_API_URL', apiUrl);
-        localStorage.setItem('FAUVES_DYNAMIC_API_TOKEN', apiToken);
+        if (apiUrl.trim()) {
+            localStorage.setItem('FAUVES_DYNAMIC_API_URL', apiUrl.trim());
+        } else {
+            localStorage.removeItem('FAUVES_DYNAMIC_API_URL');
+        }
+
+        if (apiToken.trim()) {
+            localStorage.setItem('FAUVES_DYNAMIC_API_TOKEN', apiToken.trim());
+        } else {
+            localStorage.removeItem('FAUVES_DYNAMIC_API_TOKEN');
+        }
+
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 3000);
         // Reload to apply changes across components
