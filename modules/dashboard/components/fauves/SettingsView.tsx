@@ -16,9 +16,14 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
     const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
-        const savedUrl = localStorage.getItem('FAUVES_DYNAMIC_API_URL') || import.meta.env.VITE_FAUVES_API_URL || '';
+        const savedUrl = localStorage.getItem('FAUVES_DYNAMIC_API_URL');
+        const envUrl = import.meta.env.VITE_FAUVES_API_URL || '';
+
+        // Only use the Vite ENV URL if there's nothing in localStorage AND it's not the stale one
+        const initialUrl = savedUrl || (envUrl.includes('fauves-api-production') ? '' : envUrl);
+
         const savedToken = localStorage.getItem('FAUVES_DYNAMIC_API_TOKEN') || '';
-        setApiUrl(savedUrl);
+        setApiUrl(initialUrl);
         setApiToken(savedToken);
     }, []);
 
