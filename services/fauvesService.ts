@@ -19,10 +19,13 @@ const getBaseURL = () => {
             return finalUrl;
         }
     }
-    const defaultUrl = import.meta.env.VITE_FAUVES_API_URL || import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
-    const finalDefault = defaultUrl.endsWith('/') ? defaultUrl : `${defaultUrl}/`;
-    console.log(`[FauvesAPI] Using default Base URL: ${finalDefault}`);
-    return finalDefault;
+
+    // Proxy approach: use our own backend to bypass CORS and env propagation issues
+    const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
+    const proxyUrl = apiBase.endsWith('/') ? `${apiBase}fauves-proxy/` : `${apiBase}/fauves-proxy/`;
+
+    console.log(`[FauvesAPI] Using Backend Proxy as Base URL: ${proxyUrl}`);
+    return proxyUrl;
 };
 
 const fauvesApi = axios.create({
