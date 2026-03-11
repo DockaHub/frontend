@@ -29,6 +29,7 @@ export interface Organization {
   iconBg?: string;
   iconScale?: number;
   clientPortalDomain?: string;
+  leadsAguardando?: number;
 }
 
 export type EmailLabel = 'Important' | 'Social' | 'Updates' | 'Work' | 'System' | 'Personal';

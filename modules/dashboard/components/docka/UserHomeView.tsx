@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Clock, Calendar as CalendarIcon, ArrowRight, Building2, Plus, Search } from 'lucide-react';
+import { CheckSquare, Clock, Calendar as CalendarIcon, ArrowRight, Building2, Plus, Search, Users } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
 import { Organization } from '../../../../types';
 import { api } from '../../../../services/api';
@@ -92,22 +92,40 @@ const UserHomeView: React.FC = () => {
                                         </div>
 
                                         <div className="flex items-center gap-4 mb-4">
-                                            <div className={`w-12 h-12 rounded-lg ${org.logoColor || 'bg-docka-500'} flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0`}>
-                                                {org.name.substring(0, 1)}
+                                            <div
+                                                className={`w-12 h-12 rounded-lg ${!org.svgIcon ? (org.logoColor || 'bg-docka-500') : ''} flex items-center justify-center text-white font-bold text-lg shadow-sm shrink-0 overflow-hidden`}
+                                                style={org.svgIcon ? { backgroundColor: org.iconBg || '#2563EB', color: org.iconColor || '#ffffff' } : {}}
+                                            >
+                                                {org.svgIcon ? (
+                                                    <div
+                                                        className="w-full h-full p-2.5 [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current [&>svg]:block"
+                                                        style={{ transform: `scale(${org.iconScale || 1})` }}
+                                                        dangerouslySetInnerHTML={{
+                                                            __html: org.svgIcon
+                                                                .replace(/<svg([^>]*?)\s+(width|height)=["'][^"']*["']/gi, '<svg$1')
+                                                                .replace(/<svg([^>]*?)\s+(width|height)=["'][^"']*["']/gi, '<svg$1')
+                                                                .trim()
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    org.name.substring(0, 1)
+                                                )}
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-docka-900 dark:text-zinc-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{org.name}</h3>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-400">{org.type}</p>
                                             </div>
                                         </div>
 
                                         <div className="flex items-center gap-4 text-xs text-docka-500 dark:text-zinc-500">
-                                            <div className="flex items-center gap-1.5 bg-docka-50 dark:bg-zinc-800 px-2 py-1 rounded">
-                                                <CheckSquare size={12} /> <span>{org.features ? (org as any)._count?.tasks || 0 : 0} Tarefas</span>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 bg-docka-50 dark:bg-zinc-800 px-2 py-1 rounded">
-                                                <Clock size={12} /> <span>Ativo</span>
-                                            </div>
+                                            {org.slug === 'asterysko' ? (
+                                                <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2.5 py-1.5 rounded-lg font-bold border border-blue-100 dark:border-blue-800/50">
+                                                    <Users size={12} /> <span>{org.leadsAguardando || 0} Leads aguardando</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 bg-docka-50 dark:bg-zinc-800 px-2 py-1 rounded">
+                                                    <CheckSquare size={12} /> <span>{org.features ? (org as any)._count?.tasks || 0 : 0} Tarefas</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
