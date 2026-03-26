@@ -165,7 +165,7 @@ export const fauvesService = {
         const typeMap: Record<string, string> = {
             users: 'admin/users',
             artists: 'admin/artists',
-            categories: 'categories',
+            categories: 'admin/categories',
             ads: 'admin/announcements',
             slides: 'admin/slides'
         };
