@@ -6,16 +6,21 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
+    base: mode === 'production' ? './' : '/',
     server: {
       port: 3000,
       host: '0.0.0.0',
     },
     plugins: [
       react(),
-      // nodePolyfills({
-      //   // Whether to polyfill `node:` protocol imports.
-      //   protocolImports: true,
-      // }),
+      nodePolyfills({
+        globals: {
+          Buffer: true,
+          global: true,
+          process: true,
+        },
+        protocolImports: true,
+      }),
     ],
     define: {
       'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),

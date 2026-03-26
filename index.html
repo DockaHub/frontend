@@ -1,74 +1,93 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light">
-    <title>Docka Workspace</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        darkMode: 'class',
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-            },
-            colors: {
-              docka: {
-                50: '#f8f9fa',
-                100: '#f1f3f5',
-                200: '#e9ecef',
-                300: '#dee2e6',
-                400: '#ced4da',
-                500: '#adb5bd',
-                600: '#868e96',
-                700: '#495057',
-                800: '#343a40',
-                900: '#212529',
-                accent: '#0f172a', // Slate 900
-              }
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light">
+  <title>Docka Workspace</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            docka: {
+              50: '#f8f9fa',
+              100: '#f1f3f5',
+              200: '#e9ecef',
+              300: '#dee2e6',
+              400: '#ced4da',
+              500: '#adb5bd',
+              600: '#868e96',
+              700: '#495057',
+              800: '#343a40',
+              900: '#212529',
+              accent: '#0f172a', // Slate 900
             }
           }
         }
       }
-    </script>
-    <style>
-      body {
-        font-family: 'Inter', sans-serif;
-        -webkit-font-smoothing: antialiased;
-      }
-      /* Custom scrollbar for ultra-minimalist look */
-      ::-webkit-scrollbar {
-        width: 6px;
-      }
-      ::-webkit-scrollbar-track {
-        background: transparent;
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #e2e8f0;
-        border-radius: 3px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #cbd5e1;
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.4/",
-    "react": "https://esm.sh/react@^19.2.4",
-    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Drag area for frameless window */
+    .app-drag-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 32px;
+      -webkit-app-region: drag;
+      z-index: 9999;
+      pointer-events: none;
+      /* Allows clicks to pass through by default */
+    }
+
+    /* Interactive elements should not be draggable */
+    button,
+    a,
+    input,
+    [role="button"] {
+      -webkit-app-region: no-drag;
+      pointer-events: auto;
+    }
+
+    /* Custom scrollbar for ultra-minimalist look */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #e2e8f0;
+      border-radius: 3px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #cbd5e1;
+    }
+  </style>
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body>
-    <div id="root"></div>
+
+<body>
+  <div class="app-drag-bar"></div>
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

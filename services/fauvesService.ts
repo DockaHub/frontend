@@ -456,6 +456,18 @@ export const fauvesService = {
         }
     },
 
+    updateEvent: async (id: string, eventData: any) => {
+        const endpoint = `event/${id}`;
+        console.log(`[FauvesAPI] Updating event ${id} at: ${endpoint}`);
+        try {
+            const response = await fauvesApi.put(endpoint, eventData);
+            return response.data;
+        } catch (error: any) {
+            console.error('[FauvesAPI] Error updating event:', error.response?.status);
+            throw error;
+        }
+    },
+
     getOrganizations: async (page = 1, limit = 20) => {
         const endpoints = ['admin/organizers', 'admin/organizations'];
         let lastError: any = null;
@@ -543,6 +555,31 @@ export const fauvesService = {
                 totalTickets: 51,
                 totalOrders: 12
             };
+        }
+    },
+
+    // Event Importer Methods
+    importEventExtract: async (url: string) => {
+        const endpoint = `admin/event-importer/extract?url=${encodeURIComponent(url)}`;
+        console.log(`[FauvesAPI] Extracting event from: ${endpoint}`);
+        try {
+            const response = await fauvesApi.get(endpoint);
+            return response.data;
+        } catch (error: any) {
+            console.error('[FauvesAPI] Error extracting event:', error.response?.status);
+            throw error;
+        }
+    },
+
+    importEventSave: async (eventData: any) => {
+        const endpoint = 'admin/event-importer/save';
+        console.log(`[FauvesAPI] Saving imported event to: ${endpoint}`);
+        try {
+            const response = await fauvesApi.post(endpoint, eventData);
+            return response.data;
+        } catch (error: any) {
+            console.error('[FauvesAPI] Error saving imported event:', error.response?.status);
+            throw error;
         }
     }
 };
