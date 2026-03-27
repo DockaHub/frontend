@@ -11,8 +11,9 @@ interface SettingsViewProps {
 const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
     const [apiUrl, setApiUrl] = useState('');
     const [apiToken, setApiToken] = useState('');
+    const [dockaApiKey, setDockaApiKey] = useState('');
     const [isTestLoading, setIsTestLoading] = useState(false);
-    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string; type?: 'standard' | 'docka' } | null>(null);
     const [isSaved, setIsSaved] = useState(false);
 
     useEffect(() => {
@@ -23,8 +24,10 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
         const initialUrl = savedUrl || (envUrl.includes('fauves-api-production') ? '' : envUrl);
 
         const savedToken = localStorage.getItem('FAUVES_DYNAMIC_API_TOKEN') || '';
+        const savedDockaKey = localStorage.getItem('FAUVES_DOCKA_API_KEY') || '';
         setApiUrl(initialUrl);
         setApiToken(savedToken);
+        setDockaApiKey(savedDockaKey);
     }, []);
 
     const handleSave = () => {
@@ -38,6 +41,12 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
             localStorage.setItem('FAUVES_DYNAMIC_API_TOKEN', apiToken.trim());
         } else {
             localStorage.removeItem('FAUVES_DYNAMIC_API_TOKEN');
+        }
+
+        if (dockaApiKey.trim()) {
+            localStorage.setItem('FAUVES_DOCKA_API_KEY', dockaApiKey.trim());
+        } else {
+            localStorage.removeItem('FAUVES_DOCKA_API_KEY');
         }
 
         setIsSaved(true);
@@ -54,13 +63,26 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
             if (processedApiUrl.endsWith('/')) processedApiUrl = processedApiUrl.slice(0, -1);
             if (!processedApiUrl.toLowerCase().endsWith('/api')) processedApiUrl += '/api';
 
+            // Priority 1: Test the new Docka Integration API
+            if (dockaApiKey.trim()) {
+                const response = await fetch(`${processedApiUrl}/docka/users`, {
+                    headers: { 'x-docka-key': dockaApiKey.trim() }
+                });
+                if (response.ok) {
+                    setTestResult({ success: true, message: 'Conexão via Docka Integration estabelecida!', type: 'docka' });
+                    setIsTestLoading(false);
+                    return;
+                }
+            }
+
+            // Priority 2: Standard API test
             const response = await fetch(`${processedApiUrl}/events`, {
                 headers: {
                     'Authorization': `Bearer ${apiToken || localStorage.getItem('token')}`
                 }
             });
             if (response.ok) {
-                setTestResult({ success: true, message: 'Conexão estabelecida com sucesso!' });
+                setTestResult({ success: true, message: 'Conexão padrão estabelecida com sucesso!', type: 'standard' });
             } else {
                 setTestResult({ success: false, message: `Erro na API: ${response.status} ${response.statusText}` });
             }
@@ -124,7 +146,24 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Token de Acesso Admin (Bearer)</label>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Docka Integration Key (Recomendado)</label>
+                            <div className="relative">
+                                <ShieldCheck size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 dark:text-indigo-500" />
+                                <input
+                                    type="password"
+                                    value={dockaApiKey}
+                                    onChange={(e) => setDockaApiKey(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-indigo-50/30 dark:bg-indigo-900/10 border border-indigo-100 dark:border-indigo-900/20 rounded-lg text-sm outline-none focus:border-indigo-400 dark:focus:border-indigo-500 text-docka-900 dark:text-zinc-100 transition-colors"
+                                    placeholder="Insira a Chave Secreta de Integração Docka"
+                                />
+                            </div>
+                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-2 italic">
+                                Esta chave substitui o Token JWT e oferece uma conexão mais estável e permanente.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Token de Acesso Usuário (Legacy Bearer)</label>
                             <div className="relative">
                                 <ShieldCheck size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" />
                                 <input
@@ -132,12 +171,9 @@ const SettingsView: React.FC<SettingsViewProps> = ({ organization }) => {
                                     value={apiToken}
                                     onChange={(e) => setApiToken(e.target.value)}
                                     className="w-full pl-9 pr-4 py-2 bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-indigo-400 dark:focus:border-indigo-500 text-docka-900 dark:text-zinc-100 transition-colors"
-                                    placeholder="Cole aqui seu token JWT de longa duração"
+                                    placeholder="Token JWT (opcional se usar a chave acima)"
                                 />
                             </div>
-                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-2 italic">
-                                Este token é obrigatório para acessar dados protegidos (Usuários, Vendas, etc).
-                            </p>
                         </div>
 
                         {testResult && (
