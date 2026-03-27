@@ -177,7 +177,14 @@ export const fauvesService = {
         const typeMap: Record<string, string[]> = {
             users: ['admin/users', 'admin/user'],
             artists: ['admin/artists', 'admin/artist'],
-            categories: ['admin/categories', 'admin/category'],
+            categories: [
+                'admin/categories', 
+                'admin/category', 
+                'categories', 
+                'category', 
+                'event-categories',
+                'admin/event-categories'
+            ],
             ads: ['admin/announcements', 'admin/ads', 'admin/announcement'],
             slides: ['admin/slides', 'admin/slide']
         };
@@ -207,8 +214,8 @@ export const fauvesService = {
                     total = rawData.total || rawItems.length;
                 }
                 else if (type === 'categories') {
-                    rawItems = Array.isArray(rawData) ? rawData : (rawData.categories || rawData.items || []);
-                    total = rawData.total || rawItems.length;
+                    rawItems = Array.isArray(rawData) ? rawData : (rawData.categories || rawData.items || rawData.data || []);
+                    total = rawData.total || (rawData.meta?.total) || rawItems.length;
                 }
                 else if (type === 'artists') {
                     rawItems = Array.isArray(rawData) ? rawData : (rawData.artists || rawData.items || []);
@@ -285,9 +292,16 @@ export const fauvesService = {
             } catch (error: any) {
                 lastError = error;
                 console.warn(`[FauvesAPI] Endpoint failed: ${baseEndpoint} (Status: ${error.response?.status})`);
-                // If not a 404, we might want to stop trying other variations for this type,
-                // but for now let's try all variations.
-                if (error.response?.status === 401) break; // Don't retry if unauthorized
+                
+                if (error.response?.status === 404) {
+                    console.log(`[FauvesAPI] 404 detected for ${baseEndpoint}, moving to next fallback...`);
+                    continue; // Definitely try next
+                }
+
+                if (error.response?.status === 401) {
+                    console.error(`[FauvesAPI] 401 Unauthorized for ${baseEndpoint}. Your token might not have permissions for this specific route.`);
+                    // We continue to try others because some might be public (like for categories)
+                }
             }
         }
 
