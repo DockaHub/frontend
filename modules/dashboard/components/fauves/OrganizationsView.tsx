@@ -56,8 +56,19 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
         } catch (err: any) {
             console.error("Failed to fetch organizations", err);
             const status = err.response?.status;
-            const message = err.response?.data?.message || err.message;
-            setError(`Erro ${status || ''} ao carregar organizações: ${message}. Verifique o console para mais detalhes ou se o token é de administrador.`);
+            let msg = 'Erro ao carregar organizações.';
+            
+            if (status === 401) {
+                msg = '(401: Não autorizado). Certifique-se de que o Token da Fauves (em Configurações) é de um administrador válido.';
+            } else if (status === 404) {
+                msg = '(404: Não encontrado). Os endpoints de organizadores/organizações não foram encontrados na API da Fauves.';
+            } else if (status) {
+                msg = `(Erro ${status}) ao carregar: ${err.response?.data?.message || err.message}`;
+            } else {
+                msg = `Erro: ${err.message}`;
+            }
+            
+            setError(msg);
         } finally {
             setLoading(false);
         }

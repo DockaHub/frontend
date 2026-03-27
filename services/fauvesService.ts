@@ -76,10 +76,10 @@ export const fauvesService = {
                 status: ev.status || (ev.isPublished ? 'published' : 'draft'),
                 image: ev.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
                 stats: ev.stats || {
-                    views: Math.floor(Math.random() * 1000),
-                    clicks: Math.floor(Math.random() * 500),
-                    orders: Math.floor(Math.random() * 100),
-                    sales: Math.floor(Math.random() * 50)
+                    views: 0,
+                    clicks: 0,
+                    orders: 0,
+                    sales: 0
                 }
             }));
 
@@ -133,6 +133,18 @@ export const fauvesService = {
         }
     },
 
+    getEventMetrics: async (id: string) => {
+        const endpoint = `event-metrics/${id}`;
+        console.log(`[FauvesAPI] Fetching event metrics from: ${endpoint}`);
+        try {
+            const response = await fauvesApi.get(endpoint);
+            return response.data;
+        } catch (error: any) {
+            console.error('[FauvesAPI] Error fetching event metrics:', error.response?.status);
+            throw error;
+        }
+    },
+
     getStats: async () => {
         const endpoint = 'admin/metrics';
         const fullUrl = `${fauvesApi.defaults.baseURL}${endpoint}`;
@@ -162,116 +174,125 @@ export const fauvesService = {
     },
 
     getManagementData: async (type: string, page = 1, limit = 20) => {
-        const typeMap: Record<string, string> = {
-            users: 'admin/users',
-            artists: 'admin/artists',
-            categories: 'admin/categories',
-            ads: 'admin/announcements',
-            slides: 'admin/slides'
+        const typeMap: Record<string, string[]> = {
+            users: ['admin/users', 'admin/user'],
+            artists: ['admin/artists', 'admin/artist'],
+            categories: ['admin/categories', 'admin/category'],
+            ads: ['admin/announcements', 'admin/ads', 'admin/announcement'],
+            slides: ['admin/slides', 'admin/slide']
         };
 
-        const endpoint = typeMap[type] || `admin/${type}`;
-        // Append query params
-        const separator = endpoint.includes('?') ? '&' : '?';
-        const fullEndpoint = `${endpoint}${separator}page=${page}&perPage=${limit}`;
+        const endpoints = typeMap[type] || [`admin/${type}`];
+        let lastError: any = null;
 
-        const fullUrl = `${fauvesApi.defaults.baseURL}${fullEndpoint}`;
-        console.log(`[FauvesAPI] Fetching ${type} from: ${fullUrl}`);
+        for (const baseEndpoint of endpoints) {
+            // Append query params
+            const separator = baseEndpoint.includes('?') ? '&' : '?';
+            const fullEndpoint = `${baseEndpoint}${separator}page=${page}&perPage=${limit}`;
+            const fullUrl = `${fauvesApi.defaults.baseURL}${fullEndpoint}`;
 
-        try {
-            const response = await fauvesApi.get(fullEndpoint);
-            console.log(`[FauvesAPI] ${type} response status:`, response.status);
+            console.log(`[FauvesAPI] Attempting to fetch ${type} from: ${fullUrl}`);
 
-            const rawData = response.data;
-            let rawItems: any[] = [];
-            let total = 0;
+            try {
+                const response = await fauvesApi.get(fullEndpoint);
+                console.log(`[FauvesAPI] ${type} success with endpoint: ${baseEndpoint} (Status: ${response.status})`);
 
-            // Handle different response structures
-            if (type === 'users') {
-                rawItems = rawData.users || rawData || [];
-                total = rawData.total || rawItems.length;
-            }
-            else if (type === 'categories') {
-                rawItems = Array.isArray(rawData) ? rawData : (rawData.categories || []);
-                total = rawData.total || rawItems.length;
-            }
-            else if (type === 'artists') {
-                rawItems = Array.isArray(rawData) ? rawData : (rawData.artists || []);
-                total = rawData.total || rawItems.length;
-            }
-            else if (type === 'ads' || type === 'slides') {
-                rawItems = Array.isArray(rawData) ? rawData : (rawData.items || rawData.slides || rawData.announcements || []);
-                total = rawData.total || rawItems.length;
-            }
-            else {
-                rawItems = Array.isArray(rawData) ? rawData : (rawData.items || [rawData]);
-                total = rawData.total || rawItems.length;
-            }
+                const rawData = response.data;
+                let rawItems: any[] = [];
+                let total = 0;
 
-            console.log(`[FauvesAPI] ${type} loaded ${rawItems.length} items (Total: ${total})`);
-
-            // Map items to generic col1..colX format for ManagementView.tsx
-            const items = (rawItems || []).map((item: any) => {
-                if (!item) return {};
-
+                // Handle different response structures
                 if (type === 'users') {
+                    rawItems = rawData.users || rawData.items || (Array.isArray(rawData) ? rawData : []);
+                    total = rawData.total || rawItems.length;
+                }
+                else if (type === 'categories') {
+                    rawItems = Array.isArray(rawData) ? rawData : (rawData.categories || rawData.items || []);
+                    total = rawData.total || rawItems.length;
+                }
+                else if (type === 'artists') {
+                    rawItems = Array.isArray(rawData) ? rawData : (rawData.artists || rawData.items || []);
+                    total = rawData.total || rawItems.length;
+                }
+                else if (type === 'ads' || type === 'slides') {
+                    rawItems = Array.isArray(rawData) ? rawData : (rawData.items || rawData.slides || rawData.announcements || []);
+                    total = rawData.total || rawItems.length;
+                }
+                else {
+                    rawItems = Array.isArray(rawData) ? rawData : (rawData.items || [rawData]);
+                    total = rawData.total || rawItems.length;
+                }
+
+                console.log(`[FauvesAPI] ${type} loaded ${rawItems.length} items (Total: ${total})`);
+
+                // Map items to generic col1..colX format for ManagementView.tsx
+                const items = (rawItems || []).map((item: any) => {
+                    if (!item) return {};
+
+                    if (type === 'users') {
+                        return {
+                            ...item,
+                            col1: item.name || item.fullName || 'Sem nome',
+                            sub1: item.email || '-',
+                            col2: item.email || '-',
+                            col3: item.isAdmin ? 'Admin' : (item.role || 'Usuário'),
+                            col4: item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : '-',
+                            badge: item.isAdmin ? 'purple' : 'gray'
+                        };
+                    }
+                    if (type === 'categories') {
+                        return {
+                            ...item,
+                            col1: item.name || item.title || 'Sem nome',
+                            col2: item.slug || '-',
+                            col3: item.sortOrder !== undefined ? String(item.sortOrder) : '0',
+                            col4: item.isActive ? 'Ativo' : 'Inativo',
+                            badge: item.isActive ? 'purple' : 'gray'
+                        };
+                    }
+                    if (type === 'artists') {
+                        return {
+                            ...item,
+                            img: item.photoUrl || item.image || 'https://via.placeholder.com/150',
+                            col1: item.name || 'Sem nome',
+                            col2: String(item._count?.events || item.eventCount || 0),
+                            col3: item.spotifyUrl || '', 
+                            col4: item.isVerified ? 'Sim' : 'Não',
+                            col5: 'Verificar Artista',
+                            isVerified: !!item.isVerified,
+                            hasSpotify: !!item.spotifyUrl
+                        };
+                    }
+                    if (type === 'ads' || type === 'slides') {
+                        return {
+                            ...item,
+                            col1: item.title || item.name || 'Sem título',
+                            col2: item.category || item.targetUf || item.target || '-',
+                            col3: item.linkType || item.type || '-',
+                            col4: item.isActive !== false ? 'Ativo' : 'Inativo',
+                            badge: item.isActive !== false ? 'purple' : 'gray'
+                        };
+                    }
                     return {
                         ...item,
-                        col1: item.name || item.fullName || 'Sem nome',
-                        sub1: item.email || '-',
-                        col2: item.email || '-',
-                        col3: item.isAdmin ? 'Admin' : (item.role || 'Usuário'),
-                        col4: item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : '-',
-                        badge: item.isAdmin ? 'purple' : 'gray'
+                        col1: item.name || item.title || '-',
+                        col2: item.slug || item.email || '-',
+                        col3: item.status || item.role || '-',
+                        col4: item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : '-'
                     };
-                }
-                if (type === 'categories') {
-                    return {
-                        ...item,
-                        col1: item.name || item.title || 'Sem nome',
-                        col2: item.slug || '-',
-                        col3: item.sortOrder !== undefined ? String(item.sortOrder) : '0',
-                        col4: item.isActive ? 'Ativo' : 'Inativo',
-                        badge: item.isActive ? 'purple' : 'gray'
-                    };
-                }
-                if (type === 'artists') {
-                    return {
-                        ...item,
-                        img: item.photoUrl || item.image || 'https://via.placeholder.com/150',
-                        col1: item.name || 'Sem nome',
-                        col2: String(item._count?.events || item.eventCount || 0),
-                        col3: item.spotifyUrl || '', // URL string
-                        col4: item.isVerified ? 'Sim' : 'Não',
-                        col5: 'Verificar Artista',
-                        isVerified: !!item.isVerified,
-                        hasSpotify: !!item.spotifyUrl
-                    };
-                }
-                if (type === 'ads' || type === 'slides') {
-                    return {
-                        ...item,
-                        col1: item.title || item.name || 'Sem título',
-                        col2: item.category || item.targetUf || item.target || '-',
-                        col3: item.linkType || item.type || '-',
-                        col4: item.isActive !== false ? 'Ativo' : 'Inativo',
-                        badge: item.isActive !== false ? 'purple' : 'gray'
-                    };
-                }
-                // Fallback mapping
-                return {
-                    ...item,
-                    col1: item.name || item.title || '-',
-                    col2: item.slug || item.email || '-',
-                    col3: item.status || item.role || '-',
-                    col4: item.createdAt ? new Date(item.createdAt).toLocaleDateString('pt-BR') : '-'
-                };
-            });
-            return { items, total };
-        } catch (error: any) {
-            console.error(`[FauvesAPI] Error fetching ${type} from ${fullUrl}:`, error.response?.status, error.message);
-            throw error;
+                });
+                return { items, total };
+            } catch (error: any) {
+                lastError = error;
+                console.warn(`[FauvesAPI] Endpoint failed: ${baseEndpoint} (Status: ${error.response?.status})`);
+                // If not a 404, we might want to stop trying other variations for this type,
+                // but for now let's try all variations.
+                if (error.response?.status === 401) break; // Don't retry if unauthorized
+            }
         }
+
+        console.error(`[FauvesAPI] All endpoints failed for ${type}. Last error:`, lastError?.response?.status);
+        throw lastError;
     },
 
     getOrders: async (page = 1, limit = 20) => {

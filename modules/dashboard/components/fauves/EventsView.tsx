@@ -77,6 +77,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
     // Detail View State
     const [summary, setSummary] = useState<any>(null);
     const [fullEvent, setFullEvent] = useState<any>(null);
+    const [metrics, setMetrics] = useState<any>(null);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
 
     // Fetch details when selectedEvent changes
@@ -85,12 +86,14 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
             if (selectedEvent?.id) {
                 setIsDetailLoading(true);
                 try {
-                    const [evt, sum] = await Promise.all([
+                    const [evt, sum, met] = await Promise.all([
                         fauvesService.getEvent(selectedEvent.id),
-                        fauvesService.getEventSummary(selectedEvent.id)
+                        fauvesService.getEventSummary(selectedEvent.id),
+                        fauvesService.getEventMetrics(selectedEvent.id)
                     ]);
                     setFullEvent(evt);
                     setSummary(sum);
+                    setMetrics(met);
                 } catch (e) {
                     console.error("Error loading details:", e);
                 } finally {
@@ -200,7 +203,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                     <Eye size={20} />
                                 </div>
                             </div>
-                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{Math.floor(Math.random() * 2000) + 100}</h3>
+                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{metrics?.views || 0}</h3>
                             <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Visualizações</p>
                         </div>
 
@@ -210,7 +213,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                     <TrendingUp size={20} />
                                 </div>
                             </div>
-                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{Math.floor(Math.random() * 500) + 20}</h3>
+                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{metrics?.interests || 0}</h3>
                             <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Cliques em Ingressos</p>
                         </div>
 
@@ -244,10 +247,10 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                             </h2>
                             <div className="space-y-4">
                                 {[
-                                    { label: 'Visitaram a página do evento', val: Math.floor(Math.random() * 1000) + 500, drop: null },
-                                    { label: "Clicaram em 'Selecionar Ingressos'", val: Math.floor(Math.random() * 400) + 100, drop: '60%' },
-                                    { label: 'Iniciaram checkout', val: Math.floor(Math.random() * 100) + 50, drop: '70%' },
-                                    { label: 'Chegaram à revisão', val: Math.floor(Math.random() * 80) + 40, drop: '10%' },
+                                    { label: 'Visitaram a página do evento', val: metrics?.views || 0, drop: null },
+                                    { label: "Clicaram em 'Selecionar Ingressos'", val: metrics?.interests || 0, drop: metrics?.views > 0 ? `${Math.round((1 - (metrics.interests / metrics.views)) * 100)}%` : '0%' },
+                                    { label: 'Iniciaram checkout', val: (summary || {}).revenue > 0 ? ((summary || {}).ticketsSold + ((summary || {}).pendingPayments || 0)) : 0, drop: metrics?.interests > 0 ? `${Math.round((1 - (((summary || {}).ticketsSold + ((summary || {}).pendingPayments || 0)) / metrics.interests)) * 100)}%` : '0%' },
+                                    { label: 'Chegaram à revisão', val: (summary || {}).revenue > 0 ? ((summary || {}).ticketsSold + Math.floor(((summary || {}).pendingPayments || 0) * 0.5)) : 0, drop: '10%' },
                                     { label: 'Completaram pagamento', val: (summary || {}).ticketsSold || 0, drop: '20%' }
                                 ].map((step, i) => (
                                     <div key={i} className="flex items-center justify-between py-3 border-b border-docka-100 dark:border-zinc-800 last:border-0">

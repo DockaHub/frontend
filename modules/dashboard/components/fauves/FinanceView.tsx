@@ -53,9 +53,14 @@ const FinanceView: React.FC = () => {
             console.error('Failed to fetch orders:', err);
             const status = err.response?.status;
             let msg = 'Erro ao carregar transações da plataforma remota.';
-            if (status === 401) msg = '(401: Não autorizado - Token inválido)';
-            else if (status === 404) msg = '(404: Não encontrado)';
-            else if (status) msg = `(Erro ${status})`;
+            
+            if (status === 401) {
+                msg = '(401: Não autorizado). Verifique se o seu Token da Fauves está configurado e é de administrador nas configurações.';
+            } else if (status === 404) {
+                msg = '(404: Não encontrado). O endpoint de pedidos não foi localizado na API da Fauves.';
+            } else if (status) {
+                msg = `(Erro ${status}: ${err.message})`;
+            }
 
             setError(msg);
         } finally {
