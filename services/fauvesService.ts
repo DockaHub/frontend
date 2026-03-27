@@ -338,6 +338,42 @@ export const fauvesService = {
         } catch (error: any) {
             throw error;
         }
+    },
+
+    // Event Importer Methods
+    importEventExtract: async (url: string) => {
+        const endpoints = [
+            `docka/event-importer/extract?url=${encodeURIComponent(url)}`,
+            `admin/event-importer/extract?url=${encodeURIComponent(url)}`
+        ];
+        
+        for (const endpoint of endpoints) {
+            console.log(`[FauvesAPI] Extracting event from: ${endpoint}`);
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data;
+            } catch (error: any) {
+                console.warn(`[FauvesAPI] Extraction failed on: ${endpoint}`, error.response?.status);
+                if (error.response?.status === 404) continue;
+            }
+        }
+        throw new Error('Falha ao extrair dados do evento.');
+    },
+
+    importEventSave: async (eventData: any) => {
+        const endpoints = ['docka/event-importer/save', 'admin/event-importer/save'];
+        
+        for (const endpoint of endpoints) {
+            console.log(`[FauvesAPI] Saving imported event to: ${endpoint}`);
+            try {
+                const response = await fauvesApi.post(endpoint, eventData);
+                return response.data;
+            } catch (error: any) {
+                console.warn(`[FauvesAPI] Save failed on: ${endpoint}`, error.response?.status);
+                if (error.response?.status === 404) continue;
+            }
+        }
+        throw new Error('Falha ao salvar evento importado.');
     }
 };
 
