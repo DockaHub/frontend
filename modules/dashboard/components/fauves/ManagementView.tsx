@@ -20,6 +20,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
     const [categoryName, setCategoryName] = useState('');
     const [categorySlug, setCategorySlug] = useState('');
     const [categoryIcon, setCategoryIcon] = useState('Music');
+    const [categoryColor, setCategoryColor] = useState('indigo');
 
     // Slide form state
     const [slideTitle, setSlideTitle] = useState('');
@@ -201,37 +202,70 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 mb-3">Ícone</label>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 mb-2">Ícone</label>
 
-                            <div className="bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg p-4 mb-3">
+                            <div className="bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg p-3 mb-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
-                                        <SelectedIcon size={24} className="text-teal-600 dark:text-teal-400" />
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                        categoryColor === 'indigo' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
+                                        categoryColor === 'teal' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600' :
+                                        categoryColor === 'rose' ? 'bg-rose-100 dark:bg-rose-900/30 text-rose-600' :
+                                        categoryColor === 'amber' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' :
+                                        categoryColor === 'cyan' ? 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600' :
+                                        categoryColor === 'emerald' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600' :
+                                        categoryColor === 'zinc' ? 'bg-zinc-100 dark:bg-zinc-900/30 text-zinc-600' :
+                                        'bg-purple-100 dark:bg-purple-900/30 text-purple-600'
+                                    }`}>
+                                        <SelectedIcon size={20} />
                                     </div>
                                     <div>
-                                        <p className="text-xs font-bold text-docka-700 dark:text-zinc-400">Ícone selecionado:</p>
-                                        <p className="text-sm font-medium text-docka-900 dark:text-zinc-100">{categoryIcon}</p>
+                                        <p className="text-xs font-bold text-docka-700 dark:text-zinc-400">Prévia</p>
+                                        <p className="text-[10px] text-docka-400">{categoryIcon} / {categoryColor}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-6 gap-2">
+                            <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto pr-1">
                                 {iconOptions.map(({ name, icon: Icon }) => (
                                     <button
                                         key={name}
                                         type="button"
                                         onClick={() => setCategoryIcon(name)}
-                                        className={`aspect-square flex items-center justify-center rounded-lg border-2 transition-all hover:border-teal-400 dark:hover:border-teal-600 ${categoryIcon === name
-                                            ? 'border-teal-500 dark:border-teal-500 bg-teal-50 dark:bg-teal-900/30'
+                                        className={`aspect-square flex items-center justify-center rounded-lg border-2 transition-all ${categoryIcon === name
+                                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
                                             : 'border-docka-200 dark:border-zinc-700 bg-white dark:bg-zinc-900'
                                             }`}
                                     >
-                                        <Icon size={20} className={categoryIcon === name ? 'text-teal-600 dark:text-teal-400' : 'text-docka-400 dark:text-zinc-500'} />
+                                        <Icon size={18} className={categoryIcon === name ? 'text-teal-600' : 'text-docka-400'} />
                                     </button>
                                 ))}
                             </div>
+                        </div>
 
-                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-2">Clique em um ícone para selecioná-lo</p>
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 mb-2">Cor de Destaque</label>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { id: 'indigo', color: 'bg-indigo-500' },
+                                    { id: 'teal', color: 'bg-teal-500' },
+                                    { id: 'rose', color: 'bg-rose-500' },
+                                    { id: 'amber', color: 'bg-amber-500' },
+                                    { id: 'cyan', color: 'bg-cyan-500' },
+                                    { id: 'emerald', color: 'bg-emerald-500' },
+                                    { id: 'purple', color: 'bg-purple-500' },
+                                    { id: 'zinc', color: 'bg-zinc-500' },
+                                ].map(c => (
+                                    <button
+                                        key={c.id}
+                                        type="button"
+                                        onClick={() => setCategoryColor(c.id)}
+                                        className={`w-8 h-8 rounded-full border-2 transition-all ${categoryColor === c.id ? 'border-docka-900 scale-110 shadow-md' : 'border-transparent'}`}
+                                        title={c.id}
+                                    >
+                                        <div className={`w-full h-full rounded-full ${c.color}`} />
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 );
@@ -814,7 +848,19 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                                             </td>
                                             <td className="px-6 py-4 text-docka-500 dark:text-zinc-500 text-xs">{row.col4}</td>
                                             <td className="px-6 py-4 text-right">
-                                                <button className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline">Editar</button>
+                                                <button
+                                                    onClick={() => {
+                                                        setEditingItem(row);
+                                                        setCategoryName(row.col1);
+                                                        setCategorySlug(row.col2);
+                                                        setCategoryIcon(row.icon || 'Music');
+                                                        setCategoryColor(row.color || 'indigo');
+                                                        setIsModalOpen(true);
+                                                    }}
+                                                    className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                                                >
+                                                    Editar
+                                                </button>
                                             </td>
                                         </>
                                     )}
@@ -863,7 +909,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                 onClose={() => {
                     setIsModalOpen(false);
                     setEditingItem(null);
-                    setCategoryName(''); setCategorySlug(''); setCategoryIcon('Music');
+                    setCategoryName(''); setCategorySlug(''); setCategoryIcon('Music'); setCategoryColor('indigo');
                     setSlideTitle(''); setSlideImage(''); setSlideUF('Universal (todos)'); setSlideOrder('0');
                     setSlideLinkType('Sem link'); setSlideExternalUrl(''); setSlideSearchEvent('');
                     setIsSlideActive(true); setShowSlideTitle(false);
@@ -877,7 +923,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                             onClick={() => {
                                 setIsModalOpen(false);
                                 setEditingItem(null);
-                                setCategoryName(''); setCategorySlug(''); setCategoryIcon('Music');
+                                setCategoryName(''); setCategorySlug(''); setCategoryIcon('Music'); setCategoryColor('indigo');
                                 setSlideTitle(''); setSlideImage(''); setSlideUF('Universal (todos)'); setSlideOrder('0');
                                 setSlideLinkType('Sem link'); setSlideExternalUrl(''); setSlideSearchEvent('');
                                 setIsSlideActive(true); setShowSlideTitle(false);
@@ -898,7 +944,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                                     } else if (type === 'ads') {
                                         console.log('Saving announcement:', { title: adTitle });
                                     } else if (type === 'categories') {
-                                        const payload = { name: categoryName, slug: categorySlug, icon: categoryIcon };
+                                        const payload = { name: categoryName, slug: categorySlug, icon: categoryIcon, color: categoryColor };
                                         if (editingItem) {
                                             await fauvesService.updateCategory(editingItem.id, payload);
                                         } else {
