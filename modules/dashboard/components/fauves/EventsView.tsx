@@ -393,6 +393,10 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                                     {event.status}
                                                 </span>
                                             </div>
+                                            <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-md shadow-sm border border-white/20">
+                                                <TrendingUp size={10} className="text-orange-500" />
+                                                <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400">{event.stats?.interests || 0}</span>
+                                            </div>
                                         </div>
                                         <div className="p-4 flex-1 flex flex-col">
                                             <h3 className="font-bold text-docka-900 dark:text-zinc-100 mb-1 line-clamp-2">{event.title}</h3>
