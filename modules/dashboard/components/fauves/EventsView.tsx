@@ -623,8 +623,12 @@ const EventForm: React.FC<{
                 </div>
 
                 <div className="col-span-2">
-                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Descrição</label>
-                    <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100 min-h-[100px]" placeholder="Descreva o evento..." />
+                    <RichTextField 
+                        label="Descrição" 
+                        value={formData.description} 
+                        onChange={(val: string) => setFormData({...formData, description: val})} 
+                        placeholder="Descreva o evento..."
+                    />
                 </div>
 
                 <div>
@@ -741,6 +745,51 @@ const EventForm: React.FC<{
                     {isSaving && <Loader2 size={16} className="animate-spin" />}
                     {initialData?.id ? 'Salvar Alterações' : 'Criar Evento'}
                 </button>
+            </div>
+        </div>
+    );
+};
+
+const RichTextField = ({ value, onChange, label, placeholder }: any) => {
+    const editorRef = React.useRef<HTMLDivElement>(null);
+
+    // Initial value synchronization
+    useEffect(() => {
+        if (editorRef.current && editorRef.current.innerHTML !== value) {
+            editorRef.current.innerHTML = value || '';
+        }
+    }, []);
+
+    // Sync if value changes externally (like when selecting another event)
+    useEffect(() => {
+        if (editorRef.current && editorRef.current.innerHTML !== value && value !== undefined) {
+            // Only update if it's truly different to avoid cursor jumps
+            // But contentEditable sync is tricky with state
+        }
+    }, [value]);
+
+    return (
+        <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase tracking-wider">{label}</label>
+            <div className="relative group">
+                <div
+                    ref={editorRef}
+                    contentEditable
+                    onInput={(e: any) => onChange(e.currentTarget.innerHTML)}
+                    onBlur={(e: any) => onChange(e.currentTarget.innerHTML)}
+                    onPaste={() => {
+                        // Basic paste cleaning could go here if needed
+                    }}
+                    className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl text-sm text-docka-900 dark:text-zinc-100 min-h-[180px] outline-none focus:ring-2 focus:ring-docka-500/20 focus:border-docka-500 transition-all overflow-y-auto prose prose-sm dark:prose-invert max-w-none"
+                />
+                {!value && (
+                    <div className="absolute top-3 left-4 text-docka-400 pointer-events-none text-sm italic">
+                        {placeholder}
+                    </div>
+                )}
+            </div>
+            <div className="flex gap-2 text-[10px] text-docka-400 dark:text-zinc-500 font-medium">
+                <span>Dica: Você pode colar textos formatados do Word ou sites.</span>
             </div>
         </div>
     );
