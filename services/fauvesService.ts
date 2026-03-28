@@ -434,6 +434,21 @@ export const fauvesService = {
                 return [];
             }
         }
+    },
+
+    createCategory: async (data: any) => {
+        const response = await fauvesApi.post('docka/categories', data);
+        return response.data;
+    },
+
+    updateCategory: async (id: string, data: any) => {
+        const response = await fauvesApi.put(`docka/category/${id}`, data);
+        return response.data;
+    },
+
+    deleteCategory: async (id: string) => {
+        const response = await fauvesApi.delete(`docka/category/${id}`);
+        return response.data;
     }
 };
 

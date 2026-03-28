@@ -716,15 +716,26 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                                                                     <Pencil size={14} />
                                                                     Editar
                                                                 </button>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        console.log('Desativando', row);
+                                                                 <button
+                                                                    onClick={async () => {
+                                                                        if (window.confirm('Tem certeza que deseja excluir esta categoria?')) {
+                                                                            setIsLoading(true);
+                                                                            try {
+                                                                                await fauvesService.deleteCategory(row.id);
+                                                                                fetchData();
+                                                                            } catch (err) {
+                                                                                console.error('Failed to delete:', err);
+                                                                                alert('Erro ao excluir categoria.');
+                                                                            } finally {
+                                                                                setIsLoading(false);
+                                                                            }
+                                                                        }
                                                                         setOpenDropdownId(null);
                                                                     }}
                                                                     className="w-full px-4 py-2.5 text-left text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-2"
                                                                 >
-                                                                    <XCircle size={14} />
-                                                                    Desativar
+                                                                    <Trash2 size={14} />
+                                                                    Excluir
                                                                 </button>
                                                             </div>
                                                         </>
@@ -878,49 +889,35 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                             Cancelar
                         </button>
                         <button
-                            onClick={() => {
-                                if (type === 'slides') {
-                                    console.log('Saving slide:', {
-                                        title: slideTitle,
-                                        image: slideImage,
-                                        uf: slideUF,
-                                        order: slideOrder,
-                                        linkType: slideLinkType,
-                                        externalUrl: slideExternalUrl,
-                                        searchEvent: slideSearchEvent,
-                                        active: isSlideActive,
-                                        showTitle: showSlideTitle
-                                    });
-                                } else if (type === 'ads') {
-                                    console.log('Saving announcement:', {
-                                        title: adTitle,
-                                        desc: adDescription,
-                                        image: adImage,
-                                        cat: adCategory,
-                                        public: adPublic,
-                                        link: adLink,
-                                        linkText: adLinkText,
-                                        active: adIsActive,
-                                        order: adOrder,
-                                        start: adStartDate,
-                                        end: adEndDate
-                                    });
-                                } else {
-                                    console.log('Saving category:', { name: categoryName, slug: categorySlug, icon: categoryIcon });
+                            disabled={isLoading}
+                            onClick={async () => {
+                                setIsLoading(true);
+                                try {
+                                    if (type === 'slides') {
+                                        console.log('Saving slide:', { title: slideTitle, image: slideImage });
+                                    } else if (type === 'ads') {
+                                        console.log('Saving announcement:', { title: adTitle });
+                                    } else if (type === 'categories') {
+                                        const payload = { name: categoryName, slug: categorySlug, icon: categoryIcon };
+                                        if (editingItem) {
+                                            await fauvesService.updateCategory(editingItem.id, payload);
+                                        } else {
+                                            await fauvesService.createCategory(payload);
+                                        }
+                                        fetchData();
+                                    }
+                                    setIsModalOpen(false);
+                                    setEditingItem(null);
+                                } catch (err) {
+                                    console.error('Failed to save:', err);
+                                    alert('Falha ao salvar. Verifique o console.');
+                                } finally {
+                                    setIsLoading(false);
                                 }
-                                setIsModalOpen(false);
-                                setEditingItem(null);
-                                // Reset all
-                                setCategoryName(''); setCategorySlug(''); setCategoryIcon('Music');
-                                setSlideTitle(''); setSlideImage(''); setSlideUF('Universal (todos)'); setSlideOrder('0');
-                                setSlideLinkType('Sem link'); setSlideExternalUrl(''); setSlideSearchEvent('');
-                                setIsSlideActive(true); setShowSlideTitle(false);
-                                setAdTitle(''); setAdDescription(''); setAdImage(''); setAdCategory('Novidade'); setAdPublic('Organizadores');
-                                setAdLink(''); setAdLinkText('Saiba mais'); setAdIsActive(true); setAdOrder('0'); setAdStartDate(''); setAdEndDate('');
                             }}
-                            className={`px-6 py-2 text-sm font-bold text-white ${type === 'slides' || type === 'ads' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-600 hover:bg-teal-700'} rounded-lg shadow-sm transition-colors`}
+                            className={`px-6 py-2 text-sm font-bold text-white ${type === 'slides' || type === 'ads' ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-teal-600 hover:bg-teal-700'} rounded-lg shadow-sm transition-colors disabled:opacity-50`}
                         >
-                            {editingItem ? 'Salvar' : (type === 'slides' || type === 'ads' ? 'Criar' : 'Salvar')}
+                            {isLoading ? <Loader2 size={16} className="animate-spin" /> : (editingItem ? 'Salvar' : (type === 'slides' || type === 'ads' ? 'Criar' : 'Salvar'))}
                         </button>
                     </>
                 }
