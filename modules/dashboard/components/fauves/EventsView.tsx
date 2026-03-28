@@ -493,13 +493,18 @@ const EventForm: React.FC<{
         status: initialData?.status || 'draft',
         categoryId: initialData?.categoryId || '',
         organizationId: initialData?.organizationId || initialData?.organization?.id || '',
-        externalUrl: initialData?.externalUrl || ''
+        externalUrl: initialData?.externalUrl || '',
+        lineup: initialData?.artists?.map((a: any) => a.artist) || initialData?.lineup || []
     });
 
     const [isSaving, setIsSaving] = useState(false);
     const [suggestions, setSuggestions] = useState<any[]>([]);
     const [isSearchingAddress, setIsSearchingAddress] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const [artistSearch, setArtistSearch] = useState('');
+    const [artistSuggestions, setArtistSuggestions] = useState<any[]>([]);
+    const [isSearchingArtists, setIsSearchingArtists] = useState(false);
 
     // Address Autocomplete Logic
     useEffect(() => {
@@ -539,6 +544,45 @@ const EventForm: React.FC<{
         setShowSuggestions(false);
     };
 
+    // Artist Search Logic
+    useEffect(() => {
+        if (!artistSearch || artistSearch.length < 2) {
+            setArtistSuggestions([]);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            setIsSearchingArtists(true);
+            try {
+                const results = await fauvesService.searchArtists(artistSearch);
+                setArtistSuggestions(results);
+            } catch (error) {
+                console.error("Error searching artists:", error);
+            } finally {
+                setIsSearchingArtists(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [artistSearch]);
+
+    const handleAddArtist = (artist: any) => {
+        if (formData.lineup.find((a: any) => a.id === artist.id)) return;
+        setFormData({
+            ...formData,
+            lineup: [...formData.lineup, artist]
+        });
+        setArtistSearch('');
+        setArtistSuggestions([]);
+    };
+
+    const handleRemoveArtist = (artistId: string) => {
+        setFormData({
+            ...formData,
+            lineup: formData.lineup.filter((a: any) => a.id !== artistId)
+        });
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         try {
@@ -571,6 +615,16 @@ const EventForm: React.FC<{
                 <div>
                     <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Término</label>
                     <input type="datetime-local" value={formData.endDate} onChange={(e) => setFormData({...formData, endDate: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100" />
+                </div>
+
+                <div className="col-span-2">
+                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Subtítulo</label>
+                    <input type="text" value={formData.subtitle} onChange={(e) => setFormData({...formData, subtitle: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100" placeholder="Ex: O maior festival de techno do ano" />
+                </div>
+
+                <div className="col-span-2">
+                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Descrição</label>
+                    <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100 min-h-[100px]" placeholder="Descreva o evento..." />
                 </div>
 
                 <div>
@@ -630,6 +684,54 @@ const EventForm: React.FC<{
                 <div className="col-span-2">
                     <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Imagem URL</label>
                     <input type="text" value={formData.image} onChange={(e) => setFormData({...formData, image: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100" />
+                </div>
+
+                <div className="col-span-2">
+                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Lineup / Artistas (Spotify)</label>
+                    <div className="relative mb-3">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={14} />
+                        <input 
+                            type="text" 
+                            value={artistSearch} 
+                            onChange={(e) => setArtistSearch(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100" 
+                            placeholder="Buscar artista no Spotify..."
+                        />
+                        {isSearchingArtists && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-docka-400" />}
+                        
+                        {artistSuggestions.length > 0 && (
+                            <div className="absolute z-[60] left-0 right-0 mt-1 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                                {artistSuggestions.map((artist) => (
+                                    <button 
+                                        key={artist.id}
+                                        onClick={() => handleAddArtist(artist)}
+                                        className="w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-docka-50 dark:hover:bg-zinc-800 border-b border-docka-100 dark:border-zinc-800 last:border-0"
+                                    >
+                                        <img src={artist.imageUrl || 'https://via.placeholder.com/40'} className="w-8 h-8 rounded-full object-cover" alt="" />
+                                        <div>
+                                            <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{artist.name}</p>
+                                            <p className="text-[10px] text-docka-500">{artist.genres?.slice(0, 2).join(', ')}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                        {formData.lineup.map((artist: any) => (
+                            <div key={artist.id} className="flex items-center gap-2 bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-full pl-1 pr-2 py-1">
+                                <img src={artist.imageUrl || 'https://via.placeholder.com/40'} className="w-6 h-6 rounded-full object-cover" alt="" />
+                                <span className="text-xs font-medium text-docka-700 dark:text-zinc-200">{artist.name}</span>
+                                <button onClick={() => handleRemoveArtist(artist.id)} className="p-0.5 hover:bg-docka-200 dark:hover:bg-zinc-700 rounded-full text-docka-400 dark:text-zinc-500">
+                                    <Plus className="rotate-45" size={14} />
+                                </button>
+                            </div>
+                        ))}
+                        {formData.lineup.length === 0 && (
+                            <p className="text-xs text-docka-400 italic">Nenhum artista adicionado ao lineup.</p>
+                        )}
+                    </div>
                 </div>
             </div>
 

@@ -54,51 +54,51 @@ fauvesApi.interceptors.request.use((config) => {
 
 export const fauvesService = {
     getEvents: async (page = 1, limit = 20) => {
-        const endpoint = 'admin/events';
-        const fullEndpoint = `${endpoint}?page=${page}&perPage=${limit}`;
-        try {
-            const response = await fauvesApi.get(fullEndpoint);
-            const rawEvents = response.data.events || response.data;
-            const total = response.data.total || (Array.isArray(rawEvents) ? rawEvents.length : 0);
+        const endpoints = ['docka/admin/events', 'admin/events', 'events'];
+        let lastError: any = null;
 
-            const items = (rawEvents || []).map((ev: any) => ({
-                id: ev.id,
-                title: ev.name || ev.title || 'Sem título',
-                date: ev.startDate ? new Date(ev.startDate).toLocaleDateString('pt-BR') : (ev.date || '-'),
-                location: ev.locationCity ? `${ev.locationCity}, ${ev.locationUf}` : (ev.location || '-'),
-                status: ev.status || (ev.isPublished ? 'published' : 'draft'),
-                image: ev.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
-                stats: ev.stats || { views: 0, clicks: 0, orders: 0, sales: 0 }
-            }));
-
-            return { items, total };
-        } catch (error: any) {
+        for (const endpoint of endpoints) {
+            const separator = endpoint.includes('?') ? '&' : '?';
+            const fullEndpoint = `${endpoint}${separator}page=${page}&perPage=${limit}`;
             try {
-                const response = await fauvesApi.get('events');
-                const rawEvents = response.data.events || response.data;
+                const response = await fauvesApi.get(fullEndpoint);
+                const data = response.data;
+                const rawEvents = data.events || data.items || (Array.isArray(data) ? data : []);
+                const total = data.total || (Array.isArray(rawEvents) ? rawEvents.length : 0);
+
                 const items = (rawEvents || []).map((ev: any) => ({
                     id: ev.id,
                     title: ev.name || ev.title || 'Sem título',
-                    date: ev.startDate ? new Date(ev.startDate).toLocaleDateString('pt-BR') : '',
-                    location: ev.locationCity || ev.location || '',
-                    status: 'published',
-                    image: ev.image || '',
-                    stats: { views: 0, clicks: 0, orders: 0, sales: 0 }
+                    date: ev.startDate ? new Date(ev.startDate).toLocaleDateString('pt-BR') : (ev.date || '-'),
+                    location: ev.locationCity ? `${ev.locationCity}, ${ev.locationUf}` : (ev.location || '-'),
+                    status: ev.status || (ev.isPublished ? 'published' : 'draft'),
+                    image: ev.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
+                    stats: ev.stats || { views: 0, clicks: 0, interests: 0, orders: 0, sales: 0 }
                 }));
-                return { items, total: items.length };
-            } catch (e) {
-                throw error;
+
+                return { items, total };
+            } catch (error: any) {
+                lastError = error;
+                if (error.response?.status === 404) continue;
             }
         }
+        throw lastError;
     },
 
     getEvent: async (id: string) => {
-        try {
-            const response = await fauvesApi.get(`admin/events/${id}`);
-            return response.data.event;
-        } catch (error: any) {
-            throw error;
+        const endpoints = [`docka/event/${id}`, `admin/events/${id}`, `event/${id}`];
+        let lastError: any = null;
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                const data = response.data;
+                return data.event || data;
+            } catch (error: any) {
+                lastError = error;
+                if (error.response?.status === 404) continue;
+            }
         }
+        throw lastError;
     },
 
     getManagementData: async (type: string, page = 1, limit = 20) => {
@@ -200,15 +200,16 @@ export const fauvesService = {
     },
 
     getOrders: async (page = 1, limit = 20) => {
-        const endpoints = ['docka/orders', 'admin/orders', 'admin/order', 'orders', 'order'];
+        const endpoints = ['docka/orders', 'admin/orders', 'orders'];
         let lastError: any = null;
         for (const baseEndpoint of endpoints) {
             const separator = baseEndpoint.includes('?') ? '&' : '?';
             const fullEndpoint = `${baseEndpoint}${separator}page=${page}&perPage=${limit}`;
             try {
                 const response = await fauvesApi.get(fullEndpoint);
-                const rawOrders = response.data.orders || response.data.items || response.data;
-                const total = response.data.total || (Array.isArray(rawOrders) ? rawOrders.length : 0);
+                const data = response.data;
+                const rawOrders = data.orders || data.items || (Array.isArray(data) ? data : []);
+                const total = data.total || (Array.isArray(rawOrders) ? rawOrders.length : 0);
 
                 const items = (Array.isArray(rawOrders) ? rawOrders : []).map((o: any) => {
                     if (!o) return {};
@@ -237,15 +238,16 @@ export const fauvesService = {
     },
 
     getSupportTickets: async (page = 1, limit = 20) => {
-        const endpoints = ['docka/tickets', 'admin/tickets', 'admin/ticket', 'tickets', 'ticket'];
+        const endpoints = ['docka/tickets', 'admin/tickets', 'tickets'];
         let lastError: any = null;
         for (const baseEndpoint of endpoints) {
             const separator = baseEndpoint.includes('?') ? '&' : '?';
             const fullEndpoint = `${baseEndpoint}${separator}page=${page}&perPage=${limit}`;
             try {
                 const response = await fauvesApi.get(fullEndpoint);
-                const rawTickets = response.data.tickets || response.data.items || response.data;
-                const total = response.data.total || (Array.isArray(rawTickets) ? rawTickets.length : 0);
+                const data = response.data;
+                const rawTickets = data.tickets || data.items || (Array.isArray(data) ? data : []);
+                const total = data.total || (Array.isArray(rawTickets) ? rawTickets.length : 0);
 
                 const items = (Array.isArray(rawTickets) ? rawTickets : []).map((t: any) => ({
                     id: t.id,
@@ -308,18 +310,23 @@ export const fauvesService = {
                 return { ...data, rawFields: data };
             } catch (error: any) {
                 lastError = error;
+                if (error.response?.status === 404) continue;
             }
         }
         throw lastError;
     },
 
     getOrganizationStats: async (id: string) => {
-        try {
-            const response = await fauvesApi.get(`admin/metrics?organizationId=${id}`);
-            return response.data.metrics || response.data;
-        } catch (error: any) {
-            return { eventsActive: 0, totalRevenue: 0, totalTickets: 0, totalOrders: 0 };
+        const endpoints = [`admin/organizers/${id}/stats`, `admin/organizations/${id}/stats`, `admin/metrics?organizationId=${id}`];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data.stats || response.data.metrics || response.data;
+            } catch (e) {
+                continue;
+            }
         }
+        return { eventsActive: 0, totalRevenue: 0, totalTickets: 0, totalOrders: 0 };
     },
 
     createEvent: async (eventData: any) => {
@@ -332,15 +339,58 @@ export const fauvesService = {
     },
 
     updateEvent: async (id: string, eventData: any) => {
-        try {
-            const response = await fauvesApi.put(`event/${id}`, eventData);
-            return response.data;
-        } catch (error: any) {
-            throw error;
+        const endpoints = [`docka/event/${id}`, `event/${id}`];
+        let lastError: any = null;
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.put(endpoint, eventData);
+                return response.data;
+            } catch (error: any) {
+                lastError = error;
+            }
         }
+        throw lastError;
     },
 
-    // Event Importer Methods
+    getEventSummary: async (id: string) => {
+        const endpoints = [`docka/event-summary?eventId=${id}`, `admin/event-summary?eventId=${id}`];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data.summary || response.data;
+            } catch (e) {
+                continue;
+            }
+        }
+        return { ticketsSold: 0, checkins: 0, revenue: 0, pendingPayments: 0 };
+    },
+
+    getEventMetrics: async (id: string) => {
+        const endpoints = [`docka/event-metrics?eventId=${id}`, `admin/metrics?eventId=${id}`];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data.metrics || response.data;
+            } catch (e) {
+                continue;
+            }
+        }
+        return { views: 0, interests: 0 };
+    },
+
+    getStats: async () => {
+        const endpoints = ['docka/metrics', 'admin/metrics'];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data.metrics || response.data;
+            } catch (e) {
+                continue;
+            }
+        }
+        return { salesToday: 0, totalRevenue: 0, checkins: 0, eventsActive: 0 };
+    },
+
     importEventExtract: async (url: string) => {
         const endpoints = [
             `docka/event-importer/extract?url=${encodeURIComponent(url)}`,
@@ -348,12 +398,10 @@ export const fauvesService = {
         ];
         
         for (const endpoint of endpoints) {
-            console.log(`[FauvesAPI] Extracting event from: ${endpoint}`);
             try {
                 const response = await fauvesApi.get(endpoint);
                 return response.data;
             } catch (error: any) {
-                console.warn(`[FauvesAPI] Extraction failed on: ${endpoint}`, error.response?.status);
                 if (error.response?.status === 404) continue;
             }
         }
@@ -364,16 +412,28 @@ export const fauvesService = {
         const endpoints = ['docka/event-importer/save', 'admin/event-importer/save'];
         
         for (const endpoint of endpoints) {
-            console.log(`[FauvesAPI] Saving imported event to: ${endpoint}`);
             try {
                 const response = await fauvesApi.post(endpoint, eventData);
                 return response.data;
             } catch (error: any) {
-                console.warn(`[FauvesAPI] Save failed on: ${endpoint}`, error.response?.status);
                 if (error.response?.status === 404) continue;
             }
         }
         throw new Error('Falha ao salvar evento importado.');
+    },
+
+    searchArtists: async (query: string) => {
+        try {
+            const response = await fauvesApi.get(`docka/spotify/search/artists?q=${encodeURIComponent(query)}`);
+            return response.data.artists || [];
+        } catch (error) {
+            try {
+                const response = await fauvesApi.get(`spotify/search/artists?q=${encodeURIComponent(query)}`);
+                return response.data.artists || [];
+            } catch (e) {
+                return [];
+            }
+        }
     }
 };
 

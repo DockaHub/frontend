@@ -239,9 +239,13 @@ export interface FauvesEvent {
   image: string;
   status: 'published' | 'draft' | 'ended';
   location: string;
+  subtitle?: string;
+  description?: string;
+  lineup?: any[];
   stats?: {
     views: number;
     clicks: number;
+    interests?: number;
     orders: number;
     sales: number;
   };
