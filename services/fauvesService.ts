@@ -449,6 +449,26 @@ export const fauvesService = {
     deleteCategory: async (id: string) => {
         const response = await fauvesApi.delete(`docka/category/${id}`);
         return response.data;
+    },
+
+    getUserDetails: async (id: string) => {
+        const response = await fauvesApi.get(`docka/user/${id}`);
+        return response.data.user || response.data;
+    },
+
+    getUserDetailed: async (id: string) => {
+        const response = await fauvesApi.get(`docka/user/${id}/detailed`);
+        return response.data.user || response.data;
+    },
+
+    updateUser: async (id: string, data: any) => {
+        const response = await fauvesApi.put(`docka/user/${id}`, data);
+        return response.data;
+    },
+
+    toggleUserStatus: async (id: string) => {
+        const response = await fauvesApi.post(`docka/user/${id}/toggle-status`);
+        return response.data;
     }
 };
 

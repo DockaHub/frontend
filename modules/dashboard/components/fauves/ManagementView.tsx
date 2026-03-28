@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, User as UserIcon, Link as LinkIcon, Loader2, RotateCw, MoreHorizontal, Pencil, XCircle, Music, Mic2, Guitar, Headphones, Mic, Volume2, Disc, Film, Palette, Utensils, Plane, Globe, Trash2, Ban, CreditCard } from 'lucide-react';
+import { Search, Plus, Link as LinkIcon, Loader2, RotateCw, MoreHorizontal, Pencil, Music, Mic2, Guitar, Headphones, Mic, Volume2, Disc, Film, Palette, Utensils, Plane, Globe, Trash2, Ban, CreditCard } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
+import FauvesUserDetails from './FauvesUserDetails';
 
 interface ManagementViewProps {
     type: 'users' | 'artists' | 'categories' | 'ads' | 'slides';
@@ -15,6 +16,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<any | null>(null);
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
     // Category form state
     const [categoryName, setCategoryName] = useState('');
@@ -129,30 +131,6 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
     // Dynamic Modal Content Renderer
     const renderModalContent = () => {
         switch (type) {
-            case 'users':
-                return (
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Nome Completo</label>
-                            <div className="relative">
-                                <UserIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" />
-                                <input className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100" placeholder="Ex: João Silva" />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">E-mail</label>
-                            <input type="email" className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100" placeholder="joao@exemplo.com" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Permissão</label>
-                            <select className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100">
-                                <option>Usuário Padrão</option>
-                                <option>Organizador</option>
-                                <option>Admin</option>
-                            </select>
-                        </div>
-                    </div>
-                );
             case 'categories':
                 const iconOptions = [
                     { name: 'Music', icon: Music },
@@ -562,6 +540,16 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
         }
     }
 
+    if (selectedUserId && type === 'users') {
+        return (
+            <FauvesUserDetails 
+                userId={selectedUserId} 
+                onBack={() => setSelectedUserId(null)}
+                onUpdate={fetchData} 
+            />
+        );
+    }
+
     return (
         <div className="animate-in fade-in duration-300">
             <div className="flex justify-between items-end mb-8">
@@ -678,7 +666,13 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                         </thead>
                         <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
                             {data.length > 0 ? data.map((row: any, i) => (
-                                <tr key={i} className={`hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors ${openDropdownId === row.id ? 'z-50 relative' : ''}`}>
+                                <tr 
+                                    key={i} 
+                                    onClick={() => {
+                                        if (type === 'users') setSelectedUserId(row.id);
+                                    }}
+                                    className={`hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors ${type === 'users' ? 'cursor-pointer' : ''} ${openDropdownId === row.id ? 'z-50 relative' : ''}`}
+                                >
                                     {type === 'artists' ? (
                                         <>
                                             <td className="px-6 py-4">
@@ -849,13 +843,9 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                                             <td className="px-6 py-4 text-docka-500 dark:text-zinc-500 text-xs">{row.col4}</td>
                                             <td className="px-6 py-4 text-right">
                                                 <button
-                                                    onClick={() => {
-                                                        setEditingItem(row);
-                                                        setCategoryName(row.col1);
-                                                        setCategorySlug(row.col2);
-                                                        setCategoryIcon(row.icon || 'Music');
-                                                        setCategoryColor(row.color || 'indigo');
-                                                        setIsModalOpen(true);
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedUserId(row.id);
                                                     }}
                                                     className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
                                                 >
@@ -916,8 +906,8 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                     setAdTitle(''); setAdDescription(''); setAdImage(''); setAdCategory('Novidade'); setAdPublic('Organizadores');
                     setAdLink(''); setAdLinkText('Saiba mais'); setAdIsActive(true); setAdOrder('0'); setAdStartDate(''); setAdEndDate('');
                 }}
-                title={editingItem ? (type === 'slides' ? 'Editar slide' : type === 'ads' ? 'Editar Anúncio' : 'Editar categoria') : (type === 'slides' ? 'Novo Slide' : type === 'ads' ? 'Novo Anúncio' : `Criar ${config.btn?.replace('Novo ', '').replace('Nova ', '')}`)}
-                footer={
+                title={editingItem ? (type === 'users' ? 'Detalhes do Usuário' : type === 'slides' ? 'Editar slide' : type === 'ads' ? 'Editar Anúncio' : 'Editar categoria') : (type === 'slides' ? 'Novo Slide' : type === 'ads' ? 'Novo Anúncio' : `Criar ${config.btn?.replace('Novo ', '').replace('Nova ', '')}`)}
+                footer={type === 'users' ? null : (
                     <>
                         <button
                             onClick={() => {
@@ -966,7 +956,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                             {isLoading ? <Loader2 size={16} className="animate-spin" /> : (editingItem ? 'Salvar' : (type === 'slides' || type === 'ads' ? 'Criar' : 'Salvar'))}
                         </button>
                     </>
-                }
+                )}
             >
                 {renderModalContent()}
             </Modal>
