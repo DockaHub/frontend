@@ -1,4 +1,5 @@
 import axios from 'axios';
+import api from './api';
 
 const getBaseURL = () => {
     if (typeof window !== 'undefined') {
@@ -452,13 +453,51 @@ export const fauvesService = {
     },
 
     getUserDetails: async (id: string) => {
-        const response = await fauvesApi.get(`docka/user/${id}`);
-        return response.data.user || response.data;
+        const endpoints = [`docka/user/${id}`, `admin/users/${id}`, `admin/user/${id}`, `user/${id}`];
+        let lastError: any = null;
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                const data = response.data.user || response.data;
+                return data;
+            } catch (error: any) {
+                lastError = error;
+                if (error.response?.status === 404) continue;
+            }
+        }
+        throw lastError;
     },
 
     getUserDetailed: async (id: string) => {
-        const response = await fauvesApi.get(`docka/user/${id}/detailed`);
-        return response.data.user || response.data;
+        try {
+            // Chamada direta para o backend local (Docka Hub), ignorando o proxy da Fauves
+            const response = await api.get(`users/${id}/detailed`);
+            return response.data.user || response.data;
+        } catch (error) {
+            console.warn(`[fauvesService] Local user ${id} not found or error. Falling back to Fauves API...`);
+            // Se falhar no backend local, tenta buscar diretamente na Fauves
+            const externalUser = await fauvesService.getUserDetails(id);
+            
+            // Normalizar dados da Fauves para compatibilidade com o componente
+            if (externalUser && !externalUser.surname) {
+                const nameParts = (externalUser.name || externalUser.fullName || '').split(' ');
+                externalUser.name = nameParts[0];
+                externalUser.surname = nameParts.slice(1).join(' ') || '';
+            }
+
+            // Garantir que stats exista para não quebrar a UI
+            if (!externalUser.stats) {
+                externalUser.stats = {
+                    totalSpent: 0,
+                    totalOrders: 0,
+                    paidOrders: 0,
+                    eventsAttended: externalUser.attendingEventsCount || 0,
+                    ticketsOwned: externalUser.ticketsCount || externalUser.attendingEventsCount || 0
+                };
+            }
+
+            return externalUser;
+        }
     },
 
     updateUser: async (id: string, data: any) => {
