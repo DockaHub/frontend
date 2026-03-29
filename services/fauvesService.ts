@@ -454,11 +454,8 @@ export const fauvesService = {
 
     getUserDetails: async (id: string) => {
         const endpoints = [
-            `docka/users/${id}`, // New robust integration endpoint
-            `admin/user/${id}`,  // Existing admin endpoint (requires token)
-            `user/${id}`,        // Public/Authenticated profile endpoint
-            `users/${id}`,        // Other common pattern
-            `docka/user/${id}`,  // Singular (usually 404)
+            `docka/users/${id}`, // Primary integration endpoint (Enriched)
+            `users/${id}`,      // Legacy fallback
         ];
         let lastError: any = null;
         for (const endpoint of endpoints) {
