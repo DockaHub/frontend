@@ -453,19 +453,29 @@ export const fauvesService = {
     },
 
     getUserDetails: async (id: string) => {
-        const endpoints = [`docka/user/${id}`, `admin/users/${id}`, `admin/user/${id}`, `user/${id}`];
+        const endpoints = [
+            `docka/users/${id}`, // New robust integration endpoint
+            `admin/user/${id}`,  // Existing admin endpoint (requires token)
+            `user/${id}`,        // Public/Authenticated profile endpoint
+            `users/${id}`,        // Other common pattern
+            `docka/user/${id}`,  // Singular (usually 404)
+        ];
         let lastError: any = null;
         for (const endpoint of endpoints) {
             try {
                 const response = await fauvesApi.get(endpoint);
-                const data = response.data.user || response.data;
-                return data;
+                const data = response.data.user || response.data.item || response.data;
+                if (data) return data;
             } catch (error: any) {
                 lastError = error;
+                // Continue if 404 or 401, but log the 401 for visibility
+                if (error.response?.status === 401) {
+                    console.warn(`[fauvesService] Unauthorized access (401) to ${endpoint}`);
+                }
                 if (error.response?.status === 404) continue;
             }
         }
-        throw lastError;
+        throw lastError || new Error(`User ${id} not found in any endpoint`);
     },
 
     getUserDetailed: async (id: string) => {
