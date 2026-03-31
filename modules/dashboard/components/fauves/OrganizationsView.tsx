@@ -440,42 +440,42 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                 </div>
                             ) : (
                                 <div className="space-y-4">
-                                    {members.length === 0 ? (
-                                        <div className="text-center py-10 bg-docka-50/50 dark:bg-zinc-800/20 rounded-xl border border-dashed border-docka-200 dark:border-zinc-800">
-                                            <p className="text-xs text-docka-400">Nenhum membro na equipe além do proprietário.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {/* Dedicated Owner Row/Card */}
-                                            {members.find(m => m.id === selectedOrg.creatorId || m.role === 'OWNER') && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {/* Dedicated Owner Row/Card */}
+                                        {(() => {
+                                            const owner = members.find(m => m.id === selectedOrg.creatorId || m.role === 'OWNER');
+                                            if (!owner && !selectedOrg) return null;
+                                            
+                                            return (
                                                 <div className="md:col-span-2 flex items-center justify-between p-5 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-900/10 dark:to-transparent border border-amber-100 dark:border-amber-900/20 rounded-2xl relative overflow-hidden group">
                                                     <div className="absolute top-0 right-0 p-1 bg-amber-500 text-white rounded-bl-lg">
                                                         <Crown size={12} />
                                                     </div>
-                                                    {(() => {
-                                                        const owner = members.find(m => m.id === selectedOrg.creatorId || m.role === 'OWNER');
-                                                        return (
-                                                            <>
-                                                                <div className="flex items-center gap-4">
-                                                                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-amber-600 font-bold shadow-sm ring-2 ring-amber-500/20">
-                                                                        {owner.name?.substring(0, 1) || owner.email?.substring(0, 1).toUpperCase()}
-                                                                    </div>
-                                                                    <div>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{owner.name || owner.email.split('@')[0]}</p>
-                                                                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-tighter">Proprietário</span>
-                                                                        </div>
-                                                                        <p className="text-[10px] text-docka-500 dark:text-zinc-400 lowercase">{owner.email}</p>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 opacity-60">
-                                                                    Dono da Organização
-                                                                </div>
-                                                            </>
-                                                        );
-                                                    })()}
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-amber-600 font-bold shadow-sm ring-2 ring-amber-500/20">
+                                                            {owner?.name?.substring(0, 1) || owner?.email?.substring(0, 1).toUpperCase() || 'P'}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{owner?.name || owner?.email?.split('@')[0] || 'Proprietário'}</p>
+                                                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-tighter">Proprietário</span>
+                                                            </div>
+                                                            <p className="text-[10px] text-docka-500 dark:text-zinc-400 lowercase">{owner?.email || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 opacity-60">
+                                                        Dono da Organização
+                                                    </div>
                                                 </div>
-                                            )}
+                                            );
+                                        })()}
+
+                                        {/* Other Members */}
+                                        {members.filter(m => m.id !== selectedOrg.creatorId && m.role !== 'OWNER').length === 0 && !loadingMembers && (
+                                            <div className="md:col-span-2 text-center py-6 bg-docka-50/30 dark:bg-zinc-800/10 rounded-xl border border-dashed border-docka-100 dark:border-zinc-800">
+                                                <p className="text-[10px] text-docka-400 uppercase tracking-widest font-bold">Nenhum outro membro na equipe</p>
+                                            </div>
+                                        )}
 
                                             {/* Other Members */}
                                             {members
