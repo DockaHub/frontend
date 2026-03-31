@@ -309,8 +309,11 @@ export const fauvesService = {
                 const data = response.data.organization || response.data;
                 return { ...data, rawFields: data };
             }
-        } catch (e) {
-            console.warn(`[fauvesService] Local organization ${id} not found or error. Falling back to Fauves API...`);
+        } catch (e: any) {
+            // Only log if it's NOT a 404 (which is expected for organizations not yet synced)
+            if (e.response?.status !== 404) {
+                console.warn(`[fauvesService] Local organization ${id} fetch error:`, e.message);
+            }
         }
 
         const endpoints = [`admin/organizers/${id}`, `admin/organizations/${id}`];
