@@ -302,20 +302,6 @@ export const fauvesService = {
     },
 
     getOrganization: async (id: string) => {
-        // Try local backend (Docka Hub) first to get enriched data (like creator)
-        try {
-            const response = await api.get(`organizations/${id}`);
-            if (response.data) {
-                const data = response.data.organization || response.data;
-                return { ...data, rawFields: data };
-            }
-        } catch (e: any) {
-            // Only log if it's NOT a 404 (which is expected for organizations not yet synced)
-            if (e.response?.status !== 404) {
-                console.warn(`[fauvesService] Local organization ${id} fetch error:`, e.message);
-            }
-        }
-
         const endpoints = [`admin/organizers/${id}`, `admin/organizations/${id}`];
         let lastError: any = null;
         for (const endpoint of endpoints) {
@@ -361,81 +347,73 @@ export const fauvesService = {
 
     getOrganizationMembers: async (id: string) => {
         const endpoints = [
-            `organizations/${id}/members`, // Local endpoint first
             `admin/organizers/${id}/members`, 
             `admin/organizations/${id}/members`, 
             `admin/organizers/${id}/team`, 
             `admin/organizations/${id}/team` 
         ];
         
-        // Try local backend first
-        try {
-            const response = await api.get(`organizations/${id}/members`);
-            return response.data.members || response.data.items || response.data;
-        } catch (e) {
-            // Fallback to other endpoints via proxy/remote
-            for (const endpoint of endpoints.slice(1)) {
-                try {
-                    const response = await fauvesApi.get(endpoint);
-                    return response.data.members || response.data.items || response.data;
-                } catch (err) {
-                    continue;
-                }
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data.members || response.data.items || response.data;
+            } catch (err) {
+                continue;
             }
         }
         return [];
     },
 
     addOrganizationMember: async (id: string, memberData: { email: string, role?: string }) => {
-        // Try local backend first
-        try {
-            const response = await api.post(`organizations/${id}/members`, memberData);
-            return response.data;
-        } catch (e) {
-            const endpoints = [`admin/organizers/${id}/members`, `admin/organizations/${id}/members` ];
-            let lastError: any = null;
-            for (const endpoint of endpoints) {
-                try {
-                    const response = await fauvesApi.post(endpoint, memberData);
-                    return response.data;
-                } catch (error: any) {
-                    lastError = error;
-                    if (error.response?.status === 404) continue;
-                }
+        const endpoints = [`admin/organizers/${id}/members`, `admin/organizations/${id}/members` ];
+        let lastError: any = null;
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.post(endpoint, memberData);
+                return response.data;
+            } catch (error: any) {
+                lastError = error;
+                if (error.response?.status === 404) continue;
             }
-            throw lastError;
         }
+        throw lastError;
     },
 
     removeOrganizationMember: async (id: string, userId: string) => {
-        // Try local backend first
-        try {
-            const response = await api.delete(`organizations/${id}/members/${userId}`);
-            return response.data;
-        } catch (e) {
-            const endpoints = [`admin/organizers/${id}/members/${userId}`, `admin/organizations/${id}/members/${userId}` ];
-            let lastError: any = null;
-            for (const endpoint of endpoints) {
-                try {
-                    const response = await fauvesApi.delete(endpoint);
-                    return response.data;
-                } catch (error: any) {
-                    lastError = error;
-                    if (error.response?.status === 404) continue;
-                }
+        const endpoints = [`admin/organizers/${id}/members/${userId}`, `admin/organizations/${id}/members/${userId}` ];
+        let lastError: any = null;
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.delete(endpoint);
+                return response.data;
+            } catch (error: any) {
+                lastError = error;
+                if (error.response?.status === 404) continue;
             }
-            throw lastError;
         }
+        throw lastError;
     },
 
     transferOrganizationOwnership: async (id: string, newOwnerId: string) => {
-        const response = await api.post(`organizations/${id}/transfer-ownership`, { newOwnerId });
-        return response.data;
+        const endpoints = [`admin/organizers/${id}/transfer-ownership`, `admin/organizations/${id}/transfer-ownership` ];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.post(endpoint, { newOwnerId });
+                return response.data;
+            } catch (e) { continue; }
+        }
+        throw new Error('Endpoint de transferência não disponível na Fauves.');
     },
 
     updateOrganizationMemberRole: async (id: string, userId: string, role: string) => {
-        const response = await api.patch(`organizations/${id}/members/${userId}/role`, { role });
-        return response.data;
+        const endpoints = [`admin/organizers/${id}/members/${userId}/role`, `admin/organizations/${id}/members/${userId}/role` ];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.patch(endpoint, { role });
+                return response.data;
+            } catch (e) { continue; }
+        }
+        throw new Error('Endpoint de atualização de cargo não disponível na Fauves.');
     },
 
     searchUsers: async (query: string) => {

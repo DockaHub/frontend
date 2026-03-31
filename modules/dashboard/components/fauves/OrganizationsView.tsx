@@ -108,6 +108,7 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
         setLoadingMembers(true);
         try {
             const data = await fauvesService.getOrganizationMembers(orgId);
+            console.log(`[OrganizationsView] Members for ${orgId}:`, data);
             setMembers(data || []);
         } catch (err) {
             console.error("Failed to fetch members", err);
@@ -456,8 +457,19 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Dedicated Owner Row/Card */}
                                         {(() => {
-                                            const owner = members.find(m => m.id === selectedOrg.creatorId || m.role === 'OWNER') || selectedOrg.creator;
-                                            if (!owner && !selectedOrg) return null;
+                                            // Flexible owner search: check for OWNER role, isOwner flag, or creatorId match
+                                            const owner = members.find(m => 
+                                                m.role === 'OWNER' || 
+                                                m.isOwner === true || 
+                                                m.id === selectedOrg.creatorId ||
+                                                m.id === selectedOrg.ownerId
+                                            ) || selectedOrg.creator || selectedOrg.owner;
+
+                                            if (!owner) return (
+                                                <div className="md:col-span-2 p-5 bg-zinc-50 dark:bg-zinc-800/30 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-2xl text-center">
+                                                    <p className="text-xs text-zinc-400">Dados do proprietário não encontrados na Fauves API.</p>
+                                                </div>
+                                            );
                                             
                                             return (
                                                 <div className="md:col-span-2 flex items-center justify-between p-5 bg-gradient-to-r from-amber-50 to-transparent dark:from-amber-900/10 dark:to-transparent border border-amber-100 dark:border-amber-900/20 rounded-2xl relative overflow-hidden group">
@@ -466,18 +478,18 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                                     </div>
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center text-amber-600 font-bold shadow-sm ring-2 ring-amber-500/20">
-                                                            {owner?.name?.substring(0, 1) || owner?.email?.substring(0, 1).toUpperCase() || 'P'}
+                                                            {(owner.name || owner.fullName || owner.email || 'P').substring(0, 1).toUpperCase()}
                                                         </div>
                                                         <div>
                                                             <div className="flex items-center gap-2">
-                                                                <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{owner?.name || owner?.email?.split('@')[0] || 'Proprietário'}</p>
+                                                                <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{owner.name || owner.fullName || owner.email?.split('@')[0] || 'Proprietário'}</p>
                                                                 <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white uppercase tracking-tighter">Proprietário</span>
                                                             </div>
-                                                            <p className="text-[10px] text-docka-500 dark:text-zinc-400 lowercase">{owner?.email || 'N/A'}</p>
+                                                            <p className="text-[10px] text-docka-500 dark:text-zinc-400">{owner.email || 'N/A'}</p>
                                                         </div>
                                                     </div>
                                                     <div className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 opacity-60">
-                                                        Dono da Organização
+                                                        Responsável direto
                                                     </div>
                                                 </div>
                                             );
@@ -489,8 +501,13 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                                 <p className="text-[10px] text-docka-400 uppercase tracking-widest font-bold">Nenhum outro membro na equipe</p>
                                             </div>
                                         )}
-                                            {members
-                                                .filter(m => m.id !== selectedOrg.creatorId && m.role !== 'OWNER')
+                                         {members
+                                                .filter(m => 
+                                                    m.role !== 'OWNER' && 
+                                                    m.isOwner !== true && 
+                                                    m.id !== selectedOrg.creatorId &&
+                                                    m.id !== selectedOrg.ownerId
+                                                )
                                                 .map((member: any) => (
                                                 <div key={member.id} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 border border-docka-100 dark:border-zinc-800 rounded-xl hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all group">
                                                     <div className="flex items-center gap-3">
