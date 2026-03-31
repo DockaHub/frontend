@@ -476,8 +476,6 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                                 <p className="text-[10px] text-docka-400 uppercase tracking-widest font-bold">Nenhum outro membro na equipe</p>
                                             </div>
                                         )}
-
-                                            {/* Other Members */}
                                             {members
                                                 .filter(m => m.id !== selectedOrg.creatorId && m.role !== 'OWNER')
                                                 .map((member: any) => (
@@ -524,9 +522,8 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
-                                </div>
-                            )}
+                                    </div>
+                                )}
                         </div>
 
                         {/* Stats Summary Grid */}
