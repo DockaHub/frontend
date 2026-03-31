@@ -302,6 +302,17 @@ export const fauvesService = {
     },
 
     getOrganization: async (id: string) => {
+        // Try local backend (Docka Hub) first to get enriched data (like creator)
+        try {
+            const response = await api.get(`organizations/${id}`);
+            if (response.data) {
+                const data = response.data.organization || response.data;
+                return { ...data, rawFields: data };
+            }
+        } catch (e) {
+            console.warn(`[fauvesService] Local organization ${id} not found or error. Falling back to Fauves API...`);
+        }
+
         const endpoints = [`admin/organizers/${id}`, `admin/organizations/${id}`];
         let lastError: any = null;
         for (const endpoint of endpoints) {
