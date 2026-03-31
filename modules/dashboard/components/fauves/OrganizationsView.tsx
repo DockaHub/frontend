@@ -37,6 +37,7 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
     const [searchTimeout, setSearchTimeout] = useState<any>(null);
     const [isSearchingUsers, setIsSearchingUsers] = useState(false);
     const [showUserResults, setShowUserResults] = useState(false);
+    const [inviteRole, setInviteRole] = useState<'ADMIN' | 'MEMBER'>('MEMBER');
 
     useEffect(() => {
         fetchData();
@@ -145,8 +146,12 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
         if (!newMemberEmail) return;
         setLoadingMembers(true);
         try {
-            await fauvesService.addOrganizationMember(selectedOrg.id, { email: newMemberEmail, role: 'member' });
+            await fauvesService.addOrganizationMember(selectedOrg.id, { 
+                email: newMemberEmail, 
+                role: inviteRole 
+            });
             setNewMemberEmail('');
+            setInviteRole('MEMBER');
             fetchMembers(selectedOrg.id);
         } catch (err) {
             console.error("Failed to add member", err);
@@ -423,6 +428,14 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                             </div>
                                         )}
                                     </div>
+                                    <select
+                                        value={inviteRole}
+                                        onChange={(e) => setInviteRole(e.target.value as any)}
+                                        className="px-3 py-2 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-[10px] uppercase font-bold outline-none focus:ring-1 focus:ring-indigo-500"
+                                    >
+                                        <option value="MEMBER">Membro</option>
+                                        <option value="ADMIN">Admin</option>
+                                    </select>
                                     <button
                                         onClick={handleAddMember}
                                         disabled={loadingMembers || !newMemberEmail}
@@ -443,7 +456,7 @@ const OrganizationsView: React.FC<OrganizationsViewProps> = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {/* Dedicated Owner Row/Card */}
                                         {(() => {
-                                            const owner = members.find(m => m.id === selectedOrg.creatorId || m.role === 'OWNER');
+                                            const owner = members.find(m => m.id === selectedOrg.creatorId || m.role === 'OWNER') || selectedOrg.creator;
                                             if (!owner && !selectedOrg) return null;
                                             
                                             return (
