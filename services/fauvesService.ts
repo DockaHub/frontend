@@ -268,7 +268,7 @@ export const fauvesService = {
     },
 
     getOrganizations: async (page = 1, limit = 20) => {
-        const endpoints = ['docka/organizations', 'admin/organizers', 'admin/organizations', 'organizers', 'organizations'];
+        const endpoints = ['docka/organizations', 'admin/organizers', 'admin/organizations', 'organizers', 'organizations', 'organization'];
         let lastError: any = null;
         for (const endpoint of endpoints) {
             try {
