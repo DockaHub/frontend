@@ -302,7 +302,13 @@ export const fauvesService = {
     },
 
     getOrganization: async (id: string) => {
-        const endpoints = [`admin/organizers/${id}`, `admin/organizations/${id}`];
+        const endpoints = [
+            `docka/organizations/${id}`,
+            `admin/organizers/${id}`, 
+            `admin/organizations/${id}`,
+            `organizers/${id}`,
+            `organizations/${id}`
+        ];
         let lastError: any = null;
         for (const endpoint of endpoints) {
             try {
@@ -311,7 +317,7 @@ export const fauvesService = {
                 return { ...data, rawFields: data };
             } catch (error: any) {
                 lastError = error;
-                if (error.response?.status === 404) continue;
+                if (error.response?.status === 404 || error.response?.status === 401) continue;
             }
         }
         throw lastError;
@@ -347,25 +353,26 @@ export const fauvesService = {
 
     getOrganizationMembers: async (id: string) => {
         const endpoints = [
-            `admin/organizers/${id}/members`, 
+            `docka/organizations/${id}/members`,
             `admin/organizations/${id}/members`, 
-            `admin/organizers/${id}/team`, 
-            `admin/organizations/${id}/team` 
+            `admin/organizers/${id}/members`,
+            `organizers/${id}/team`,
+            `organizations/${id}/members`
         ];
         
         for (const endpoint of endpoints) {
             try {
                 const response = await fauvesApi.get(endpoint);
                 return response.data.members || response.data.items || response.data;
-            } catch (err) {
-                continue;
+            } catch (error: any) {
+                if (error.response?.status === 404 || error.response?.status === 401) continue;
             }
         }
         return [];
     },
 
     addOrganizationMember: async (id: string, memberData: { email: string, role?: string }) => {
-        const endpoints = [`admin/organizers/${id}/members`, `admin/organizations/${id}/members` ];
+        const endpoints = [`docka/organizations/${id}/members`, `admin/organizations/${id}/members` ];
         let lastError: any = null;
         for (const endpoint of endpoints) {
             try {
@@ -380,7 +387,7 @@ export const fauvesService = {
     },
 
     removeOrganizationMember: async (id: string, userId: string) => {
-        const endpoints = [`admin/organizers/${id}/members/${userId}`, `admin/organizations/${id}/members/${userId}` ];
+        const endpoints = [`docka/organizations/${id}/members/${userId}`, `admin/organizations/${id}/members/${userId}` ];
         let lastError: any = null;
         for (const endpoint of endpoints) {
             try {
