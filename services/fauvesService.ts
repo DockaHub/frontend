@@ -307,7 +307,8 @@ export const fauvesService = {
             `admin/organizers/${id}`, 
             `admin/organizations/${id}`,
             `organizers/${id}`,
-            `organizations/${id}`
+            `organizations/${id}`,
+            `organization/${id}`
         ];
         let lastError: any = null;
         for (const endpoint of endpoints) {
