@@ -315,7 +315,9 @@ export const fauvesService = {
             try {
                 const response = await fauvesApi.get(endpoint);
                 const data = response.data.organizer || response.data.organization || response.data;
-                return { ...data, rawFields: data };
+                // Handle cases where the response itself is the organization object or has a property
+                const orgData = data.id ? data : (data.organizer || data.organization || data);
+                return { ...orgData, rawFields: orgData };
             } catch (error: any) {
                 lastError = error;
                 if (error.response?.status === 404 || error.response?.status === 401) continue;
@@ -325,12 +327,19 @@ export const fauvesService = {
     },
 
     getOrganizationStats: async (id: string) => {
-        const endpoints = [`admin/organizers/${id}/stats`, `admin/organizations/${id}/stats`, `admin/metrics?organizationId=${id}`];
+        // Try secure docka route first, then fall back to admin routes
+        const endpoints = [
+            `docka/organizations/${id}/stats`,
+            `admin/organizers/${id}/stats`,
+            `admin/organizations/${id}/stats`,
+            `admin/metrics?organizationId=${id}`
+        ];
         for (const endpoint of endpoints) {
             try {
                 const response = await fauvesApi.get(endpoint);
                 return response.data.stats || response.data.metrics || response.data;
-            } catch (e) {
+            } catch (e: any) {
+                if (e.response?.status === 404 || e.response?.status === 401) continue;
                 continue;
             }
         }
@@ -338,7 +347,11 @@ export const fauvesService = {
     },
 
     updateOrganization: async (id: string, data: any) => {
-        const endpoints = [`admin/organizers/${id}`, `admin/organizations/${id}`];
+        const endpoints = [
+            `docka/organizations/${id}`,
+            `admin/organizers/${id}`, 
+            `admin/organizations/${id}`
+        ];
         let lastError: any = null;
         for (const endpoint of endpoints) {
             try {
@@ -346,7 +359,7 @@ export const fauvesService = {
                 return response.data;
             } catch (error: any) {
                 lastError = error;
-                if (error.response?.status === 404) continue;
+                if (error.response?.status === 404 || error.response?.status === 401) continue;
             }
         }
         throw lastError;
