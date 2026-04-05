@@ -627,6 +627,54 @@ export const fauvesService = {
     toggleUserStatus: async (id: string) => {
         const response = await fauvesApi.post(`docka/user/${id}/toggle-status`);
         return response.data;
+    },
+
+    deleteUser: async (id: string) => {
+        const response = await fauvesApi.delete(`docka/users/${id}`);
+        return response.data;
+    },
+
+    getLeads: async () => {
+        const endpoints = ['docka/admin/event-lead', 'admin/event-lead', 'event-lead'];
+        let lastError: any = null;
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data;
+            } catch (error: any) {
+                lastError = error;
+                if (error.response?.status === 404) continue;
+            }
+        }
+        throw lastError;
+    },
+
+    deleteLead: async (id: string) => {
+        const endpoints = [`docka/admin/event-lead/${id}`, `admin/event-lead/${id}`, `event-lead/${id}`];
+        let lastError: any = null;
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.delete(endpoint);
+                return response.data;
+            } catch (error: any) {
+                lastError = error;
+                if (error.response?.status === 404) continue;
+            }
+        }
+        throw lastError;
+    },
+
+    getRanking: async () => {
+        const endpoints = ['docka/metrics/ranking', 'admin/metrics/ranking', 'admin/ranking', 'metrics/ranking'];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fauvesApi.get(endpoint);
+                return response.data.ranking || response.data || [];
+            } catch (e) {
+                continue;
+            }
+        }
+        return [];
     }
 };
 

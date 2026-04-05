@@ -71,6 +71,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
             return [
                 { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
                 { id: 'events', label: 'Eventos & Vendas', icon: Ticket },
+                { id: 'leads', label: 'Newsletter & Leads', icon: Users },
                 { id: 'categories', label: 'Categorias', icon: FolderOpen },
                 { id: 'artists', label: 'Artistas', icon: Mic2 },
                 { id: 'slides', label: 'Slides', icon: LayoutTemplate },

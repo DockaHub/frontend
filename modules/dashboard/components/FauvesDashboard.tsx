@@ -16,6 +16,7 @@ import ManagementView from './fauves/ManagementView';
 import SettingsView from './fauves/SettingsView';
 import OrganizationsView from './fauves/OrganizationsView';
 import ReportsView from './fauves/ReportsView';
+import LeadsView from './fauves/LeadsView';
 
 interface FauvesDashboardProps {
     user: User;
@@ -44,6 +45,8 @@ const FauvesDashboard: React.FC<FauvesDashboardProps> = ({ activeView, onNavigat
             return <ViewWrapper><EventsView initialEventId={viewData?.eventId} /></ViewWrapper>;
         case 'finance':
             return <ViewWrapper><FinanceView /></ViewWrapper>;
+        case 'leads':
+            return <ViewWrapper><LeadsView /></ViewWrapper>;
         case 'helpdesk':
         case 'helpdesk-tickets':
         case 'helpdesk-chat':

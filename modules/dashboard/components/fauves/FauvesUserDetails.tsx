@@ -7,7 +7,7 @@ import {
   AlertCircle, Info, ArrowLeft, Pencil, 
   Lock, Building, Ticket, ShoppingCart, 
   CalendarDays, TrendingUp, Bell, Handshake,
-  ChevronRight
+  ChevronRight, Trash2
 } from 'lucide-react';
 import { fauvesService } from '../../../../services/fauvesService';
 
@@ -24,6 +24,9 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<any>({});
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchUserDetails();
@@ -79,6 +82,22 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (deleteConfirmEmail !== user?.email) return;
+    setDeleting(true);
+    try {
+      await fauvesService.deleteUser(userId);
+      if (onUpdate) onUpdate();
+      onBack();
+    } catch (err: any) {
+      console.error('Failed to delete user:', err);
+      alert('Erro ao excluir o usuário: ' + (err?.response?.data?.message || err.message || 'Erro desconhecido'));
+    } finally {
+      setDeleting(false);
+      setShowDeleteModal(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-24 text-docka-400 dark:text-zinc-500 bg-zinc-50/50 dark:bg-black/20 rounded-3xl min-h-[600px]">
@@ -104,6 +123,7 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
   const stats = user.stats || {};
 
   return (
+    <>
     <div className="space-y-6 animate-in fade-in duration-500 pb-20">
       {/* HEADER PAGE */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-sm border border-zinc-100 dark:border-zinc-800/50">
@@ -330,6 +350,15 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
                 <span className="flex items-center gap-2">{user.disabled ? <CheckCircle size={14} /> : <Ban size={14} />} {user.disabled ? 'Ativar conta' : 'Banir usuário'}</span>
                 <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all" />
               </button>
+              <div className="mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                <button 
+                  onClick={() => { setDeleteConfirmEmail(''); setShowDeleteModal(true); }}
+                  className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/10 text-xs font-bold text-red-600 dark:text-red-400 transition-all group border border-red-100 dark:border-red-900/20"
+                >
+                  <span className="flex items-center gap-2"><Trash2 size={14} /> Excluir conta permanentemente</span>
+                  <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all" />
+                </button>
+              </div>
             </div>
           </section>
 
@@ -438,6 +467,60 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
       </div>
 
     </div>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl border border-red-100 dark:border-red-900/30 w-full max-w-md p-8 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-500 flex-shrink-0">
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-zinc-900 dark:text-zinc-100">Excluir conta permanentemente</h2>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">Esta ação é <span className="font-black text-red-500">irreversível</span> e não pode ser desfeita.</p>
+              </div>
+            </div>
+
+            <div className="bg-red-50 dark:bg-red-900/10 rounded-2xl p-4 mb-6 border border-red-100 dark:border-red-900/20">
+              <p className="text-xs text-red-700 dark:text-red-400 font-bold leading-relaxed">
+                Todos os dados deste usuário serão excluídos permanentemente, incluindo tickets, pedidos e associações com organizações.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-[10px] font-black text-zinc-400 uppercase tracking-widest mb-2">Confirme digitando o e-mail do usuário</p>
+              <p className="text-xs font-mono font-bold text-zinc-600 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-800 rounded-xl px-3 py-2 mb-3 select-all">{user.email}</p>
+              <input
+                type="email"
+                value={deleteConfirmEmail}
+                onChange={e => setDeleteConfirmEmail(e.target.value)}
+                placeholder="Digite o e-mail para confirmar..."
+                className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 focus:border-red-400 dark:focus:border-red-600 rounded-xl px-4 py-3 text-sm font-bold text-zinc-900 dark:text-zinc-100 outline-none transition-all placeholder:font-normal placeholder:text-zinc-400"
+                autoFocus
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 font-bold text-sm hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteUser}
+                disabled={deleteConfirmEmail !== user.email || deleting}
+                className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-black text-sm hover:bg-red-700 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-red-500/20 disabled:shadow-none"
+              >
+                {deleting ? <RotateCw size={16} className="animate-spin" /> : <Trash2 size={16} />}
+                {deleting ? 'Excluindo...' : 'Excluir definitivamente'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
