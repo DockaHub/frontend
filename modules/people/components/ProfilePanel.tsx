@@ -129,6 +129,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveM
                             <div className="flex-1">
                                 <div className="text-docka-400 dark:text-zinc-500 text-xs">Data de Entrada</div>
                                 <div className="text-docka-900 dark:text-zinc-100 font-medium">{contact.joinDate}</div>
+                            </div>
                         </div>
                     </div>
                     <div className="border-t border-docka-100 dark:border-zinc-800 pt-6 space-y-4">
