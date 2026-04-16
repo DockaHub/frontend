@@ -636,7 +636,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 >
                                     <option value="">-- Não Atribuído --</option>
                                     {organizationMembers.map(m => (
-                                        <option key={m.userId} value={m.userId}>{m.user?.name}</option>
+                                        <option key={m.id} value={m.id}>{m.name}</option>
                                     ))}
                                 </select>
                             </div>
