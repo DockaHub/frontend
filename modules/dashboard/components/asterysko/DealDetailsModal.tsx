@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2 } from 'lucide-react';
-import { KanbanCardData } from '../../../../types';
+import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
@@ -38,12 +38,6 @@ interface DealComment {
     };
 }
 
-import { KanbanCardData, Organization } from '../../../../types';
-import Modal from '../../../../components/common/Modal';
-import api from '../../../../services/api';
-import { useAuth } from '../../../../context/AuthContext';
-import { useToast } from '../../../../context/ToastContext';
-
 interface DealDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -63,7 +57,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [isDeleting, setIsDeleting] = useState(false);
 
     // Permissions logic
-    const isAdmin = user?.role === 'ADMIN' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
+    const isAdmin = user?.role === 'admin' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
 
     // Tag creation state
     const [isAddingTag, setIsAddingTag] = useState(false);
