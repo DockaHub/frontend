@@ -24,7 +24,13 @@ const PeopleLayout: React.FC<PeopleLayoutProps> = ({ currentOrg, hasAccess = tru
     const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
     const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [newMemberData, setNewMemberData] = useState({
+        name: '',
+        email: '',
+        organizationId: currentOrg.id,
+        department: 'Engenharia',
         jobTitle: '',
+        role: 'MEMBER' as 'MEMBER' | 'ADMIN' | 'VIEWER' | 'OWNER',
         permissions: {
             canAccessFinance: false,
             canAccessSettings: false,
@@ -120,7 +126,13 @@ const PeopleLayout: React.FC<PeopleLayoutProps> = ({ currentOrg, hasAccess = tru
             });
             
             setIsAddMemberModalOpen(false);
+            setNewMemberData({
+                name: '',
+                email: '',
+                organizationId: currentOrg.id,
+                department: 'Engenharia',
                 jobTitle: '',
+                role: 'MEMBER',
                 permissions: {
                     canAccessFinance: false,
                     canAccessSettings: false,
