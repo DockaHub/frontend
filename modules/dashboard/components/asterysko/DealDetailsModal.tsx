@@ -623,7 +623,20 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
                                         <button
                                             key={plan}
-                                            onClick={() => handleAutoSave('planType', plan)}
+                                            onClick={() => {
+                                                handleAutoSave('planType', plan);
+                                                // Auto-update price based on plan
+                                                let newValue = '';
+                                                let numericValue = 0;
+                                                if (plan === 'ESSENCIAL') { newValue = '997,00'; numericValue = 997; }
+                                                else if (plan === 'PREMIUM') { newValue = '2.200,00'; numericValue = 2200; }
+                                                else if (plan === 'BLINDADO') { newValue = '3.700,00'; numericValue = 3700; }
+                                                
+                                                if (newValue) {
+                                                    setFormData((prev: any) => ({ ...prev, value: newValue }));
+                                                    updateDealPartial('value', numericValue);
+                                                }
+                                            }}
                                             className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${formData.planType === plan
                                                 ? 'bg-green-500 border-green-400 text-white shadow-lg scale-105'
                                                 : 'bg-docka-800 dark:bg-zinc-200 border-docka-700 dark:border-zinc-300 text-docka-400 dark:text-zinc-500'
@@ -679,23 +692,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
                     </div>
 
-                    {/* VALUE & FEE SELECTOR */}
+                    {/* VALUE SECTION */}
                     <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                                <Tag size={14} /> Selecionar Honorário Padrão
-                            </label>
-                            <select
-                                onChange={(e) => handleFeeSelect(e.target.value)}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                            >
-                                <option value="">-- Personalizado / Outro --</option>
-                                {fees.map(f => (
-                                    <option key={f.id} value={f.id}>{f.name} (R$ {Number(f.value).toLocaleString('pt-BR')})</option>
-                                ))}
-                            </select>
-                        </div>
-
                         <div className="space-y-2">
                             <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
                                 <DollarSign size={14} /> Valor Estimado
