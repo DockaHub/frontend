@@ -18,9 +18,8 @@ export const organizationService = {
 
     // Get members of an organization
     async getMembers(id: string): Promise<OrganizationMember[]> {
-        const response = await api.get(`/organizations/${id}`);
-        // Assuming the backend returns members in the organization object
-        return response.data.members || [];
+        const response = await api.get(`/organizations/${id}/members`);
+        return response.data || [];
     },
 
     // List ALL organizations (Admin)

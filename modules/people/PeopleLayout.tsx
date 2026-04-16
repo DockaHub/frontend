@@ -66,11 +66,11 @@ const PeopleLayout: React.FC<PeopleLayoutProps> = ({ currentOrg, hasAccess = tru
             }
 
             const mappedContacts: Contact[] = members.map((m: any) => ({
-                id: m.userId,
-                name: m.user.name,
-                email: m.user.email,
-                avatar: m.user.avatar || `https://ui-avatars.com/api/?name=${m.user.name}&background=random`,
-                role: m.user.jobTitle || 'Sem Cargo',
+                id: m.userId || m.id,
+                name: m.name,
+                email: m.email,
+                avatar: m.avatar || `https://ui-avatars.com/api/?name=${m.name}&background=random`,
+                role: m.jobTitle || 'Sem Cargo',
                 department: m.role === 'OWNER' ? 'Proprietário' : (m.role === 'ADMIN' ? 'Administrador' : 'Membro'),
                 organizationId: m.organizationId,
                 status: 'offline', // Placeholder
