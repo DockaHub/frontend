@@ -107,7 +107,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
             if (selectedOrg.slug.includes('hostizi')) {
                 return <HostiziDashboard user={user} activeView={activeView} organization={selectedOrg} />;
             }
-            return <TokyonDashboard user={user} activeView={activeView} organization={selectedOrg} />;
+            return <TokyonDashboard user={user} activeView={activeView} onNavigate={handleViewChange} organization={selectedOrg} />;
         }
         if (selectedOrg.slug === 'umachave') {
             return <UmaChaveDashboard user={user} activeView={activeView} organization={selectedOrg} />;

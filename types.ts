@@ -23,6 +23,12 @@ export interface Organization {
     contacts?: boolean;
   };
   memberRole?: 'OWNER' | 'ADMIN' | 'MEMBER';
+  memberPermissions?: {
+    canAccessFinance?: boolean;
+    canAccessSettings?: boolean;
+    canAccessPeople?: boolean;
+    canAccessContent?: boolean;
+  };
   logo?: string;
   svgIcon?: string;
   iconColor?: string;
@@ -190,6 +196,12 @@ export interface Contact {
   location?: string;
   isStarred?: boolean;
   joinDate?: string;
+  permissions?: {
+    canAccessFinance?: boolean;
+    canAccessSettings?: boolean;
+    canAccessPeople?: boolean;
+    canAccessContent?: boolean;
+  };
 }
 
 // TASKS TYPES (GLOBAL)
@@ -314,6 +326,9 @@ export interface KanbanCardData {
   contactName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  assignedUserId?: string;
+  planType?: 'ESSENCIAL' | 'PREMIUM' | 'BLINDADO';
+  closedAt?: string;
   unread?: boolean;
 }
 

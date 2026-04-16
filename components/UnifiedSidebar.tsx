@@ -83,23 +83,39 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+
     const handleSelectOrg = (org: Organization) => {
         onOrgChange(org);
         setIsOrgMenuOpen(false);
         if (isCollapsed) setIsCollapsed(false);
     };
 
-    // Global Apps Configuration
+    // Toggle item expansion
+    const toggleItem = (id: string) => {
+        setExpandedItems(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    // Global Apps Configuration - Filtered by Permissions
     const globalApps = [
         { id: 'home', label: 'Início', icon: Home, path: `/dashboard?view=home&org=${currentOrg.id}` },
-        { id: 'mail', label: 'E-mail', icon: Mail, path: `/mail?org=${currentOrg.id}` },
-        { id: 'chat', label: 'Chat', icon: MessageSquare, path: `/chat?org=${currentOrg.id}` },
-        { id: 'meet', label: 'Meet', icon: Phone, path: `/meet?org=${currentOrg.id}` },
-        { id: 'tasks', label: 'Tarefas', icon: CheckSquare, path: `/tasks?org=${currentOrg.id}` },
-        { id: 'calendar', label: 'Agenda', icon: Calendar, path: `/calendar?org=${currentOrg.id}` },
-        { id: 'drive', label: 'Drive', icon: HardDrive, path: `/drive?org=${currentOrg.id}` },
-        { id: 'contacts', label: 'Pessoas', icon: Users, path: `/contacts?org=${currentOrg.id}` },
-    ];
+        { id: 'mail', label: 'E-mail', icon: Mail, path: `/mail?org=${currentOrg.id}`, perm: 'canAccessContent' },
+        { id: 'chat', label: 'Chat', icon: MessageSquare, path: `/chat?org=${currentOrg.id}`, perm: 'canAccessContent' },
+        { id: 'meet', label: 'Meet', icon: Phone, path: `/meet?org=${currentOrg.id}`, perm: 'canAccessContent' },
+        { id: 'tasks', label: 'Tarefas', icon: CheckSquare, path: `/tasks?org=${currentOrg.id}`, perm: 'canAccessContent' },
+        { id: 'calendar', label: 'Agenda', icon: Calendar, path: `/calendar?org=${currentOrg.id}`, perm: 'canAccessContent' },
+        { id: 'drive', label: 'Drive', icon: HardDrive, path: `/drive?org=${currentOrg.id}`, perm: 'canAccessContent' },
+        { id: 'contacts', label: 'Pessoas', icon: Users, path: `/contacts?org=${currentOrg.id}`, perm: 'canAccessPeople' },
+    ].filter(app => {
+        if (!app.perm) return true;
+        if (currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN' || user.role === 'ADMIN') return true;
+        return (currentOrg.memberPermissions as any)?.[app.perm] !== false;
+    });
 
     return (
         <div className={`flex flex-col bg-docka-50 dark:bg-zinc-900 pt-4 h-full border-r border-docka-200/50 dark:border-zinc-800 shrink-0 transition-all duration-300 ease-in-out relative group/sidebar ${isCollapsed ? 'w-[68px]' : 'w-[260px]'} ${className}`}>
@@ -201,17 +217,19 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                         </button>
                                     ))}
                                 </div>
-                                <div className="p-2 border-t border-docka-100 dark:border-zinc-800 bg-docka-50/50 dark:bg-zinc-800/20">
-                                    <button
-                                        onClick={() => { setIsOrgMenuOpen(false); setIsAddOrgModalOpen(true); }}
-                                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-docka-100 dark:hover:bg-zinc-800 transition-colors text-docka-500 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 text-xs font-medium"
-                                    >
-                                        <div className="w-5 h-5 rounded border border-dashed border-docka-300 dark:border-zinc-600 flex items-center justify-center">
-                                            +
+                                    {(currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN' || user.role === 'ADMIN') && (
+                                        <div className="p-2 border-t border-docka-100 dark:border-zinc-800 bg-docka-50/50 dark:bg-zinc-800/20">
+                                            <button
+                                                onClick={() => { setIsOrgMenuOpen(false); setIsAddOrgModalOpen(true); }}
+                                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-docka-100 dark:hover:bg-zinc-800 transition-colors text-docka-500 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 text-xs font-medium"
+                                            >
+                                                <div className="w-5 h-5 rounded border border-dashed border-docka-300 dark:border-zinc-600 flex items-center justify-center">
+                                                    +
+                                                </div>
+                                                Criar nova organização
+                                            </button>
                                         </div>
-                                        Criar nova organização
-                                    </button>
-                                </div>
+                                    )}
                             </div>
                         </>
                     )}
@@ -226,13 +244,17 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
 
                         const isSelected = isDashboard && (currentView === item.id || (item.children?.some(child => currentView === child.id)));
                         const hasChildren = item.children && item.children.length > 0;
-                        const isExpanded = isSelected;
+                        const isExpanded = isSelected || expandedItems.has(item.id);
 
                         const ButtonContent = (
                             <button
                                 onClick={() => {
-                                    navigate(`/dashboard?view=${item.id}&org=${currentOrg.id}`);
-                                    if (onClose && !hasChildren) onClose();
+                                    if (hasChildren) {
+                                        toggleItem(item.id);
+                                    } else {
+                                        navigate(`/dashboard?view=${item.id}&org=${currentOrg.id}`);
+                                        if (onClose) onClose();
+                                    }
                                 }}
                                 className={`w-full flex items-center px-2 py-2 text-sm rounded-lg transition-all duration-200 group ${isSelected
                                     ? 'bg-docka-100 dark:bg-zinc-800 text-docka-900 dark:text-zinc-100 font-semibold'

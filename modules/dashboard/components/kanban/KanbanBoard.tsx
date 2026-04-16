@@ -56,10 +56,18 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCa
                           style={{ ...provided.draggableProps.style }}
                           className={`bg-white dark:bg-zinc-900 p-4 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm hover:shadow-md hover:border-docka-300 dark:hover:border-zinc-700 transition-all cursor-pointer group relative active:scale-[0.98] ${snapshot.isDragging ? 'shadow-lg rotate-2 z-50' : ''}`}
                         >
-                          {/* Priority Indicator */}
-                          {card.priority === 'high' && (
-                            <div className="absolute top-4 right-4 w-2 h-2 bg-red-500 rounded-full animate-pulse" title="Alta Prioridade" />
-                          )}
+                          {/* Top Meta: Priority & Health */}
+                          <div className="absolute top-4 right-4 flex items-center gap-1.5">
+                            {(card as any).health && (
+                                <div 
+                                    className={`w-2 h-2 rounded-full ${(card as any).health === 'on-track' ? 'bg-emerald-500' : (card as any).health === 'at-risk' ? 'bg-orange-500' : 'bg-red-500'}`} 
+                                    title={`Status: ${(card as any).health}`}
+                                />
+                            )}
+                            {card.priority === 'high' && (
+                                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title="Alta Prioridade" />
+                            )}
+                          </div>
 
                           {/* Tags */}
                           {card.tags && card.tags.length > 0 && (
@@ -74,15 +82,34 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCa
 
                           {/* Main Content */}
                           <h4 className="font-bold text-docka-900 dark:text-zinc-100 mb-1 leading-snug">{card.title}</h4>
-                          {card.subtitle && <p className="text-xs text-docka-500 dark:text-zinc-400 mb-3">{card.subtitle}</p>}
+                          {card.subtitle && <p className="text-xs text-docka-500 dark:text-zinc-400 mb-3 line-clamp-2">{card.subtitle}</p>}
+
+                          {/* Probability Indicator (CRM) */}
+                          {(card as any).probability !== undefined && (card as any).probability < 100 && (
+                             <div className="mb-3">
+                                <div className="flex justify-between items-center text-[10px] font-bold text-docka-400 mb-1 uppercase">
+                                    <span>Probabilidade</span>
+                                    <span>{(card as any).probability}%</span>
+                                </div>
+                                <div className="w-full h-1 bg-docka-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                    <div className="h-full bg-orange-500 rounded-full" style={{ width: `${(card as any).probability}%` }} />
+                                </div>
+                             </div>
+                          )}
 
                           {/* Footer Meta */}
                           <div className="flex justify-between items-center pt-3 border-t border-docka-50 dark:border-zinc-800">
                             <div className="flex items-center gap-3">
                               {card.members && card.members.length > 0 && (
                                 <div className="flex -space-x-1.5">
-                                  {card.members.map((m, i) => (
-                                    <img key={i} src={m} className="w-5 h-5 rounded-full border border-white dark:border-zinc-900" alt="Member" />
+                                  {card.members.map((m: any, i: number) => (
+                                    <img 
+                                        key={i} 
+                                        src={typeof m === 'string' ? m : m.avatar} 
+                                        className="w-5 h-5 rounded-full border border-white dark:border-zinc-900" 
+                                        alt="Member" 
+                                        title={typeof m === 'string' ? '' : m.name}
+                                    />
                                   ))}
                                 </div>
                               )}

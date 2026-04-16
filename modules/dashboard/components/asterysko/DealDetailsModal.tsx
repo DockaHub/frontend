@@ -58,9 +58,13 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     // Form State
     const [formData, setFormData] = useState<any>({});
     const [fees, setFees] = useState<any[]>([]);
+    const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
 
     useEffect(() => {
         api.get('/asterysko/fees').then(res => setFees(res.data)).catch(err => console.error('Error loading fees:', err));
+        
+        // Fetch org members to assign to deals
+        api.get('/organizations/members').then(res => setOrganizationMembers(res.data)).catch(err => console.error('Error loading members:', err));
     }, []);
 
     const handleFeeSelect = (feeId: string) => {
@@ -94,6 +98,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 status: deal.status || '',
                 description: (deal as any).description || '',
                 signedAt: (deal as any).signedAt || null,
+                assignedUserId: (deal as any).assignedUserId || null,
+                planType: (deal as any).planType || 'ESSENCIAL',
                 tags,
                 cnpj: info.cnpj || '',
                 razaoSocial: info.razaoSocial || '',
@@ -122,6 +128,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     contactPhone: response.data.contactPhone,
                     contactEmail: response.data.contactEmail,
                     signedAt: response.data.signedAt,
+                    assignedUserId: response.data.assignedUserId,
+                    planType: response.data.planType,
                     tags,
                     cnpj: info.cnpj || '',
                     razaoSocial: info.razaoSocial || '',
@@ -583,9 +591,50 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         )}
                         {formData.status === 'won' && (
                             <div className="text-center text-xs text-docka-500 italic">
-                                Processo concluído. Nenhuma ação pendente.
+                                Processo concluído em {formData.closedAt ? new Date(formData.closedAt).toLocaleDateString() : 'N/A'}.
                             </div>
                         )}
+                    </div>
+
+                    {/* COMMISSION AREA - NEW */}
+                    <div className="bg-docka-900 dark:bg-zinc-100 p-5 rounded-xl border border-docka-800 dark:border-zinc-200 shadow-xl space-y-4">
+                        <label className="text-xs font-bold text-docka-300 dark:text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <DollarSign size={14} className="text-green-400" /> Configuração de Vendas
+                        </label>
+
+                        <div className="space-y-3">
+                            <div className="group">
+                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Responsável (Vendas)</label>
+                                <select
+                                    className="w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500 transition-all text-white dark:text-zinc-900"
+                                    value={formData.assignedUserId || ''}
+                                    onChange={e => handleAutoSave('assignedUserId', e.target.value)}
+                                >
+                                    <option value="">-- Não Atribuído --</option>
+                                    {organizationMembers.map(m => (
+                                        <option key={m.userId} value={m.userId}>{m.user?.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="group">
+                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Tipo de Plano</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
+                                        <button
+                                            key={plan}
+                                            onClick={() => handleAutoSave('planType', plan)}
+                                            className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${formData.planType === plan
+                                                ? 'bg-green-500 border-green-400 text-white shadow-lg scale-105'
+                                                : 'bg-docka-800 dark:bg-zinc-200 border-docka-700 dark:border-zinc-300 text-docka-400 dark:text-zinc-500'
+                                                }`}
+                                        >
+                                            {plan}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {/* CONTACT INFO */}

@@ -1,9 +1,8 @@
-
 import {
     LayoutDashboard, Ticket, CreditCard, Mic2, LayoutTemplate, Megaphone, Users,
     BarChart3, Settings, Globe, Headphones, FolderOpen, Mail,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
-    Network, FileInput, Server, Search, MessageSquare, Book
+    Network, FileInput, Server, Search, MessageSquare, Book, Trophy
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization } from '../types';
@@ -59,8 +58,18 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         if (currentOrg.slug === 'tokyon') {
             return [
                 { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
+                {
+                    id: 'boards',
+                    label: 'Quadros de Trabalho',
+                    icon: Briefcase,
+                    children: [
+                        { id: 'clients', label: 'CRM & Vendas' },
+                        { id: 'projects', label: 'Gestão de Projetos' },
+                        { id: 'generic-board', label: 'Kanban Genérico' },
+                    ]
+                },
                 { id: 'orange-program', label: 'Orange Program', icon: Zap },
-                { id: 'clients', label: 'Clientes & Projetos', icon: Briefcase },
+                { id: 'client-list', label: 'Base de Clientes', icon: Users },
                 { id: 'financial', label: 'Financeiro', icon: CreditCard },
                 { id: 'settings', label: 'Configurações', icon: Settings },
             ];
@@ -103,6 +112,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'clients', label: 'Clientes', icon: Briefcase },
                 { id: 'crm', label: 'CRM & Leads', icon: Users, badgeCount: unreadLeads > 0 ? unreadLeads : undefined, badgeColor: 'bg-red-500' },
                 { id: 'processes', label: 'Processos INPI', icon: Scale },
+                { id: 'performance', label: 'Minhas Metas', icon: Trophy },
                 { id: 'financial', label: 'Financeiro', icon: CreditCard },
                 { id: 'settings', label: 'Configurações', icon: Settings },
             ];
@@ -154,7 +164,43 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         ];
     };
 
+    const filterMenuByPermissions = (items: MenuItem[]): MenuItem[] => {
+        if (!currentOrg) return items;
+        
+        // Donos e Admins globais/da org vêem tudo
+        if (currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN') {
+            return items;
+        }
+
+        const perms = currentOrg.memberPermissions;
+        if (!perms) return items; // Fallback se não houver permissões definidas
+
+        return items.filter(item => {
+            // Regras para Financeiro
+            if (['financial', 'finance', 'billing', 'financeiro'].includes(item.id.toLowerCase())) {
+                return perms.canAccessFinance;
+            }
+            
+            // Regras para Configurações
+            if (item.id.toLowerCase() === 'settings') {
+                return perms.canAccessSettings;
+            }
+
+            // Regras para Pessoas/Usuários (se aplicável ao item)
+            if (['users', 'members', 'pessoas'].includes(item.id.toLowerCase())) {
+                return perms.canAccessPeople !== false; // Padrão true
+            }
+
+            // Regras para Conteúdo/Operacional
+            if (['content', 'events', 'artists', 'research', 'properties'].includes(item.id.toLowerCase())) {
+                return perms.canAccessContent !== false; // Padrão true
+            }
+
+            return true;
+        });
+    };
+
     return {
-        menuItems: getOrgMenu(),
+        menuItems: filterMenuByPermissions(getOrgMenu()),
     };
 };

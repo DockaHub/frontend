@@ -42,9 +42,14 @@ export const organizationService = {
     },
 
     // Add a member to the organization
-    async addMember(id: string, email: string, role: string = 'MEMBER'): Promise<OrganizationMember> {
-        const response = await api.post(`/organizations/${id}/members`, { email, role });
+    async addMember(id: string, email: string, role: string = 'MEMBER', permissions: any = null): Promise<OrganizationMember> {
+        const response = await api.post(`/organizations/${id}/members`, { email, role, permissions });
         return response.data;
+    },
+
+    // Update member permissions
+    async updateMemberPermissions(id: string, userId: string, permissions: any): Promise<void> {
+        await api.patch(`/organizations/${id}/members/${userId}/permissions`, { permissions });
     },
 
     // Remove a member from the organization

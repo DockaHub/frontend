@@ -1,10 +1,8 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   Zap, TrendingUp, CheckCircle2, Clock, Download, 
-  Menu, User, Bell, X, Image as ImageIcon, FileText, 
-  ExternalLink, LogOut, ChevronRight, ThumbsUp, MessageSquare,
-  BarChart3, Globe, DollarSign, Calendar, Eye, ArrowUpRight
+  Bell, FileText, ThumbsUp, MessageSquare,
+  BarChart3, DollarSign, Calendar, Eye, ArrowUpRight
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 
@@ -105,56 +103,53 @@ const TokyonClientPortal: React.FC<TokyonClientPortalProps> = ({ onExit }) => {
         </div>
 
         {/* HEADER AREA (Black & Orange Identity) */}
-        <div className="bg-zinc-900 text-white px-6 py-6 shrink-0 relative overflow-hidden">
-            {/* Abstract Background */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-orange-600 rounded-full blur-[120px] opacity-20 -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+        <div className="bg-zinc-900 text-white px-6 py-10 shrink-0 relative overflow-hidden border-b border-white/5">
+            {/* Dynamic Background Elements */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-600 rounded-full blur-[150px] opacity-20 -translate-y-1/2 translate-x-1/3 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-zinc-800 rounded-full blur-[100px] opacity-30 translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6 relative z-10">
-                <div className="flex items-center gap-4">
-                    <TokyonLogoSVG />
-                    <div className="h-8 w-px bg-zinc-700 hidden md:block" />
-                    <p className="text-xs text-zinc-400 font-medium tracking-widest uppercase hidden md:block">Client Space</p>
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 relative z-10 font-black tracking-tight">
+                <div className="flex items-center gap-6">
+                    <div className="hover:scale-110 transition-transform cursor-pointer">
+                        <TokyonLogoSVG />
+                    </div>
                 </div>
 
-                {/* Desktop Nav */}
-                <div className="flex bg-zinc-800/50 backdrop-blur-md p-1 rounded-lg border border-zinc-700/50">
+                {/* Main Nav - Glassmorphism */}
+                <div className="flex bg-white/5 backdrop-blur-2xl p-1.5 rounded-2xl border border-white/10 shadow-2xl">
                     {[
-                        { id: 'dashboard', label: 'Visão Geral', icon: BarChart3 },
-                        { id: 'approvals', label: 'Aprovações', icon: CheckCircle2, count: 2 },
+                        { id: 'dashboard', label: 'Estratégia', icon: BarChart3 },
+                        { id: 'approvals', label: 'Entregas', icon: CheckCircle2, count: 2 },
                         { id: 'finance', label: 'Financeiro', icon: DollarSign }
                     ].map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as any)}
-                            className={`flex items-center gap-2 px-6 py-2 rounded-md text-sm font-medium transition-all ${
+                            className={`flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-black transition-all duration-300 ${
                                 activeTab === tab.id 
-                                ? 'bg-orange-600 text-white shadow-sm' 
-                                : 'text-zinc-400 hover:text-white hover:bg-zinc-700'
+                                ? 'bg-white text-zinc-900 shadow-[0_8px_20px_rgba(255,255,255,0.1)] active:scale-95' 
+                                : 'text-zinc-400 hover:text-white hover:bg-white/5'
                             }`}
                         >
-                            <tab.icon size={16} />
+                            <tab.icon size={18} />
                             {tab.label}
                             {tab.count && (
-                                <span className="bg-white text-orange-600 text-[10px] px-1.5 py-0.5 rounded-full font-bold ml-1 shadow-sm">{tab.count}</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-black ml-1 shadow-sm ${activeTab === tab.id ? 'bg-orange-600 text-white' : 'bg-white/10 text-white'}`}>
+                                    {tab.count}
+                                </span>
                             )}
                         </button>
                     ))}
                 </div>
 
-                <div className="flex items-center gap-4">
-                    <button className="relative p-2 hover:bg-zinc-800 rounded-full transition-colors text-zinc-400 hover:text-white">
-                        <Bell size={20} />
-                        <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full border-2 border-zinc-900" />
-                    </button>
-                    <div className="flex items-center gap-3 pl-4 border-l border-zinc-700">
-                        <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold">Roberto A.</p>
-                            <p className="text-xs text-zinc-500">CMO • Taurus</p>
-                        </div>
-                        <div className="w-10 h-10 bg-zinc-800 rounded-full flex items-center justify-center text-zinc-400 border border-zinc-700">
-                            <User size={20} />
-                        </div>
+                <div className="flex items-center gap-5">
+                    <div className="flex flex-col items-end pr-5 border-r border-white/10">
+                        <p className="text-sm font-black text-white">Roberto A.</p>
+                        <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">CMO • Taurus</p>
                     </div>
+                    <button className="w-12 h-12 bg-white/5 hover:bg-white/10 rounded-2xl flex items-center justify-center text-zinc-400 hover:text-white border border-white/10 transition-all active:scale-90">
+                        <Bell size={20} />
+                    </button>
                 </div>
             </div>
         </div>
@@ -182,88 +177,106 @@ const TokyonClientPortal: React.FC<TokyonClientPortalProps> = ({ onExit }) => {
                         </div>
 
                         {/* KPI Grid */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                             {METRICS.map((m, i) => (
-                                <div key={i} className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm hover:border-orange-300 dark:hover:border-orange-700 hover:shadow-md transition-all group">
-                                    <p className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2">{m.label}</p>
+                                <div key={i} className="bg-white dark:bg-zinc-900/50 backdrop-blur-xl p-6 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl shadow-zinc-200/50 dark:shadow-none hover:border-orange-500 transition-all hover:-translate-y-1 group">
+                                    <p className="text-[10px] font-black text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mb-3">{m.label}</p>
                                     <div className="flex items-end justify-between">
-                                        <h3 className="text-3xl font-bold text-zinc-900 dark:text-zinc-100">{m.value}</h3>
-                                        <div className={`text-xs font-bold px-2 py-1 rounded flex items-center gap-1 ${m.change.includes('+') ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
-                                            <TrendingUp size={12} /> {m.change}
+                                        <h3 className="text-4xl font-black text-zinc-900 dark:text-zinc-100">{m.value}</h3>
+                                        <div className={`text-xs font-black px-3 py-1 rounded-full flex items-center gap-1 ${m.change.includes('+') ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30' : 'bg-red-50 text-red-600 dark:bg-red-950/30'}`}>
+                                            {m.change}
                                         </div>
                                     </div>
-                                    <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-2">{m.period}</p>
                                 </div>
                             ))}
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Project Timeline (Orange Program) */}
-                            <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
-                                <div className="flex justify-between items-center mb-6">
-                                    <h3 className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                                        <Zap size={18} className="text-orange-600" /> Orange Program™
-                                    </h3>
-                                    <span className="text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded border border-orange-100 dark:border-orange-900/30 uppercase tracking-wide">Fase 3: Evolução Web</span>
-                                </div>
-                                <div className="space-y-6 relative before:absolute before:left-4 before:top-4 before:bottom-4 before:w-0.5 before:bg-zinc-100 dark:before:bg-zinc-800">
-                                    {PROJECT_TIMELINE.map((step, i) => (
-                                        <div key={i} className="relative flex items-center gap-4 group">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 shrink-0 z-10 transition-all ${
-                                                step.status === 'done' ? 'border-orange-500 text-orange-500 bg-white dark:bg-zinc-900' :
-                                                step.status === 'active' ? 'border-orange-600 bg-orange-600 text-white shadow-lg shadow-orange-200 dark:shadow-none' :
-                                                'border-zinc-200 dark:border-zinc-700 text-zinc-300 dark:text-zinc-600 bg-white dark:bg-zinc-900'
-                                            }`}>
-                                                {step.status === 'done' ? <CheckCircle2 size={16} /> : i + 1}
-                                            </div>
-                                            <div className="flex-1">
-                                                <div className="flex justify-between mb-1">
-                                                    <h4 className={`font-bold text-sm ${step.status === 'waiting' ? 'text-zinc-400 dark:text-zinc-600' : 'text-zinc-900 dark:text-zinc-100'}`}>{step.phase}</h4>
-                                                    <span className="text-xs font-bold text-zinc-400 dark:text-zinc-600">{step.progress}%</span>
-                                                </div>
-                                                <div className="w-full h-1.5 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                                    <div className="h-full bg-orange-600 rounded-full transition-all duration-1000" style={{ width: `${step.progress}%` }} />
-                                                </div>
-                                                {step.next && (
-                                                    <p className="text-xs text-orange-600 dark:text-orange-400 mt-1 font-medium flex items-center gap-1">
-                                                        <ChevronRight size={12} /> Em andamento: {step.next}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                            {/* Strategic Pillars (Orange Program) */}
+                            <div className="lg:col-span-2 space-y-6">
+                                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl p-8 shadow-sm relative overflow-hidden">
+                                     <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600 rounded-full blur-[100px] opacity-5 -translate-y-1/2 translate-x-1/2" />
+                                     
+                                     <div className="flex justify-between items-center mb-8 relative z-10">
+                                         <h3 className="text-xl font-black text-zinc-900 dark:text-zinc-100 flex items-center gap-3">
+                                             <div className="p-2 bg-orange-600 rounded-lg text-white shadow-lg shadow-orange-900/20">
+                                                 <Zap size={20} fill="currentColor" />
+                                             </div>
+                                             Sua Jornada Estratégica
+                                         </h3>
+                                         <span className="text-[10px] font-black text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 px-4 py-1.5 rounded-full border border-orange-100 dark:border-orange-900/30 uppercase tracking-[0.2em]">65% Concluído</span>
+                                     </div>
+
+                                     <div className="grid grid-cols-5 gap-3 mb-10">
+                                         {[
+                                             { label: 'Posicionamento', active: true, done: true },
+                                             { label: 'Presença Digital', active: true, done: true },
+                                             { label: 'Web Experience', active: true, done: false },
+                                             { label: 'Tráfego', active: false, done: false },
+                                             { label: 'CRM', active: false, done: false },
+                                         ].map((step, i) => (
+                                             <div key={i} className="flex flex-col items-center gap-2">
+                                                 <div className={`w-full h-2 rounded-full transition-all duration-700 ${step.done ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : step.active ? 'bg-orange-600' : 'bg-zinc-100 dark:bg-zinc-800'}`} />
+                                                 <span className={`text-[9px] font-black uppercase text-center leading-tight ${step.active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-400'}`}>{step.label}</span>
+                                             </div>
+                                         ))}
+                                     </div>
+
+                                     <div className="space-y-4">
+                                         {PROJECT_TIMELINE.slice(0, 3).map((step, i) => (
+                                             <div key={i} className="flex items-center gap-5 p-4 bg-zinc-50 dark:bg-zinc-800/30 rounded-2xl border border-zinc-100 dark:border-zinc-800 hover:bg-white dark:hover:bg-zinc-800 transition-all hover:shadow-xl hover:shadow-zinc-200/50 dark:hover:shadow-none cursor-default">
+                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${step.status === 'done' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-600 text-white'}`}>
+                                                     {step.status === 'done' ? <CheckCircle2 size={18} /> : <Clock size={18} />}
+                                                 </div>
+                                                 <div className="flex-1">
+                                                     <p className="text-xs font-black text-zinc-900 dark:text-zinc-100 mb-1">{step.phase}</p>
+                                                     <div className="w-full h-1 bg-zinc-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                                         <div className={`h-full ${step.status === 'done' ? 'bg-emerald-500' : 'bg-orange-600'} rounded-full`} style={{ width: `${step.progress}%` }} />
+                                                     </div>
+                                                 </div>
+                                                 {step.next && <span className="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-1 rounded">PRÓXIMO: {step.next}</span>}
+                                             </div>
+                                         ))}
+                                     </div>
                                 </div>
                             </div>
 
-                            {/* Pending Approvals Widget */}
-                            <div className="bg-zinc-900 rounded-xl p-6 text-white shadow-xl relative overflow-hidden flex flex-col border border-zinc-800">
+                            {/* Impact Summary Widget */}
+                            <div className="bg-zinc-950 rounded-3xl p-8 text-white shadow-2xl relative overflow-hidden flex flex-col border border-white/5">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-orange-600 rounded-full blur-[120px] opacity-10 -translate-y-1/2 translate-x-1/2" />
                                 <div className="relative z-10 flex-1">
-                                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                                        <CheckCircle2 size={20} className="text-orange-500" />
-                                        Você tem pendências
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {APPROVAL_QUEUE.filter(i => i.status === 'pending').map((item) => (
-                                            <div key={item.id} className="bg-zinc-800 p-3 rounded-lg border border-zinc-700 flex gap-3 items-center hover:bg-zinc-750 transition-colors cursor-pointer group" onClick={() => { setActiveTab('approvals'); setSelectedAsset(item); }}>
-                                                {item.preview ? (
-                                                    <img src={item.preview} className="w-10 h-10 rounded object-cover border border-zinc-600 group-hover:border-orange-500 transition-colors" />
-                                                ) : (
-                                                    <div className="w-10 h-10 bg-zinc-700 rounded flex items-center justify-center text-zinc-400 border border-zinc-600 group-hover:border-orange-500 transition-colors"><FileText size={16} /></div>
-                                                )}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-bold truncate group-hover:text-orange-400 transition-colors">{item.title}</p>
-                                                    <p className="text-xs text-zinc-400">{item.type} • {item.date}</p>
-                                                </div>
-                                                <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse shadow-[0_0_10px_#f97316]" />
+                                    <div className="flex items-center gap-3 mb-8">
+                                        <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center">
+                                            <TrendingUp size={20} />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-black text-lg">Resumo de Impacto</h3>
+                                            <p className="text-zinc-500 text-[10px] font-black uppercase tracking-widest">ROI Projectado • Março 2026</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-6">
+                                        <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
+                                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Retorno sobre Investimento</p>
+                                            <div className="flex items-end gap-2">
+                                                <span className="text-4xl font-black">4.2x</span>
+                                                <span className="text-emerald-500 text-xs font-black mb-2">+15% este tri</span>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className="p-5 bg-white/5 rounded-2xl border border-white/10">
+                                            <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">Eficiência Operacional</p>
+                                            <div className="flex items-end gap-2">
+                                                <span className="text-4xl font-black">+32%</span>
+                                                <span className="text-orange-500 text-xs font-black mb-2">vs. s/ Dockha</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <button 
                                     onClick={() => setActiveTab('approvals')}
-                                    className="w-full mt-6 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-lg text-sm font-bold transition-all shadow-lg shadow-orange-900/20 active:scale-95"
+                                    className="w-full mt-10 bg-white text-zinc-950 py-4 rounded-2xl text-xs font-black hover:scale-[1.02] active:scale-95 transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-3"
                                 >
-                                    Revisar & Aprovar (2)
+                                    Ver Relatório Completo <ArrowUpRight size={18} />
                                 </button>
                             </div>
                         </div>

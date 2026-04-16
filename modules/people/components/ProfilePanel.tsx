@@ -1,16 +1,50 @@
 
 import React from 'react';
 import { Contact } from '../../../types';
-import { X, Mail, MessageSquare, Phone, MapPin, Calendar, Briefcase, Star } from 'lucide-react';
+import { X, Mail, MessageSquare, Phone, MapPin, Calendar, Briefcase, Star, Trash2, Shield, Settings, CreditCard, Users, FolderOpen, Save } from 'lucide-react';
 import OrgTag from '../../../components/common/OrgTag';
 
 interface ProfilePanelProps {
-    contact: Contact | null;
-    onClose: () => void;
+    onRemoveMember: (contact: Contact) => Promise<void>;
+    onUpdatePermissions: (contactId: string, permissions: any) => Promise<void>;
 }
 
-const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose }) => {
+const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveMember, onUpdatePermissions }) => {
+    const [isDeleting, setIsDeleting] = React.useState(false);
+    const [showConfirmDelete, setShowConfirmDelete] = React.useState(false);
+    const [isSaving, setIsSaving] = React.useState(false);
+    const [localPermissions, setLocalPermissions] = React.useState(contact?.permissions || {
+        canAccessFinance: false,
+        canAccessSettings: false,
+        canAccessPeople: true,
+        canAccessContent: true
+    });
+
+    React.useEffect(() => {
+        if (contact?.permissions) {
+            setLocalPermissions(contact.permissions);
+        }
+    }, [contact]);
+
     if (!contact) return null;
+
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        await onRemoveMember(contact);
+        setIsDeleting(false);
+        setShowConfirmDelete(false);
+    };
+
+    const handleSavePermissions = async () => {
+        setIsSaving(true);
+        try {
+            await onUpdatePermissions(contact.id, localPermissions);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const hasPermissionChanges = JSON.stringify(localPermissions) !== JSON.stringify(contact.permissions);
 
     return (
         <div className="fixed inset-y-0 right-0 w-[400px] bg-white dark:bg-zinc-900 shadow-2xl border-l border-docka-200 dark:border-zinc-800 transform transition-transform duration-300 z-50 flex flex-col animate-in slide-in-from-right">
@@ -97,9 +131,81 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose }) => {
                                 <div className="text-docka-900 dark:text-zinc-100 font-medium">{contact.joinDate}</div>
                             </div>
                         </div>
+                    <div className="border-t border-docka-100 dark:border-zinc-800 pt-6 space-y-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xs font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-wider">Acesso e Permissões</h3>
+                            {hasPermissionChanges && (
+                                <button 
+                                    onClick={handleSavePermissions}
+                                    disabled={isSaving}
+                                    className="text-[10px] font-bold bg-indigo-500 hover:bg-indigo-600 text-white px-2 py-1 rounded flex items-center gap-1 transition-colors disabled:opacity-50"
+                                >
+                                    <Save size={10} /> {isSaving ? 'Salvando...' : 'Salvar'}
+                                </button>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            {[
+                                { id: 'canAccessFinance', label: 'Financeiro', icon: CreditCard },
+                                { id: 'canAccessSettings', label: 'Configurações', icon: Settings },
+                                { id: 'canAccessPeople', label: 'Pessoas', icon: Users },
+                                { id: 'canAccessContent', label: 'Conteúdo', icon: FolderOpen }
+                            ].map((perm) => (
+                                <label key={perm.id} className="flex items-center gap-3 p-3 bg-docka-50/50 dark:bg-zinc-800/30 border border-docka-100 dark:border-zinc-800 rounded-xl cursor-pointer hover:bg-docka-50 dark:hover:bg-zinc-800 transition-colors group">
+                                    <div className="w-8 h-8 rounded-lg bg-white dark:bg-zinc-800 flex items-center justify-center text-docka-400 dark:text-zinc-500 group-hover:text-indigo-500 transition-colors">
+                                        <perm.icon size={16} />
+                                    </div>
+                                    <div className="flex-1 text-sm font-medium text-docka-900 dark:text-zinc-100">{perm.label}</div>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={(localPermissions as any)[perm.id]}
+                                        onChange={(e) => setLocalPermissions({
+                                            ...localPermissions, 
+                                            [perm.id]: e.target.checked
+                                        })}
+                                        className="w-4 h-4 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer" 
+                                    />
+                                </label>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
+                {/* Danger Zone */}
+                <div className="mt-12 pt-6 border-t border-docka-100 dark:border-zinc-800">
+                    <h3 className="text-xs font-bold text-red-500 dark:text-red-400 uppercase tracking-wider mb-4">Zona de Perigo</h3>
+                    
+                    {!showConfirmDelete ? (
+                        <button 
+                            onClick={() => setShowConfirmDelete(true)}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-sm font-medium transition-colors"
+                        >
+                            <Trash2 size={16} />
+                            Remover da Organização
+                        </button>
+                    ) : (
+                        <div className="space-y-3 p-4 bg-red-50 dark:bg-red-900/10 rounded-lg border border-red-100 dark:border-red-900/20">
+                            <p className="text-sm text-red-700 dark:text-red-300 font-medium">Tem certeza que deseja remover {contact.name} desta organização?</p>
+                            <div className="flex gap-2">
+                                <button 
+                                    disabled={isDeleting}
+                                    onClick={handleDelete}
+                                    className="flex-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-md transition-colors disabled:opacity-50"
+                                >
+                                    {isDeleting ? 'Removendo...' : 'Sim, Remover'}
+                                </button>
+                                <button 
+                                    disabled={isDeleting}
+                                    onClick={() => setShowConfirmDelete(false)}
+                                    className="flex-1 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-md transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -11,6 +11,7 @@ import AsteryskoOverviewView from './asterysko/AsteryskoOverviewView';
 import AsteryskoDocumentsView from './asterysko/AsteryskoDocumentsView';
 import AsteryskoClientPortal from './asterysko/AsteryskoClientPortal';
 import AsteryskoClientsView from './asterysko/AsteryskoClientsView';
+import AsteryskoPerformanceView from './asterysko/AsteryskoPerformanceView';
 
 
 import SearchAssistant from '../../asterysko/SearchAssistant';
@@ -60,6 +61,8 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
             return <div className="h-full bg-docka-50 dark:bg-zinc-950"><AsteryskoFinancialView /></div>;
         case 'settings':
             return <AsteryskoSettingsView onOpenClientPortal={() => setViewingAsClient(true)} organization={organization} />;
+        case 'performance':
+            return <AsteryskoPerformanceView />;
         case 'documents':
             return <AsteryskoDocumentsView />;
         case 'overview':

@@ -240,41 +240,49 @@ const AppContent: React.FC = () => {
     navigate('/admin');
   };
 
-  // Command Palette Actions Definition
-  const commandActions = [
-    // Navigation
-    { id: 'nav-mail', label: 'Ir para E-mail', icon: Mail, section: 'Navegação', perform: () => navigate(`/mail?org=${currentOrg.id}`) },
-    { id: 'nav-chat', label: 'Ir para Chat', icon: MessageSquare, section: 'Navegação', perform: () => navigate(`/chat?org=${currentOrg.id}`) },
-    { id: 'nav-calendar', label: 'Ir para Agenda', icon: Calendar, section: 'Navegação', perform: () => navigate(`/calendar?org=${currentOrg.id}`) },
-    { id: 'nav-drive', label: 'Ir para Drive', icon: HardDrive, section: 'Navegação', perform: () => navigate(`/drive?org=${currentOrg.id}`) },
-    { id: 'nav-tasks', label: 'Ir para Tarefas', icon: CheckSquare, section: 'Navegação', perform: () => navigate(`/tasks?org=${currentOrg.id}`) },
-    { id: 'nav-people', label: 'Ir para Pessoas', icon: Users, section: 'Navegação', perform: () => navigate(`/contacts?org=${currentOrg.id}`) },
-    { id: 'nav-meet', label: 'Ir para Meet', icon: Video, section: 'Navegação', perform: () => navigate(`/meet?org=${currentOrg.id}`) },
-    { id: 'nav-dash', label: 'Ir para Painel', icon: LayoutDashboard, section: 'Navegação', perform: () => navigate(`/dashboard?org=${currentOrg.id}`) },
-
-    // Organizations
-    ...(userOrgs.length > 0 ? userOrgs : ORGANIZATIONS).map(org => ({
-      id: `org-${org.id}`,
-      label: `Mudar para ${org.name}`,
-      icon: Building2,
-      section: 'Workspaces',
-      perform: () => {
-        setCurrentOrg(org);
-        navigate(`/dashboard?org=${org.id}`);
-        addToast({
-          type: 'success',
-          title: `Workspace Alterado`,
-          message: `Você agora está visualizando ${org.name}.`
-        });
-      }
-    })),
-
-    // System
-    { id: 'sys-theme', label: `Alternar para Modo ${theme === 'light' ? 'Escuro' : 'Claro'}`, icon: theme === 'light' ? Moon : Sun, section: 'Sistema', perform: toggleTheme },
-    { id: 'sys-settings', label: 'Abrir Preferências', icon: Settings, section: 'Sistema', perform: handleOpenPreferences },
-    { id: 'sys-admin', label: 'Console Admin', icon: LayoutDashboard, section: 'Sistema', perform: handleNavigateToAdmin },
-    { id: 'sys-logout', label: 'Sair da Conta', icon: LogOut, section: 'Sistema', perform: handleLogout },
-  ];
+    // Command Palette Actions Definition - Filtered by Permissions
+    const commandActions = [
+      // Navigation
+      { id: 'nav-dash', label: 'Ir para Painel', icon: LayoutDashboard, section: 'Navegação', perform: () => navigate(`/dashboard?org=${currentOrg.id}`) },
+      { id: 'nav-mail', label: 'Ir para E-mail', icon: Mail, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/mail?org=${currentOrg.id}`) },
+      { id: 'nav-chat', label: 'Ir para Chat', icon: MessageSquare, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/chat?org=${currentOrg.id}`) },
+      { id: 'nav-calendar', label: 'Ir para Agenda', icon: Calendar, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/calendar?org=${currentOrg.id}`) },
+      { id: 'nav-drive', label: 'Ir para Drive', icon: HardDrive, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/drive?org=${currentOrg.id}`) },
+      { id: 'nav-tasks', label: 'Ir para Tarefas', icon: CheckSquare, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/tasks?org=${currentOrg.id}`) },
+      { id: 'nav-meet', label: 'Ir para Meet', icon: Video, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/meet?org=${currentOrg.id}`) },
+      { id: 'nav-people', label: 'Ir para Pessoas', icon: Users, section: 'Navegação', perm: 'canAccessPeople', perform: () => navigate(`/contacts?org=${currentOrg.id}`) },
+  
+      // Organizations
+      ...(userOrgs.length > 0 ? userOrgs : ORGANIZATIONS).map(org => ({
+        id: `org-${org.id}`,
+        label: `Mudar para ${org.name}`,
+        icon: Building2,
+        section: 'Workspaces',
+        perform: () => {
+          setCurrentOrg(org);
+          navigate(`/dashboard?org=${org.id}`);
+          addToast({
+            type: 'success',
+            title: `Workspace Alterado`,
+            message: `Você agora está visualizando ${org.name}.`
+          });
+        }
+      })).filter(action => {
+          // If the action is for an org the user is not in (and they aren't admin), they shouldn't see it
+          // But userOrgs is already filtered by the backend.
+          return true;
+      }),
+  
+      // System
+      { id: 'sys-theme', label: `Alternar para Modo ${theme === 'light' ? 'Escuro' : 'Claro'}`, icon: theme === 'light' ? Moon : Sun, section: 'Sistema', perform: toggleTheme },
+      { id: 'sys-settings', label: 'Abrir Preferências', icon: Settings, section: 'Sistema', perform: handleOpenPreferences },
+      { id: 'sys-admin', label: 'Console Admin', icon: LayoutDashboard, section: 'Sistema', perform: handleNavigateToAdmin },
+      { id: 'sys-logout', label: 'Sair da Conta', icon: LogOut, section: 'Sistema', perform: handleLogout },
+    ].filter(action => {
+        if (!('perm' in action)) return true;
+        if (currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN' || user?.role === 'ADMIN') return true;
+        return (currentOrg.memberPermissions as any)?.[(action as any).perm] !== false;
+    });
 
 
   // ... (inside AppContent)
