@@ -7,6 +7,8 @@ import Modal from '../../../../components/common/Modal';
 import DealDetailsModal from './DealDetailsModal';
 import api from '../../../../services/api';
 import { DropResult } from '@hello-pangea/dnd';
+import { useAuth } from '../../../../context/AuthContext';
+import { Organization } from '../../../../types';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
     constructor(props: any) {
@@ -40,15 +42,16 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     }
 }
 
-const AsteryskoCRMView: React.FC = () => {
+const AsteryskoCRMView: React.FC<{ organization?: Organization }> = ({ organization }) => {
     return (
         <ErrorBoundary>
-            <AsteryskoCRMViewContent />
+            <AsteryskoCRMViewContent organization={organization} />
         </ErrorBoundary>
     );
 };
 
-const AsteryskoCRMViewContent: React.FC = () => {
+const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ organization }) => {
+    const { user } = useAuth();
     const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
     const [selectedCard, setSelectedCard] = useState<KanbanCardData | null>(null);
     const [columns, setColumns] = useState<KanbanColumnData[]>([]);
@@ -197,6 +200,7 @@ const AsteryskoCRMViewContent: React.FC = () => {
                 priority: 'medium',
                 status: newLead.status,
                 clientId: newLead.clientId,
+                assignedUserId: user?.id, // Automático para criação manual
                 tags
             });
             setIsNewLeadModalOpen(false);
@@ -597,6 +601,7 @@ const AsteryskoCRMViewContent: React.FC = () => {
                 onClose={() => setIsDealDetailsModalOpen(false)}
                 deal={selectedCard}
                 onConvertSuccess={fetchDeals}
+                organization={organization}
             />
         </div>
     );

@@ -38,14 +38,21 @@ interface DealComment {
     };
 }
 
+import { KanbanCardData, Organization } from '../../../../types';
+import Modal from '../../../../components/common/Modal';
+import api from '../../../../services/api';
+import { useAuth } from '../../../../context/AuthContext';
+import { useToast } from '../../../../context/ToastContext';
+
 interface DealDetailsModalProps {
     isOpen: boolean;
     onClose: () => void;
     deal: KanbanCardData | null;
     onConvertSuccess: () => void;
+    organization?: Organization;
 }
 
-const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, deal, onConvertSuccess }) => {
+const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, deal, onConvertSuccess, organization }) => {
     const { user } = useAuth();
     const { addToast } = useToast();
     const [loading, setLoading] = useState(false);
@@ -55,6 +62,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [showConfirmConvert, setShowConfirmConvert] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // Permissions logic
+    const isAdmin = user?.role === 'ADMIN' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
+
+    // Tag creation state
+    const [isAddingTag, setIsAddingTag] = useState(false);
+    const [customTagName, setCustomTagName] = useState('');
+    const tagInputRef = useRef<HTMLInputElement>(null);
+
     // Form State
     const [formData, setFormData] = useState<any>({});
     const [fees, setFees] = useState<any[]>([]);
@@ -63,9 +78,17 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     useEffect(() => {
         api.get('/asterysko/fees').then(res => setFees(res.data)).catch(err => console.error('Error loading fees:', err));
         
-        // Fetch org members to assign to deals
-        api.get('/organizations/members').then(res => setOrganizationMembers(res.data)).catch(err => console.error('Error loading members:', err));
-    }, []);
+        // Fetch org members to assign to deals - Now restricted by Organization Context
+        if (organization?.id) {
+            api.get(`/organizations/${organization.id}/members`)
+                .then(res => {
+                    // Filter to exclude clients and keep only staff/admins
+                    const staff = res.data.filter((m: any) => m.globalRole !== 'CLIENT');
+                    setOrganizationMembers(staff);
+                })
+                .catch(err => console.error('Error loading members:', err));
+        }
+    }, [organization?.id]);
 
     const handleFeeSelect = (feeId: string) => {
         const fee = fees.find(f => f.id === feeId);
@@ -606,9 +629,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <div className="group">
                                 <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Responsável (Vendas)</label>
                                 <select
-                                    className="w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-green-500 transition-all text-white dark:text-zinc-900"
+                                    className={`w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-lg px-3 py-2 outline-none transition-all text-white dark:text-zinc-900 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'focus:ring-2 focus:ring-green-500'}`}
                                     value={formData.assignedUserId || ''}
                                     onChange={e => handleAutoSave('assignedUserId', e.target.value)}
+                                    disabled={!isAdmin}
                                 >
                                     <option value="">-- Não Atribuído --</option>
                                     {organizationMembers.map(m => (
@@ -701,11 +725,12 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <div className="relative group">
                                 <span className="absolute left-0 top-1.5 text-sm text-docka-400">R$</span>
                                 <input
-                                    className="w-full text-lg font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-b border-docka-200 dark:border-zinc-700 hover:border-green-500 focus:border-green-600 pl-7 py-1 outline-none transition-colors placeholder:text-docka-300"
+                                    className={`w-full text-lg font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-b border-docka-200 dark:border-zinc-700 py-1 outline-none transition-colors placeholder:text-docka-300 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'hover:border-green-500 focus:border-green-600'}`}
                                     value={formData.value || ''}
                                     onChange={e => setFormData({ ...formData, value: maskCurrency(e.target.value) })}
                                     onBlur={e => handleBlur('value', e.target.value)}
                                     placeholder="0,00"
+                                    disabled={!isAdmin}
                                 />
                             </div>
                         </div>
@@ -757,7 +782,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </label>
                         <div className="flex flex-wrap gap-2">
                             {formData.tags?.map((tag: any, idx: number) => {
-                                // Don't show the virtualized tags in the general list if they are handled by inputs
                                 if (tag.label?.startsWith('CNPJ:') || tag.label?.startsWith('Razão Social:') || tag.label?.startsWith('Endereço:')) return null;
                                 return (
                                     <span key={idx} className={`px-2 py-1 rounded text-xs font-bold uppercase ${tag.color} flex items-center gap-1`}>
@@ -771,51 +795,49 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     </span>
                                 );
                             })}
-                            <button
-                                className="px-2 py-1 rounded text-xs border border-dashed border-docka-300 text-docka-500 hover:bg-docka-50 transition-colors"
-                                onClick={() => {
-                                    const newTag = { label: 'Nova Tag', color: 'bg-gray-100 text-gray-700' };
-                                    handleAutoSave('tags', [...(formData.tags || []), newTag]);
-                                }}
-                            >
-                                + Tag
-                            </button>
+
+                            {isAddingTag ? (
+                                <div className="flex items-center gap-2 animate-in slide-in-from-left-2 duration-200">
+                                    <input
+                                        ref={tagInputRef}
+                                        autoFocus
+                                        className="px-2 py-1 text-xs border border-docka-400 rounded-md outline-none focus:ring-2 focus:ring-docka-200 min-w-[80px]"
+                                        placeholder="Nome da tag..."
+                                        value={customTagName}
+                                        onChange={e => setCustomTagName(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') {
+                                                if (customTagName.trim()) {
+                                                    const newTag = { label: customTagName.trim(), color: 'bg-indigo-100 text-indigo-700' };
+                                                    handleAutoSave('tags', [...(formData.tags || []), newTag]);
+                                                }
+                                                setIsAddingTag(false);
+                                                setCustomTagName('');
+                                            } else if (e.key === 'Escape') {
+                                                setIsAddingTag(false);
+                                                setCustomTagName('');
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (customTagName.trim()) {
+                                                const newTag = { label: customTagName.trim(), color: 'bg-indigo-100 text-indigo-700' };
+                                                handleAutoSave('tags', [...(formData.tags || []), newTag]);
+                                            }
+                                            setIsAddingTag(false);
+                                            setCustomTagName('');
+                                        }}
+                                    />
+                                </div>
+                            ) : (
+                                <button
+                                    className="px-2 py-1 rounded text-xs border border-dashed border-docka-300 text-docka-500 hover:bg-docka-50 transition-colors"
+                                    onClick={() => setIsAddingTag(true)}
+                                >
+                                    + Tag
+                                </button>
+                            )}
                         </div>
                     </div>
-
-                    {/* TAGS */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Tag size={14} /> Tags
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                            {formData.tags?.map((tag: any, idx: number) => {
-                                // Don't show the virtualized tags in the general list if they are handled by inputs
-                                if (tag.label?.startsWith('CNPJ:') || tag.label?.startsWith('Razão Social:') || tag.label?.startsWith('Endereço:')) return null;
-                                return (
-                                    <span key={idx} className={`px-2 py-1 rounded text-xs font-bold uppercase ${tag.color} flex items-center gap-1`}>
-                                        {tag.label}
-                                        <button className="hover:opacity-75" onClick={() => {
-                                            const newTags = formData.tags.filter((_: any, i: number) => i !== idx);
-                                            handleAutoSave('tags', newTags);
-                                        }}>
-                                            ×
-                                        </button>
-                                    </span>
-                                );
-                            })}
-                            <button
-                                className="px-2 py-1 rounded text-xs border border-dashed border-docka-300 text-docka-500 hover:bg-docka-50 transition-colors"
-                                onClick={() => {
-                                    const newTag = { label: 'Nova Tag', color: 'bg-gray-100 text-gray-700' };
-                                    handleAutoSave('tags', [...(formData.tags || []), newTag]);
-                                }}
-                            >
-                                + Tag
-                            </button>
-                        </div>
-                    </div>
-
 
                     {/* DELETE ZONE */}
                     <div className="pt-4 border-t border-docka-100 dark:border-zinc-800">
