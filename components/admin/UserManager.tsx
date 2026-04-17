@@ -128,17 +128,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
             jobTitle: user.jobTitle || '',
             phone: user.phone || '',
             location: user.location || '',
-            bio: user.bio || '',
-            smtpHost: user.smtpHost || '',
-            smtpPort: user.smtpPort || 465,
-            smtpUser: user.smtpUser || '',
-            smtpPass: user.smtpPass || '',
-            smtpSecure: user.smtpSecure !== false,
-            imapHost: user.imapHost || '',
-            imapPort: user.imapPort || 993,
-            imapUser: user.imapUser || '',
-            imapPass: user.imapPass || '',
-            imapSecure: user.imapSecure !== false
+            bio: user.bio || ''
         });
         setNewPassword('');
         setShowPasswordInput(false);
@@ -556,15 +546,6 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                             >
                                 <Building2 size={16} className="mr-2" /> Organizações
                             </button>
-                            <button
-                                onClick={() => setActiveTab('email')}
-                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'email'
-                                    ? 'border-docka-900 text-docka-900'
-                                    : 'border-transparent text-docka-500 hover:text-docka-700'
-                                    }`}
-                            >
-                                <Mail size={16} className="mr-2" /> Configurações de E-mail
-                            </button>
                         </div>
 
                         {activeTab === 'profile' && (
@@ -808,162 +789,6 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                             </div>
                         )}
 
-                        {activeTab === 'email' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 flex items-start gap-4">
-                                    <div className="p-2 bg-white rounded-md text-indigo-600 shadow-sm">
-                                        <Mail size={20} />
-                                    </div>
-                                    <div>
-                                        <h4 className="text-sm font-bold text-indigo-900">E-mail Universal (Zoho/Outros)</h4>
-                                        <p className="text-xs text-indigo-700 mt-0.5">
-                                            Configure as credenciais SMTP e IMAP individuais deste usuário para permitir o envio e recebimento de e-mails pessoais.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <form onSubmit={handleSaveProfile} className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-4">
-                                            <h4 className="text-xs font-bold text-docka-400 uppercase tracking-widest flex items-center">
-                                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-2" />
-                                                SMTP (Envio)
-                                            </h4>
-                                            
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Servidor SMTP</label>
-                                                    <input 
-                                                        type="text"
-                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                        placeholder="smtp.zoho.com"
-                                                        value={formData.smtpHost}
-                                                        onChange={e => setFormData({...formData, smtpHost: e.target.value})}
-                                                    />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Porta</label>
-                                                        <input 
-                                                            type="number"
-                                                            className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                            placeholder="465"
-                                                            value={formData.smtpPort}
-                                                            onChange={e => setFormData({...formData, smtpPort: parseInt(e.target.value)})}
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-end pb-2">
-                                                        <label className="flex items-center gap-2 cursor-pointer">
-                                                            <input 
-                                                                type="checkbox"
-                                                                className="rounded text-indigo-600"
-                                                                checked={formData.smtpSecure}
-                                                                onChange={e => setFormData({...formData, smtpSecure: e.target.checked})}
-                                                            />
-                                                            <span className="text-xs font-medium text-docka-600">SSL/TLS</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Usuário SMTP</label>
-                                                    <input 
-                                                        type="text"
-                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                        placeholder="usuario@dominio.com"
-                                                        value={formData.smtpUser}
-                                                        onChange={e => setFormData({...formData, smtpUser: e.target.value})}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Senha de App SMTP</label>
-                                                    <input 
-                                                        type="password"
-                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
-                                                        placeholder="••••••••••••"
-                                                        value={formData.smtpPass}
-                                                        onChange={e => setFormData({...formData, smtpPass: e.target.value})}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-4">
-                                            <h4 className="text-xs font-bold text-docka-400 uppercase tracking-widest flex items-center">
-                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2" />
-                                                IMAP (Recebimento)
-                                            </h4>
-
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Servidor IMAP</label>
-                                                    <input 
-                                                        type="text"
-                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                        placeholder="imap.zoho.com"
-                                                        value={formData.imapHost}
-                                                        onChange={e => setFormData({...formData, imapHost: e.target.value})}
-                                                    />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Porta</label>
-                                                        <input 
-                                                            type="number"
-                                                            className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                            placeholder="993"
-                                                            value={formData.imapPort}
-                                                            onChange={e => setFormData({...formData, imapPort: parseInt(e.target.value)})}
-                                                        />
-                                                    </div>
-                                                    <div className="flex items-end pb-2">
-                                                        <label className="flex items-center gap-2 cursor-pointer">
-                                                            <input 
-                                                                type="checkbox"
-                                                                className="rounded text-emerald-600"
-                                                                checked={formData.imapSecure}
-                                                                onChange={e => setFormData({...formData, imapSecure: e.target.checked})}
-                                                            />
-                                                            <span className="text-xs font-medium text-docka-600">SSL/TLS</span>
-                                                        </label>
-                                                    </div>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Usuário IMAP</label>
-                                                    <input 
-                                                        type="text"
-                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                        placeholder="usuario@dominio.com"
-                                                        value={formData.imapUser}
-                                                        onChange={e => setFormData({...formData, imapUser: e.target.value})}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Senha de App IMAP</label>
-                                                    <input 
-                                                        type="password"
-                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
-                                                        placeholder="••••••••••••"
-                                                        value={formData.imapPass}
-                                                        onChange={e => setFormData({...formData, imapPass: e.target.value})}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-8 pt-4 border-t border-docka-100 flex justify-end">
-                                        <button
-                                            type="submit"
-                                            disabled={isSaving}
-                                            className="px-6 py-2 bg-docka-900 text-white text-sm font-bold rounded-lg hover:bg-docka-800 disabled:opacity-50 flex items-center shadow-lg transition-all"
-                                        >
-                                            <Save size={16} className="mr-2" />
-                                            {isSaving ? 'Salvando...' : 'Salvar Configurações de E-mail'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        )}
                     </div>
                 </div>
             )}
