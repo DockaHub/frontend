@@ -63,9 +63,13 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     const [selectedOrgForDomain, setSelectedOrgForDomain] = useState('');
 
     // Access Control Modal
-    const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
-    const [selectedMailboxForAccess, setSelectedMailboxForAccess] = useState<any>(null);
     const [orgMembers, setOrgMembers] = useState<any[]>([]);
+
+    // -- Diagnostic State --
+    const [smtpTestResult, setSmtpTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [imapTestResult, setImapTestResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+    const [isTestingImap, setIsTestingImap] = useState(false);
 
 
     // -- Effects --
@@ -266,6 +270,32 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
         } catch (error) {
             console.error("Failed to toggle access", error);
             addToast({ type: 'error', title: 'Erro ao alterar acesso', duration: 3000 });
+        }
+    };
+
+    const handleTestSmtp = async (config: { host: string; port: number; user: string; pass: string; secure: boolean }) => {
+        setIsTestingSmtp(true);
+        setSmtpTestResult(null);
+        try {
+            const result = await mailService.testSmtp(config);
+            setSmtpTestResult(result);
+        } catch (error: any) {
+            setSmtpTestResult({ success: false, message: error.response?.data?.message || error.message });
+        } finally {
+            setIsTestingSmtp(false);
+        }
+    };
+
+    const handleTestImap = async (config: { host: string; port: number; user: string; pass: string; secure: boolean }) => {
+        setIsTestingImap(true);
+        setImapTestResult(null);
+        try {
+            const result = await mailService.testImap(config);
+            setImapTestResult(result);
+        } catch (error: any) {
+            setImapTestResult({ success: false, message: error.response?.data?.message || error.message });
+        } finally {
+            setIsTestingImap(false);
         }
     };
 
@@ -510,10 +540,57 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                 </div>
 
                                 <div className="p-3 bg-docka-50 rounded-lg border border-docka-200">
-                                    <h4 className="text-sm font-bold text-docka-900 mb-4 flex items-center gap-2">
-                                        <RefreshCw size={16} className="text-indigo-600" />
-                                        Configuração Zoho/SMTP/IMAP
-                                    </h4>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-sm font-bold text-docka-900 flex items-center gap-2">
+                                            <RefreshCw size={16} className="text-indigo-600" />
+                                            Configuração Zoho/SMTP/IMAP
+                                        </h4>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                type="button"
+                                                onClick={() => handleTestSmtp({
+                                                    host: newSmtpHost,
+                                                    port: newSmtpPort,
+                                                    user: newSmtpUser,
+                                                    pass: newSmtpPass,
+                                                    secure: newSmtpSecure
+                                                })}
+                                                disabled={isTestingSmtp || !newSmtpHost}
+                                                className="text-[10px] bg-white border border-docka-200 px-2 py-1 rounded hover:bg-docka-100 disabled:opacity-50 transition-colors"
+                                            >
+                                                {isTestingSmtp ? 'Testando SMTP...' : '💡 Testar SMTP'}
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => handleTestImap({
+                                                    host: newImapHost,
+                                                    port: newImapPort,
+                                                    user: newImapUser,
+                                                    pass: newImapPass,
+                                                    secure: newImapSecure
+                                                })}
+                                                disabled={isTestingImap || !newImapHost}
+                                                className="text-[10px] bg-white border border-docka-200 px-2 py-1 rounded hover:bg-docka-100 disabled:opacity-50 transition-colors"
+                                            >
+                                                {isTestingImap ? 'Testando IMAP...' : '💡 Testar IMAP'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {(smtpTestResult || imapTestResult) && (
+                                        <div className="mb-4 space-y-2">
+                                            {smtpTestResult && (
+                                                <p className={`text-[10px] p-2 rounded ${smtpTestResult.success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                                    <strong>SMTP:</strong> {smtpTestResult.message}
+                                                </p>
+                                            )}
+                                            {imapTestResult && (
+                                                <p className={`text-[10px] p-2 rounded ${imapTestResult.success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                                    <strong>IMAP:</strong> {imapTestResult.message}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                     
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 gap-3">
@@ -524,7 +601,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                     className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                     placeholder="smtp.zoho.com"
                                                     value={newSmtpHost}
-                                                    onChange={e => setNewSmtpHost(e.target.value)}
+                                                    onChange={e => { setNewSmtpHost(e.target.value); setSmtpTestResult(null); }}
                                                 />
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
@@ -534,12 +611,12 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                         type="number"
                                                         className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                         value={newSmtpPort}
-                                                        onChange={e => setNewSmtpPort(parseInt(e.target.value))}
+                                                        onChange={e => { setNewSmtpPort(parseInt(e.target.value)); setSmtpTestResult(null); }}
                                                     />
                                                 </div>
                                                 <div className="flex items-end pb-1.5">
                                                     <label className="flex items-center gap-1.5 cursor-pointer">
-                                                        <input type="checkbox" checked={newSmtpSecure} onChange={e => setNewSmtpSecure(e.target.checked)} className="rounded text-indigo-600" />
+                                                        <input type="checkbox" checked={newSmtpSecure} onChange={e => { setNewSmtpSecure(e.target.checked); setSmtpTestResult(null); }} className="rounded text-indigo-600" />
                                                         <span className="text-[10px] font-medium text-docka-600">SSL/TLS</span>
                                                     </label>
                                                 </div>
@@ -552,14 +629,14 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                         className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                         placeholder="email@zoho.com"
                                                         value={newSmtpUser}
-                                                        onChange={e => setNewSmtpUser(e.target.value)}
+                                                        onChange={e => { setNewSmtpUser(e.target.value); setSmtpTestResult(null); }}
                                                     />
                                                     <input 
                                                         type="password"
                                                         className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                         placeholder="Senha de App"
                                                         value={newSmtpPass}
-                                                        onChange={e => setNewSmtpPass(e.target.value)}
+                                                        onChange={e => { setNewSmtpPass(e.target.value); setSmtpTestResult(null); }}
                                                     />
                                                 </div>
                                             </div>
@@ -572,7 +649,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                 className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                 placeholder="imap.zoho.com"
                                                 value={newImapHost}
-                                                onChange={e => setNewImapHost(e.target.value)}
+                                                onChange={e => { setNewImapHost(e.target.value); setImapTestResult(null); }}
                                             />
                                         </div>
                                     </div>
@@ -644,10 +721,57 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                 </div>
 
                                 <div className="p-3 bg-docka-50 rounded-lg border border-docka-200">
-                                    <h4 className="text-sm font-bold text-docka-900 mb-4 flex items-center gap-2">
-                                        <RefreshCw size={16} className="text-indigo-600" />
-                                        Configuração Zoho/SMTP/IMAP
-                                    </h4>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h4 className="text-sm font-bold text-docka-900 flex items-center gap-2">
+                                            <RefreshCw size={16} className="text-indigo-600" />
+                                            Configuração Zoho/SMTP/IMAP
+                                        </h4>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                type="button"
+                                                onClick={() => handleTestSmtp({
+                                                    host: editSmtpHost,
+                                                    port: editSmtpPort,
+                                                    user: editSmtpUser,
+                                                    pass: editSmtpPass,
+                                                    secure: editSmtpSecure
+                                                })}
+                                                disabled={isTestingSmtp || !editSmtpHost}
+                                                className="text-[10px] bg-white border border-docka-200 px-2 py-1 rounded hover:bg-docka-100 disabled:opacity-50 transition-colors"
+                                            >
+                                                {isTestingSmtp ? 'Testando SMTP...' : '💡 Testar SMTP'}
+                                            </button>
+                                            <button 
+                                                type="button"
+                                                onClick={() => handleTestImap({
+                                                    host: editImapHost,
+                                                    port: editImapPort,
+                                                    user: editImapUser,
+                                                    pass: editImapPass,
+                                                    secure: editImapSecure
+                                                })}
+                                                disabled={isTestingImap || !editImapHost}
+                                                className="text-[10px] bg-white border border-docka-200 px-2 py-1 rounded hover:bg-docka-100 disabled:opacity-50 transition-colors"
+                                            >
+                                                {isTestingImap ? 'Testando IMAP...' : '💡 Testar IMAP'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {(smtpTestResult || imapTestResult) && (
+                                        <div className="mb-4 space-y-2">
+                                            {smtpTestResult && (
+                                                <p className={`text-[10px] p-2 rounded ${smtpTestResult.success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                                    <strong>SMTP:</strong> {smtpTestResult.message}
+                                                </p>
+                                            )}
+                                            {imapTestResult && (
+                                                <p className={`text-[10px] p-2 rounded ${imapTestResult.success ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                                    <strong>IMAP:</strong> {imapTestResult.message}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                     
                                     <div className="space-y-4">
                                         <div className="grid grid-cols-1 gap-3">
@@ -658,7 +782,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                     className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                     placeholder="smtp.zoho.com"
                                                     value={editSmtpHost}
-                                                    onChange={e => setEditSmtpHost(e.target.value)}
+                                                    onChange={e => { setEditSmtpHost(e.target.value); setSmtpTestResult(null); }}
                                                 />
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
@@ -668,12 +792,12 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                         type="number"
                                                         className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                         value={editSmtpPort}
-                                                        onChange={e => setEditSmtpPort(parseInt(e.target.value))}
+                                                        onChange={e => { setEditSmtpPort(parseInt(e.target.value)); setSmtpTestResult(null); }}
                                                     />
                                                 </div>
                                                 <div className="flex items-end pb-1.5">
                                                     <label className="flex items-center gap-1.5 cursor-pointer">
-                                                        <input type="checkbox" checked={editSmtpSecure} onChange={e => setEditSmtpSecure(e.target.checked)} className="rounded text-indigo-600" />
+                                                        <input type="checkbox" checked={editSmtpSecure} onChange={e => { setEditSmtpSecure(e.target.checked); setSmtpTestResult(null); }} className="rounded text-indigo-600" />
                                                         <span className="text-[10px] font-medium text-docka-600">SSL/TLS</span>
                                                     </label>
                                                 </div>
@@ -686,14 +810,14 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                         className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                         placeholder="email@zoho.com"
                                                         value={editSmtpUser}
-                                                        onChange={e => setEditSmtpUser(e.target.value)}
+                                                        onChange={e => { setEditSmtpUser(e.target.value); setSmtpTestResult(null); }}
                                                     />
                                                     <input 
                                                         type="password"
                                                         className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                         placeholder="Senha de App"
                                                         value={editSmtpPass}
-                                                        onChange={e => setEditSmtpPass(e.target.value)}
+                                                        onChange={e => { setEditSmtpPass(e.target.value); setSmtpTestResult(null); }}
                                                     />
                                                 </div>
                                             </div>
@@ -706,7 +830,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                                 className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
                                                 placeholder="imap.zoho.com"
                                                 value={editImapHost}
-                                                onChange={e => setEditImapHost(e.target.value)}
+                                                onChange={e => { setEditImapHost(e.target.value); setImapTestResult(null); }}
                                             />
                                         </div>
                                     </div>

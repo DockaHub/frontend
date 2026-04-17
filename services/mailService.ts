@@ -149,5 +149,16 @@ export const mailService = {
   async deleteLabel(labelId: string) {
     const response = await api.delete(`/mail/labels/${labelId}`);
     return response.data;
+  },
+
+  // DIAGNOSTICS
+  async testSmtp(config: { host: string; port: number; user: string; pass: string; secure: boolean }) {
+    const response = await api.post('/mail/test-smtp', config);
+    return response.data;
+  },
+
+  async testImap(config: { host: string; port: number; user: string; pass: string; secure: boolean }) {
+    const response = await api.post('/mail/test-imap', config);
+    return response.data;
   }
 };
