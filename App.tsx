@@ -170,6 +170,19 @@ const AppContent: React.FC = () => {
     fetchUserOrgs();
   }, [user]);
 
+  // Sync currentOrg with URL parameter reactively
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const orgId = params.get('org');
+    
+    if (orgId && currentOrg?.id !== orgId && userOrgs.length > 0) {
+      const targetOrg = userOrgs.find(o => o.id === orgId);
+      if (targetOrg) {
+        setCurrentOrg(targetOrg);
+      }
+    }
+  }, [location.search, userOrgs, currentOrg?.id]);
+
   // Apply Theme Effect & Base Favicon (Docka)
   useEffect(() => {
     const root = window.document.documentElement;
