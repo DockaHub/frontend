@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
-import { TrendingUp, Trophy, Target, DollarSign, CheckCircle2, Star, Zap, ChevronRight, Medal } from 'lucide-react';
+import { TrendingUp, Trophy, Target, DollarSign, CheckCircle2, Star, Zap, ChevronRight, Medal, X, Info, Gauge } from 'lucide-react';
 import api from '../../../../services/api';
 
 const AsteryskoPerformanceView: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [selectedRule, setSelectedRule] = useState<any>(null);
 
     useEffect(() => {
         fetchPerformance();
@@ -27,6 +28,112 @@ const AsteryskoPerformanceView: React.FC = () => {
     if (!stats) return <div className="p-8 text-center text-red-500">Erro ao carregar metas.</div>;
 
     const commissionBRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.accumulatedCommission);
+
+    const rules = [
+        { 
+            id: 'essencial',
+            name: 'Essencial', 
+            desc: 'Comissão progressiva (100, 125, 150)', 
+            color: 'blue',
+            details: (
+                <div className="space-y-4">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">O plano Essencial recompensa o volume de vendas com bônus progressivos por faixa atingida no mês.</p>
+                    <div className="overflow-hidden rounded-xl border border-zinc-100 dark:border-zinc-800">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-zinc-50 dark:bg-zinc-800 text-zinc-500 uppercase text-[10px] font-bold">
+                                <tr>
+                                    <th className="px-4 py-2">Faixa de Vendas</th>
+                                    <th className="px-4 py-2">Comissão Un.</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                <tr className={stats.essencialCount <= 10 ? 'bg-blue-50 dark:bg-blue-900/20 font-bold text-blue-600' : 'text-zinc-600 dark:text-zinc-400'}>
+                                    <td className="px-4 py-3">1ª a 10ª venda</td>
+                                    <td className="px-4 py-3 text-right">R$ 100,00</td>
+                                </tr>
+                                <tr className={stats.essencialCount > 10 && stats.essencialCount <= 25 ? 'bg-blue-50 dark:bg-blue-900/20 font-bold text-blue-600' : 'text-zinc-600 dark:text-zinc-400'}>
+                                    <td className="px-4 py-3">11ª a 25ª venda</td>
+                                    <td className="px-4 py-3 text-right">R$ 125,00</td>
+                                </tr>
+                                <tr className={stats.essencialCount > 25 ? 'bg-blue-50 dark:bg-blue-900/20 font-bold text-blue-600' : 'text-zinc-600 dark:text-zinc-400'}>
+                                    <td className="px-4 py-3">A partir da 26ª</td>
+                                    <td className="px-4 py-3 text-right">R$ 150,00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div className="bg-blue-50 dark:bg-blue-900/10 p-3 rounded-lg flex items-center gap-3">
+                        <Gauge className="text-blue-500" size={20} />
+                        <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Seu progresso atual: {stats.essencialCount} vendas Essencial</span>
+                    </div>
+                </div>
+            )
+        },
+        { 
+            id: 'premium',
+            name: 'Premium', 
+            desc: 'R$ 220,00 por venda fixo', 
+            color: 'emerald',
+            details: (
+                <div className="space-y-4">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">O plano Premium oferece uma comissão fixa agressiva por cada fechamento, ideal para acelerar seus ganhos.</p>
+                    <div className="p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex flex-col items-center text-emerald-600 dark:text-emerald-400">
+                        <DollarSign size={40} className="mb-2" />
+                        <span className="text-3xl font-black">R$ 220,00</span>
+                        <span className="text-xs uppercase font-bold tracking-widest mt-1 opacity-60">Por Venda</span>
+                    </div>
+                    <ul className="text-xs space-y-2 text-zinc-500 dark:text-zinc-400">
+                        <li className="flex items-center gap-2">• Sem limite de teto mensal</li>
+                        <li className="flex items-center gap-2">• Independente da meta de volume</li>
+                    </ul>
+                </div>
+            )
+        },
+        { 
+            id: 'blindado',
+            name: 'Blindado', 
+            desc: 'R$ 370,00 por venda fixo', 
+            color: 'purple',
+            details: (
+                <div className="space-y-4">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">O plano Blindado é o nosso produto de maior valor e maior recompensa direta para o consultor.</p>
+                    <div className="p-6 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex flex-col items-center text-purple-600 dark:text-purple-400">
+                        <Trophy size={40} className="mb-2" />
+                        <span className="text-3xl font-black">R$ 370,00</span>
+                        <span className="text-xs uppercase font-bold tracking-widest mt-1 opacity-60">Por Venda</span>
+                    </div>
+                    <div className="text-center p-3 border border-dashed border-purple-200 dark:border-purple-800 rounded-xl">
+                        <p className="text-[10px] text-purple-500 font-bold uppercase">Indicado para grandes contas</p>
+                    </div>
+                </div>
+            )
+        },
+        { 
+            id: 'bonus',
+            name: 'Super Bônus', 
+            desc: 'R$ 1.000,00 extra ao atingir 40 vendas totais', 
+            color: 'amber',
+            details: (
+                <div className="space-y-4">
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">Atingir o Super Bônus é o reconhecimento máximo do escritório para quem mantém constância e volume.</p>
+                    <div className="relative h-4 bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
+                        <div 
+                            className="absolute inset-y-0 left-0 bg-amber-500 rounded-full transition-all duration-1000"
+                            style={{ width: `${stats.bonusProgress}%` }}
+                        />
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold text-zinc-400 uppercase">
+                        <span>{stats.salesCount} Vendas</span>
+                        <span className="text-amber-500">Meta: 40 Vendas</span>
+                    </div>
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl text-center">
+                        <p className="text-2xl font-black text-amber-600">+ R$ 1.000,00</p>
+                        <p className="text-xs text-amber-500 mt-1">Ganha instantaneamente ao bater o volume!</p>
+                    </div>
+                </div>
+            )
+        },
+    ];
 
     return (
         <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar transition-colors">
@@ -58,7 +165,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                     </div>
 
                     {/* Sales Target Card */}
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-docka-200 dark:border-zinc-800 shadow-sm transition-transform hover:scale-[1.02] cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'bonus'))}>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2 text-docka-500 dark:text-zinc-400">
                                 <Target size={18} />
@@ -85,7 +192,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                     </div>
 
                     {/* Tier Card */}
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-docka-200 dark:border-zinc-800 shadow-sm transition-transform hover:scale-[1.02] cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'essencial'))}>
                         <div className="flex items-center gap-2 text-docka-500 dark:text-zinc-400 mb-4">
                             <Trophy size={18} />
                             <span className="text-xs font-bold uppercase tracking-wider">Nível de Conversão</span>
@@ -112,35 +219,37 @@ const AsteryskoPerformanceView: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Progression Info */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-docka-200 dark:border-zinc-800 overflow-hidden">
-                            <div className="p-6 border-b border-docka-100 dark:border-zinc-800">
+                        <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-docka-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+                            <div className="p-6 border-b border-docka-100 dark:border-zinc-800 flex justify-between items-center">
                                 <h3 className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                     <Star size={18} className="text-amber-500" /> Regras de Planos e Comissões
                                 </h3>
+                                <div className="text-[10px] text-docka-400 font-bold uppercase tracking-widest flex items-center gap-1">
+                                    <Info size={12} /> Clique para detalhes
+                                </div>
                             </div>
                             <div className="divide-y divide-docka-50 dark:divide-zinc-800">
-                                {[
-                                    { name: 'Essencial', desc: 'Comissão progressiva (100, 125, 150)', color: 'blue' },
-                                    { name: 'Premium', desc: 'R$ 220,00 por venda fixo', color: 'emerald' },
-                                    { name: 'Blindado', desc: 'R$ 370,00 por venda fixo', color: 'purple' },
-                                    { name: 'Super Bônus', desc: 'R$ 1.000,00 extra ao atingir 40 vendas totais', color: 'amber' },
-                                ].map((item, i) => (
-                                    <div key={i} className="p-4 flex items-center justify-between hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors">
+                                {rules.map((item, i) => (
+                                    <div 
+                                        key={i} 
+                                        onClick={() => setSelectedRule(item)}
+                                        className="p-4 flex items-center justify-between hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-all cursor-pointer group active:scale-[0.99]"
+                                    >
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full bg-${item.color}-500`} />
+                                            <div className={`w-2 h-2 rounded-full bg-${item.color}-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]`} />
                                             <div>
-                                                <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{item.name}</p>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-500">{item.desc}</p>
+                                                <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 group-hover:translate-x-1 transition-transform">{item.name}</p>
+                                                <p className="text-xs text-docka-500 dark:text-zinc-400">{item.desc}</p>
                                             </div>
                                         </div>
-                                        <ChevronRight size={14} className="text-docka-300" />
+                                        <ChevronRight size={14} className="text-docka-300 group-hover:translate-x-1 transition-all" />
                                     </div>
                                 ))}
                             </div>
                         </div>
                     </div>
 
-                    {/* Bonus Card */}
+                    {/* Bonus Card Summary */}
                     <div className="space-y-6">
                         <div className={`p-6 rounded-2xl border-2 transition-all ${
                             stats.hasBonus 
@@ -149,7 +258,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                         }`}>
                             <div className="flex flex-col items-center text-center">
                                 <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
-                                    stats.hasBonus ? 'bg-amber-500 text-white' : 'bg-docka-100 dark:bg-zinc-800 text-docka-400'
+                                    stats.hasBonus ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30' : 'bg-docka-100 dark:bg-zinc-800 text-docka-400'
                                 }`}>
                                     <Trophy size={32} />
                                 </div>
@@ -157,7 +266,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                                 <p className="text-3xl font-black mb-4">R$ 1.000,00</p>
                                 
                                 {stats.hasBonus ? (
-                                    <div className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-full text-xs font-bold animate-pulse">
+                                    <div className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-full text-xs font-bold animate-bounce shadow-lg">
                                         <CheckCircle2 size={14} /> BÔNUS CONQUISTADO!
                                     </div>
                                 ) : (
@@ -178,9 +287,9 @@ const AsteryskoPerformanceView: React.FC = () => {
                     </h3>
                     <div className="space-y-3">
                         {stats.recentDeals?.length === 0 ? (
-                            <p className="text-sm text-docka-400">Nenhum fechamento registrado este mês.</p>
+                            <p className="text-sm text-docka-400 italic">Nenhum fechamento registrado este mês.</p>
                         ) : stats.recentDeals?.map((deal: any) => (
-                            <div key={deal.id} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                            <div key={deal.id} className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm transition-all hover:border-emerald-200 dark:hover:border-emerald-800">
                                 <div className="flex items-center gap-3">
                                     <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 flex items-center justify-center">
                                         <CheckCircle2 size={16} />
@@ -203,6 +312,55 @@ const AsteryskoPerformanceView: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Premium Detail Modal Overlay */}
+            {selectedRule && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200"
+                    onClick={() => setSelectedRule(null)}
+                >
+                    <div 
+                        className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-10 duration-300"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className={`p-6 bg-gradient-to-r ${
+                            selectedRule.color === 'blue' ? 'from-blue-600 to-indigo-600' :
+                            selectedRule.color === 'emerald' ? 'from-emerald-600 to-teal-600' :
+                            selectedRule.color === 'purple' ? 'from-purple-600 to-fuchsia-600' :
+                            'from-amber-500 to-orange-500'
+                        } text-white flex justify-between items-center relative overflow-hidden`}>
+                            <div className="relative z-10">
+                                <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Detalhes da Regra</p>
+                                <h3 className="text-2xl font-black">{selectedRule.name}</h3>
+                            </div>
+                            <button 
+                                onClick={() => setSelectedRule(null)}
+                                className="relative z-10 p-2 hover:bg-white/20 rounded-full transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                            {/* Decorative background shape */}
+                            <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl" />
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-8">
+                            {selectedRule.details}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-8 pb-8">
+                            <button 
+                                onClick={() => setSelectedRule(null)}
+                                className="w-full py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
+                            >
+                                Entendido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
