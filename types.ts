@@ -103,6 +103,12 @@ export interface ChatChannel {
   memberIds?: string[]; // IDs of members in the channel (legacy/deprecated)
   members?: User[]; // Full member objects from backend
   isPlaceholder?: boolean; // If true, this is a virtual DM (not yet created in DB)
+  organizationId?: string;
+  organization?: {
+    id: string;
+    name: string;
+    logoColor?: string;
+  };
 }
 
 export interface ChatMessage {

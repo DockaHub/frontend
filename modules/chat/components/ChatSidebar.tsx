@@ -23,9 +23,20 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const publicChannels = channels.filter(c => c.type === 'public');
-  const privateChannels = channels.filter(c => c.type === 'private');
-  const dms = channels.filter(c => c.type === 'dm');
+  // Group channels by organization
+  const groupedChannels = channels.reduce((acc, channel) => {
+    const orgId = channel.organizationId || currentOrg.id;
+    const orgName = channel.organization?.name || currentOrg.name;
+    
+    if (!acc[orgId]) {
+      acc[orgId] = {
+        name: orgName,
+        channels: []
+      };
+    }
+    acc[orgId].channels.push(channel);
+    return acc;
+  }, {} as Record<string, { name: string; channels: ChatChannel[] }>);
 
   const ChannelItem: React.FC<{ channel: ChatChannel }> = ({ channel }) => {
     const isSelected = selectedChannelId === channel.id;
@@ -69,9 +80,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   return (
     <div className={`${isCollapsed ? 'w-[60px]' : 'w-[240px]'} flex flex-col bg-docka-50 dark:bg-zinc-900 pt-4 h-full border-r border-docka-200 dark:border-zinc-800 hidden lg:flex transition-all duration-300`}>
-      {/* Header Context */}
+      {/* Global Header */}
       <div className={`mb-4 flex items-center ${isCollapsed ? 'justify-center px-2' : 'justify-between px-4'}`}>
-        {!isCollapsed && <h2 className="text-sm font-bold text-docka-900 dark:text-zinc-100 truncate mr-2">{currentOrg.name} Chat</h2>}
+        {!isCollapsed && <h2 className="text-sm font-bold text-docka-900 dark:text-zinc-100 truncate mr-2">Chat Global</h2>}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 p-1.5 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-md transition-colors"
@@ -92,37 +103,32 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-2 space-y-6 custom-scrollbar">
-        {/* Public Channels */}
-        <div>
-          {!isCollapsed && (
-            <div className="flex items-center justify-between px-2 mb-1 group">
-              <h3 className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase tracking-wider">Canais</h3>
-              {onAddChannel && (
-                <button onClick={onAddChannel} className="p-1 rounded hover:bg-docka-200 dark:hover:bg-zinc-800 text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 transition-all" title="Criar Canal">
-                  <Plus size={14} />
-                </button>
-              )}
+      <div className="flex-1 overflow-y-auto px-2 space-y-6 custom-scrollbar pb-6">
+        {Object.entries(groupedChannels).map(([orgId, group]) => (
+          <div key={orgId} className="space-y-1">
+            {!isCollapsed && (
+              <div className="flex items-center justify-between px-2 mb-2">
+                 <h3 className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest">{group.name}</h3>
+                 {orgId === currentOrg.id && onAddChannel && (
+                    <button onClick={onAddChannel} className="p-0.5 rounded hover:bg-docka-200 dark:hover:bg-zinc-800 text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 transition-all">
+                      <Plus size={12} />
+                    </button>
+                 )}
+              </div>
+            )}
+            
+            <div className="space-y-0.5">
+              {/* Separate by types within organization? Or mixed? User suggested Group by Org */}
+              {group.channels
+                .filter(c => c.type !== 'dm')
+                .map(c => <ChannelItem key={c.id} channel={c} />)}
+              
+              {group.channels
+                .filter(c => c.type === 'dm')
+                .map(c => <ChannelItem key={c.id} channel={c} />)}
             </div>
-          )}
-          {isCollapsed && <div className="h-px bg-docka-200 dark:bg-zinc-800 mx-2 my-2" />}
-          {publicChannels.map(c => <ChannelItem key={c.id} channel={c} />)}
-          {privateChannels.map(c => <ChannelItem key={c.id} channel={c} />)}
-        </div>
-
-        {/* DMs */}
-        <div>
-          {!isCollapsed && (
-            <div className="flex items-center justify-between px-2 mb-1 group">
-              <h3 className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase tracking-wider">Mensagens Diretas</h3>
-              <button onClick={onNewDM} className="p-1 rounded hover:bg-docka-200 dark:hover:bg-zinc-800 text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 transition-all" title="Nova Mensagem">
-                <Plus size={14} />
-              </button>
-            </div>
-          )}
-          {isCollapsed && <div className="h-px bg-docka-200 dark:bg-zinc-800 mx-2 my-2" />}
-          {dms.map(c => <ChannelItem key={c.id} channel={c} />)}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   );

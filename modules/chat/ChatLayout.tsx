@@ -40,10 +40,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     useEffect(() => {
         socketService.connect();
 
-        if (currentOrg?.id) {
-            loadChannels();
-            loadMembers();
-        }
+        loadChannels();
+        loadMembers();
 
         return () => {
             socketService.disconnect();
@@ -54,7 +52,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
     const loadChannels = async () => {
         try {
-            const fetchedChannels = await chatService.getChannels(currentOrg.id);
+            const fetchedChannels = await chatService.getAllChannels();
             setChannels(fetchedChannels);
             
             // If no channel is selected yet, try URL param or first channel
@@ -145,10 +143,13 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
     // 2. Fetch Messages and Join Room when Channel Select
     useEffect(() => {
-        if (!selectedChannelId || selectedChannelId.startsWith('virtual-') || !currentOrg?.id) return;
+        if (!selectedChannelId || selectedChannelId.startsWith('virtual-')) return;
+
+        const selectedChannel = channels.find(c => c.id === selectedChannelId);
+        const orgId = selectedChannel?.organizationId || currentOrg.id;
 
         // Update URL
-        setSearchParams({ org: currentOrg.id, channel: selectedChannelId }, { replace: true });
+        setSearchParams({ org: orgId, channel: selectedChannelId }, { replace: true });
 
         const loadMessages = async () => {
             try {

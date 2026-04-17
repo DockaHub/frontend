@@ -8,6 +8,11 @@ export const chatService = {
         return response.data.map((c: any) => mapChannel(c));
     },
 
+    async getAllChannels(): Promise<ChatChannel[]> {
+        const response = await api.get(`/chat/all-channels`);
+        return response.data.map((c: any) => mapChannel(c));
+    },
+
     async createChannel(organizationId: string, data: { name: string; type: 'public' | 'private' | 'dm'; members?: string[] }): Promise<ChatChannel> {
         const response = await api.post(`/chat/organizations/${organizationId}/channels`, data);
         return mapChannel(response.data);
@@ -44,6 +49,8 @@ function mapChannel(c: any): ChatChannel {
         unreadCount: 0, // TODO: Implement unread count logic
         memberIds: c.members?.map((m: any) => m.id) || [],
         members: c.members || [],
+        organizationId: c.organizationId,
+        organization: c.organization
     };
 }
 
