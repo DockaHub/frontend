@@ -233,11 +233,6 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-end sm:items-center">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                         <div className="relative flex-1 sm:flex-none">
-                            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={16} />
-                            <select
-                                className="pl-9 pr-8 py-2 text-sm bg-docka-50 border border-docka-200 rounded-lg outline-none focus:border-docka-400 transition-colors w-full sm:w-64 appearance-none cursor-pointer font-medium text-docka-700 hover:bg-docka-100"
-                                value={selectedDomainName}
-                        <div className="relative flex-1 sm:flex-none">
                             <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={16} />
                             <select
                                 className="pl-9 pr-8 py-2 text-sm bg-docka-50 border border-docka-200 rounded-lg outline-none focus:border-docka-400 transition-colors w-full sm:w-64 appearance-none cursor-pointer font-medium text-docka-700 hover:bg-docka-100"
