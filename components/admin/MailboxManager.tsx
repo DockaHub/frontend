@@ -142,12 +142,12 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                 email: newMailboxEmail,
                 type: newMailboxType,
                 smtpHost: newSmtpHost,
-                smtpPort: newSmtpPort,
+                smtpPort: isNaN(newSmtpPort) ? 465 : newSmtpPort,
                 smtpUser: newSmtpUser,
                 smtpPass: newSmtpPass,
                 smtpSecure: newSmtpSecure,
                 imapHost: newImapHost,
-                imapPort: newImapPort,
+                imapPort: isNaN(newImapPort) ? 993 : newImapPort,
                 imapUser: newImapUser,
                 imapPass: newImapPass,
                 imapSecure: newImapSecure
@@ -169,9 +169,8 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     const handleEditMailbox = (mailbox: any) => {
         setEditingMailbox(mailbox);
         setEditMailboxName(mailbox.name);
-        // Extract username from email (user@domain.com)
-        const [user] = mailbox.email.split('@');
-        setEditMailboxEmailUser(user);
+        // We now use the FULL email for editing to avoid invalid format on save
+        setEditMailboxEmailUser(mailbox.email);
         setEditMailboxType(mailbox.type);
         setEditSmtpHost(mailbox.smtpHost || '');
         setEditSmtpPort(mailbox.smtpPort || 465);
@@ -198,12 +197,12 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                 email: fullEmail,
                 type: editMailboxType,
                 smtpHost: editSmtpHost,
-                smtpPort: editSmtpPort,
+                smtpPort: isNaN(editSmtpPort) ? 465 : editSmtpPort,
                 smtpUser: editSmtpUser,
                 smtpPass: editSmtpPass,
                 smtpSecure: editSmtpSecure,
                 imapHost: editImapHost,
-                imapPort: editImapPort,
+                imapPort: isNaN(editImapPort) ? 993 : editImapPort,
                 imapUser: editImapUser,
                 imapPass: editImapPass,
                 imapSecure: editImapSecure
@@ -537,7 +536,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                     >
                                         <option value="SHARED">Compartilhada (Equipe)</option>
                                         <option value="PERSONAL">Pessoal</option>
-                                        <option value="SYSTEM">Sistema / Automática</option>
+                                        <option value="GROUP">Grupo</option>
                                     </select>
                                 </div>
 
@@ -718,7 +717,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                     >
                                         <option value="SHARED">Compartilhada (Equipe)</option>
                                         <option value="PERSONAL">Pessoal</option>
-                                        <option value="SYSTEM">Sistema</option>
+                                        <option value="GROUP">Grupo</option>
                                     </select>
                                 </div>
 
