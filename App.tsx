@@ -30,6 +30,7 @@ import {
 
 import { CallProvider } from './context/CallContext';
 import { MeetProvider } from './context/MeetContext';
+import { NotificationProvider } from './context/NotificationContext';
 import CallOverlay from './modules/chat/components/CallOverlay';
 
 import { ContractSignaturePage } from './modules/asterysko/public/ContractSignaturePage';
@@ -409,7 +410,9 @@ const App: React.FC = () => {
         <AuthProvider>
           <CallProvider>
             <MeetProvider>
-              <AppContent />
+              <NotificationProvider>
+                <AppContent />
+              </NotificationProvider>
             </MeetProvider>
           </CallProvider>
         </AuthProvider>

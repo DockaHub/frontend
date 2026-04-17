@@ -36,22 +36,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
     const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
     const [editContent, setEditContent] = useState('');
 
-    // Initialize notification sound
-    useEffect(() => {
-        messageAudioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
-        messageAudioRef.current.volume = 0.5;
-    }, []);
-
-    // Play sound on new messages from others
-    useEffect(() => {
-        if (messages.length > 0) {
-            const lastMessage = messages[messages.length - 1];
-            // Only play if message is NOT from current user
-            if (user && lastMessage.senderId !== user.id) {
-                messageAudioRef.current?.play().catch(e => console.log('Audio play failed:', e));
-            }
-        }
-    }, [messages.length, user]);
 
     // Socket listeners for edits and deletes
     useEffect(() => {

@@ -10,6 +10,8 @@ import UserAvatar from './common/UserAvatar';
 import Tooltip from './common/Tooltip';
 import { useSidebarNavigation } from '../hooks/useSidebarNavigation';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNotifications } from '../context/NotificationContext';
+import NotificationPanel from './NotificationPanel';
 
 const cleanSvg = (svg: string) => {
     if (!svg) return '';
@@ -65,7 +67,9 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     const [isAddOrgModalOpen, setIsAddOrgModalOpen] = useState(false);
     const [isOrgMenuOpen, setIsOrgMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isNotificationOpen, setIsNotificationOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const notificationRef = useRef<HTMLDivElement>(null);
 
     // Hooks
     const navigate = useNavigate();
@@ -79,10 +83,15 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
                 setIsUserMenuOpen(false);
             }
+            if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+                setIsNotificationOpen(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    const { unreadCount } = useNotifications();
 
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
@@ -134,14 +143,34 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                     </button>
                 )}
 
-                {/* Desktop Collapse Button */}
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className={`text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 p-1.5 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-md transition-colors ${onClose ? 'hidden lg:block' : ''} ${isCollapsed ? 'mt-2' : ''}`}
-                    title={isCollapsed ? "Expandir" : "Reduzir"}
-                >
-                    {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-                </button>
+                {/* Desktop Collapse Button & Notification */}
+                <div className="flex items-center gap-1" ref={notificationRef}>
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                            className={`text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 p-1.5 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-md transition-colors ${isCollapsed ? 'mb-2' : ''}`}
+                            title="Notificações"
+                        >
+                            <div className="relative">
+                                <Bell size={18} />
+                                {unreadCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] items-center justify-center flex font-bold rounded-full border-2 border-docka-50 dark:border-zinc-900">
+                                        {unreadCount > 9 ? '9+' : unreadCount}
+                                    </span>
+                                )}
+                            </div>
+                        </button>
+                        {isNotificationOpen && <NotificationPanel onClose={() => setIsNotificationOpen(false)} />}
+                    </div>
+
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className={`text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 p-1.5 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-md transition-colors ${onClose ? 'hidden lg:block' : ''} ${isCollapsed ? 'mt-2' : ''}`}
+                        title={isCollapsed ? "Expandir" : "Reduzir"}
+                    >
+                        {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                    </button>
+                </div>
             </div>
 
             {/* MAIN CONTENT SCROLLABLE AREA */}

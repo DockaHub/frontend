@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Organization, ChatChannel, ChatMessage } from '../../types';
 import { MOCK_CONTACTS } from '../../constants';
 import ChatSidebar from './components/ChatSidebar';
@@ -9,6 +9,7 @@ import { chatService } from '../../services/chatService';
 import { socketService } from '../../services/socketService';
 import { useAuth } from '../../context/AuthContext';
 import { organizationService } from '../../services/organizationService';
+import { useToast } from '../../context/ToastContext';
 
 interface ChatLayoutProps {
     currentOrg: Organization;
@@ -20,6 +21,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [channels, setChannels] = useState<ChatChannel[]>([]);
     const [orgMembers, setOrgMembers] = useState<any[]>([]);
+    const { addToast } = useToast();
+    const notificationAudio = useRef<HTMLAudioElement>(new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'));
 
     // Modal States
     const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
@@ -154,11 +157,29 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
     // 3. Listen for new messages and status updates
     useEffect(() => {
+        notificationAudio.current.volume = 0.5;
+
         const handleReceiveMessage = (newMessage: any) => {
             // Map backend message to frontend format
             const mappedMsg: ChatMessage = mapBackendMessage(newMessage);
 
-            // Only append if it belongs to current channel
+            // 1. Play sound if from others
+            if (currentUser && newMessage.senderId !== currentUser.id) {
+                notificationAudio.current.play().catch(e => console.log('Audio play failed:', e));
+                
+                // 2. Show Toast if not in current channel
+                if (newMessage.channelId !== selectedChannelId) {
+                    addToast({
+                        type: 'info',
+                        title: `Nova mensagem de ${mappedMsg.senderName}`,
+                        message: mappedMsg.content.length > 60 
+                            ? mappedMsg.content.substring(0, 57) + '...' 
+                            : mappedMsg.content
+                    });
+                }
+            }
+
+            // Only append to messages if it belongs to current channel
             if (newMessage.channelId === selectedChannelId) {
                 setMessages(prev => [...prev, mappedMsg]);
             }
