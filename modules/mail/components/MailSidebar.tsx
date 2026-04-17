@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Inbox, Send, Archive, Trash2, PenSquare, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Plus, X, Check } from 'lucide-react';
+import { Inbox, Send, Archive, Trash2, PenSquare, ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, Plus, X, Check, RefreshCcw, Settings } from 'lucide-react';
 import { MailFolder, Mailbox, Label } from '../../../types';
 import { mailService } from '../../../services/mailService';
 
@@ -7,6 +7,8 @@ interface MailSidebarProps {
   mailboxes: Mailbox[];
   currentMailboxId: string;
   onMailboxChange: (mailboxId: string) => void;
+  onSyncMailbox: (mailboxId: string) => void;
+  onMailboxSettings: (mailbox: Mailbox) => void;
   currentFolder: MailFolder;
   onFolderChange: (folder: MailFolder) => void;
   onCompose: () => void;
@@ -17,6 +19,8 @@ const MailSidebar: React.FC<MailSidebarProps> = ({
   mailboxes,
   currentMailboxId,
   onMailboxChange,
+  onSyncMailbox,
+  onMailboxSettings,
   currentFolder,
   onFolderChange,
   onCompose,
@@ -152,9 +156,25 @@ const MailSidebar: React.FC<MailSidebarProps> = ({
                   </div>
                 </div>
                 {!isCollapsed && (
-                  <button className="text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-300">
-                    {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </button>
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onSyncMailbox(mailbox.id); }}
+                      className="p-1 text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-300 hover:bg-docka-200 dark:hover:bg-zinc-700 rounded transition-all"
+                      title="Sincronizar (Puxar e-mails)"
+                    >
+                      <RefreshCcw size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onMailboxSettings(mailbox); }}
+                      className="p-1 text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-300 hover:bg-docka-200 dark:hover:bg-zinc-700 rounded transition-all"
+                      title="Configurações (SMTP/IMAP)"
+                    >
+                      <Settings size={12} />
+                    </button>
+                    <button className="p-1 text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-300">
+                      {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                    </button>
+                  </div>
                 )}
               </div>
 

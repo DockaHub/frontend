@@ -19,6 +19,7 @@ import CommandPalette from './components/common/CommandPalette';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './modules/auth/LoginPage';
+import { ForcePasswordChange } from './components/auth/ForcePasswordChange';
 import { Organization } from './types';
 import { ORGANIZATIONS } from './constants';
 import {
@@ -307,6 +308,10 @@ const AppContent: React.FC = () => {
       return <AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />;
     }
     return <LoginPage />;
+  }
+
+  if (user?.requirePasswordChange) {
+    return <ForcePasswordChange />;
   }
 
   return (

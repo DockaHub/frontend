@@ -54,5 +54,17 @@ export const organizationService = {
     // Remove a member from the organization
     async removeMember(id: string, userId: string): Promise<void> {
         await api.delete(`/organizations/${id}/members/${userId}`);
+    },
+
+    // Invite a new team member with full details and multi-org support
+    async inviteTeamMember(data: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        role: string;
+        organizationIds: string[];
+    }): Promise<{ user: User; generatedPassword?: string }> {
+        const response = await api.post('/organizations/invite-team', data);
+        return response.data;
     }
 };

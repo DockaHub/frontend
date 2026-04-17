@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Trash2, RefreshCw, Settings, X, Building2, User as UserIcon, Lock, Save, MapPin, Phone, Briefcase } from 'lucide-react';
+import { Users, Plus, Trash2, RefreshCw, Settings, X, Building2, User as UserIcon, Lock, Save, MapPin, Phone, Briefcase, Mail } from 'lucide-react';
 import { userService } from '../../services/userService';
 import { Organization } from '../../types';
 import { organizationService } from '../../services/organizationService';
@@ -15,8 +15,12 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
     const [newUserEmail, setNewUserEmail] = useState('');
+    const [newUserFirstName, setNewUserFirstName] = useState('');
+    const [newUserLastName, setNewUserLastName] = useState('');
+    const [newUserSelectedOrgs, setNewUserSelectedOrgs] = useState<string[]>(organizations[0] ? [organizations[0].id] : []);
     const [newUserRole, setNewUserRole] = useState('MEMBER');
     const [isInviting, setIsInviting] = useState(false);
+    const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
 
     // User Detail Modal State
     const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -26,7 +30,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
     const [roleToAdd, setRoleToAdd] = useState('MEMBER');
 
     // Profile Edit State
-    const [activeTab, setActiveTab] = useState<'profile' | 'organizations'>('profile');
+    const [activeTab, setActiveTab] = useState<'profile' | 'organizations' | 'email'>('profile');
     const [isSaving, setIsSaving] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -34,7 +38,17 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
         jobTitle: '',
         phone: '',
         location: '',
-        bio: ''
+        bio: '',
+        smtpHost: '',
+        smtpPort: 465,
+        smtpUser: '',
+        smtpPass: '',
+        smtpSecure: true,
+        imapHost: '',
+        imapPort: 993,
+        imapUser: '',
+        imapPass: '',
+        imapSecure: true
     });
     const [newPassword, setNewPassword] = useState('');
     const [showPasswordInput, setShowPasswordInput] = useState(false);
@@ -63,11 +77,28 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
     const handleInviteUser = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsInviting(true);
+        setGeneratedPassword(null);
         try {
-            await organizationService.addMember(selectedOrgId, newUserEmail, newUserRole);
-            addToast({ type: 'success', title: 'Usuário convidado com sucesso!', duration: 3000 });
+            const result = await organizationService.inviteTeamMember({
+                firstName: newUserFirstName,
+                lastName: newUserLastName,
+                email: newUserEmail,
+                role: newUserRole,
+                organizationIds: newUserSelectedOrgs
+            });
+            
+            addToast({ type: 'success', title: 'Convite enviado com sucesso!', duration: 3000 });
+            
+            if (result.generatedPassword) {
+                setGeneratedPassword(result.generatedPassword);
+            } else {
+                // If user already existed, just close
+                setIsInviteModalOpen(false);
+            }
+            
             setNewUserEmail('');
-            setIsInviteModalOpen(false);
+            setNewUserFirstName('');
+            setNewUserLastName('');
             loadMembers();
         } catch (error: any) {
             console.error("Failed to invite user", error);
@@ -97,7 +128,17 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
             jobTitle: user.jobTitle || '',
             phone: user.phone || '',
             location: user.location || '',
-            bio: user.bio || ''
+            bio: user.bio || '',
+            smtpHost: user.smtpHost || '',
+            smtpPort: user.smtpPort || 465,
+            smtpUser: user.smtpUser || '',
+            smtpPass: user.smtpPass || '',
+            smtpSecure: user.smtpSecure !== false,
+            imapHost: user.imapHost || '',
+            imapPort: user.imapPort || 993,
+            imapUser: user.imapUser || '',
+            imapPass: user.imapPass || '',
+            imapSecure: user.imapSecure !== false
         });
         setNewPassword('');
         setShowPasswordInput(false);
@@ -310,55 +351,137 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                     <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-lg font-bold text-docka-900">Convidar Usuário</h3>
-                            <button onClick={() => setIsInviteModalOpen(false)} className="text-docka-400 hover:text-docka-600">
+                            <button onClick={() => {
+                                setIsInviteModalOpen(false);
+                                setGeneratedPassword(null);
+                            }} className="text-docka-400 hover:text-docka-600">
                                 <X size={20} />
                             </button>
                         </div>
-                        <form onSubmit={handleInviteUser}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-docka-700 mb-1">Email do Usuário</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
-                                        placeholder="colega@exemplo.com"
-                                        value={newUserEmail}
-                                        onChange={e => setNewUserEmail(e.target.value)}
-                                    />
-                                    <p className="text-xs text-docka-500 mt-1">
-                                        O usuário deve ter uma conta existente no Docka Hub.
+
+                        {!generatedPassword ? (
+                            <form onSubmit={handleInviteUser}>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-sm font-medium text-docka-700 mb-1">Nome</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
+                                                placeholder="João"
+                                                value={newUserFirstName}
+                                                onChange={e => setNewUserFirstName(e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-docka-700 mb-1">Sobrenome</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
+                                                placeholder="Silva"
+                                                value={newUserLastName}
+                                                onChange={e => setNewUserLastName(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-docka-700 mb-1">Email do Usuário</label>
+                                        <input
+                                            type="email"
+                                            required
+                                            className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
+                                            placeholder="colega@exemplo.com"
+                                            value={newUserEmail}
+                                            onChange={e => setNewUserEmail(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-docka-700 mb-1">Organizações</label>
+                                        <div className="max-h-32 overflow-y-auto border border-docka-200 rounded-md p-2 space-y-1">
+                                            {organizations.map(org => (
+                                                <label key={org.id} className="flex items-center gap-2 px-2 py-1 hover:bg-docka-50 rounded cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={newUserSelectedOrgs.includes(org.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setNewUserSelectedOrgs([...newUserSelectedOrgs, org.id]);
+                                                            } else {
+                                                                setNewUserSelectedOrgs(newUserSelectedOrgs.filter(id => id !== org.id));
+                                                            }
+                                                        }}
+                                                        className="rounded text-docka-900 focus:ring-docka-500"
+                                                    />
+                                                    <span className="text-sm text-docka-700">{org.name}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-docka-700 mb-1">Função</label>
+                                        <select
+                                            className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
+                                            value={newUserRole}
+                                            onChange={e => setNewUserRole(e.target.value)}
+                                        >
+                                            <option value="MEMBER">Membro</option>
+                                            <option value="ADMIN">Administrador</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="mt-6 flex justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsInviteModalOpen(false)}
+                                        className="px-4 py-2 text-sm font-medium text-docka-700 hover:bg-docka-100 rounded-md transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isInviting || newUserSelectedOrgs.length === 0}
+                                        className="px-4 py-2 text-sm font-medium text-white bg-docka-900 hover:bg-docka-800 rounded-md transition-colors disabled:opacity-50"
+                                    >
+                                        {isInviting ? 'Convidando...' : 'Enviar Convite'}
+                                    </button>
+                                </div>
+                            </form>
+                        ) : (
+                            <div className="space-y-4 py-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-lg text-center">
+                                    <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <Lock className="text-emerald-600" size={24} />
+                                    </div>
+                                    <h4 className="text-emerald-900 font-bold mb-1">Usuário Criado!</h4>
+                                    <p className="text-sm text-emerald-700 mb-4">Envie os dados de acesso abaixo para o usuário:</p>
+                                    
+                                    <div className="bg-white p-4 rounded border border-emerald-200 text-left space-y-2">
+                                        <div>
+                                            <span className="text-[10px] uppercase font-bold text-docka-400 block tracking-tight">Usuário</span>
+                                            <span className="text-sm font-mono break-all">{newUserEmail}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-[10px] uppercase font-bold text-docka-400 block tracking-tight">Senha Temporária</span>
+                                            <span className="text-lg font-mono font-bold text-docka-900 select-all">{generatedPassword}</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-[10px] text-emerald-600 mt-3 italic">
+                                        * O usuário será obrigado a trocar de senha no primeiro acesso.
                                     </p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-docka-700 mb-1">Função</label>
-                                    <select
-                                        className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
-                                        value={newUserRole}
-                                        onChange={e => setNewUserRole(e.target.value)}
-                                    >
-                                        <option value="MEMBER">Membro</option>
-                                        <option value="ADMIN">Administrador</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div className="mt-6 flex justify-end gap-3">
                                 <button
-                                    type="button"
-                                    onClick={() => setIsInviteModalOpen(false)}
-                                    className="px-4 py-2 text-sm font-medium text-docka-700 hover:bg-docka-100 rounded-md transition-colors"
+                                    onClick={() => {
+                                        setIsInviteModalOpen(false);
+                                        setGeneratedPassword(null);
+                                    }}
+                                    className="w-full py-2.5 bg-docka-900 text-white rounded-lg font-bold hover:bg-docka-800 transition-colors"
                                 >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isInviting}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-docka-900 hover:bg-docka-800 rounded-md transition-colors disabled:opacity-50"
-                                >
-                                    {isInviting ? 'Convidando...' : 'Enviar Convite'}
+                                    Concluído
                                 </button>
                             </div>
-                        </form>
+                        )}
                     </div>
                 </div>
             )}
@@ -403,6 +526,15 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                     }`}
                             >
                                 <Building2 size={16} className="mr-2" /> Organizações
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('email')}
+                                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors flex items-center ${activeTab === 'email'
+                                    ? 'border-docka-900 text-docka-900'
+                                    : 'border-transparent text-docka-500 hover:text-docka-700'
+                                    }`}
+                            >
+                                <Mail size={16} className="mr-2" /> Configurações de E-mail
                             </button>
                         </div>
 
@@ -624,6 +756,163 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'email' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-100 flex items-start gap-4">
+                                    <div className="p-2 bg-white rounded-md text-indigo-600 shadow-sm">
+                                        <Mail size={20} />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-indigo-900">E-mail Universal (Zoho/Outros)</h4>
+                                        <p className="text-xs text-indigo-700 mt-0.5">
+                                            Configure as credenciais SMTP e IMAP individuais deste usuário para permitir o envio e recebimento de e-mails pessoais.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleSaveProfile} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <h4 className="text-xs font-bold text-docka-400 uppercase tracking-widest flex items-center">
+                                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full mr-2" />
+                                                SMTP (Envio)
+                                            </h4>
+                                            
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Servidor SMTP</label>
+                                                    <input 
+                                                        type="text"
+                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                        placeholder="smtp.zoho.com"
+                                                        value={formData.smtpHost}
+                                                        onChange={e => setFormData({...formData, smtpHost: e.target.value})}
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Porta</label>
+                                                        <input 
+                                                            type="number"
+                                                            className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                            placeholder="465"
+                                                            value={formData.smtpPort}
+                                                            onChange={e => setFormData({...formData, smtpPort: parseInt(e.target.value)})}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-end pb-2">
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input 
+                                                                type="checkbox"
+                                                                className="rounded text-indigo-600"
+                                                                checked={formData.smtpSecure}
+                                                                onChange={e => setFormData({...formData, smtpSecure: e.target.checked})}
+                                                            />
+                                                            <span className="text-xs font-medium text-docka-600">SSL/TLS</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Usuário SMTP</label>
+                                                    <input 
+                                                        type="text"
+                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                        placeholder="usuario@dominio.com"
+                                                        value={formData.smtpUser}
+                                                        onChange={e => setFormData({...formData, smtpUser: e.target.value})}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Senha de App SMTP</label>
+                                                    <input 
+                                                        type="password"
+                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-indigo-500 outline-none"
+                                                        placeholder="••••••••••••"
+                                                        value={formData.smtpPass}
+                                                        onChange={e => setFormData({...formData, smtpPass: e.target.value})}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-xs font-bold text-docka-400 uppercase tracking-widest flex items-center">
+                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2" />
+                                                IMAP (Recebimento)
+                                            </h4>
+
+                                            <div className="space-y-3">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Servidor IMAP</label>
+                                                    <input 
+                                                        type="text"
+                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                        placeholder="imap.zoho.com"
+                                                        value={formData.imapHost}
+                                                        onChange={e => setFormData({...formData, imapHost: e.target.value})}
+                                                    />
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Porta</label>
+                                                        <input 
+                                                            type="number"
+                                                            className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                            placeholder="993"
+                                                            value={formData.imapPort}
+                                                            onChange={e => setFormData({...formData, imapPort: parseInt(e.target.value)})}
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-end pb-2">
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input 
+                                                                type="checkbox"
+                                                                className="rounded text-emerald-600"
+                                                                checked={formData.imapSecure}
+                                                                onChange={e => setFormData({...formData, imapSecure: e.target.checked})}
+                                                            />
+                                                            <span className="text-xs font-medium text-docka-600">SSL/TLS</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Usuário IMAP</label>
+                                                    <input 
+                                                        type="text"
+                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                        placeholder="usuario@dominio.com"
+                                                        value={formData.imapUser}
+                                                        onChange={e => setFormData({...formData, imapUser: e.target.value})}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase mb-1">Senha de App IMAP</label>
+                                                    <input 
+                                                        type="password"
+                                                        className="w-full px-3 py-2 text-sm border border-docka-200 rounded-md focus:ring-2 focus:ring-emerald-500 outline-none"
+                                                        placeholder="••••••••••••"
+                                                        value={formData.imapPass}
+                                                        onChange={e => setFormData({...formData, imapPass: e.target.value})}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 pt-4 border-t border-docka-100 flex justify-end">
+                                        <button
+                                            type="submit"
+                                            disabled={isSaving}
+                                            className="px-6 py-2 bg-docka-900 text-white text-sm font-bold rounded-lg hover:bg-docka-800 disabled:opacity-50 flex items-center shadow-lg transition-all"
+                                        >
+                                            <Save size={16} className="mr-2" />
+                                            {isSaving ? 'Salvando...' : 'Salvar Configurações de E-mail'}
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         )}
                     </div>

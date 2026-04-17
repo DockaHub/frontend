@@ -10,21 +10,11 @@ interface MailboxManagerProps {
     organizations?: Organization[]; // Kept for consistency
 }
 
-// Extended Domain interface to include organization details from backend
-interface ExtendedDomain extends Domain {
-    organization?: {
-        id: string;
-        name: string;
-        slug: string;
-    },
-    organizationId: string;
-}
 
 const MailboxManager: React.FC<MailboxManagerProps> = () => {
     // Data State
-    const [allDomains, setAllDomains] = useState<ExtendedDomain[]>([]);
     const [allOrgs, setAllOrgs] = useState<Organization[]>([]);
-    const [selectedDomainName, setSelectedDomainName] = useState<string>('');
+    const [selectedOrgId, setSelectedOrgId] = useState<string>('');
     const [mailboxes, setMailboxes] = useState<any[]>([]);
 
     // UI State
@@ -61,39 +51,25 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     // -- Effects --
 
     useEffect(() => {
-        loadGlobalDomains();
         loadAllOrganizations();
     }, []);
 
     useEffect(() => {
-        if (selectedDomainName) {
+        if (selectedOrgId) {
             loadMailboxes();
             loadOrgMembers();
         }
-    }, [selectedDomainName]);
+    }, [selectedOrgId]);
 
     // -- Loaders --
-
-    const loadGlobalDomains = async () => {
-        try {
-            const domains = await domainService.listAllGlobal();
-            setAllDomains(domains as ExtendedDomain[]); // Cast as our extended interface
-
-            // Auto-select first verified or any domain if none selected
-            if (!selectedDomainName && domains.length > 0) {
-                const verified = domains.find(d => d.status === 'VERIFIED');
-                setSelectedDomainName(verified ? verified.name : domains[0].name);
-            }
-        } catch (error) {
-            console.error("Failed to load global domains", error);
-            addToast({ type: 'error', title: 'Erro ao carregar domínios', duration: 4000 });
-        }
-    };
 
     const loadAllOrganizations = async () => {
         try {
             const orgs = await organizationService.listAllGlobal();
             setAllOrgs(orgs);
+            if (!selectedOrgId && orgs.length > 0) {
+                setSelectedOrgId(orgs[0].id);
+            }
         } catch (error) {
             console.error("Failed to load organizations", error);
         }
@@ -102,7 +78,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     const loadMailboxes = async () => {
         setIsLoading(true);
         try {
-            const data = await mailService.getMailboxesByDomain(selectedDomainName);
+            const data = await mailService.getMailboxes(selectedOrgId);
             setMailboxes(data);
         } catch (error) {
             console.error("Failed to load mailboxes", error);
@@ -113,10 +89,9 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     };
 
     const loadOrgMembers = async () => {
-        const domainObj = allDomains.find(d => d.name === selectedDomainName);
-        if (domainObj && domainObj.organizationId) {
+        if (selectedOrgId) {
             try {
-                const members = await organizationService.getMembers(domainObj.organizationId);
+                const members = await organizationService.getMembers(selectedOrgId);
                 setOrgMembers(members);
             } catch (error) {
                 console.error("Failed to load org members", error);
@@ -129,19 +104,16 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     const handleCreateMailbox = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const domainObj = allDomains.find(d => d.name === selectedDomainName);
-        if (!domainObj) {
-            addToast({ type: 'error', title: 'Domínio inválido selecionado', duration: 3000 });
+        if (!selectedOrgId) {
+            addToast({ type: 'error', title: 'Organização não selecionada', duration: 3000 });
             return;
         }
 
-        const fullEmail = `${newMailboxEmail}@${selectedDomainName}`;
-
         setIsCreating(true);
         try {
-            await mailService.createMailbox(domainObj.organizationId, {
+            await mailService.createMailbox(selectedOrgId, {
                 name: newMailboxName,
-                email: fullEmail,
+                email: newMailboxEmail,
                 type: newMailboxType
             });
 
@@ -172,8 +144,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
         e.preventDefault();
         if (!editingMailbox) return;
 
-        const fullEmail = `${editMailboxEmailUser}@${selectedDomainName}`; // Assume domain doesn't change here
-
+        const fullEmail = editMailboxEmailUser; // Now we enter full email
         setIsCreating(true); // Reuse loading state
         try {
             await mailService.updateMailbox(editingMailbox.id, {
@@ -206,38 +177,6 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
         }
     };
 
-    const openDomainConfig = () => {
-        const domainObj = allDomains.find(d => d.name === selectedDomainName);
-        if (domainObj) {
-            setSelectedOrgForDomain(domainObj.organizationId || (domainObj.organization?.id || ''));
-            setIsDomainConfigOpen(true);
-        }
-    };
-
-    const handleUpdateDomainOrg = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const domainObj = allDomains.find(d => d.name === selectedDomainName);
-        if (!domainObj) return;
-
-        setIsUpdatingDomain(true);
-        try {
-            await domainService.updateDomain(domainObj.id, {
-                organizationId: selectedOrgForDomain
-            });
-
-            addToast({ type: 'success', title: 'Organização do domínio atualizada!', duration: 3000 });
-            setIsDomainConfigOpen(false);
-            // Reload global domains to reflect change
-            await loadGlobalDomains();
-            // Current mailboxes might still display old org name until re-fetched
-            if (selectedDomainName) loadMailboxes();
-        } catch (error: any) {
-            console.error("Failed to update domain org", error);
-            addToast({ type: 'error', title: 'Erro ao transferir domínio', duration: 3000 });
-        } finally {
-            setIsUpdatingDomain(false);
-        }
-    };
 
     // Access Control
     const handleOpenAccessModal = (mailbox: any) => {
@@ -280,7 +219,6 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
         }
     };
 
-    const selectedDomainObj = allDomains.find(d => d.name === selectedDomainName);
 
     return (
         <div className="bg-white rounded-xl border border-docka-200 shadow-sm overflow-hidden min-h-[500px]">
@@ -299,37 +237,30 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                             <select
                                 className="pl-9 pr-8 py-2 text-sm bg-docka-50 border border-docka-200 rounded-lg outline-none focus:border-docka-400 transition-colors w-full sm:w-64 appearance-none cursor-pointer font-medium text-docka-700 hover:bg-docka-100"
                                 value={selectedDomainName}
-                                onChange={(e) => setSelectedDomainName(e.target.value)}
+                        <div className="relative flex-1 sm:flex-none">
+                            <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={16} />
+                            <select
+                                className="pl-9 pr-8 py-2 text-sm bg-docka-50 border border-docka-200 rounded-lg outline-none focus:border-docka-400 transition-colors w-full sm:w-64 appearance-none cursor-pointer font-medium text-docka-700 hover:bg-docka-100"
+                                value={selectedOrgId}
+                                onChange={(e) => setSelectedOrgId(e.target.value)}
                             >
-                                {allDomains.map(d => (
-                                    <option key={d.id} value={d.name}>
-                                        {d.name} {d.organization ? `(${d.organization.name})` : ''}
-                                        {d.status !== 'VERIFIED' ? ' [Não Verificado]' : ''}
+                                {allOrgs.map(org => (
+                                    <option key={org.id} value={org.id}>
+                                        {org.name}
                                     </option>
                                 ))}
-                                {allDomains.length === 0 && <option value="">Nenhum domínio encontrado</option>}
+                                {allOrgs.length === 0 && <option value="">Nenhuma organização encontrada</option>}
                             </select>
                             <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-docka-400">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                         </div>
-                        <button
-                            onClick={openDomainConfig}
-                            className="p-2 text-docka-500 hover:text-docka-900 bg-docka-50 hover:bg-docka-100 border border-docka-200 rounded-lg transition-colors"
-                            title="Configurações do Domínio (Ex: Alterar Organização)"
-                            disabled={!selectedDomainName}
-                        >
-                            <Settings size={18} />
-                        </button>
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 rounded-md text-xs font-medium border ${selectedDomainObj?.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
-                            {selectedDomainObj?.status === 'VERIFIED' ? 'Verificado' : 'Pendente'}
-                        </span>
                         <button
                             onClick={() => setIsModalOpen(true)}
-                            disabled={!selectedDomainName || selectedDomainObj?.status !== 'VERIFIED'}
+                            disabled={!selectedOrgId}
                             className="flex items-center px-3 py-2 text-sm bg-docka-900 text-white rounded-lg hover:bg-docka-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
                             <Plus size={16} className="mr-2" /> Nova Mailbox
@@ -342,7 +273,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
             {isLoading ? (
                 <div className="p-12 text-center text-docka-400">
                     <RefreshCw className="animate-spin mx-auto mb-3" size={24} />
-                    <p>Carregando mailboxes do domínio <strong>{selectedDomainName}</strong>...</p>
+                    <p>Carregando mailboxes...</p>
                 </div>
             ) : (
                 <table className="w-full text-sm text-left">
@@ -364,7 +295,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                         <Mail className="h-8 w-8 opacity-40" />
                                     </div>
                                     <p className="text-base font-medium text-docka-600">Nenhuma mailbox encontrada</p>
-                                    <p className="text-sm">Não há contas de email criadas para @{selectedDomainName}</p>
+                                    <p className="text-sm">Não há contas de email criadas para esta organização.</p>
                                 </td>
                             </tr>
                         ) : (

@@ -257,12 +257,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onSelectOrg }) => {
                 Mailboxes
               </button>
               <button
-                onClick={() => handleTabChange('domains')}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'domains' ? 'bg-white text-docka-900 shadow-sm' : 'text-docka-500 hover:text-docka-900'}`}
-              >
-                Domínios
-              </button>
-              <button
                 onClick={() => handleTabChange('users')}
                 className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'users' ? 'bg-white text-docka-900 shadow-sm' : 'text-docka-500 hover:text-docka-900'}`}
               >
@@ -405,9 +399,6 @@ const AdminView: React.FC<AdminViewProps> = ({ onSelectOrg }) => {
               <MailboxManager organizations={organizations} />
             )}
 
-            {activeTab === 'domains' && (
-              <DomainManager organizations={organizations} />
-            )}
 
             {activeTab === 'users' && (
               <UserManager organizations={organizations} />

@@ -108,6 +108,12 @@ export const mailService = {
     await api.delete(`/mail/mailboxes/${id}`);
   },
 
+  // POST: Sync mailbox via IMAP
+  async syncMailbox(mailboxId: string): Promise<{ success: boolean; imported: number }> {
+    const response = await api.post(`/mail/mailboxes/${mailboxId}/sync`);
+    return response.data;
+  },
+
   // POST: Add user to mailbox
   async addUser(mailboxId: string, userId: string): Promise<any> {
     const response = await api.post(`/mail/mailboxes/${mailboxId}/users`, { userId });
