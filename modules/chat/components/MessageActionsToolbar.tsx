@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smile, Reply, Send, Bookmark, MoreHorizontal } from 'lucide-react';
+import { Smile, Reply, Send, Bookmark, MoreHorizontal, Edit2, Trash2 } from 'lucide-react';
 
 interface MessageActionsToolbarProps {
     onReact?: (emoji: string) => void;
