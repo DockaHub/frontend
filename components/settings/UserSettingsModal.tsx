@@ -51,6 +51,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
     const { refreshUser } = useAuth(); // Get refreshUser from context
     const [isLoading, setIsLoading] = useState(false);
     const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Function to apply phone mask
@@ -88,6 +89,10 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             return;
         }
 
+        // Local preview for instant feedback
+        const localUrl = URL.createObjectURL(file);
+        setPreviewUrl(localUrl);
+
         setIsUploadingAvatar(true);
         try {
             await userService.uploadAvatar(file);
@@ -99,6 +104,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
             });
         } catch (error: any) {
             console.error('Failed to upload avatar:', error);
+            setPreviewUrl(null); // Reset preview on error
             addToast({
                 type: 'error',
                 title: 'Erro no Upload',
@@ -232,7 +238,11 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                                     onClick={!isUploadingAvatar ? handleAvatarClick : undefined}
                                     title="Alterar foto de perfil"
                                 >
-                                    <img src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} className={`w-full h-full rounded-full border-4 border-white dark:border-zinc-800 shadow-md object-cover transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`} alt="Profile" />
+                                    <img 
+                                        src={previewUrl || (user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_URL || ''}${user.avatar.replace('/api', '')}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`)} 
+                                        className={`w-full h-full rounded-full border-4 border-white dark:border-zinc-800 shadow-md object-cover transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`} 
+                                        alt="Profile" 
+                                    />
                                     <div className={`absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 ${!isUploadingAvatar ? 'group-hover:opacity-100' : ''} transition-opacity`}>
                                         <Camera size={24} className="text-white" />
                                     </div>
