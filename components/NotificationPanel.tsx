@@ -11,16 +11,17 @@ interface NotificationPanelProps {
 }
 
 const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
-    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+    const { notifications, unreadCount, markAsRead, markAllAsRead, markAsReadByLink } = useNotifications();
     const navigate = useNavigate();
 
     const handleNotificationClick = async (notif: Notification) => {
-        if (!notif.read) {
-            await markAsRead(notif.id);
-        }
         if (notif.link) {
+            // If it has a link (like a chat), mark all related as read
+            await markAsReadByLink(notif.link);
             navigate(notif.link);
             onClose();
+        } else if (!notif.read) {
+            await markAsRead(notif.id);
         }
     };
 

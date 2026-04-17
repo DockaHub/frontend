@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Organization, ChatChannel, ChatMessage } from '../../types';
 import ChatSidebar from './components/ChatSidebar';
 import ChatStream from './components/ChatStream';
@@ -17,7 +18,8 @@ interface ChatLayoutProps {
 
 const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     const { user: currentUser } = useAuth();
-    const [selectedChannelId, setSelectedChannelId] = useState<string>('');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [selectedChannelId, setSelectedChannelId] = useState<string>(searchParams.get('channel') || '');
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [channels, setChannels] = useState<ChatChannel[]>([]);
     const [orgMembers, setOrgMembers] = useState<any[]>([]);
@@ -54,8 +56,15 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
         try {
             const fetchedChannels = await chatService.getChannels(currentOrg.id);
             setChannels(fetchedChannels);
-            if (fetchedChannels.length > 0 && !selectedChannelId) {
-                setSelectedChannelId(fetchedChannels[0].id);
+            
+            // If no channel is selected yet, try URL param or first channel
+            if (!selectedChannelId && fetchedChannels.length > 0) {
+                const urlChannel = searchParams.get('channel');
+                if (urlChannel && fetchedChannels.some(c => c.id === urlChannel)) {
+                    setSelectedChannelId(urlChannel);
+                } else {
+                    setSelectedChannelId(fetchedChannels[0].id);
+                }
             }
         } catch (error) {
             console.error("Failed to load channels", error);
@@ -137,6 +146,9 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     // 2. Fetch Messages and Join Room when Channel Select
     useEffect(() => {
         if (!selectedChannelId || selectedChannelId.startsWith('virtual-')) return;
+
+        // Update URL
+        setSearchParams({ org: currentOrg.id, channel: selectedChannelId }, { replace: true });
 
         const loadMessages = async () => {
             try {
