@@ -154,18 +154,24 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     useEffect(() => {
         const handleReceiveMessage = (newMessage: any) => {
             // Map backend message to frontend format
-            const mappedMsg: ChatMessage = {
-                id: newMessage.id,
-                senderId: newMessage.senderId,
-                senderName: newMessage.sender.name,
-                senderAvatar: newMessage.sender.avatar,
-                content: newMessage.content,
-                timestamp: new Date(newMessage.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
+            const mappedMsg: ChatMessage = mapBackendMessage(newMessage);
 
             // Only append if it belongs to current channel
             if (newMessage.channelId === selectedChannelId) {
                 setMessages(prev => [...prev, mappedMsg]);
+            }
+        };
+
+        const handleMsgUpdated = (updatedMessage: any) => {
+            if (updatedMessage.channelId === selectedChannelId) {
+                const mapped = mapBackendMessage(updatedMessage);
+                setMessages(prev => prev.map(m => m.id === mapped.id ? mapped : m));
+            }
+        };
+
+        const handleMsgDeleted = (data: { messageId: string, channelId: string }) => {
+            if (data.channelId === selectedChannelId) {
+                setMessages(prev => prev.filter(m => m.id !== data.messageId));
             }
         };
 
@@ -178,13 +184,28 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
         };
 
         socketService.on('receive_message', handleReceiveMessage);
+        socketService.on('message_updated', handleMsgUpdated);
+        socketService.on('message_deleted', handleMsgDeleted);
         socketService.on('user_status_change', handleStatusChange);
 
         return () => {
             socketService.off('receive_message', handleReceiveMessage);
+            socketService.off('message_updated', handleMsgUpdated);
+            socketService.off('message_deleted', handleMsgDeleted);
             socketService.off('user_status_change', handleStatusChange);
         };
     }, [selectedChannelId]);
+
+    // Helper to map backend message format to frontend ChatMessage
+    const mapBackendMessage = (m: any): ChatMessage => ({
+        id: m.id,
+        senderId: m.senderId,
+        senderName: m.sender.name,
+        senderAvatar: m.sender.avatar,
+        content: m.content,
+        isEdited: m.isEdited,
+        timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
 
     const currentChannel = displayChannels.find(c => c.id === selectedChannelId) || displayChannels[0];
 
