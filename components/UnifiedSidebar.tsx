@@ -91,7 +91,8 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const { unreadCount } = useNotifications();
+    const { unreadCount, notifications } = useNotifications();
+    const unreadChatCount = notifications.filter(n => n.type === 'CHAT' && !n.read).length;
 
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
@@ -367,10 +368,17 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                         : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-100/50 dark:hover:bg-zinc-800/50 hover:text-docka-900 dark:hover:text-zinc-200'
                                         } ${isCollapsed ? 'justify-center' : ''}`}
                                 >
-                                    <app.icon
-                                        size={20}
-                                        className={`shrink-0 transition-colors ${isActive ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-400 dark:text-zinc-500 group-hover:text-docka-600 dark:group-hover:text-zinc-300'} ${!isCollapsed ? 'mr-3' : ''}`}
-                                    />
+                                    <div className="relative">
+                                        <app.icon
+                                            size={20}
+                                            className={`shrink-0 transition-colors ${isActive ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-400 dark:text-zinc-500 group-hover:text-docka-600 dark:group-hover:text-zinc-300'} ${!isCollapsed ? 'mr-3' : ''}`}
+                                        />
+                                        {app.id === 'chat' && unreadChatCount > 0 && (
+                                            <span className={`absolute -top-1.5 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border border-white dark:border-zinc-900 ${isCollapsed ? '-right-1.5 w-3.5 h-3.5' : 'right-1.5 w-4 h-4'}`}>
+                                                {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                                            </span>
+                                        )}
+                                    </div>
                                     {!isCollapsed && <span className="flex-1 text-left truncate">{app.label}</span>}
                                 </button>
                             );

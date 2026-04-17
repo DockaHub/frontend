@@ -20,6 +20,7 @@ interface NotificationContextType {
     unreadCount: number;
     markAsRead: (id: string) => Promise<void>;
     markAllAsRead: () => Promise<void>;
+    markAsReadByLink: (link: string) => Promise<void>;
     addLocalNotification: (notification: Notification) => void;
 }
 
@@ -112,6 +113,24 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
         }
     };
 
+    const markAsReadByLink = async (link: string) => {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/notifications/link`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({ link })
+            });
+            if (response.ok) {
+                setNotifications(prev => prev.map(n => n.link === link ? { ...n, read: true } : n));
+            }
+        } catch (error) {
+            console.error('Failed to mark notifications as read by link', error);
+        }
+    };
+
     const addLocalNotification = (notification: Notification) => {
         setNotifications(prev => [notification, ...prev]);
     };
@@ -119,7 +138,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
-        <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, addLocalNotification }}>
+        <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, markAsReadByLink, addLocalNotification }}>
             {children}
         </NotificationContext.Provider>
     );

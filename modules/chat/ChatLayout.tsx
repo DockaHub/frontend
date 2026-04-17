@@ -9,6 +9,7 @@ import { socketService } from '../../services/socketService';
 import { useAuth } from '../../context/AuthContext';
 import { organizationService } from '../../services/organizationService';
 import { useToast } from '../../context/ToastContext';
+import { useNotifications } from '../../context/NotificationContext';
 
 interface ChatLayoutProps {
     currentOrg: Organization;
@@ -21,6 +22,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     const [channels, setChannels] = useState<ChatChannel[]>([]);
     const [orgMembers, setOrgMembers] = useState<any[]>([]);
     const { addToast } = useToast();
+    const { markAsReadByLink } = useNotifications();
     const notificationAudio = useRef<HTMLAudioElement>(new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'));
 
     // Modal States
@@ -149,10 +151,16 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
         loadMessages();
         socketService.joinChannel(selectedChannelId);
 
+        // Clear unread count for this channel locally
+        setChannels(prev => prev.map(c => c.id === selectedChannelId ? { ...c, unreadCount: 0 } : c));
+        
+        // Mark as read in backend notifications
+        markAsReadByLink(`/chat?org=${currentOrg.id}&channel=${selectedChannelId}`);
+
         return () => {
             socketService.leaveChannel(selectedChannelId);
         };
-    }, [selectedChannelId]);
+    }, [selectedChannelId, currentOrg.id]);
 
     // 3. Listen for new messages and status updates
     useEffect(() => {
@@ -181,6 +189,13 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
             // Only append to messages if it belongs to current channel
             if (newMessage.channelId === selectedChannelId) {
                 setMessages(prev => [...prev, mappedMsg]);
+            } else {
+                // Increment unread count for the target channel
+                setChannels(prev => prev.map(c => 
+                    c.id === newMessage.channelId 
+                        ? { ...c, unreadCount: (c.unreadCount || 0) + 1 } 
+                        : c
+                ));
             }
         };
 
