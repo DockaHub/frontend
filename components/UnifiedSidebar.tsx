@@ -217,7 +217,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                         </button>
                                     ))}
                                 </div>
-                                    {(currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN' || user.role === 'ADMIN') && (
+                                    {user.role === 'ADMIN' && (
                                         <div className="p-2 border-t border-docka-100 dark:border-zinc-800 bg-docka-50/50 dark:bg-zinc-800/20">
                                             <button
                                                 onClick={() => { setIsOrgMenuOpen(false); setIsAddOrgModalOpen(true); }}

@@ -80,7 +80,9 @@ const UserHomeView: React.FC = () => {
                                 <h2 className="text-lg font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                     <Building2 size={18} className="text-docka-400 dark:text-zinc-500" /> Meus Espaços de Trabalho
                                 </h2>
-                                <button className="text-xs text-docka-500 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400 font-medium">Gerenciar todos</button>
+                                {user?.role === 'ADMIN' && (
+                                    <button className="text-xs text-docka-50 hover:text-indigo-600 dark:text-zinc-400 dark:hover:text-indigo-400 font-medium opacity-0">Gerenciar todos</button>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -130,13 +132,14 @@ const UserHomeView: React.FC = () => {
                                     </div>
                                 ))}
 
-                                {/* Add New Org Card */}
-                                <div className="border border-dashed border-docka-300 dark:border-zinc-700 rounded-xl p-5 flex flex-col items-center justify-center text-center hover:bg-docka-50 dark:hover:bg-zinc-900/50 transition-colors cursor-pointer group min-h-[140px]">
-                                    <div className="w-10 h-10 rounded-full bg-docka-100 dark:bg-zinc-800 flex items-center justify-center text-docka-400 dark:text-zinc-500 mb-3 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                                        <Plus size={20} />
+                                {user?.role === 'ADMIN' && (
+                                    <div className="border border-dashed border-docka-300 dark:border-zinc-700 rounded-xl p-5 flex flex-col items-center justify-center text-center hover:bg-docka-50 dark:hover:bg-zinc-900/50 transition-colors cursor-pointer group min-h-[140px]">
+                                        <div className="w-10 h-10 rounded-full bg-docka-100 dark:bg-zinc-800 flex items-center justify-center text-docka-400 dark:text-zinc-500 mb-3 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                            <Plus size={20} />
+                                        </div>
+                                        <span className="text-sm font-medium text-docka-600 dark:text-zinc-400 group-hover:text-docka-900 dark:group-hover:text-zinc-200">Criar nova organização</span>
                                     </div>
-                                    <span className="text-sm font-medium text-docka-600 dark:text-zinc-400 group-hover:text-docka-900 dark:group-hover:text-zinc-200">Criar nova organização</span>
-                                </div>
+                                )}
                             </div>
                         </section>
 

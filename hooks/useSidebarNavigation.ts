@@ -178,12 +178,12 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         return items.filter(item => {
             // Regras para Financeiro
             if (['financial', 'finance', 'billing', 'financeiro'].includes(item.id.toLowerCase())) {
-                return perms.canAccessFinance;
+                return perms.canAccessFinance !== false;
             }
             
             // Regras para Configurações
             if (item.id.toLowerCase() === 'settings') {
-                return perms.canAccessSettings;
+                return perms.canAccessSettings !== false;
             }
 
             // Regras para Pessoas/Usuários (se aplicável ao item)

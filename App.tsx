@@ -147,6 +147,15 @@ const AppContent: React.FC = () => {
 
               if (savedOrg) {
                 setCurrentOrg(savedOrg);
+              } else if (enhancedOrgs.length === 1) {
+                // AUTO-REDIRECT IF ONLY ONE ORG
+                const singleOrg = enhancedOrgs[0];
+                setCurrentOrg(singleOrg);
+                
+                // If on home, go to overview
+                if (window.location.pathname === '/' || (window.location.pathname === '/dashboard' && !params.get('view'))) {
+                  navigate(`/dashboard?org=${singleOrg.id}&view=overview`, { replace: true });
+                }
               } else {
                 setCurrentOrg(enhancedOrgs[0]);
               }

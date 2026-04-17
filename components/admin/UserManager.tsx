@@ -192,6 +192,35 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
         }
     };
 
+    const handleTogglePermission = async (orgId: string, permissionType: string, value: boolean) => {
+        if (!selectedUser) return;
+        
+        try {
+            // Find current org permissions
+            const currentOrg = userOrgs.find(o => o.id === orgId) as any;
+            const currentPerms = currentOrg?.memberPermissions || {};
+            
+            const newPerms = {
+                ...currentPerms,
+                [permissionType]: value
+            };
+
+            await organizationService.updateMemberPermissions(orgId, selectedUser.id, newPerms);
+            
+            // Update local state
+            setUserOrgs(userOrgs.map(o => 
+                o.id === orgId 
+                ? { ...o, memberPermissions: newPerms }
+                : o
+            ));
+
+            addToast({ type: 'success', title: 'Permissões atualizadas', duration: 2000 });
+        } catch (error) {
+            console.error("Failed to update permissions", error);
+            addToast({ type: 'error', title: 'Erro ao atualizar permissões', duration: 3000 });
+        }
+    };
+
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser) return;
@@ -689,6 +718,8 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                     <tr>
                                                         <th className="px-4 py-2">Organização</th>
                                                         <th className="px-4 py-2">Função</th>
+                                                        <th className="px-4 py-2 text-center">🔐 Financeiro</th>
+                                                        <th className="px-4 py-2 text-center">⚙️ Config</th>
                                                         <th className="px-4 py-2 text-right">Ações</th>
                                                     </tr>
                                                 </thead>
@@ -707,6 +738,24 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-docka-100 text-docka-600 border border-docka-200">
                                                                         {org.memberRole || 'MEMBER'}
                                                                     </span>
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="rounded text-docka-900 focus:ring-docka-500"
+                                                                        checked={org.memberPermissions?.canAccessFinance !== false}
+                                                                        onChange={(e) => handleTogglePermission(org.id, 'canAccessFinance', e.target.checked)}
+                                                                        disabled={org.memberRole === 'OWNER'}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="rounded text-docka-900 focus:ring-docka-500"
+                                                                        checked={org.memberPermissions?.canAccessSettings !== false}
+                                                                        onChange={(e) => handleTogglePermission(org.id, 'canAccessSettings', e.target.checked)}
+                                                                        disabled={org.memberRole === 'OWNER'}
+                                                                    />
                                                                 </td>
                                                                 <td className="px-4 py-3 text-right">
                                                                     <button
