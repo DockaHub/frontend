@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useRef } from 'react';
 import { 
     Hash, Users, Phone, Video, MoreHorizontal, Paperclip, Smile, Send, Plus, Search, BellOff, Info, FileText, Code, Zap, Reply, Bookmark, Trash2, Edit2, X, Check
 } from 'lucide-react';
