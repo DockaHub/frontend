@@ -5,7 +5,6 @@ import { INITIAL_DOMAINS, CURRENT_USER } from '../../constants';
 import { Organization } from '../../types';
 import api from '../../services/api';
 import MailboxManager from './MailboxManager';
-import DomainManager from './DomainManager';
 import UserManager from './UserManager';
 import { useToast } from '../../context/ToastContext';
 
@@ -17,7 +16,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onSelectOrg }) => {
   // Sync with URL params
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab') as any;
-  const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'mailboxes' | 'domains' | 'users'>(tabParam || 'overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'organizations' | 'mailboxes' | 'users'>(tabParam || 'overview');
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToast();
@@ -29,7 +28,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onSelectOrg }) => {
   const [editLogoColor, setEditLogoColor] = useState('');
 
   useEffect(() => {
-    if (tabParam && ['overview', 'organizations', 'mailboxes', 'domains', 'users'].includes(tabParam)) {
+    if (tabParam && ['overview', 'organizations', 'mailboxes', 'users'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
