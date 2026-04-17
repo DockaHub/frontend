@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Bell, Check, Trash2, X, ExternalLink, MessageSquare, CheckSquare, Info } from 'lucide-react';
-import { useNotifications, Notification } from '../../context/NotificationContext';
+import { useNotifications, Notification } from '../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
