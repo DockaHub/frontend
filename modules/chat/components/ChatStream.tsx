@@ -5,7 +5,7 @@ import { ChatChannel, ChatMessage } from '../../../types';
 import { useCall } from '../../../context/CallContext';
 import { useAuth } from '../../../context/AuthContext';
 import { chatService } from '../../../services/chatService';
-import { getSocket } from '../../../services/socketService';
+import { socketService } from '../../../services/socketService';
 import UserAvatar from '../../../components/common/UserAvatar';
 import MessageActionsToolbar from './MessageActionsToolbar';
 import { useToast } from '../../../context/ToastContext';
@@ -54,27 +54,21 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
 
     // Socket listeners for edits and deletes
     useEffect(() => {
-        const socket = getSocket();
-        
         const handleMsgUpdated = (updatedMsg: any) => {
-            // Update local messages array if we were clever and had a local state, 
-            // but ChatStream usually receives messages via props or a parent.
-            // If it's pure props, we'd need to notify parent. 
-            // Assuming this component should handle its own signal for now or refresh.
-            // For now, let's just trigger a log or if it's state-managed here, update it.
-            // NOTE: Usually there's a useChatMessages hook or similar.
+            // NOTE: UI is actually updated via ChatLayout.tsx listeners, 
+            // but we keep these here for potential local effects or sound triggers.
         };
 
         const handleMsgDeleted = ({ messageId }: { messageId: string }) => {
-            // Same as above
+            // same
         };
 
-        socket.on('message_updated', handleMsgUpdated);
-        socket.on('message_deleted', handleMsgDeleted);
+        socketService.on('message_updated', handleMsgUpdated);
+        socketService.on('message_deleted', handleMsgDeleted);
 
         return () => {
-            socket.off('message_updated', handleMsgUpdated);
-            socket.off('message_deleted', handleMsgDeleted);
+            socketService.off('message_updated', handleMsgUpdated);
+            socketService.off('message_deleted', handleMsgDeleted);
         };
     }, []);
 
