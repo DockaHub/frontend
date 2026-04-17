@@ -145,7 +145,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
     // 2. Fetch Messages and Join Room when Channel Select
     useEffect(() => {
-        if (!selectedChannelId || selectedChannelId.startsWith('virtual-')) return;
+        if (!selectedChannelId || selectedChannelId.startsWith('virtual-') || !currentOrg?.id) return;
 
         // Update URL
         setSearchParams({ org: currentOrg.id, channel: selectedChannelId }, { replace: true });

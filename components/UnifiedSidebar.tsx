@@ -102,6 +102,8 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
         if (isCollapsed) setIsCollapsed(false);
     };
 
+    if (!currentOrg) return null;
+
     // Toggle item expansion
     const toggleItem = (id: string) => {
         setExpandedItems(prev => {
