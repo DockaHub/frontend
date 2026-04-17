@@ -100,7 +100,8 @@ export interface ChatChannel {
   unreadCount?: number;
   userAvatar?: string; // For DMs
   isOnline?: boolean; // For DMs
-  memberIds?: string[]; // IDs of members in the channel
+  memberIds?: string[]; // IDs of members in the channel (legacy/deprecated)
+  members?: User[]; // Full member objects from backend
   isPlaceholder?: boolean; // If true, this is a virtual DM (not yet created in DB)
 }
 

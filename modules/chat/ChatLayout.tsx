@@ -75,17 +75,28 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
         // 1. Process Real Channels (add name/avatar for DMs)
         const processedReal = channels.map(c => {
             if (c.type === 'dm') {
-                const otherMemberId = c.memberIds?.find(id => id !== currentUser.id);
-                // Check orgMembers to find details
-                const otherMember = orgMembers.find(m => m.user.id === otherMemberId);
-
-                // If we found the user, use their details. Otherwise fallback to existing data
+                // Try to resolve member from channel's own members list first (more reliable)
+                const otherMember = c.members?.find(m => m.id !== currentUser.id);
+                
                 if (otherMember) {
                     return {
                         ...c,
-                        name: otherMember.user.name,
-                        userAvatar: otherMember.user.avatar,
-                        isOnline: otherMember.user.status === 'ONLINE'
+                        name: otherMember.name,
+                        userAvatar: otherMember.avatar,
+                        isOnline: otherMember.status === 'ONLINE'
+                    };
+                }
+
+                // Fallback to orgMembers if channel member details are missing
+                const otherMemberIdFromList = c.memberIds?.find(id => id !== currentUser.id);
+                const otherMemberFromOrg = orgMembers.find(m => m.user.id === otherMemberIdFromList);
+
+                if (otherMemberFromOrg) {
+                    return {
+                        ...c,
+                        name: otherMemberFromOrg.user.name,
+                        userAvatar: otherMemberFromOrg.user.avatar,
+                        isOnline: otherMemberFromOrg.user.status === 'ONLINE'
                     };
                 }
             }

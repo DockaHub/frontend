@@ -16,5 +16,16 @@ export const userService = {
     async setPassword(userId: string, password: string) {
         const response = await api.post(`/users/${userId}/password`, { password });
         return response.data;
+    },
+    
+    async uploadAvatar(file: File) {
+        const formData = new FormData();
+        formData.append('avatar', file);
+        const response = await api.patch('/users/profile/avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data;
     }
 };

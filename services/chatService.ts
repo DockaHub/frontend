@@ -34,6 +34,7 @@ function mapChannel(c: any): ChatChannel {
         type: c.type.toLowerCase(), // Backend might ensure lowercase but good to be safe
         unreadCount: 0, // TODO: Implement unread count logic
         memberIds: c.members?.map((m: any) => m.id) || [],
+        members: c.members || [],
     };
 }
 

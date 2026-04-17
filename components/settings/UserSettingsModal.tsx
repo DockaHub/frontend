@@ -50,6 +50,8 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
     const { refreshUser } = useAuth(); // Get refreshUser from context
     const [isLoading, setIsLoading] = useState(false);
+    const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Function to apply phone mask
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,6 +68,47 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
         }
 
         setFormData({ ...formData, phone: formattedValue });
+    };
+
+    const handleAvatarClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Basic validation
+        if (!file.type.startsWith('image/')) {
+            addToast({
+                type: 'error',
+                title: 'Arquivo Inválido',
+                message: 'Por favor, selecione uma imagem válida.'
+            });
+            return;
+        }
+
+        setIsUploadingAvatar(true);
+        try {
+            await userService.uploadAvatar(file);
+            await refreshUser();
+            addToast({
+                type: 'success',
+                title: 'Foto Atualizada',
+                message: 'Sua foto de perfil foi atualizada com sucesso.'
+            });
+        } catch (error: any) {
+            console.error('Failed to upload avatar:', error);
+            addToast({
+                type: 'error',
+                title: 'Erro no Upload',
+                message: error.response?.data?.error || 'Não foi possível enviar a imagem.'
+            });
+        } finally {
+            setIsUploadingAvatar(false);
+            // Reset input
+            if (e.target) e.target.value = '';
+        }
     };
 
     const handleSave = async () => {
@@ -128,6 +171,15 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                 </div>
             }
         >
+            {/* Hidden Input for Avatar */}
+            <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                className="hidden"
+            />
+
             <div className="flex flex-col md:flex-row h-[500px] -mt-2 -mx-2">
 
                 {/* Sidebar Tabs */}
@@ -174,11 +226,19 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
                             {/* Avatar & Header */}
                             <div className="flex items-center gap-6">
-                                <div className="relative group cursor-pointer">
-                                    <img src={user.avatar} className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-md object-cover" alt="Profile" />
-                                    <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div
+                                    className={`relative group cursor-pointer ${isUploadingAvatar ? 'cursor-wait' : ''}`}
+                                    onClick={!isUploadingAvatar ? handleAvatarClick : undefined}
+                                >
+                                    <img src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} className={`w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-md object-cover transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`} alt="Profile" />
+                                    <div className={`absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 ${!isUploadingAvatar ? 'group-hover:opacity-100' : ''} transition-opacity`}>
                                         <Camera size={24} className="text-white" />
                                     </div>
+                                    {isUploadingAvatar && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <h3 className="text-xl font-bold text-docka-900 dark:text-zinc-100">{formData.name}</h3>
