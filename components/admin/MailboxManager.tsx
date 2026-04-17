@@ -63,6 +63,8 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     const [selectedOrgForDomain, setSelectedOrgForDomain] = useState('');
 
     // Access Control Modal
+    const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+    const [selectedMailboxForAccess, setSelectedMailboxForAccess] = useState<any>(null);
     const [orgMembers, setOrgMembers] = useState<any[]>([]);
 
     // -- Diagnostic State --
