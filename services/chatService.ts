@@ -21,6 +21,15 @@ export const chatService = {
     async sendMessage(channelId: string, content: string): Promise<ChatMessage> {
         const response = await api.post(`/chat/channels/${channelId}/messages`, { content });
         return mapMessage(response.data);
+    },
+
+    async updateMessage(messageId: string, content: string): Promise<ChatMessage> {
+        const response = await api.patch(`/chat/messages/${messageId}`, { content });
+        return mapMessage(response.data);
+    },
+
+    async deleteMessage(messageId: string): Promise<void> {
+        await api.delete(`/chat/messages/${messageId}`);
     }
 };
 

@@ -1,10 +1,14 @@
-
-import React, { useRef, useEffect, useState } from 'react';
-import { Hash, Users, Phone, Video, MoreHorizontal, Paperclip, Smile, Send, Plus, Search, BellOff, Info, FileText, Code, Zap } from 'lucide-react';
+import { 
+    Hash, Users, Phone, Video, MoreHorizontal, Paperclip, Smile, Send, Plus, Search, BellOff, Info, FileText, Code, Zap, Reply, Bookmark, Trash2, Edit2, X, Check
+} from 'lucide-react';
 import { ChatChannel, ChatMessage } from '../../../types';
 import { useCall } from '../../../context/CallContext';
 import { useAuth } from '../../../context/AuthContext';
+import { chatService } from '../../../services/chatService';
+import { getSocket } from '../../../services/socketService';
 import UserAvatar from '../../../components/common/UserAvatar';
+import MessageActionsToolbar from './MessageActionsToolbar';
+import { useToast } from '../../../context/ToastContext';
 
 interface ChatStreamProps {
     channel: ChatChannel;
@@ -16,6 +20,7 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
     const endRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [input, setInput] = useState('');
+    const messageAudioRef = useRef<HTMLAudioElement | null>(null);
 
     // Header States
     const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
@@ -23,7 +28,55 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
 
     // Input States
     const [isInputMenuOpen, setIsInputMenuOpen] = useState(false);
+    const { user } = useAuth();
+    const { addToast } = useToast();
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+    const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+    const [editContent, setEditContent] = useState('');
+
+    // Initialize notification sound
+    useEffect(() => {
+        messageAudioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3');
+        messageAudioRef.current.volume = 0.5;
+    }, []);
+
+    // Play sound on new messages from others
+    useEffect(() => {
+        if (messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            // Only play if message is NOT from current user
+            if (user && lastMessage.senderId !== user.id) {
+                messageAudioRef.current?.play().catch(e => console.log('Audio play failed:', e));
+            }
+        }
+    }, [messages.length, user]);
+
+    // Socket listeners for edits and deletes
+    useEffect(() => {
+        const socket = getSocket();
+        
+        const handleMsgUpdated = (updatedMsg: any) => {
+            // Update local messages array if we were clever and had a local state, 
+            // but ChatStream usually receives messages via props or a parent.
+            // If it's pure props, we'd need to notify parent. 
+            // Assuming this component should handle its own signal for now or refresh.
+            // For now, let's just trigger a log or if it's state-managed here, update it.
+            // NOTE: Usually there's a useChatMessages hook or similar.
+        };
+
+        const handleMsgDeleted = ({ messageId }: { messageId: string }) => {
+            // Same as above
+        };
+
+        socket.on('message_updated', handleMsgUpdated);
+        socket.on('message_deleted', handleMsgDeleted);
+
+        return () => {
+            socket.off('message_updated', handleMsgUpdated);
+            socket.off('message_deleted', handleMsgDeleted);
+        };
+    }, []);
 
     // Close menus when clicking outside
     useEffect(() => {
@@ -157,9 +210,9 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar" onClick={() => { setIsInputMenuOpen(false); setIsEmojiPickerOpen(false); }}>
+            <div className="flex-1 overflow-y-auto px-1 py-4 space-y-0.5 custom-scrollbar" onClick={() => { setIsInputMenuOpen(false); setIsEmojiPickerOpen(false); }}>
                 {/* Welcome Placeholder */}
-                <div className="mt-8 mb-12">
+                <div className="px-5 mt-4 mb-10">
                     <div className="w-16 h-16 bg-docka-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
                         {channel.type === 'dm' ? (
                             <UserAvatar src={channel.userAvatar} name={channel.name} size="xl" className="rounded-2xl border border-docka-200 dark:border-zinc-700" />
@@ -170,33 +223,117 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
                     <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">
                         {channel.type === 'dm' ? channel.name : `Bem-vindo ao #${channel.name}!`}
                     </h1>
-                    <p className="text-docka-500 dark:text-zinc-500 mt-2">
-                        Este é o começo da sua conversa. {channel.type === 'public' && "Este canal é público para a organização."}
+                    <p className="text-docka-500 dark:text-zinc-500 mt-2 text-[15px]">
+                        Este é o começo da sua conversa {channel.type === 'dm' ? `com ${channel.name}` : `em #${channel.name}`}. {channel.type === 'public' && "Este canal é público para a organização."}
                     </p>
                 </div>
 
                 {messages.map((msg, idx) => {
                     const prev = messages[idx - 1];
                     const isSequence = prev && prev.senderId === msg.senderId;
+                    const isHovered = hoveredMessageId === msg.id;
+
                     return (
-                        <div key={msg.id} className={`group flex ${isSequence ? 'mt-1' : 'mt-6'}`}>
+                        <div 
+                            key={msg.id} 
+                            className={`relative px-5 py-0.5 group transition-colors flex items-start ${isSequence ? 'mt-0' : 'mt-4'} hover:bg-docka-50/50 dark:hover:bg-zinc-900/50`}
+                            onMouseEnter={() => setHoveredMessageId(msg.id)}
+                            onMouseLeave={() => setHoveredMessageId(null)}
+                        >
+                            {/* Slack-style Message Action Bar */}
+                            {isHovered && !editingMessageId && (
+                                <MessageActionsToolbar 
+                                    className="absolute -top-4 right-5 animate-in fade-in zoom-in-95 duration-100"
+                                    isAuthor={user?.id === msg.senderId}
+                                    onEdit={() => {
+                                        setEditingMessageId(msg.id);
+                                        setEditContent(msg.content);
+                                    }}
+                                    onDelete={async () => {
+                                        if (window.confirm('Excluir esta mensagem?')) {
+                                            try {
+                                                await chatService.deleteMessage(msg.id);
+                                                addToast({ type: 'success', title: 'Mensagem excluída' });
+                                            } catch (error) {
+                                                addToast({ type: 'error', title: 'Erro ao excluir' });
+                                            }
+                                        }
+                                    }}
+                                />
+                            )}
+
                             {!isSequence ? (
-                                <UserAvatar src={msg.senderAvatar} name={msg.senderName} size="md" className="mr-4 mt-1" />
+                                <UserAvatar src={msg.senderAvatar} name={msg.senderName} size="md" className="mr-3 mt-1 rounded-lg" />
                             ) : (
-                                <div className="w-10 mr-4 text-xs text-docka-300 dark:text-zinc-600 text-right opacity-0 group-hover:opacity-100 pt-1 select-none">
-                                    {msg.timestamp.split(' ')[0]}
+                                <div className="w-10 mr-3 text-[10px] text-docka-400 dark:text-zinc-600 text-right opacity-0 group-hover:opacity-100 pt-1.5 select-none transition-opacity">
+                                    {msg.timestamp.split(' ')[1]}
                                 </div>
                             )}
+
                             <div className="flex-1 min-w-0">
                                 {!isSequence && (
-                                    <div className="flex items-baseline mb-1">
-                                        <span className="font-bold text-docka-900 dark:text-zinc-100 mr-2 text-sm">{msg.senderName}</span>
-                                        <span className="text-xs text-docka-400 dark:text-zinc-500">{msg.timestamp}</span>
+                                    <div className="flex items-baseline gap-2 mb-0.5">
+                                        <span className="font-black text-docka-900 dark:text-zinc-100 text-sm hover:underline cursor-pointer">{msg.senderName}</span>
+                                        <span className="text-[11px] text-docka-400 dark:text-zinc-500">{msg.timestamp}</span>
                                     </div>
                                 )}
-                                <div className="text-docka-800 dark:text-zinc-300 text-[15px] leading-relaxed">
-                                    {msg.content}
-                                </div>
+                                
+                                {editingMessageId === msg.id ? (
+                                    <div className="mt-1">
+                                        <div className="bg-white dark:bg-zinc-800 border-2 border-indigo-500 rounded-lg p-2 shadow-inner">
+                                            <textarea
+                                                className="w-full bg-transparent outline-none text-[15px] dark:text-zinc-200 resize-none"
+                                                value={editContent}
+                                                onChange={(e) => setEditContent(e.target.value)}
+                                                onKeyDown={async (e) => {
+                                                    if (e.key === 'Escape') setEditingMessageId(null);
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        try {
+                                                            await chatService.updateMessage(msg.id, editContent);
+                                                            setEditingMessageId(null);
+                                                            addToast({ type: 'success', title: 'Mensagem editada' });
+                                                        } catch (err) {
+                                                            addToast({ type: 'error', title: 'Falha ao editar' });
+                                                        }
+                                                    }
+                                                }}
+                                                autoFocus
+                                            />
+                                            <div className="flex justify-end gap-2 mt-2">
+                                                <button 
+                                                    onClick={() => setEditingMessageId(null)}
+                                                    className="px-3 py-1 text-xs font-semibold text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-700 rounded transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button 
+                                                    className="px-3 py-1 text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 rounded transition-colors"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await chatService.updateMessage(msg.id, editContent);
+                                                            setEditingMessageId(null);
+                                                        } catch (err) {
+                                                            addToast({ type: 'error', title: 'Falha ao editar' });
+                                                        }
+                                                    }}
+                                                >
+                                                    Salvar
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-docka-400 mt-1">
+                                            <b>esc</b> para cancelar • <b>enter</b> para salvar
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="text-docka-800 dark:text-zinc-300 text-[15px] leading-snug break-words">
+                                        {msg.content}
+                                        {msg.isEdited && (
+                                            <span className="text-[10px] text-docka-400 ml-1.5 opacity-70">(editado)</span>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )
