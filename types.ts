@@ -113,6 +113,7 @@ export interface ChatMessage {
   content: string;
   timestamp: string;
   reactions?: Record<string, number>;
+  isEdited?: boolean;
 }
 
 // CALENDAR TYPES

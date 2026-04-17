@@ -99,7 +99,7 @@ class SocketService {
         return this.socket?.connected || false;
     }
     getServerUrl() {
-        return this.socket?.io.uri || 'Unknown';
+        return (this.socket?.io as any)?.uri || 'Unknown';
     }
 }
 

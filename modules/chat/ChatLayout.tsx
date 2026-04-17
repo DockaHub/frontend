@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Organization, ChatChannel, ChatMessage } from '../../types';
-import { MOCK_CONTACTS } from '../../constants';
 import ChatSidebar from './components/ChatSidebar';
 import ChatStream from './components/ChatStream';
 import Modal from '../../components/common/Modal';

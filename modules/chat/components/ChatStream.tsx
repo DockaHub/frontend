@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-    Hash, Users, Phone, Video, MoreHorizontal, Paperclip, Smile, Send, Plus, Search, BellOff, Info, FileText, Code, Zap, Reply, Bookmark, Trash2, Edit2, X, Check
+    Hash, Users, Phone, Video, MoreHorizontal, Paperclip, Smile, Send, Plus, Search, BellOff, Info, FileText, Code, Zap, Reply, Bookmark, Trash2, Edit2
 } from 'lucide-react';
 import { ChatChannel, ChatMessage } from '../../../types';
 import { useCall } from '../../../context/CallContext';
@@ -21,7 +21,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
     const endRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [input, setInput] = useState('');
-    const messageAudioRef = useRef<HTMLAudioElement | null>(null);
 
     // Header States
     const [isHeaderMenuOpen, setIsHeaderMenuOpen] = useState(false);
@@ -39,12 +38,12 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
 
     // Socket listeners for edits and deletes
     useEffect(() => {
-        const handleMsgUpdated = (updatedMsg: any) => {
+        const handleMsgUpdated = () => {
             // NOTE: UI is actually updated via ChatLayout.tsx listeners, 
             // but we keep these here for potential local effects or sound triggers.
         };
 
-        const handleMsgDeleted = ({ messageId }: { messageId: string }) => {
+        const handleMsgDeleted = () => {
             // same
         };
 
@@ -61,8 +60,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
     useEffect(() => {
         const handleClickOutside = () => {
             setIsHeaderMenuOpen(false);
-            setIsInputMenuOpen(false);
-            setIsEmojiPickerOpen(false);
         };
         // Simple delay to allow button clicks to propagate
         document.addEventListener('click', handleClickOutside);
@@ -73,6 +70,9 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
     useEffect(() => {
         endRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
+
+    // Call Context
+    const { callUser } = useCall();
 
     const handleSend = () => {
         if (!input.trim()) return;
@@ -94,9 +94,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
     const insertEmoji = (emoji: string) => {
         setInput(prev => prev + emoji);
     }
-
-    // Call Context
-    const { callUser } = useCall();
 
     const handleCall = (type: 'audio' | 'video') => {
         // Logic to find the user to call
