@@ -8,7 +8,6 @@ import ComposeModal from './components/ComposeModal';
 import { Menu, X, RefreshCw } from 'lucide-react';
 import { mailService } from '../../services/mailService';
 import { useToast } from '../../context/ToastContext';
-import MailboxSettingsModal from './components/MailboxSettingsModal';
 
 interface MailLayoutProps {
   currentOrg?: Organization;
@@ -29,9 +28,6 @@ const MailLayout: React.FC<MailLayoutProps> = ({ currentOrg }) => {
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Mailbox Settings State
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [editingMailbox, setEditingMailbox] = useState<Mailbox | null>(null);
 
   // New: State for pre-filling Compose (Reply/Forward)
   const [composeInitialData, setComposeInitialData] = useState<{ to?: string, subject?: string, body?: string } | undefined>(undefined);
@@ -240,10 +236,6 @@ const MailLayout: React.FC<MailLayoutProps> = ({ currentOrg }) => {
     }
   };
 
-  const handleMailboxSettings = (mailbox: Mailbox) => {
-    setEditingMailbox(mailbox);
-    setIsSettingsOpen(true);
-  };
 
   const selectedEmail = emails.find(e => e.id === selectedEmailId);
 
@@ -270,7 +262,6 @@ const MailLayout: React.FC<MailLayoutProps> = ({ currentOrg }) => {
             currentMailboxId={currentMailboxId}
             onMailboxChange={(id) => { setCurrentMailboxId(id); setIsMobileMenuOpen(false); }}
             onSyncMailbox={handleSyncMailbox}
-            onMailboxSettings={handleMailboxSettings}
             currentFolder={currentFolder}
             onFolderChange={(folder) => { setCurrentFolder(folder); setIsMobileMenuOpen(false); }}
             onCompose={handleComposeOpen}
@@ -339,13 +330,6 @@ const MailLayout: React.FC<MailLayoutProps> = ({ currentOrg }) => {
         />
       )}
 
-      {isSettingsOpen && editingMailbox && (
-        <MailboxSettingsModal
-          mailbox={editingMailbox}
-          onClose={() => setIsSettingsOpen(false)}
-          onUpdate={loadMailboxes}
-        />
-      )}
     </div>
   );
 };
