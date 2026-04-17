@@ -118,7 +118,6 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
 
     // Call Context
     const { callUser } = useCall();
-    const { user } = useAuth(); // We need current user to find the "other" person in DM
 
     const handleCall = (type: 'audio' | 'video') => {
         // Logic to find the user to call
