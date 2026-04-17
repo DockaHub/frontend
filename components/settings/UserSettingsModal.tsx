@@ -226,11 +226,13 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
 
                             {/* Avatar & Header */}
                             <div className="flex items-center gap-6">
-                                <div
-                                    className={`relative group cursor-pointer ${isUploadingAvatar ? 'cursor-wait' : ''}`}
+                                <button
+                                    type="button"
+                                    className={`relative group cursor-pointer w-24 h-24 rounded-full overflow-hidden ${isUploadingAvatar ? 'cursor-wait' : ''}`}
                                     onClick={!isUploadingAvatar ? handleAvatarClick : undefined}
+                                    title="Alterar foto de perfil"
                                 >
-                                    <img src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} className={`w-24 h-24 rounded-full border-4 border-white dark:border-zinc-800 shadow-md object-cover transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`} alt="Profile" />
+                                    <img src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`} className={`w-full h-full rounded-full border-4 border-white dark:border-zinc-800 shadow-md object-cover transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`} alt="Profile" />
                                     <div className={`absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 ${!isUploadingAvatar ? 'group-hover:opacity-100' : ''} transition-opacity`}>
                                         <Camera size={24} className="text-white" />
                                     </div>
@@ -239,7 +241,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                                             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                         </div>
                                     )}
-                                </div>
+                                </button>
                                 <div>
                                     <h3 className="text-xl font-bold text-docka-900 dark:text-zinc-100">{formData.name}</h3>
                                     <p className="text-sm text-docka-500 dark:text-zinc-400">{formData.role}</p>
