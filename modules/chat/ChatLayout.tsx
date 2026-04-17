@@ -89,12 +89,12 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
                 // Fallback to orgMembers if channel member details are missing
                 const otherMemberIdFromList = c.memberIds?.find(id => id !== currentUser.id);
-                const otherMemberFromOrg = orgMembers.find(m => m.user.id === otherMemberIdFromList);
+                const otherMemberFromOrg = orgMembers.find(m => m.user?.id === otherMemberIdFromList);
 
-                if (otherMemberFromOrg) {
+                if (otherMemberFromOrg && otherMemberFromOrg.user) {
                     return {
                         ...c,
-                        name: otherMemberFromOrg.user.name,
+                        name: otherMemberFromOrg.user.name || 'Usuário Desconhecido',
                         userAvatar: otherMemberFromOrg.user.avatar,
                         isOnline: otherMemberFromOrg.user.status === 'ONLINE'
                     };
@@ -111,18 +111,20 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
         );
 
         // Add current user to set to avoid listing self
-        existingDMUserIds.add(currentUser.id);
+        if (currentUser) {
+            existingDMUserIds.add(currentUser.id);
+        }
 
         // 3. Create Virtual DMs for other members
         const virtualDMs: ChatChannel[] = orgMembers
-            .filter(m => !existingDMUserIds.has(m.user.id))
+            .filter(m => m.user && !existingDMUserIds.has(m.user.id))
             .map(m => ({
                 id: `virtual-${m.user.id}`,
-                name: m.user.name,
+                name: m.user.name || 'Usuário',
                 type: 'dm',
                 userAvatar: m.user.avatar,
                 isOnline: m.user.status === 'ONLINE',
-                memberIds: [currentUser.id, m.user.id],
+                memberIds: [currentUser?.id || '', m.user.id],
                 isPlaceholder: true
             }));
 
@@ -177,7 +179,7 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
         const handleStatusChange = (data: { userId: string, status: string }) => {
             setOrgMembers(prev => prev.map(member =>
-                member.user.id === data.userId
+                member.user?.id === data.userId
                     ? { ...member, user: { ...member.user, status: data.status } }
                     : member
             ));
@@ -200,8 +202,8 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     const mapBackendMessage = (m: any): ChatMessage => ({
         id: m.id,
         senderId: m.senderId,
-        senderName: m.sender.name,
-        senderAvatar: m.sender.avatar,
+        senderName: m.sender?.name || 'Usuário Desconhecido',
+        senderAvatar: m.sender?.avatar,
         content: m.content,
         isEdited: m.isEdited,
         timestamp: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
