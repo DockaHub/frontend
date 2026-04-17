@@ -122,42 +122,14 @@ const TaskDetailModal: React.FC<TaskDetailModalProps> = ({ task, isOpen, onClose
         }
     };
 
-    // Helper to get user initials
-    const getUserInitials = (name?: string) => {
-        if (!name) return '?';
-        return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    };
-
-    // Helper to get avatar color
-    const getAvatarColor = (id?: string) => {
-        if (!id) return 'bg-docka-400 dark:bg-zinc-600';
-        const colors = [
-            'bg-blue-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500',
-            'bg-green-500', 'bg-yellow-500', 'bg-red-500', 'bg-teal-500'
-        ];
-        const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
-        return colors[index];
-    };
-
     const renderUserAvatar = (user?: { id: string; name: string; email: string; avatar?: string }, size: 'sm' | 'md' = 'md') => {
         if (!user) return null;
-
-        const sizeClasses = size === 'sm' ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs';
-
-        if (user.avatar) {
-            return (
-                <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className={`${sizeClasses} rounded-full object-cover`}
-                />
-            );
-        }
-
         return (
-            <div className={`${sizeClasses} rounded-full ${getAvatarColor(user.id)} flex items-center justify-center text-white font-bold`}>
-                {getUserInitials(user.name)}
-            </div>
+            <UserAvatar 
+                src={user.avatar} 
+                name={user.name} 
+                size={size} 
+            />
         );
     };
 

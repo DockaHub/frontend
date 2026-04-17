@@ -4,6 +4,7 @@ import { Hash, Users, Phone, Video, MoreHorizontal, Paperclip, Smile, Send, Plus
 import { ChatChannel, ChatMessage } from '../../../types';
 import { useCall } from '../../../context/CallContext';
 import { useAuth } from '../../../context/AuthContext';
+import UserAvatar from '../../../components/common/UserAvatar';
 
 interface ChatStreamProps {
     channel: ChatChannel;
@@ -105,7 +106,7 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
                 <div className="flex items-center">
                     {channel.type === 'dm' ? (
                         <div className="flex items-center">
-                            <img src={channel.userAvatar} className="w-8 h-8 rounded-lg mr-3 border border-docka-100 dark:border-zinc-800" alt="" />
+                            <UserAvatar src={channel.userAvatar} name={channel.name} size="sm" className="mr-3" />
                             <span className="font-bold text-docka-900 dark:text-zinc-100">{channel.name}</span>
                             {channel.isOnline && <div className="w-2 h-2 bg-green-500 rounded-full ml-2 border border-white dark:border-zinc-950" title="Online" />}
                         </div>
@@ -160,7 +161,11 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
                 {/* Welcome Placeholder */}
                 <div className="mt-8 mb-12">
                     <div className="w-16 h-16 bg-docka-100 dark:bg-zinc-800 rounded-2xl flex items-center justify-center mb-4">
-                        {channel.type === 'dm' ? <img src={channel.userAvatar} className="w-full h-full rounded-2xl border border-docka-200 dark:border-zinc-700" /> : <Hash size={32} className="text-docka-400 dark:text-zinc-500" />}
+                        {channel.type === 'dm' ? (
+                            <UserAvatar src={channel.userAvatar} name={channel.name} size="xl" className="rounded-2xl border border-docka-200 dark:border-zinc-700" />
+                        ) : (
+                            <Hash size={32} className="text-docka-400 dark:text-zinc-500" />
+                        )}
                     </div>
                     <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">
                         {channel.type === 'dm' ? channel.name : `Bem-vindo ao #${channel.name}!`}
@@ -176,7 +181,7 @@ const ChatStream: React.FC<ChatStreamProps> = ({ channel, messages, onSendMessag
                     return (
                         <div key={msg.id} className={`group flex ${isSequence ? 'mt-1' : 'mt-6'}`}>
                             {!isSequence ? (
-                                <img src={msg.senderAvatar} className="w-10 h-10 rounded-lg mr-4 mt-1 border border-docka-100 dark:border-zinc-800" alt="" />
+                                <UserAvatar src={msg.senderAvatar} name={msg.senderName} size="md" className="mr-4 mt-1" />
                             ) : (
                                 <div className="w-10 mr-4 text-xs text-docka-300 dark:text-zinc-600 text-right opacity-0 group-hover:opacity-100 pt-1 select-none">
                                     {msg.timestamp.split(' ')[0]}

@@ -4,6 +4,7 @@ import { Star, MoreHorizontal, Reply, CornerUpRight, Sparkles, X, Printer, Downl
 import { Email } from '../../../types';
 import { summarizeEmail } from '../../../services/geminiService';
 import Modal from '../../../components/common/Modal';
+import UserAvatar from '../../../components/common/UserAvatar';
 
 interface MailReaderProps {
     email: Email | undefined;
@@ -145,7 +146,7 @@ const MailReader: React.FC<MailReaderProps> = ({ email, onClose, onArchive, onDe
 
                         <div className="flex items-start justify-between pb-8 border-b border-docka-100 dark:border-zinc-800">
                             <div className="flex items-center space-x-4">
-                                <img src={email.from.avatar || "https://ui-avatars.com/api/?name=" + email.from.name} className="w-11 h-11 rounded-full object-cover border border-docka-200 dark:border-zinc-700 shadow-sm" alt="Avatar" />
+                                <UserAvatar src={email.from.avatar} name={email.from.name} size="md" />
                                 <div>
                                     <div className="font-semibold text-docka-900 dark:text-zinc-100 text-[15px]">{email.from.name}</div>
                                     <div className="text-docka-500 dark:text-zinc-500 text-sm">{email.from.email}</div>

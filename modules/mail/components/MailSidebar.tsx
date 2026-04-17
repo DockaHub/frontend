@@ -128,7 +128,7 @@ const MailSidebar: React.FC<MailSidebarProps> = ({
               >
                 <div className="flex items-center min-w-0" onClick={(e) => { e.stopPropagation(); handleSelectMailbox(mailbox.id); }}>
                   {mailbox.type === 'personal' ? (
-                    <img src={mailbox.avatar} className={`w-6 h-6 rounded-full border border-docka-200 dark:border-zinc-700 ${!isCollapsed ? 'mr-2' : ''}`} alt="" />
+                    <UserAvatar src={mailbox.avatar} name={mailbox.name} size="xs" className={!isCollapsed ? 'mr-2' : ''} />
                   ) : (
                     <div className={`w-6 h-6 rounded-md flex items-center justify-center text-white text-[10px] font-bold ${mailbox.color || 'bg-docka-500'} ${!isCollapsed ? 'mr-2' : ''}`}>
                       {mailbox.name.substring(0, 1)}

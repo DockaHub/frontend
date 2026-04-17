@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Paperclip, Minimize2, ChevronDown } from 'lucide-react';
 import { generateEmailDraft } from '../../../services/geminiService';
 import { Email, Mailbox } from '../../../types';
+import UserAvatar from '../../../components/common/UserAvatar';
 
 interface ComposeModalProps {
   onClose: () => void;
@@ -84,7 +85,7 @@ const ComposeModal: React.FC<ComposeModalProps> = ({ onClose, onSend, initialDat
             {selectedMailbox ? (
               <>
                 {selectedMailbox.type === 'personal' ? (
-                  <img src={selectedMailbox.avatar} className="w-5 h-5 rounded-full" alt="" />
+                  <UserAvatar src={selectedMailbox.avatar} name={selectedMailbox.name} size="xs" />
                 ) : (
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold ${selectedMailbox.color || 'bg-docka-500'}`}>
                     {selectedMailbox.name.substring(0, 1)}
@@ -118,7 +119,7 @@ const ComposeModal: React.FC<ComposeModalProps> = ({ onClose, onSend, initialDat
                     className={`w-full text-left px-3 py-2 text-sm flex items-center gap-3 hover:bg-docka-50 dark:hover:bg-zinc-800 transition-colors ${selectedMailboxId === mb.id ? 'bg-indigo-50 dark:bg-zinc-800' : ''}`}
                   >
                     {mb.type === 'personal' ? (
-                      <img src={mb.avatar} className="w-8 h-8 rounded-full border border-docka-200 dark:border-zinc-700" alt="" />
+                      <UserAvatar src={mb.avatar} name={mb.name} size="sm" />
                     ) : (
                       <div className={`w-8 h-8 rounded-md flex items-center justify-center text-white text-xs font-bold ${mb.color || 'bg-docka-500'}`}>
                         {mb.name.substring(0, 1)}

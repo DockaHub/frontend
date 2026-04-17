@@ -3,6 +3,7 @@ import React from 'react';
 import { Contact, ContactStatus } from '../../../types';
 import { Mail, MessageSquare, MoreHorizontal, MapPin } from 'lucide-react';
 import OrgTag from '../../../components/common/OrgTag';
+import UserAvatar from '../../../components/common/UserAvatar';
 
 interface PeopleGridProps {
     contacts: Contact[];
@@ -52,7 +53,7 @@ const PeopleGrid: React.FC<PeopleGridProps> = ({ contacts, viewMode, onContactCl
                             >
                                 <td className="px-4 py-3 flex items-center font-medium text-docka-900 dark:text-zinc-100 rounded-l-lg border-y border-l border-transparent group-hover:border-docka-200 dark:group-hover:border-zinc-800 group-hover:bg-white dark:group-hover:bg-zinc-900">
                                     <div className="relative mr-3">
-                                        <img src={contact.avatar} className="w-8 h-8 rounded-full bg-docka-200 dark:bg-zinc-700" alt="" />
+                                        <UserAvatar src={contact.avatar} name={contact.name} size="sm" />
                                         <div className="absolute -bottom-0.5 -right-0.5"><StatusIndicator status={contact.status} /></div>
                                     </div>
                                     <div>
@@ -101,7 +102,7 @@ const PeopleGrid: React.FC<PeopleGridProps> = ({ contacts, viewMode, onContactCl
                             <StatusIndicator status={contact.status} />
                         </div>
 
-                        <img src={contact.avatar} className="w-20 h-20 rounded-full mb-4 border-2 border-white dark:border-zinc-800 shadow-sm" alt="" />
+                        <UserAvatar src={contact.avatar} name={contact.name} size="2xl" className="mb-4 border-2 border-white dark:border-zinc-800 shadow-sm" />
                         <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-lg">{contact.name}</h3>
                         <div className="flex flex-col items-center mt-1">
                             <p className="text-sm text-docka-500 dark:text-zinc-400 mb-1 font-medium">{contact.role}</p>

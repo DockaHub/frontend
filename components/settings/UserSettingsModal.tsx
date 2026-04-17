@@ -5,6 +5,7 @@ import {
     CheckCircle2, AlertCircle
 } from 'lucide-react';
 import Modal from '../common/Modal';
+import UserAvatar from '../common/UserAvatar';
 import { User as UserType } from '../../types';
 import { useToast } from '../../context/ToastContext';
 import { userService } from '../../services/userService';
@@ -238,10 +239,11 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
                                     onClick={!isUploadingAvatar ? handleAvatarClick : undefined}
                                     title="Alterar foto de perfil"
                                 >
-                                    <img 
-                                        src={previewUrl || (user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${import.meta.env.VITE_API_URL || ''}${user.avatar.replace('/api', '')}`) : `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`)} 
-                                        className={`w-full h-full rounded-full border-4 border-white dark:border-zinc-800 shadow-md object-cover transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`} 
-                                        alt="Profile" 
+                                    <UserAvatar 
+                                        src={previewUrl || user.avatar} 
+                                        name={user.name} 
+                                        size="2xl" 
+                                        className={`w-full h-full transition-opacity ${isUploadingAvatar ? 'opacity-50' : ''}`} 
                                     />
                                     <div className={`absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 ${!isUploadingAvatar ? 'group-hover:opacity-100' : ''} transition-opacity`}>
                                         <Camera size={24} className="text-white" />

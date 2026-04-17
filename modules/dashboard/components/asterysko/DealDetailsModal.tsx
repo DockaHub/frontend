@@ -480,13 +480,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 comments.map((comment) => (
                                     <div key={comment.id} className="flex gap-4 relative group">
                                         <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border-4 border-white dark:border-zinc-900 z-10 shrink-0 flex items-center justify-center">
-                                            {comment.user.avatar ? (
-                                                <img src={comment.user.avatar} className="w-8 h-8 rounded-full object-cover" alt={comment.user.name} />
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-xs font-bold">
-                                                    {getInitials(comment.user.name)}
-                                                </div>
-                                            )}
+                                            <UserAvatar src={comment.user.avatar} name={comment.user.name} size="sm" />
                                         </div>
 
                                         <div className="flex-1 pt-1">

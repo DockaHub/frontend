@@ -102,15 +102,19 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCa
                             <div className="flex items-center gap-3">
                               {card.members && card.members.length > 0 && (
                                 <div className="flex -space-x-1.5">
-                                  {card.members.map((m: any, i: number) => (
-                                    <img 
+                                  {card.members.map((m: any, i: number) => {
+                                    const mSrc = typeof m === 'string' ? m : m.avatar;
+                                    const mName = typeof m === 'string' ? 'Member' : m.name;
+                                    return (
+                                      <UserAvatar 
                                         key={i} 
-                                        src={typeof m === 'string' ? m : m.avatar} 
-                                        className="w-5 h-5 rounded-full border border-white dark:border-zinc-900" 
-                                        alt="Member" 
-                                        title={typeof m === 'string' ? '' : m.name}
-                                    />
-                                  ))}
+                                        src={mSrc} 
+                                        name={mName} 
+                                        size="xs" 
+                                        className="border border-white dark:border-zinc-900" 
+                                      />
+                                    );
+                                  })}
                                 </div>
                               )}
                               {card.date && (

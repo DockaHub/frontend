@@ -6,6 +6,7 @@ import {
 import { Organization, User } from '../types';
 import Modal from './common/Modal';
 import DockaLogo from './common/DockaLogo';
+import UserAvatar from './common/UserAvatar';
 import Tooltip from './common/Tooltip';
 import { useSidebarNavigation } from '../hooks/useSidebarNavigation';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
@@ -420,7 +421,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                         <div className={`absolute bottom-full mb-3 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-bottom-2 w-72 overflow-hidden ${isCollapsed ? 'left-0' : 'left-0 right-0'}`}>
                             {/* Header */}
                             <div className="p-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/50 dark:bg-zinc-950/50 flex items-center gap-3">
-                                <img src={user.avatar || 'https://ui-avatars.com/api/?name=' + user.name} className="w-10 h-10 rounded-lg border border-docka-200 dark:border-zinc-700" alt="Avatar" />
+                                <UserAvatar src={user.avatar} name={user.name} size="md" />
                                 <div className="min-w-0">
                                     <div className="font-bold text-docka-900 dark:text-zinc-100 truncate">{user.name}</div>
                                     <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-500 font-medium">
@@ -491,7 +492,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                         } justify-center`}
                                 >
                                     <div className="relative shrink-0">
-                                        <img src={user.avatar || 'https://ui-avatars.com/api/?name=' + user.name} className="w-8 h-8 rounded-lg border border-docka-200 dark:border-zinc-700" alt="User" />
+                                        <UserAvatar src={user.avatar} name={user.name} size="sm" />
                                         <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-docka-50 dark:border-zinc-900 rounded-full" />
                                     </div>
                                 </button>
@@ -505,7 +506,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                     }`}
                             >
                                 <div className="relative shrink-0">
-                                    <img src={user.avatar || 'https://ui-avatars.com/api/?name=' + user.name} className="w-8 h-8 rounded-lg border border-docka-200 dark:border-zinc-700" alt="User" />
+                                    <UserAvatar src={user.avatar} name={user.name} size="sm" />
                                     <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-docka-50 dark:border-zinc-900 rounded-full" />
                                 </div>
 

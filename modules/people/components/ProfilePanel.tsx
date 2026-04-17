@@ -3,6 +3,7 @@ import React from 'react';
 import { Contact } from '../../../types';
 import { X, Mail, MessageSquare, Phone, MapPin, Calendar, Briefcase, Star, Trash2, Shield, Settings, CreditCard, Users, FolderOpen, Save } from 'lucide-react';
 import OrgTag from '../../../components/common/OrgTag';
+import UserAvatar from '../../../components/common/UserAvatar';
 
 interface ProfilePanelProps {
     onRemoveMember: (contact: Contact) => Promise<void>;
@@ -60,7 +61,7 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveM
 
             {/* Profile Content */}
             <div className="flex-1 overflow-y-auto px-8 pb-8 -mt-12 relative custom-scrollbar">
-                <img src={contact.avatar} className="w-24 h-24 rounded-full border-4 border-white dark:border-zinc-900 shadow-md mb-4 bg-white dark:bg-zinc-800" alt="" />
+                <UserAvatar src={contact.avatar} name={contact.name} size="2xl" className="border-4 border-white dark:border-zinc-900 shadow-md mb-4 bg-white dark:bg-zinc-800" />
 
                 <div className="flex justify-between items-start mb-6">
                     <div>

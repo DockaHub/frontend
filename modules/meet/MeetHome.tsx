@@ -141,13 +141,12 @@ const MeetHome: React.FC<MeetHomeProps> = ({ onStartInstantMeeting, onJoinMeetin
                                 <div className="flex -space-x-2">
                                     {/* Creator Avatar */}
                                     {meeting.createdBy && (
-                                        <div className="w-8 h-8 rounded-full border-2 border-white dark:border-zinc-800 overflow-hidden bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center" title={meeting.createdBy.name}>
-                                            {meeting.createdBy.avatar ? (
-                                                <img src={meeting.createdBy.avatar} alt={meeting.createdBy.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300">{meeting.createdBy.name.charAt(0).toUpperCase()}</span>
-                                            )}
-                                        </div>
+                                        <UserAvatar 
+                                            src={meeting.createdBy.avatar} 
+                                            name={meeting.createdBy.name} 
+                                            size="sm" 
+                                            className="border-2 border-white dark:border-zinc-800" 
+                                        />
                                     )}
                                     {/* Participant Avatars (max 2) */}
                                     {meeting.participants.slice(0, 2).map((participant: any) => (

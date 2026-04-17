@@ -51,10 +51,11 @@ const ActiveCall: React.FC<ActiveCallProps> = ({ meetingId, onLeave }) => {
                 <div key={p.id} className="relative bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800 group">
                     {/* Placeholder Avatar / Video Stream Simulation */}
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <img 
+                        <UserAvatar 
                             src={p.avatar} 
-                            className={`w-24 h-24 rounded-full object-cover border-4 ${p.speaking ? 'border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.3)]' : 'border-zinc-700'} transition-all duration-300`} 
-                            alt={p.name} 
+                            name={p.name} 
+                            size="2xl" 
+                            className={`border-4 ${p.speaking ? 'border-indigo-500 shadow-[0_0_30px_rgba(99,102,241,0.3)]' : 'border-zinc-700'} transition-all duration-300`} 
                         />
                     </div>
                     

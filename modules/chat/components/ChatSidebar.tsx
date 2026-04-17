@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Hash, Lock, Plus, Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { ChatChannel, Organization } from '../../../types';
+import UserAvatar from '../../../components/common/UserAvatar';
 
 interface ChatSidebarProps {
   channels: ChatChannel[];
@@ -39,7 +40,7 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       >
         {channel.type === 'dm' ? (
           <div className={`relative ${!isCollapsed ? 'mr-2' : ''}`}>
-            <img src={channel.userAvatar} className="w-5 h-5 rounded-md border border-transparent dark:border-zinc-700" alt="" />
+            <UserAvatar src={channel.userAvatar} name={channel.name} size="xs" className="rounded-md" />
             {channel.isOnline && <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 border border-white dark:border-zinc-900 rounded-full"></div>}
           </div>
         ) : (
