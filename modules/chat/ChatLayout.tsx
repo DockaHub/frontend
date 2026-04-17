@@ -276,10 +276,14 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     };
 
     // ... (Keep existing UI rendering logic for Modals etc.)
-    const filteredContacts = MOCK_CONTACTS.filter(c =>
-        c.name.toLowerCase().includes(dmSearch.toLowerCase()) ||
-        c.email.toLowerCase().includes(dmSearch.toLowerCase())
-    );
+    const filteredMembers = orgMembers.filter(m => {
+        if (!m.user || (currentUser && m.user.id === currentUser.id)) return false;
+        const search = dmSearch.toLowerCase();
+        return (
+            m.user.name?.toLowerCase().includes(search) ||
+            m.user.email?.toLowerCase().includes(search)
+        );
+    });
 
     return (
         <div className="flex h-full w-full bg-white dark:bg-zinc-950 overflow-hidden transition-colors duration-300">
@@ -376,7 +380,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
                 title="Nova Mensagem"
                 size="lg"
             >
-                {/* ... Keep DM Modal Content Same ... */}
                 <div className="h-[400px] flex flex-col -mt-2">
                     <div className="border-b border-docka-200 dark:border-zinc-800 pb-2 mb-2">
                         <div className="flex items-center gap-2">
@@ -392,20 +395,20 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar">
-                        {filteredContacts.length > 0 ? (
+                        {filteredMembers.length > 0 ? (
                             <div className="space-y-1">
-                                {filteredContacts.map(contact => (
+                                {filteredMembers.map(member => (
                                     <button
-                                        key={contact.id}
-                                        onClick={() => handleStartDM(contact)}
+                                        key={member.user.id}
+                                        onClick={() => handleStartDM(member.user)}
                                         className="w-full flex items-center gap-3 p-2 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg transition-colors text-left group"
                                     >
-                                        <img src={contact.avatar} className="w-8 h-8 rounded-md border border-docka-200 dark:border-zinc-700" alt="" />
+                                        <img src={member.user.avatar} className="w-8 h-8 rounded-md border border-docka-200 dark:border-zinc-700" alt="" />
                                         <div>
-                                            <div className="text-sm font-bold text-docka-900 dark:text-zinc-100 group-hover:text-docka-700 dark:group-hover:text-white">{contact.name}</div>
-                                            <div className="text-xs text-docka-500 dark:text-zinc-500">{contact.email}</div>
+                                            <div className="text-sm font-bold text-docka-900 dark:text-zinc-100 group-hover:text-docka-700 dark:group-hover:text-white">{member.user.name}</div>
+                                            <div className="text-xs text-docka-500 dark:text-zinc-500">{member.user.email}</div>
                                         </div>
-                                        <div className={`ml-auto w-2 h-2 rounded-full ${contact.status === 'online' ? 'bg-green-500' : 'bg-docka-300 dark:bg-zinc-600'}`} />
+                                        <div className={`ml-auto w-2 h-2 rounded-full ${member.user.status === 'ONLINE' ? 'bg-green-500' : 'bg-docka-300 dark:bg-zinc-600'}`} />
                                     </button>
                                 ))}
                             </div>
