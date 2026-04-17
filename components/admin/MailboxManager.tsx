@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, Plus, Trash2, RefreshCw, Globe, Settings, Edit, ShieldCheck } from 'lucide-react';
+import { Mail, Plus, Trash2, RefreshCw, Globe, Settings, Edit, ShieldCheck, Building2 } from 'lucide-react';
 import { Organization } from '../../types';
 import { mailService } from '../../services/mailService';
 import { domainService, Domain } from '../../services/domainService';
