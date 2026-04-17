@@ -23,7 +23,6 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
     const [orgMembers, setOrgMembers] = useState<any[]>([]);
     const { addToast } = useToast();
     const { markAsReadByLink } = useNotifications();
-    const notificationAudio = useRef<HTMLAudioElement>(new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'));
 
     // Modal States
     const [isCreateChannelOpen, setIsCreateChannelOpen] = useState(false);
@@ -164,15 +163,13 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
     // 3. Listen for new messages and status updates
     useEffect(() => {
-        notificationAudio.current.volume = 0.5;
 
         const handleReceiveMessage = (newMessage: any) => {
             // Map backend message to frontend format
             const mappedMsg: ChatMessage = mapBackendMessage(newMessage);
 
-            // 1. Play sound if from others
+            // 1. Show Toast if from others
             if (currentUser && newMessage.senderId !== currentUser.id) {
-                notificationAudio.current.play().catch(e => console.log('Audio play failed:', e));
                 
                 // 2. Show Toast if not in current channel
                 if (newMessage.channelId !== selectedChannelId) {

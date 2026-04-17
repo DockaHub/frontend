@@ -36,6 +36,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const { user } = useAuth();
     const { addToast } = useToast();
+    const notificationAudio = useRef<HTMLAudioElement>(new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'));
 
     const fetchNotifications = useCallback(async () => {
         if (!user) return;
@@ -73,6 +74,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     message: notification.message
                 });
             }
+
+            // Always play sound for notification if it belongs to current user
+            notificationAudio.current.volume = 0.5;
+            notificationAudio.current.play().catch(e => console.log('Audio play failed:', e));
         };
 
         socketService.on('new_notification', handleNewNotification);
