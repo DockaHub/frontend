@@ -228,7 +228,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                     <h2 className="text-lg font-bold text-docka-900 flex items-center gap-2">
                         Gerenciamento de Mailboxes
                     </h2>
-                    <p className="text-xs text-docka-500">Filtrado por domínio.</p>
+                    <p className="text-xs text-docka-500">Filtrado por organização.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto items-end sm:items-center">
                     <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -365,7 +365,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                             </button>
                         </div>
                         <p className="text-sm text-docka-500 mb-4">
-                            Membros da organização <strong>{selectedDomainObj?.organization?.name}</strong> que podem acessar <strong>{selectedMailboxForAccess.email}</strong>.
+                            Membros que podem acessar <strong>{selectedMailboxForAccess.email}</strong>.
                         </p>
 
                         <div className="space-y-2 max-h-[300px] overflow-y-auto">
@@ -417,9 +417,7 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                             <div className="space-y-4">
                                 <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100 mb-4">
                                     <p className="text-xs text-indigo-800">
-                                        Criando mailbox para: <strong>@{selectedDomainName}</strong>
-                                        <br />
-                                        Organização: {selectedDomainObj?.organization?.name}
+                                        As mailboxes criadas serão vinculadas à organização selecionada.
                                     </p>
                                 </div>
 
@@ -438,19 +436,14 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-docka-700 mb-1">Endereço de Email</label>
-                                    <div className="flex shadow-sm rounded-md">
                                         <input
                                             type="text"
                                             required
-                                            className="flex-1 px-3 py-2 border border-docka-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-docka-500 text-right"
-                                            placeholder="usuario"
+                                            className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
+                                            placeholder="usuario@dominio.com"
                                             value={newMailboxEmail}
-                                            onChange={e => setNewMailboxEmail(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
+                                            onChange={e => setNewMailboxEmail(e.target.value.toLowerCase())}
                                         />
-                                        <div className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-docka-300 bg-docka-50 text-docka-500 text-sm font-mono">
-                                            @{selectedDomainName}
-                                        </div>
-                                    </div>
                                 </div>
 
                                 <div>
@@ -508,18 +501,13 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-docka-700 mb-1">Endereço de Email</label>
-                                    <div className="flex shadow-sm rounded-md">
-                                        <input
-                                            type="text"
-                                            required
-                                            className="flex-1 px-3 py-2 border border-docka-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-docka-500 text-right"
-                                            value={editMailboxEmailUser}
-                                            onChange={e => setEditMailboxEmailUser(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
-                                        />
-                                        <div className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-docka-300 bg-docka-50 text-docka-500 text-sm font-mono">
-                                            @{selectedDomainName}
-                                        </div>
-                                    </div>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
+                                        value={editMailboxEmailUser}
+                                        onChange={e => setEditMailboxEmailUser(e.target.value.toLowerCase())}
+                                    />
                                     <p className="text-xs text-red-500 mt-1">Cuidado: Alterar o email pode desconectar clientes de email configurados.</p>
                                 </div>
 
@@ -558,64 +546,6 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                 </div>
             )}
 
-            {/* Domain Config Modal */}
-            {isDomainConfigOpen && selectedDomainName && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-bold text-docka-900">Configurações do Domínio</h3>
-                            <button onClick={() => setIsDomainConfigOpen(false)} className="text-docka-400 hover:text-docka-600">
-                                <Plus className="rotate-45" size={20} />
-                            </button>
-                        </div>
-
-                        <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 mb-6 text-center">
-                            <h4 className="text-xl font-bold text-docka-800">{selectedDomainName}</h4>
-                            <p className="text-sm text-docka-500 uppercase tracking-wider font-semibold mt-1">
-                                {selectedDomainObj?.status}
-                            </p>
-                        </div>
-
-                        <form onSubmit={handleUpdateDomainOrg}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-docka-700 mb-1">Organização Proprietária</label>
-                                    <p className="text-xs text-docka-500 mb-2">
-                                        Defina qual organização é dona deste domínio. Isso afeta onde as mailboxes são criadas e quem tem acesso.
-                                    </p>
-                                    <select
-                                        className="w-full px-3 py-2 border border-docka-300 rounded-md focus:outline-none focus:ring-2 focus:ring-docka-500"
-                                        value={selectedOrgForDomain}
-                                        onChange={e => setSelectedOrgForDomain(e.target.value)}
-                                    >
-                                        <option value="" disabled>Selecione uma organização</option>
-                                        {allOrgs.map(org => (
-                                            <option key={org.id} value={org.id}>{org.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="mt-8 flex justify-end gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsDomainConfigOpen(false)}
-                                    className="px-4 py-2 text-sm font-medium text-docka-700 hover:bg-docka-100 rounded-md transition-colors"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isUpdatingDomain}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-docka-900 hover:bg-docka-800 rounded-md transition-colors disabled:opacity-50 shadow-sm"
-                                >
-                                    {isUpdatingDomain ? 'Salvando...' : 'Salvar e Transferir'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
