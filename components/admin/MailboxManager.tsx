@@ -27,6 +27,8 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
 
     // New Mailbox Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newMailboxName, setNewMailboxName] = useState('');
+    const [newMailboxEmail, setNewMailboxEmail] = useState('');
     const [newMailboxType, setNewMailboxType] = useState('SHARED');
     const [newSmtpHost, setNewSmtpHost] = useState('');
     const [newSmtpPort, setNewSmtpPort] = useState(465);
@@ -42,6 +44,8 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
     // Edit Mailbox Modal
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingMailbox, setEditingMailbox] = useState<any>(null);
+    const [editMailboxName, setEditMailboxName] = useState('');
+    const [editMailboxEmailUser, setEditMailboxEmailUser] = useState('');
     const [editMailboxType, setEditMailboxType] = useState('SHARED');
     const [editSmtpHost, setEditSmtpHost] = useState('');
     const [editSmtpPort, setEditSmtpPort] = useState(465);
