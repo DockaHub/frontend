@@ -27,16 +27,32 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
 
     // New Mailbox Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newMailboxName, setNewMailboxName] = useState('');
-    const [newMailboxEmail, setNewMailboxEmail] = useState('');
     const [newMailboxType, setNewMailboxType] = useState('SHARED');
+    const [newSmtpHost, setNewSmtpHost] = useState('');
+    const [newSmtpPort, setNewSmtpPort] = useState(465);
+    const [newSmtpUser, setNewSmtpUser] = useState('');
+    const [newSmtpPass, setNewSmtpPass] = useState('');
+    const [newSmtpSecure, setNewSmtpSecure] = useState(true);
+    const [newImapHost, setNewImapHost] = useState('');
+    const [newImapPort, setNewImapPort] = useState(993);
+    const [newImapUser, setNewImapUser] = useState('');
+    const [newImapPass, setNewImapPass] = useState('');
+    const [newImapSecure, setNewImapSecure] = useState(true);
 
     // Edit Mailbox Modal
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingMailbox, setEditingMailbox] = useState<any>(null);
-    const [editMailboxName, setEditMailboxName] = useState('');
-    const [editMailboxEmailUser, setEditMailboxEmailUser] = useState('');
     const [editMailboxType, setEditMailboxType] = useState('SHARED');
+    const [editSmtpHost, setEditSmtpHost] = useState('');
+    const [editSmtpPort, setEditSmtpPort] = useState(465);
+    const [editSmtpUser, setEditSmtpUser] = useState('');
+    const [editSmtpPass, setEditSmtpPass] = useState('');
+    const [editSmtpSecure, setEditSmtpSecure] = useState(true);
+    const [editImapHost, setEditImapHost] = useState('');
+    const [editImapPort, setEditImapPort] = useState(993);
+    const [editImapUser, setEditImapUser] = useState('');
+    const [editImapPass, setEditImapPass] = useState('');
+    const [editImapSecure, setEditImapSecure] = useState(true);
 
     // Domain Config Modal
     const [isDomainConfigOpen, setIsDomainConfigOpen] = useState(false);
@@ -114,7 +130,17 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
             await mailService.createMailbox(selectedOrgId, {
                 name: newMailboxName,
                 email: newMailboxEmail,
-                type: newMailboxType
+                type: newMailboxType,
+                smtpHost: newSmtpHost,
+                smtpPort: newSmtpPort,
+                smtpUser: newSmtpUser,
+                smtpPass: newSmtpPass,
+                smtpSecure: newSmtpSecure,
+                imapHost: newImapHost,
+                imapPort: newImapPort,
+                imapUser: newImapUser,
+                imapPass: newImapPass,
+                imapSecure: newImapSecure
             });
 
             addToast({ type: 'success', title: 'Mailbox criada com sucesso!', duration: 3000 });
@@ -137,6 +163,16 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
         const [user] = mailbox.email.split('@');
         setEditMailboxEmailUser(user);
         setEditMailboxType(mailbox.type);
+        setEditSmtpHost(mailbox.smtpHost || '');
+        setEditSmtpPort(mailbox.smtpPort || 465);
+        setEditSmtpUser(mailbox.smtpUser || '');
+        setEditSmtpPass(mailbox.smtpPass || '');
+        setEditSmtpSecure(mailbox.smtpSecure !== false);
+        setEditImapHost(mailbox.imapHost || '');
+        setEditImapPort(mailbox.imapPort || 993);
+        setEditImapUser(mailbox.imapUser || '');
+        setEditImapPass(mailbox.imapPass || '');
+        setEditImapSecure(mailbox.imapSecure !== false);
         setIsEditModalOpen(true);
     };
 
@@ -150,7 +186,17 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
             await mailService.updateMailbox(editingMailbox.id, {
                 name: editMailboxName,
                 email: fullEmail,
-                type: editMailboxType
+                type: editMailboxType,
+                smtpHost: editSmtpHost,
+                smtpPort: editSmtpPort,
+                smtpUser: editSmtpUser,
+                smtpPass: editSmtpPass,
+                smtpSecure: editSmtpSecure,
+                imapHost: editImapHost,
+                imapPort: editImapPort,
+                imapUser: editImapUser,
+                imapPass: editImapPass,
+                imapSecure: editImapSecure
             });
 
             addToast({ type: 'success', title: 'Mailbox atualizada!', duration: 3000 });
@@ -458,6 +504,75 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                         <option value="SYSTEM">Sistema / Automática</option>
                                     </select>
                                 </div>
+
+                                <div className="p-3 bg-docka-50 rounded-lg border border-docka-200">
+                                    <h4 className="text-sm font-bold text-docka-900 mb-4 flex items-center gap-2">
+                                        <RefreshCw size={16} className="text-indigo-600" />
+                                        Configuração Zoho/SMTP/IMAP
+                                    </h4>
+                                    
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-500 uppercase">Servidor SMTP</label>
+                                                <input 
+                                                    type="text"
+                                                    className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                    placeholder="smtp.zoho.com"
+                                                    value={newSmtpHost}
+                                                    onChange={e => setNewSmtpHost(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase">Porta SMTP</label>
+                                                    <input 
+                                                        type="number"
+                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                        value={newSmtpPort}
+                                                        onChange={e => setNewSmtpPort(parseInt(e.target.value))}
+                                                    />
+                                                </div>
+                                                <div className="flex items-end pb-1.5">
+                                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                                        <input type="checkbox" checked={newSmtpSecure} onChange={e => setNewSmtpSecure(e.target.checked)} className="rounded text-indigo-600" />
+                                                        <span className="text-[10px] font-medium text-docka-600">SSL/TLS</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-500 uppercase">Usuário/Password SMTP</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input 
+                                                        type="text"
+                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                        placeholder="email@zoho.com"
+                                                        value={newSmtpUser}
+                                                        onChange={e => setNewSmtpUser(e.target.value)}
+                                                    />
+                                                    <input 
+                                                        type="password"
+                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                        placeholder="Senha de App"
+                                                        value={newSmtpPass}
+                                                        onChange={e => setNewSmtpPass(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t border-docka-200 pt-3">
+                                            <label className="block text-[10px] font-bold text-docka-500 uppercase">Servidor IMAP</label>
+                                            <input 
+                                                type="text"
+                                                className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                placeholder="imap.zoho.com"
+                                                value={newImapHost}
+                                                onChange={e => setNewImapHost(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="mt-6 flex justify-end gap-3">
@@ -522,6 +637,75 @@ const MailboxManager: React.FC<MailboxManagerProps> = () => {
                                         <option value="PERSONAL">Pessoal</option>
                                         <option value="SYSTEM">Sistema</option>
                                     </select>
+                                </div>
+
+                                <div className="p-3 bg-docka-50 rounded-lg border border-docka-200">
+                                    <h4 className="text-sm font-bold text-docka-900 mb-4 flex items-center gap-2">
+                                        <RefreshCw size={16} className="text-indigo-600" />
+                                        Configuração Zoho/SMTP/IMAP
+                                    </h4>
+                                    
+                                    <div className="space-y-4">
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-500 uppercase">Servidor SMTP</label>
+                                                <input 
+                                                    type="text"
+                                                    className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                    placeholder="smtp.zoho.com"
+                                                    value={editSmtpHost}
+                                                    onChange={e => setEditSmtpHost(e.target.value)}
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-500 uppercase">Porta SMTP</label>
+                                                    <input 
+                                                        type="number"
+                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                        value={editSmtpPort}
+                                                        onChange={e => setEditSmtpPort(parseInt(e.target.value))}
+                                                    />
+                                                </div>
+                                                <div className="flex items-end pb-1.5">
+                                                    <label className="flex items-center gap-1.5 cursor-pointer">
+                                                        <input type="checkbox" checked={editSmtpSecure} onChange={e => setEditSmtpSecure(e.target.checked)} className="rounded text-indigo-600" />
+                                                        <span className="text-[10px] font-medium text-docka-600">SSL/TLS</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-500 uppercase">Usuário/Password SMTP</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input 
+                                                        type="text"
+                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                        placeholder="email@zoho.com"
+                                                        value={editSmtpUser}
+                                                        onChange={e => setEditSmtpUser(e.target.value)}
+                                                    />
+                                                    <input 
+                                                        type="password"
+                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                        placeholder="Senha de App"
+                                                        value={editSmtpPass}
+                                                        onChange={e => setEditSmtpPass(e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="border-t border-docka-200 pt-3">
+                                            <label className="block text-[10px] font-bold text-docka-500 uppercase">Servidor IMAP</label>
+                                            <input 
+                                                type="text"
+                                                className="w-full px-3 py-1.5 text-xs border border-docka-200 rounded outline-none focus:ring-1 focus:ring-indigo-500"
+                                                placeholder="imap.zoho.com"
+                                                value={editImapHost}
+                                                onChange={e => setEditImapHost(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
