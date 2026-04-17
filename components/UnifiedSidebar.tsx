@@ -104,7 +104,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     // Global Apps Configuration - Filtered by Permissions
     const globalApps = [
         { id: 'home', label: 'Início', icon: Home, path: `/dashboard?view=home&org=${currentOrg.id}` },
-        { id: 'mail', label: 'E-mail', icon: Mail, path: `/mail?org=${currentOrg.id}`, perm: 'canAccessContent' },
+        // { id: 'mail', label: 'E-mail', icon: Mail, path: `/mail?org=${currentOrg.id}`, perm: 'canAccessContent' },
         { id: 'chat', label: 'Chat', icon: MessageSquare, path: `/chat?org=${currentOrg.id}`, perm: 'canAccessContent' },
         { id: 'meet', label: 'Meet', icon: Phone, path: `/meet?org=${currentOrg.id}`, perm: 'canAccessContent' },
         { id: 'tasks', label: 'Tarefas', icon: CheckSquare, path: `/tasks?org=${currentOrg.id}`, perm: 'canAccessContent' },

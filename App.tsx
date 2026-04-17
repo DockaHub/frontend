@@ -254,7 +254,7 @@ const AppContent: React.FC = () => {
     const commandActions = [
       // Navigation
       { id: 'nav-dash', label: 'Ir para Painel', icon: LayoutDashboard, section: 'Navegação', perform: () => navigate(`/dashboard?org=${currentOrg.id}`) },
-      { id: 'nav-mail', label: 'Ir para E-mail', icon: Mail, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/mail?org=${currentOrg.id}`) },
+      // { id: 'nav-mail', label: 'Ir para E-mail', icon: Mail, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/mail?org=${currentOrg.id}`) },
       { id: 'nav-chat', label: 'Ir para Chat', icon: MessageSquare, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/chat?org=${currentOrg.id}`) },
       { id: 'nav-calendar', label: 'Ir para Agenda', icon: Calendar, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/calendar?org=${currentOrg.id}`) },
       { id: 'nav-drive', label: 'Ir para Drive', icon: HardDrive, section: 'Navegação', perm: 'canAccessContent', perform: () => navigate(`/drive?org=${currentOrg.id}`) },
