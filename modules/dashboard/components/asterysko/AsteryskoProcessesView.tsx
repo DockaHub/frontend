@@ -541,9 +541,19 @@ const AsteryskoProcessesView: React.FC = () => {
                                         <tr key={proc.id} className="hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors group cursor-pointer" onClick={() => setSelectedProcess(proc)}>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
-                                                    {proc.logoUrl ? (
-                                                        <img src={proc.logoUrl} alt="" className="w-8 h-8 rounded bg-white border border-docka-100 object-contain" />
-                                                    ) : (proc.title.substring(0, 1))}
+                                                    <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-[10px] shrink-0 overflow-hidden border border-docka-100 dark:border-zinc-800">
+                                                        {proc.logoUrl ? (
+                                                            <img 
+                                                                src={`${getBackendUrl()}${proc.logoUrl}`} 
+                                                                alt="" 
+                                                                className="w-full h-full object-cover" 
+                                                                onError={(e) => {
+                                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                                    (e.target as HTMLImageElement).parentElement!.innerText = proc.title.substring(0, 2);
+                                                                }}
+                                                            />
+                                                        ) : (proc.title.substring(0, 2))}
+                                                    </div>
                                                     <span className="font-bold text-docka-900 dark:text-zinc-100">{proc.title}</span>
                                                 </div>
                                             </td>
