@@ -413,6 +413,7 @@ const AsteryskoProcessesView: React.FC = () => {
     const [gruBarcode, setGruBarcode] = useState('');
     const [gruFile, setGruFile] = useState<File | null>(null);
     const [uploadingLogo, setUploadingLogo] = useState(false);
+    const [logoError, setLogoError] = useState(false);
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
         const file = e.target.files?.[0];
@@ -428,6 +429,7 @@ const AsteryskoProcessesView: React.FC = () => {
             });
             addToast({ type: 'success', title: 'Sucesso', message: 'Logotipo atualizado com sucesso!' });
             
+            setLogoError(false); // Reset error state on success
             // Refresh process in list and selection
             const updateList = (prev: any[]) => prev.map(p => p.id === processId ? { ...p, logoUrl: res.data.logoUrl } : p);
             setProcesses(updateList);
@@ -808,11 +810,12 @@ const AsteryskoProcessesView: React.FC = () => {
                             <div className="flex gap-4">
                                 <div className="relative group">
                                     <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm overflow-hidden border-2 border-transparent group-hover:border-blue-400 transition-all">
-                                        {selectedProcess.logoUrl ? (
+                                        {selectedProcess.logoUrl && !logoError ? (
                                             <img 
                                                 src={`${getBackendUrl()}${selectedProcess.logoUrl}`} 
                                                 alt="Logo" 
                                                 className="w-full h-full object-cover"
+                                                onError={() => setLogoError(true)}
                                             />
                                         ) : (
                                             selectedProcess.title.substring(0, 2)
