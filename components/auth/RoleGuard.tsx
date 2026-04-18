@@ -32,6 +32,11 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
         if (user?.role === 'CLIENT' && !fallbackPath.includes('portal')) {
             return <Navigate to="/portal" replace />;
         }
+
+        // If it's an admin blocked from something, don't force them into the client portal
+        if (user?.role === 'ADMIN' && fallbackPath === '/portal') {
+            return <Navigate to="/dashboard" replace />;
+        }
         
         return <Navigate to={fallbackPath} replace />;
     }

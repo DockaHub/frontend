@@ -389,7 +389,7 @@ const AppContent: React.FC = () => {
 
           {/* Protected Routes */}
           <Route path="/dashboard/*" element={
-            <RoleGuard allowedRoles={['ADMIN']}>
+            <RoleGuard allowedRoles={['ADMIN', 'SUPER_ADMIN']} fallbackPath="/login">
               <DashboardLayout currentOrg={currentOrg} userOrgs={userOrgs} user={user!} onLogout={handleLogout} onOpenProfile={handleOpenProfile} onOpenPreferences={handleOpenPreferences} theme={theme} onToggleTheme={toggleTheme} />
             </RoleGuard>
           } />

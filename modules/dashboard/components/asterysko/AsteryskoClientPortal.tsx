@@ -324,13 +324,17 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                 }
             } catch (err: any) {
                 console.error('Error loading portal data:', err);
-                if (err.response?.status === 404) {
+                // If admin, we don't care if client record is missing, they just see a 'preview' (empty dashboard)
+                if (err.response?.status === 404 && user?.role !== 'ADMIN') {
                     setError('CLIENT_NOT_FOUND');
+                } else if (err.response?.status === 404 && user?.role === 'ADMIN') {
+                  setClientData({ name: user.name, email: user.email, role: 'ADMIN_PREVIEW' });
+                  setLoading(false);
                 } else {
                     setError('Não foi possível carregar os dados do portal.');
                 }
             } finally {
-                setLoading(false);
+                if (user?.role !== 'ADMIN') setLoading(false);
             }
         };
 
@@ -476,10 +480,13 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         </p>
                         <div className="flex flex-col gap-3">
                             <button
-                                onClick={() => onExit()}
+                                onClick={() => {
+                                    localStorage.clear();
+                                    window.location.href = '/login';
+                                }}
                                 className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-bold shadow-lg shadow-blue-900/20"
                             >
-                                Voltar para Login
+                                Sair e Voltar para Login
                             </button>
                         </div>
                     </div>
