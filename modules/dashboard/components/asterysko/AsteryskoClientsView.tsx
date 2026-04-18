@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Plus, User, Building2, MapPin, Mail, Phone, MoreHorizontal, Scale, FileText, CreditCard, AlertTriangle, ChevronRight, FolderOpen, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, User, Building2, MapPin, Mail, Phone, MoreHorizontal, Scale, FileText, CreditCard, AlertTriangle, ChevronRight, FolderOpen, Trash2, ExternalLink } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
