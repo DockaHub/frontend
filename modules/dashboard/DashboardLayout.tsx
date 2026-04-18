@@ -9,7 +9,6 @@ import UmaChaveDashboard from './components/UmaChaveDashboard';
 import DockaDashboard from './components/DockaDashboard';
 import HostiziDashboard from './components/HostiziDashboard';
 import { Menu, ChevronDown } from 'lucide-react';
-import UserHomeView from './components/docka/UserHomeView';
 import { useSearchParams } from 'react-router-dom';
 import UnifiedSidebar from '../../components/UnifiedSidebar';
 
@@ -81,11 +80,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
         });
     };
 
-    const renderContent = () => {
-        // Global Home View
-        if (activeView === 'home') {
-            return <UserHomeView />;
-        }
 
         // Routing by Organization Type (More robust for real data)
         if (selectedOrg.type === 'AGENCY') {

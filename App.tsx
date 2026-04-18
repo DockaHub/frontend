@@ -389,7 +389,7 @@ const AppContent: React.FC = () => {
           <Route path="/portal/*" element={<AsteryskoClientPortal theme={theme} onToggleTheme={toggleTheme} onExit={() => navigate('/')} />} />
 
           {/* Default Route */}
-          <Route path="/" element={<Navigate to={`/dashboard?view=home&org=${currentOrg.id}`} replace />} />
+          <Route path="/" element={<Navigate to={`/dashboard?view=overview&org=${currentOrg.id}`} replace />} />
         </Routes>
       </div>
 
