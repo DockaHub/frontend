@@ -114,21 +114,6 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
         });
     };
 
-    // Global Apps Configuration - Filtered by Permissions
-    const globalApps = [
-        { id: 'home', label: 'Início', icon: Home, path: `/dashboard?view=home&org=${currentOrg.id}` },
-        // { id: 'mail', label: 'E-mail', icon: Mail, path: `/mail?org=${currentOrg.id}`, perm: 'canAccessContent' },
-        { id: 'chat', label: 'Chat', icon: MessageSquare, path: `/chat?org=${currentOrg.id}`, perm: 'canAccessContent' },
-        { id: 'meet', label: 'Meet', icon: Phone, path: `/meet?org=${currentOrg.id}`, perm: 'canAccessContent' },
-        { id: 'tasks', label: 'Tarefas', icon: CheckSquare, path: `/tasks?org=${currentOrg.id}`, perm: 'canAccessContent' },
-        { id: 'calendar', label: 'Agenda', icon: Calendar, path: `/calendar?org=${currentOrg.id}`, perm: 'canAccessContent' },
-        { id: 'drive', label: 'Drive', icon: HardDrive, path: `/drive?org=${currentOrg.id}`, perm: 'canAccessContent' },
-        { id: 'contacts', label: 'Pessoas', icon: Users, path: `/contacts?org=${currentOrg.id}`, perm: 'canAccessPeople' },
-    ].filter(app => {
-        if (!app.perm) return true;
-        if (currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN' || user.role === 'ADMIN') return true;
-        return (currentOrg.memberPermissions as any)?.[app.perm] !== false;
-    });
 
     return (
         <div className={`flex flex-col bg-docka-50 dark:bg-zinc-900 pt-4 h-full border-r border-docka-200/50 dark:border-zinc-800 shrink-0 transition-all duration-300 ease-in-out relative group/sidebar ${isCollapsed ? 'w-[68px]' : 'w-[260px]'} ${className}`}>
@@ -352,51 +337,6 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                     })}
                 </div>
 
-                {/* 3. Global Apps (SECONDARY - Bottom) */}
-                <div className={`mt-2 pt-4 border-t border-docka-200 dark:border-zinc-800 ${isCollapsed ? 'flex flex-col items-center' : ''}`}>
-                    {!isCollapsed && <p className="px-2 text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-wider mb-2">Aplicativos</p>}
-                    <div className="space-y-0.5 w-full">
-                        {globalApps.map(app => {
-                            const isActive = location.pathname.startsWith(app.path);
-
-                            const AppLink = (
-                                <button
-                                    onClick={() => {
-                                        navigate(app.path);
-                                        if (onClose) onClose();
-                                    }}
-                                    className={`w-full flex items-center px-2 py-2 text-sm rounded-lg transition-all duration-200 group ${isActive
-                                        ? 'bg-docka-100 dark:bg-zinc-800 text-docka-900 dark:text-zinc-100 font-semibold'
-                                        : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-100/50 dark:hover:bg-zinc-800/50 hover:text-docka-900 dark:hover:text-zinc-200'
-                                        } ${isCollapsed ? 'justify-center' : ''}`}
-                                >
-                                    <div className="relative">
-                                        <app.icon
-                                            size={20}
-                                            className={`shrink-0 transition-colors ${isActive ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-400 dark:text-zinc-500 group-hover:text-docka-600 dark:group-hover:text-zinc-300'} ${!isCollapsed ? 'mr-3' : ''}`}
-                                        />
-                                        {app.id === 'chat' && unreadChatCount > 0 && (
-                                            <span className={`absolute -top-1.5 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full border border-white dark:border-zinc-900 ${isCollapsed ? '-right-1.5 w-3.5 h-3.5' : 'right-1.5 w-4 h-4'}`}>
-                                                {unreadChatCount > 9 ? '9+' : unreadChatCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                    {!isCollapsed && <span className="flex-1 text-left truncate">{app.label}</span>}
-                                </button>
-                            );
-
-                            return isCollapsed ? (
-                                <Tooltip key={app.id} content={app.label} side="right">
-                                    {AppLink}
-                                </Tooltip>
-                            ) : (
-                                <React.Fragment key={app.id}>
-                                    {AppLink}
-                                </React.Fragment>
-                            );
-                        })}
-                    </div>
-                </div>
 
             </div>
 

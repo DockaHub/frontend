@@ -40,6 +40,12 @@ export const organizationService = {
         return response.data;
     },
 
+    // Get all members from all user organizations
+    async getAllUserMembers(): Promise<OrganizationMember[]> {
+        const response = await api.get('/organizations/list/all-members');
+        return response.data || [];
+    },
+
     // Add a member to the organization
     async addMember(id: string, email: string, role: string = 'MEMBER', permissions: any = null): Promise<OrganizationMember> {
         const response = await api.post(`/organizations/${id}/members`, { email, role, permissions });

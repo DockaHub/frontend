@@ -71,10 +71,10 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
 
     const loadMembers = async () => {
         try {
-            const members = await organizationService.getMembers(currentOrg.id);
+            const members = await organizationService.getAllUserMembers();
             setOrgMembers(members || []);
         } catch (error) {
-            console.error("Failed to load organization members", error);
+            console.error("Failed to load global members", error);
         }
     };
 
@@ -125,17 +125,18 @@ const ChatLayout: React.FC<ChatLayoutProps> = ({ currentOrg }) => {
             existingDMUserIds.add(currentUser.id);
         }
 
-        // 3. Create Virtual DMs for other members
+        // 3. Create Virtual DMs for other members from all orgs
         const virtualDMs: ChatChannel[] = orgMembers
-            .filter(m => m.user && !existingDMUserIds.has(m.user.id))
+            .filter(m => m.user && m.user.id !== currentUser.id && !existingDMUserIds.has(m.user.id))
             .map(m => ({
                 id: `virtual-${m.user.id}`,
                 name: m.user.name || 'Usuário',
                 type: 'dm',
                 userAvatar: m.user.avatar,
                 isOnline: m.user.status === 'ONLINE',
-                memberIds: [currentUser?.id || '', m.user.id],
-                isPlaceholder: true
+                isPlaceholder: true,
+                organizationId: m.organizationId,
+                organization: (m as any).organization // The backend now returns this
             }));
 
         return [...processedReal, ...virtualDMs];
