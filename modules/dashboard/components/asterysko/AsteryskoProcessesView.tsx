@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity, Loader2, CreditCard } from 'lucide-react';
+import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity, Loader2, CreditCard, Camera } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
 
@@ -412,6 +412,40 @@ const AsteryskoProcessesView: React.FC = () => {
     const [uploadingGru, setUploadingGru] = useState(false);
     const [gruBarcode, setGruBarcode] = useState('');
     const [gruFile, setGruFile] = useState<File | null>(null);
+    const [uploadingLogo, setUploadingLogo] = useState(false);
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingLogo(true);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const res = await api.post(`/asterysko/processes/${processId}/logo`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            addToast({ type: 'success', title: 'Sucesso', message: 'Logotipo atualizado com sucesso!' });
+            
+            // Refresh process in list and selection
+            const updateList = (prev: any[]) => prev.map(p => p.id === processId ? { ...p, logoUrl: res.data.logoUrl } : p);
+            setProcesses(updateList);
+            if (selectedProcess?.id === processId) {
+                setSelectedProcess({ ...selectedProcess, logoUrl: res.data.logoUrl });
+            }
+        } catch (error) {
+            console.error('Error uploading logo:', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao processar logotipo.' });
+        } finally {
+            setUploadingLogo(false);
+        }
+    };
+
+    const handleDownloadLogo = (processId: string) => {
+        const token = localStorage.getItem('token');
+        window.open(`${getBackendUrl()}/api/asterysko/processes/${processId}/logo/download?token=${token}`, '_blank');
+    };
 
     const handleGruUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
         const file = e.target.files?.[0];
@@ -771,8 +805,41 @@ const AsteryskoProcessesView: React.FC = () => {
                         {/* Header Info */}
                         <div className="flex justify-between items-start pb-6 border-b border-docka-100 dark:border-zinc-800 mb-6 shrink-0">
                             <div className="flex gap-4">
-                                <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm">
-                                    {selectedProcess.title.substring(0, 2)}
+                                <div className="relative group">
+                                    <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm overflow-hidden border-2 border-transparent group-hover:border-blue-400 transition-all">
+                                        {selectedProcess.logoUrl ? (
+                                            <img 
+                                                src={`${getBackendUrl()}${selectedProcess.logoUrl}`} 
+                                                alt="Logo" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            selectedProcess.title.substring(0, 2)
+                                        )}
+                                        
+                                        {uploadingLogo && (
+                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                <Loader2 size={20} className="text-white animate-spin" />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Action Buttons for Logo */}
+                                    <div className="absolute -bottom-2 -right-2 flex gap-1">
+                                        <label className="w-7 h-7 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-full flex items-center justify-center text-docka-600 dark:text-zinc-400 cursor-pointer hover:bg-docka-50 dark:hover:bg-zinc-700 shadow-sm transition-all" title="Alterar Logotipo">
+                                            <Camera size={14} />
+                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, selectedProcess.id)} />
+                                        </label>
+                                        {selectedProcess.logoUrl && (
+                                            <button 
+                                                onClick={() => handleDownloadLogo(selectedProcess.id)}
+                                                className="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 shadow-sm transition-all" 
+                                                title="Baixar Logotipo"
+                                            >
+                                                <Download size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{selectedProcess.title}</h2>
