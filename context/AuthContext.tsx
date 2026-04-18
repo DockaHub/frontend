@@ -25,14 +25,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const storedUser = authService.getStoredUser();
             if (storedUser) {
                 // 1. Set initial state from storage (fast load)
-                setUser({ ...storedUser, role: (storedUser.role?.toLowerCase() || 'user') as 'admin' | 'user' });
+                setUser(storedUser);
 
                 // 2. Fetch latest data from API (background refresh)
                 try {
                     const data = await authService.getCurrentUser();
-                    const updatedUser = { ...data, role: (data.role?.toLowerCase() || 'user') as 'admin' | 'user' };
-                    setUser(updatedUser);
-                    localStorage.setItem('user', JSON.stringify(updatedUser)); // Update storage
+                    setUser(data);
+                    localStorage.setItem('user', JSON.stringify(data)); // Update storage
                 } catch (error) {
                     console.error('Failed to refresh user on mount:', error);
                 }
@@ -49,9 +48,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const refreshUser = async () => {
         try {
             const data = await authService.getCurrentUser();
-            const updatedUser = { ...data, role: (data.role?.toLowerCase() || 'user') as 'admin' | 'user' }; // Ensure role type
-            setUser(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            setUser(data);
+            localStorage.setItem('user', JSON.stringify(data));
         } catch (error) {
             console.error('Failed to refresh user:', error);
         }
@@ -61,9 +59,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const response = await authService.login(credentials);
             if (response.user && response.token) {
-                const userWithRole = { ...response.user, role: (response.user.role?.toLowerCase() || 'user') as 'admin' | 'user' };
-                setUser(userWithRole);
-                localStorage.setItem('user', JSON.stringify(userWithRole));
+                setUser(response.user);
+                localStorage.setItem('user', JSON.stringify(response.user));
             }
         } catch (error) {
             console.error('Login failed:', error);
@@ -75,9 +72,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const response = await authService.register(data);
             if (response.user && response.token) {
-                const userWithRole = { ...response.user, role: (response.user.role?.toLowerCase() || 'user') as 'admin' | 'user' };
-                setUser(userWithRole);
-                localStorage.setItem('user', JSON.stringify(userWithRole));
+                setUser(response.user);
+                localStorage.setItem('user', JSON.stringify(response.user));
             }
         } catch (error) {
             console.error('Registration failed:', error);
