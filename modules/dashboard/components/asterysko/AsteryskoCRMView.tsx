@@ -85,6 +85,9 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
     const [clients, setClients] = useState<any[]>([]);
     const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
 
+    useEffect(() => {
+        // Fetch clients for the dropdown
+        api.get('/asterysko/clients').then(res => setClients(res.data)).catch(err => console.error('Error loading clients:', err));
         api.get('/asterysko/fees').then(res => setFees(res.data)).catch(err => console.error('Error loading fees:', err));
 
         // Fetch org members to assign to deals
