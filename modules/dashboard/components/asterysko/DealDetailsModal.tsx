@@ -685,9 +685,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     </div>
                                 </div>
                             )}
-                            </div>
                         </div>
-                    </div>
 
                     {/* CONTACT INFO */}
                     <div className="space-y-4 bg-white dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-200 dark:border-zinc-700">
