@@ -69,16 +69,49 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCa
                             )}
                           </div>
 
-                          {/* Tags */}
-                          {card.tags && card.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1.5 mb-3">
-                              {card.tags.map((tag, idx) => (
-                                <span key={idx} className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${tag.color} dark:bg-opacity-20`}>
-                                  {tag.label}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          {/* Responsible & Tags */}
+                          <div className="flex flex-wrap gap-1.5 mb-3">
+                            {/* Responsible Tag */}
+                            {(card as any).assignedUser?.name && (
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-sm border border-black/5 ${(() => {
+                                const name = (card as any).assignedUser.name;
+                                const colors = [
+                                  'bg-blue-100 text-blue-700',
+                                  'bg-emerald-100 text-emerald-700',
+                                  'bg-amber-100 text-amber-700',
+                                  'bg-rose-100 text-rose-700',
+                                  'bg-indigo-100 text-indigo-700',
+                                  'bg-purple-100 text-purple-700',
+                                  'bg-cyan-100 text-cyan-700',
+                                  'bg-teal-100 text-teal-700'
+                                ];
+                                let hash = 0;
+                                for (let i = 0; i < name.length; i++) {
+                                  hash = name.charCodeAt(i) + ((hash << 5) - hash);
+                                }
+                                return colors[Math.abs(hash) % colors.length];
+                              })()}`}>
+                                👤 {(card as any).assignedUser.name.split(' ')[0]}
+                              </span>
+                            )}
+
+                            {card.tags && card.tags.length > 0 && (
+                              <>
+                                {card.tags
+                                  .filter(tag => 
+                                    !tag.label.toUpperCase().startsWith('CNPJ:') && 
+                                    !tag.label.toUpperCase().startsWith('RAZÃO SOCIAL:') && 
+                                    !tag.label.toUpperCase().startsWith('ENDEREÇO:') &&
+                                    !tag.label.toUpperCase().includes('REGISTRO DE MARCA')
+                                  )
+                                  .map((tag, idx) => (
+                                    <span key={idx} className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${tag.color} dark:bg-opacity-20`}>
+                                      {tag.label}
+                                    </span>
+                                  ))}
+                              </>
+                            )}
+                          </div>
 
                           {/* Main Content */}
                           <h4 className="font-bold text-docka-900 dark:text-zinc-100 mb-1 leading-snug">{card.title}</h4>
