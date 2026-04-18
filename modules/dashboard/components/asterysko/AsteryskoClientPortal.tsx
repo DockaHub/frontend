@@ -41,82 +41,58 @@ const AsteryskoLogoSVG = () => (
 
 // Timeline Data for a specific process (Helper)
 const getTimelineEvents = (process: any, invoices: any[] = []) => {
-    const events = [];
+    const events: any[] = [];
 
-    // 1. Add Dispatches from DB
-    if (process.dispatches && process.dispatches.length > 0) {
-        const sorted = [...process.dispatches].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        sorted.forEach((d: any) => {
-            events.push({
-                id: d.id,
-                type: 'dispatch',
-                title: d.isVirtual ? d.description : `${d.code} - ${d.description} `,
-                date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
-                desc: d.details || `Publicado na RPI ${d.rpiNumber}`
-            });
-        });
-    }
-
-    // 2. Depósito do Pedido
-    if (process.inpiProcessNumber || process.status !== 'NEW' && process.status !== 'WAITING_PAYMENT') {
-        events.push({
-            id: 'deposito',
-            type: 'dispatch',
-            title: 'Depósito do Pedido',
-            date: new Date(process.createdAt).toLocaleDateString('pt-BR'),
-            desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Aguardando'}`
-        });
-    }
-
-    // 3. Taxa INPI (Federal Tax)
-    const taxInvoice = invoices.find(i => i.type === 'TAX' && (i.processId === process.id || i.description?.includes(process.brandName)));
-    if (taxInvoice) {
-        events.push({
-            id: 'tax-payment',
-            type: 'invoice',
-            title: 'Taxa Federal (INPI)',
-            date: taxInvoice.dueDate ? new Date(taxInvoice.dueDate).toLocaleDateString('pt-BR') : '',
-            desc: taxInvoice.status === 'paid' ? 'Taxa do INPI paga com sucesso.' : 'Aguardando pagamento da taxa federal do INPI.',
-            status: taxInvoice.status,
-            invoice: taxInvoice
-        });
-    }
-
-    // 4. Honorários (Service Payment)
-    const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || i.description?.includes(process.brandName)));
-    if (serviceInvoice || process.paymentStatus) {
-        events.push({
-            id: 'service-payment',
-            type: 'invoice',
-            title: 'Honorários Profissionais',
-            date: serviceInvoice?.dueDate ? new Date(serviceInvoice.dueDate).toLocaleDateString('pt-BR') : '',
-            desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
-            status: serviceInvoice?.status || process.paymentStatus,
-            invoice: serviceInvoice
-        });
-    }
-
-    // 5. Procuração Event
-    events.push({
-        id: 'proxy',
-        type: 'proxy',
-        title: 'Procuração INPI',
-        date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
-        desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
-        status: process.proxySignStatus
-    });
-
-    // 7. Contrato Event
+    // 1. Contrato Assinado (The very first logical step)
     events.push({
         id: 'contract',
         type: 'contract',
         title: 'Contrato Assinado',
         date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
         desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
-        status: process.contractSignStatus
+        status: process.contractSignStatus,
+        createdAt: process.contractSignDate || process.createdAt
     });
 
-    // 8. GRU (Taxa Federal)
+    // 2. Honorários Profissionais (The bill)
+    const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || i.description?.includes(process.brandName)));
+    events.push({
+        id: 'service-payment',
+        type: 'invoice',
+        title: 'Honorários Profissionais',
+        date: serviceInvoice?.dueDate ? new Date(serviceInvoice.dueDate).toLocaleDateString('pt-BR') : '',
+        desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
+        status: serviceInvoice?.status || process.paymentStatus,
+        invoice: serviceInvoice,
+        createdAt: serviceInvoice?.createdAt || process.createdAt
+    });
+
+    // 3. Pagamento Recebido (Confirmation of #2)
+    if (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') {
+        const paidAt = serviceInvoice?.paidAt || process.updatedAt;
+        events.push({
+            id: 'payment-confirmation',
+            type: 'dispatch',
+            title: 'Pagamento Recebido',
+            date: paidAt ? new Date(paidAt).toLocaleDateString('pt-BR') : '',
+            desc: 'Identificamos o pagamento dos honorários iniciais com sucesso.',
+            status: 'PAID',
+            createdAt: paidAt
+        });
+    }
+
+    // 4. Procuração INPI
+    events.push({
+        id: 'proxy',
+        type: 'proxy',
+        title: 'Procuração INPI',
+        date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
+        desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
+        status: process.proxySignStatus,
+        createdAt: process.updatedAt
+    });
+
+    // 5. Taxa Federal (GRU) - Important milestone
     if (process.planType === 'ESSENCIAL' || process.planType === 'PREMIUM') {
         events.push({
             id: 'gru-stage',
@@ -126,11 +102,56 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
             status: process.gruStatus,
             barcode: process.gruBarcode,
             gruUrl: process.gruUrl,
-            receiptUrl: process.gruReceiptUrl
+            receiptUrl: process.gruReceiptUrl,
+            createdAt: process.updatedAt // Usually later than creation
         });
     }
 
-    return events;
+    // 6. Depósito do Pedido (Automatic if has process number)
+    if (process.inpiProcessNumber || (process.status !== 'NEW' && process.status !== 'WAITING_PAYMENT')) {
+        events.push({
+            id: 'deposito',
+            type: 'dispatch',
+            title: 'Depósito do Pedido',
+            date: process.filingDate ? new Date(process.filingDate).toLocaleDateString('pt-BR') : new Date(process.createdAt).toLocaleDateString('pt-BR'),
+            desc: `Protocolo gerado no INPI: ${process.inpiProcessNumber || 'Processando'}`,
+            createdAt: process.filingDate || process.createdAt
+        });
+    }
+
+    // 7. Add Dispatches from DB (Actual RPI updates)
+    if (process.dispatches && process.dispatches.length > 0) {
+        process.dispatches.forEach((d: any) => {
+            events.push({
+                id: d.id,
+                type: 'dispatch',
+                title: d.isVirtual ? d.description : `${d.code} - ${d.description}`,
+                date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
+                desc: d.details || `Publicado na RPI ${d.rpiNumber || '-'}`,
+                createdAt: d.createdAt
+            });
+        });
+    }
+
+    // Sort all events by createdAt DESC (newest on top)
+    // To show progress bottom-to-top in some UI perspectives, but here we keep logical descent if dates are SAME
+    return events.sort((a, b) => {
+        const timeA = new Date(a.createdAt).getTime();
+        const timeB = new Date(b.createdAt).getTime();
+        
+        if (timeA !== timeB) return timeB - timeA;
+        
+        // Priority tie-breaker for same date
+        const priorities: Record<string, number> = {
+            'gru': 1,
+            'dispatch': 2,
+            'proxy': 3,
+            'payment-confirmation': 4,
+            'invoice': 5,
+            'contract': 6
+        };
+        return (priorities[b.type] || 0) - (priorities[a.type] || 0);
+    });
 };
 
 const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, theme, onToggleTheme }) => {
