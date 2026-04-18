@@ -9,9 +9,10 @@ interface KanbanBoardProps {
   onCardClick?: (card: KanbanCardData) => void;
   onAddCard?: (columnId: string) => void;
   onDragEnd?: (result: DropResult) => void;
+  members?: any[];
 }
 
-const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCard, onDragEnd }) => {
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCard, onDragEnd, members = [] }) => {
   return (
     <DragDropContext onDragEnd={onDragEnd || (() => { })}>
       <div className="flex h-full overflow-x-auto pb-4 gap-4 items-start custom-scrollbar">
@@ -72,28 +73,38 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCa
                           {/* Responsible & Tags */}
                           <div className="flex flex-wrap gap-1.5 mb-3">
                             {/* Responsible Tag */}
-                            {(card as any).assignedUser?.name && (
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-sm border border-black/5 ${(() => {
-                                const name = (card as any).assignedUser.name;
-                                const colors = [
-                                  'bg-blue-100 text-blue-700',
-                                  'bg-emerald-100 text-emerald-700',
-                                  'bg-amber-100 text-amber-700',
-                                  'bg-rose-100 text-rose-700',
-                                  'bg-indigo-100 text-indigo-700',
-                                  'bg-purple-100 text-purple-700',
-                                  'bg-cyan-100 text-cyan-700',
-                                  'bg-teal-100 text-teal-700'
-                                ];
-                                let hash = 0;
-                                for (let i = 0; i < name.length; i++) {
-                                  hash = name.charCodeAt(i) + ((hash << 5) - hash);
-                                }
-                                return colors[Math.abs(hash) % colors.length];
-                              })()}`}>
-                                👤 {(card as any).assignedUser.name.split(' ')[0]}
-                              </span>
-                            )}
+                            {(() => {
+                              const assignedId = (card as any).assignedUserId;
+                              const assignedUser = (card as any).assignedUser;
+                              const respName = assignedUser?.name || 
+                                              members.find(m => m.id === assignedId || m.userId === assignedId)?.user?.name || 
+                                              members.find(m => m.id === assignedId || m.userId === assignedId)?.name;
+                              
+                              if (!respName) return null;
+
+                              const colors = [
+                                'bg-blue-100 text-blue-700',
+                                'bg-emerald-100 text-emerald-700',
+                                'bg-amber-100 text-amber-700',
+                                'bg-rose-100 text-rose-700',
+                                'bg-indigo-100 text-indigo-700',
+                                'bg-purple-100 text-purple-700',
+                                'bg-cyan-100 text-cyan-700',
+                                'bg-teal-100 text-teal-700'
+                              ];
+                              
+                              let hash = 0;
+                              for (let i = 0; i < respName.length; i++) {
+                                hash = respName.charCodeAt(i) + ((hash << 5) - hash);
+                              }
+                              const colorClass = colors[Math.abs(hash) % colors.length];
+
+                              return (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase shadow-sm border border-black/5 ${colorClass}`}>
+                                  👤 {respName.split(' ')[0]}
+                                </span>
+                              );
+                            })()}
 
                             {card.tags && card.tags.length > 0 && (
                               <>

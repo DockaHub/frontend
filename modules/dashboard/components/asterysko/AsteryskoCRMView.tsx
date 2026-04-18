@@ -344,6 +344,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                             onCardClick={handleCardClick}
                             onAddCard={handleAddCard}
                             onDragEnd={handleDragEnd}
+                            members={organizationMembers}
                         />
                     ) : (
                         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 overflow-hidden">
