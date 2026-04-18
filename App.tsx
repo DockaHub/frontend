@@ -126,12 +126,12 @@ const AppContent: React.FC = () => {
     checkCustomDomain();
   }, []);
 
-  // Enforce Tenant Routing
+  // Enforce Tenant Routing only for clients
   useEffect(() => {
-    if (isTenantDomain && !resolvingDomain && !location.pathname.startsWith('/portal') && !location.pathname.startsWith('/sign')) {
+    if (isTenantDomain && !resolvingDomain && user?.role === 'CLIENT' && !location.pathname.startsWith('/portal') && !location.pathname.startsWith('/sign')) {
       navigate('/portal', { replace: true });
     }
-  }, [isTenantDomain, resolvingDomain, location.pathname, navigate]);
+  }, [isTenantDomain, resolvingDomain, user?.role, location.pathname, navigate]);
 
   // Fetch real organizations for the user
   useEffect(() => {
