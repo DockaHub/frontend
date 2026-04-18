@@ -383,6 +383,21 @@ const AsteryskoProcessesView: React.FC = () => {
         }
     };
 
+    const handleUpdateClass = async (newClass: string) => {
+        if (!selectedProcess) return;
+        try {
+            await api.put(`/asterysko/processes/${selectedProcess.id}`, {
+                nclClass: newClass
+            });
+            const updated = { ...selectedProcess, class: newClass };
+            setSelectedProcess(updated);
+            setProcesses(prev => prev.map(p => p.id === selectedProcess.id ? updated : p));
+            addToast({ type: 'success', title: 'Sucesso', message: 'Classe NCL atualizada!' });
+        } catch (error) {
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao atualizar classe.' });
+        }
+    };
+
     const handleUpdateStatus = async () => {
         if (!selectedProcess || !newStatusData.status || !newStatusData.description) return alert('Preencha pelo menos Status e Descrição do Despacho.');
         try {
@@ -873,7 +888,16 @@ const AsteryskoProcessesView: React.FC = () => {
                                             <option value="BLINDADO">BLINDADO</option>
                                         </select>
                                         <span>•</span>
-                                        <span className="font-medium text-docka-700 dark:text-zinc-300">{selectedProcess.class}</span>
+                                        <div className="flex items-center gap-1 group/class">
+                                            <span className="font-bold text-docka-700 dark:text-zinc-300">NCL</span>
+                                            <input 
+                                                type="text"
+                                                defaultValue={selectedProcess.class || ''}
+                                                onBlur={(e) => handleUpdateClass(e.target.value)}
+                                                className="w-8 bg-transparent border-b border-transparent hover:border-docka-200 focus:border-blue-500 text-xs font-bold text-docka-700 dark:text-zinc-300 outline-none transition-all text-center"
+                                                title="Clique para editar a Classe"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
