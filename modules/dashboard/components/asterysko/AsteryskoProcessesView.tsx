@@ -434,9 +434,10 @@ const AsteryskoProcessesView: React.FC = () => {
             if (selectedProcess?.id === processId) {
                 setSelectedProcess({ ...selectedProcess, logoUrl: res.data.logoUrl });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error uploading logo:', error);
-            addToast({ type: 'error', title: 'Erro', message: 'Falha ao processar logotipo.' });
+            const msg = error.response?.data?.details || error.response?.data?.error || 'Falha ao processar logotipo.';
+            addToast({ type: 'error', title: 'Erro', message: msg });
         } finally {
             setUploadingLogo(false);
         }
