@@ -20,6 +20,7 @@ import { ToastProvider, useToast } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './modules/auth/LoginPage';
 import { ForcePasswordChange } from './components/auth/ForcePasswordChange';
+import { RoleGuard } from './components/auth/RoleGuard';
 import { Organization } from './types';
 import { ORGANIZATIONS } from './constants';
 import {
@@ -69,6 +70,20 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const checkCustomDomain = async () => {
       const hostname = window.location.hostname;
+
+      // CHECK FOR AUTH TOKEN IN URL (FOR IMPERSONATION/AUTO-LOGIN)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('token');
+      if (urlToken) {
+          console.log('Detected token in URL, applying session...');
+          localStorage.setItem('token', urlToken);
+          // Clean URL but keep session
+          const newUrl = window.location.pathname;
+          window.history.replaceState({}, '', newUrl);
+          window.location.reload(); // Refresh to bootstrap auth with new token
+          return;
+      }
+
       // Skip for default development and platform domains
       if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('dockahub') || hostname.includes('vercel.app')) {
         setResolvingDomain(false);
@@ -373,7 +388,11 @@ const AppContent: React.FC = () => {
           <Route path="/sign/:dealId" element={<ContractSignaturePage dealId={location.pathname.split('/')[2]} />} />
 
           {/* Protected Routes */}
-          <Route path="/dashboard/*" element={<DashboardLayout currentOrg={currentOrg} userOrgs={userOrgs} user={user!} onLogout={handleLogout} onOpenProfile={handleOpenProfile} onOpenPreferences={handleOpenPreferences} theme={theme} onToggleTheme={toggleTheme} />} />
+          <Route path="/dashboard/*" element={
+            <RoleGuard allowedRoles={['ADMIN']}>
+              <DashboardLayout currentOrg={currentOrg} userOrgs={userOrgs} user={user!} onLogout={handleLogout} onOpenProfile={handleOpenProfile} onOpenPreferences={handleOpenPreferences} theme={theme} onToggleTheme={toggleTheme} />
+            </RoleGuard>
+          } />
           <Route path="/mail" element={<MailLayout currentOrg={currentOrg} />} />
           <Route path="/chat" element={<ChatLayout currentOrg={currentOrg} />} />
           <Route path="/tasks" element={<TasksLayout />} />

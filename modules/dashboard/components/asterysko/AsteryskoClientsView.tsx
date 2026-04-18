@@ -206,17 +206,19 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             const response = await api.post(`/asterysko/impersonate/${clientId}`);
             const { token, user } = response.data;
 
-            // Store the current admin session to allow coming back later if needed
-            // But for now, simple impersonation: replace token and redirect
-            localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(user));
+            addToast({ type: 'success', title: 'Acesso Autorizado', message: `Abrindo portal como ${user.name} em nova aba...` });
             
-            addToast({ type: 'success', title: 'Acesso Autorizado', message: `Entrando como ${user.name}...` });
+            // Determine target portal URL
+            // If we are in production, we might want to use the customer's custom domain
+            const isProd = !window.location.hostname.includes('localhost');
+            const portalBase = isProd ? 'https://cliente.asterysko.com/portal' : '/portal';
             
-            // Redirect to client portal
-            setTimeout(() => {
-                window.location.href = '/portal/dashboard';
-            }, 1000);
+            const impersonateUrl = `${portalBase}?token=${token}`;
+            
+            // Open in new tab to keep admin session intact in current tab
+            window.open(impersonateUrl, '_blank');
+            
+            setActiveMenuClientId(null);
         } catch (error: any) {
             console.error('Failed to impersonate', error);
             addToast({ type: 'error', title: 'Erro de Autenticação', message: error.response?.data?.error || 'Não foi possível acessar como cliente.' });
