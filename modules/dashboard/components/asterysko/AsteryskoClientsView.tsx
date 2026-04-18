@@ -16,6 +16,7 @@ interface Document {
 
 interface Client {
     id: string;
+    organizationId?: string;
     name: string; // Contact Person
     company: string; // Legal Name
     email: string;
@@ -33,9 +34,13 @@ interface Client {
     documents: Document[];
 }
 
-// Mock Data
+import { Organization } from '../../../../types';
 
-const AsteryskoClientsView: React.FC = () => {
+interface AsteryskoClientsViewProps {
+    organization?: Organization;
+}
+
+const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organization }) => {
     const { addToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -45,7 +50,8 @@ const AsteryskoClientsView: React.FC = () => {
 
     const fetchClients = async () => {
         try {
-            const response = await api.get('/asterysko/clients');
+            const orgId = organization?.id || 'org_1';
+            const response = await api.get(`/asterysko/clients?organizationId=${orgId}`);
             setClients(response.data);
         } catch (error) {
             console.error('Failed to fetch clients', error);
@@ -54,7 +60,7 @@ const AsteryskoClientsView: React.FC = () => {
 
     useEffect(() => {
         fetchClients();
-    }, []);
+    }, [organization?.id]);
 
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<Partial<Client>>({});
@@ -107,7 +113,7 @@ const AsteryskoClientsView: React.FC = () => {
                 name: newClient.name,
                 email: newClient.email,
                 phone: newClient.phone,
-                organizationId: 'org_1' // Temporary fallback
+                organizationId: organization?.id || 'org_1'
             });
 
             await fetchClients();
@@ -204,8 +210,19 @@ const AsteryskoClientsView: React.FC = () => {
                 {/* Header */}
                 <div className="flex justify-between items-center mb-8">
                     <div>
-                        <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Carteira de Clientes</h1>
-                        <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gerencie empresas, titulares e histórico de relacionamento.</p>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Carteira de Clientes</h1>
+                            {(organization?.id === 'org_1' || organization?.slug === 'docka') && (
+                                <span className="bg-docka-100 dark:bg-zinc-800 text-docka-600 dark:text-zinc-400 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border border-docka-200 dark:border-zinc-700">
+                                    VisÃ£o Global
+                                </span>
+                            )}
+                        </div>
+                        <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">
+                            {organization?.id === 'org_1' || organization?.slug === 'docka' 
+                                ? 'Visualizando todos os clientes de todas as organizaÃ§Ãµes (Docka Holding).' 
+                                : `Gerencie a carteira de clientes da ${organization?.name || 'sua organizaÃ§Ã£o'}.`}
+                        </p>
                     </div>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}

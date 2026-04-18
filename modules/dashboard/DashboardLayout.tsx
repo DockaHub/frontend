@@ -81,6 +81,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
     };
 
 
+    const renderContent = () => {
         // Routing by Organization Type (More robust for real data)
         if (selectedOrg.type === 'AGENCY') {
             return <AsteryskoDashboard user={user} activeView={activeView} organization={selectedOrg} />;

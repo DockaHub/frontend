@@ -56,7 +56,7 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
         case 'processes':
             return <AsteryskoProcessesView />;
         case 'clients':
-            return <AsteryskoClientsView />;
+            return <AsteryskoClientsView organization={organization} />;
         case 'financial':
             return <div className="h-full bg-docka-50 dark:bg-zinc-950"><AsteryskoFinancialView /></div>;
         case 'settings':
