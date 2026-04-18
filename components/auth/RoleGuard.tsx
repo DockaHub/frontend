@@ -18,11 +18,22 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     allowedRoles, 
     fallbackPath = '/portal' 
 }) => {
-    const { user, isAuthenticated } = useAuth();
+    const { user, isAuthenticated, loading } = useAuth();
     const location = useLocation();
+
+    // If still loading auth state, show nothing or a loader
+    if (loading) {
+        return null; 
+    }
 
     if (!isAuthenticated) {
         return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
+    // If authenticated but user data is missing (still fetching profile)
+    // AND it's not a public route, wait for user object.
+    if (!user) {
+        return null; // Or a spinner
     }
 
     if (!user || !allowedRoles.includes(user.role)) {

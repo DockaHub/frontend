@@ -355,7 +355,11 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex h-screen w-screen bg-white dark:bg-zinc-950 text-docka-900 dark:text-zinc-100 antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans overflow-hidden transition-colors duration-300">
       <CallOverlay />
-      {!location.pathname.startsWith('/portal') && !location.pathname.startsWith('/sign') && !location.pathname.startsWith('/dashboard') && (
+      {!location.pathname.startsWith('/portal') && 
+       !location.pathname.startsWith('/sign') && 
+       !location.pathname.startsWith('/dashboard') && 
+       !location.pathname.startsWith('/login') &&
+       !location.pathname.startsWith('/auth') && (
         <UnifiedSidebar
           currentOrg={currentOrg}
           onOrgChange={(org) => {
