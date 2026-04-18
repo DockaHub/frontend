@@ -201,7 +201,6 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
             if (newLead.razaoSocial) tags.push({ label: `Razão Social: ${newLead.razaoSocial}`, color: 'bg-purple-100 text-purple-700' });
             if (newLead.address) tags.push({ label: `Endereço: ${newLead.address}`, color: 'bg-amber-100 text-amber-700' });
 
-            await api.post('/asterysko/crm/deals', {
             const payload = {
                 ...newLead,
                 organizationId: organization?.id,
