@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import KanbanBoard from '../kanban/KanbanBoard';
 import { KanbanColumnData, KanbanCardData } from '../../../../types';
-import { Plus, Users, Search, Filter, Kanban, List, ChevronDown, Tag } from 'lucide-react';
+import { Plus, Users, Search, Filter, Kanban, List, ChevronDown, Tag, DollarSign } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import DealDetailsModal from './DealDetailsModal';
 import api from '../../../../services/api';
@@ -76,19 +76,27 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
         feeId: '',
         cnpj: '',
         address: '',
-        razaoSocial: ''
+        razaoSocial: '',
+        planType: 'ESSENCIAL',
+        assignedUserId: ''
     });
 
     const [fees, setFees] = useState<any[]>([]);
-
     const [clients, setClients] = useState<any[]>([]);
+    const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
 
-    useEffect(() => {
-        // Fetch clients for the dropdown
-        api.get('/asterysko/clients').then(res => setClients(res.data)).catch(err => console.error('Error loading clients:', err));
-        // Fetch fees
         api.get('/asterysko/fees').then(res => setFees(res.data)).catch(err => console.error('Error loading fees:', err));
-    }, []);
+
+        // Fetch org members to assign to deals
+        if (organization?.id) {
+            api.get(`/organizations/${organization.id}/members`)
+                .then(res => {
+                    const staff = res.data.filter((m: any) => m.globalRole !== 'CLIENT');
+                    setOrganizationMembers(staff);
+                })
+                .catch(err => console.error('Error loading members:', err));
+        }
+    }, [organization?.id]);
 
     const handleClientSelect = (clientId: string) => {
         const client = clients.find(c => c.id === clientId);
@@ -200,7 +208,8 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                 priority: 'medium',
                 status: newLead.status,
                 clientId: newLead.clientId,
-                assignedUserId: user?.id, // Automático para criação manual
+                assignedUserId: newLead.assignedUserId || user?.id, // Use selecionado ou o atual
+                planType: newLead.planType,
                 tags
             });
             setIsNewLeadModalOpen(false);
@@ -217,7 +226,9 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                 feeId: '',
                 cnpj: '',
                 address: '',
-                razaoSocial: ''
+                razaoSocial: '',
+                planType: 'ESSENCIAL',
+                assignedUserId: ''
             });
             fetchDeals(); // Refresh board
         } catch (error) {
@@ -497,6 +508,60 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                     className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 text-docka-900 dark:text-zinc-100"
                                     placeholder="Rua, Número, CEP..."
                                 />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {/* NEW: SALES CONFIGURATION */}
+                    <div className="bg-docka-900 dark:bg-zinc-100 p-5 rounded-xl border border-docka-800 dark:border-zinc-200 shadow-xl space-y-4">
+                        <label className="text-xs font-bold text-docka-300 dark:text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
+                            <DollarSign size={14} className="text-green-400" /> Configuração de Vendas
+                        </label>
+
+                        <div className="space-y-4">
+                            <div className="group">
+                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Responsável (Vendas)</label>
+                                <select
+                                    className="w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-lg px-3 py-2 outline-none transition-all text-white dark:text-zinc-900 focus:ring-2 focus:ring-green-500"
+                                    value={newLead.assignedUserId}
+                                    onChange={e => setNewLead({ ...newLead, assignedUserId: e.target.value })}
+                                >
+                                    <option value="">-- Atribuir a Mim --</option>
+                                    {organizationMembers.map(m => (
+                                        <option key={m.id} value={m.userId || m.id}>
+                                            {m.user?.name || m.name || m.user?.email || m.email || "Usuário"}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="group">
+                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Tipo de Plano</label>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
+                                        <button
+                                            key={plan}
+                                            onClick={() => {
+                                                let newValue = '';
+                                                if (plan === 'ESSENCIAL') newValue = '997,00';
+                                                else if (plan === 'PREMIUM') newValue = '2.200,00';
+                                                else if (plan === 'BLINDADO') newValue = '3.700,00';
+                                                
+                                                setNewLead(prev => ({ 
+                                                    ...prev, 
+                                                    planType: plan, 
+                                                    value: newValue ? `R$ ${newValue}` : prev.value 
+                                                }));
+                                            }}
+                                            className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${newLead.planType === plan
+                                                ? 'bg-green-500 border-green-400 text-white shadow-lg scale-105'
+                                                : 'bg-docka-800 dark:bg-zinc-200 border-docka-700 dark:border-zinc-300 text-docka-400 dark:text-zinc-500'
+                                            }`}
+                                        >
+                                            {plan}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
