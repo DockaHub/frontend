@@ -990,7 +990,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                             <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-xl p-5 border border-slate-100 dark:border-zinc-800">
                                                                 <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200 dark:border-zinc-700">
                                                                     <h4 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Classificação de Nice (NCL)</h4>
-                                                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">Classe {proc.classes}</span>
+                                                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">Classe {proc.classes || 'N/A'}</span>
                                                                 </div>
                                                                 <div>
                                                                     <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Especificação dos Produtos/Serviços</label>
