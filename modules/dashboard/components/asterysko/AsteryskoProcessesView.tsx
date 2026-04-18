@@ -361,6 +361,19 @@ const AsteryskoProcessesView: React.FC = () => {
         }
     };
 
+    const handleUpdatePlan = async (plan: string) => {
+        if (!selectedProcess) return;
+        try {
+            await api.put(`/asterysko/processes/${selectedProcess.id}`, { planType: plan });
+            setSelectedProcess({ ...selectedProcess, planType: plan });
+            setProcesses(prev => prev.map(p => p.id === selectedProcess.id ? { ...p, planType: plan } : p));
+            addToast({ type: 'success', title: 'Sucesso', message: 'Plano do processo atualizado.' });
+        } catch (error) {
+            console.error('Update plan error', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao atualizar plano.' });
+        }
+    };
+
     const handleUpdateStatus = async () => {
         if (!selectedProcess || !newStatusData.status || !newStatusData.description) return alert('Preencha pelo menos Status e Descrição do Despacho.');
         try {
@@ -758,6 +771,17 @@ const AsteryskoProcessesView: React.FC = () => {
                                         <span>•</span>
                                         <span>{selectedProcess.client}</span>
                                         <span>•</span>
+                                        <select 
+                                            value={selectedProcess.planType || ''} 
+                                            onChange={(e) => handleUpdatePlan(e.target.value)}
+                                            className="bg-transparent border-none text-xs font-bold text-docka-700 dark:text-zinc-300 outline-none hover:bg-docka-50 dark:hover:bg-zinc-800 rounded px-1"
+                                        >
+                                            <option value="">DEF. PLANO</option>
+                                            <option value="ESSENCIAL">ESSENCIAL</option>
+                                            <option value="PREMIUM">PREMIUM</option>
+                                            <option value="BLINDADO">BLINDADO</option>
+                                        </select>
+                                        <span>•</span>
                                         <span className="font-medium text-docka-700 dark:text-zinc-300">{selectedProcess.class}</span>
                                     </div>
                                 </div>
@@ -901,6 +925,76 @@ const AsteryskoProcessesView: React.FC = () => {
                             {/* DOCUMENTS VIEW */}
                             {activeTab === 'docs' && (
                                 <div className="space-y-6">
+
+                                    {/* GRU SECTION IN DOCS TAB FOR DISCOVERY */}
+                                    {(selectedProcess.planType === 'ESSENCIAL' || selectedProcess.planType === 'PREMIUM') && (
+                                        <div className="bg-blue-50/50 dark:bg-blue-900/10 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl p-5 space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg"><CreditCard size={20} /></div>
+                                                    <div>
+                                                        <h4 className="font-bold text-sm text-docka-900 dark:text-zinc-100">Taxa Federal (GRU)</h4>
+                                                        <p className="text-[10px] text-docka-500 dark:text-zinc-400 font-bold uppercase tracking-wider">Obrigatório para planos {selectedProcess.planType}</p>
+                                                    </div>
+                                                </div>
+                                                {selectedProcess.gruStatus === 'PAID' ? (
+                                                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded uppercase tracking-wider">Validado / Pago</span>
+                                                ) : selectedProcess.gruUrl ? (
+                                                    <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded uppercase tracking-wider">Aguardando Cliente</span>
+                                                ) : (
+                                                    <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded uppercase tracking-wider">Pendente</span>
+                                                )}
+                                            </div>
+
+                                            {!selectedProcess.gruUrl ? (
+                                                <div className="space-y-3">
+                                                    <p className="text-xs text-docka-600 dark:text-zinc-400">Ao subir o boleto, enviaremos automaticamente um e-mail para o cliente realizar o pagamento.</p>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Cole aqui o código de barras da Guia..."
+                                                        value={gruBarcode}
+                                                        onChange={(e) => setGruBarcode(e.target.value)}
+                                                        className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 font-mono"
+                                                    />
+                                                    <div className="flex gap-2">
+                                                        <label className="flex-1 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-4 py-2.5 flex items-center justify-center gap-2 text-sm text-docka-600 dark:text-zinc-400 cursor-pointer hover:bg-docka-50 transition-colors border-dashed border-2">
+                                                            <Upload size={16} /> {gruFile ? <span className="text-blue-600 font-bold">{gruFile.name}</span> : 'Selecionar Boleto (PDF)'}
+                                                            <input type="file" hidden accept=".pdf" onChange={(e) => setGruFile(e.target.files?.[0] || null)} />
+                                                        </label>
+                                                        <button
+                                                            onClick={() => handleGruUpload({ target: { files: [gruFile] } } as any, selectedProcess.id)}
+                                                            disabled={uploadingGru || !gruFile || !gruBarcode}
+                                                            className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-50 transition-all shadow-sm"
+                                                        >
+                                                            {uploadingGru ? <Loader2 size={16} className="animate-spin" /> : 'Enviar p/ Cliente'}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-lg border border-docka-100 dark:border-zinc-800">
+                                                    <div>
+                                                        <span className="block text-[10px] uppercase font-bold text-docka-400 mb-1">Código de Barras</span>
+                                                        <span className="font-mono text-xs">{selectedProcess.gruBarcode}</span>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <button 
+                                                            onClick={() => window.open(`${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/gru/download`, '_blank')}
+                                                            className="text-xs font-bold text-blue-600 hover:underline"
+                                                        >
+                                                            Ver Boleto
+                                                        </button>
+                                                        <span className="text-docka-200">|</span>
+                                                        <button 
+                                                            onClick={() => setSelectedProcess({ ...selectedProcess, gruUrl: null })}
+                                                            className="text-xs font-bold text-rose-500 hover:underline"
+                                                        >
+                                                            Substituir
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Contract Section */}
                                     <div className="bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl p-5">
