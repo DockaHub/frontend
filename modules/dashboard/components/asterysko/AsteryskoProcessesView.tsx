@@ -1343,6 +1343,142 @@ const AsteryskoProcessesView: React.FC = () => {
                                 </div>
                             )}
 
+                            {/* INFORMATION VIEW */}
+                            {activeTab === 'info' && (
+                                <div className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Nome da Marca</label>
+                                                <input 
+                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
+                                                    value={infoForm.brandName || ''}
+                                                    onChange={e => setInfoForm({ ...infoForm, brandName: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Número do Processo INPI</label>
+                                                <input 
+                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500 font-mono"
+                                                    value={infoForm.inpiProcessNumber || ''}
+                                                    onChange={e => setInfoForm({ ...infoForm, inpiProcessNumber: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Titulares / Nome Empresarial</label>
+                                                <textarea 
+                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500 h-20 resize-none"
+                                                    value={infoForm.holders || ''}
+                                                    onChange={e => setInfoForm({ ...infoForm, holders: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Tipo</label>
+                                                    <select 
+                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
+                                                        value={infoForm.brandType || ''}
+                                                        onChange={e => setInfoForm({ ...infoForm, brandType: e.target.value })}
+                                                    >
+                                                        <option value="MISTA">Mista</option>
+                                                        <option value="NOMINATIVA">Nominativa</option>
+                                                        <option value="FIGURATIVA">Figurativa</option>
+                                                        <option value="TRIDIMENSIONAL">Tridim.</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Apresentação</label>
+                                                    <input 
+                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
+                                                        value={infoForm.presentation || ''}
+                                                        onChange={e => setInfoForm({ ...infoForm, presentation: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Natureza</label>
+                                                    <input 
+                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
+                                                        value={infoForm.nature || ''}
+                                                        onChange={e => setInfoForm({ ...infoForm, nature: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Procurador</label>
+                                                    <input 
+                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
+                                                        value={infoForm.procurator || ''}
+                                                        onChange={e => setInfoForm({ ...infoForm, procurator: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Classe NCL</label>
+                                                <input 
+                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
+                                                    value={infoForm.nclClass || ''}
+                                                    onChange={e => setInfoForm({ ...infoForm, nclClass: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Especificação de Produtos e Serviços</label>
+                                        <textarea 
+                                            className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-3 rounded-lg outline-none focus:border-blue-500 h-24 resize-none leading-relaxed"
+                                            value={infoForm.nclSpecification || ''}
+                                            onChange={e => setInfoForm({ ...infoForm, nclSpecification: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-zinc-900/50 rounded-xl border border-dotted border-slate-300 dark:border-zinc-700">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Depósito</label>
+                                            <input 
+                                                type="date"
+                                                className="w-full text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded outline-none"
+                                                value={infoForm.filingDate || ''}
+                                                onChange={e => setInfoForm({ ...infoForm, filingDate: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Concessão</label>
+                                            <input 
+                                                type="date"
+                                                className="w-full text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded outline-none"
+                                                value={infoForm.concessionDate || ''}
+                                                onChange={e => handleConcessionDateChange(e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase mb-1 flex items-center gap-1"><AlertCircle size={10} /> Data Expiração</label>
+                                            <input 
+                                                type="date"
+                                                className="w-full text-xs bg-white dark:bg-zinc-800 border border-rose-100 dark:border-rose-900/30 px-2 py-1.5 rounded outline-none text-rose-600 dark:text-rose-400 font-bold"
+                                                value={infoForm.expirationDate || ''}
+                                                onChange={e => setInfoForm({ ...infoForm, expirationDate: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="flex justify-end pt-2">
+                                        <button 
+                                            onClick={handleSaveInfo}
+                                            disabled={isSavingInfo}
+                                            className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-docka-800 dark:hover:bg-white disabled:opacity-50 transition-all shadow-md flex items-center gap-2"
+                                        >
+                                            {isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
+                                            Salvar Informações Técnicas
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     </div>
                 </Modal>
