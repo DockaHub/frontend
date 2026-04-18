@@ -327,8 +327,44 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                 // If admin, we don't care if client record is missing, they just see a 'preview' (empty dashboard)
                 if (err.response?.status === 404 && user?.role !== 'ADMIN') {
                     setError('CLIENT_NOT_FOUND');
-                } else if (err.response?.status === 404 && user?.role === 'ADMIN') {
-                  setClientData({ name: user.name, email: user.email, role: 'ADMIN_PREVIEW' });
+                } else if ((err.response?.status === 404 || true) && user?.role === 'ADMIN') {
+                  // MOCK DATA FOR ADMIN PREVIEW
+                  const mockProc = {
+                    id: 'preview-1',
+                    brandName: 'DOCKA HUB',
+                    brandPresentation: 'Mista',
+                    brandNature: 'Serviço',
+                    brandType: 'Tecnologia',
+                    holders: 'Docka Hub Tecnologia Ltda.',
+                    inpiProcessNumber: '928374655',
+                    filingDate: new Date().toISOString(),
+                    status: 'FILED',
+                    classes: '35, 42',
+                    nclSpecification: 'Software como serviço (SaaS); Plataforma de automação e gestão empresarial; Desenvolvimento de ferramentas de inteligência comercial.',
+                    procurator: 'Asterysko Propriedade Intelectual',
+                    contractUrl: '#',
+                    proxyUrl: '#',
+                    contractSignStatus: 'SIGNED',
+                    proxySignStatus: 'VALIDATED'
+                  };
+                  
+                  setClientData({ 
+                    name: user.name, 
+                    email: user.email, 
+                    role: 'ADMIN_PREVIEW',
+                    cpfCnpj: '00.000.000/0001-00',
+                    address: 'Av. Paulista, 1000 - São Paulo, SP'
+                  });
+                  setProcesses([mockProc]);
+                  setExpandedId(mockProc.id);
+                  setFinancials({
+                    invoices: [
+                      { id: 'FAT-PREVIEW', description: 'Registro de Marca - Honorários Asterysko', value: 997.00, dueDate: new Date().toISOString(), status: 'paid' }
+                    ],
+                    contracts: [
+                      { id: 'CTR-PREVIEW', brandName: 'DOCKA HUB', contractUrl: '#', contractSignStatus: 'SIGNED', inpiProcessNumber: '928374655' }
+                    ]
+                  });
                   setLoading(false);
                 } else {
                     setError('Não foi possível carregar os dados do portal.');
