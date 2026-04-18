@@ -59,6 +59,18 @@ const getTimelineEvents = (process: any) => {
         internalState: process.contractSignStatus
     });
 
+    // 5. GRU (Taxa Federal) - Only for ESSENCIAL and PREMIUM
+    if (process.planType === 'ESSENCIAL' || process.planType === 'PREMIUM') {
+        events.push({
+            type: 'gru',
+            title: 'Taxa Federal (GRU)',
+            date: process.gruStatus === 'PAID' ? 'Pago' : (process.gruUrl ? 'Aguardando Pagto.' : ''),
+            desc: process.gruStatus === 'PAID' ? 'Pagamento da GRU confirmado.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da GRU pelo escritório.'),
+            status: process.gruStatus === 'PAID' ? 'completed' : (process.gruUrl ? 'current' : 'pending'),
+            internalState: process.gruStatus
+        });
+    }
+
     return events;
 };
 
@@ -160,14 +172,12 @@ const AsteryskoProcessesView: React.FC = () => {
                     date: new Date(p.updatedAt).toLocaleDateString('pt-BR'),
                     nextStep: getNextStep(p.status),
                     dispatches: p.dispatches,
-                    createdAt: p.createdAt,
-                    proxyUrl: p.proxyUrl,
-                    proxySignedUrl: p.proxySignedUrl,
-                    proxySignStatus: p.proxySignStatus,
-                    contractUrl: p.contractUrl,
-                    contractSignStatus: p.contractSignStatus,
-                    contractSignDate: p.contractSignDate,
-                    logoUrl: p.brand?.logoUrl
+                    logoUrl: p.brand?.logoUrl,
+                    planType: p.planType,
+                    gruUrl: p.gruUrl,
+                    gruBarcode: p.gruBarcode,
+                    gruReceiptUrl: p.gruReceiptUrl,
+                    gruStatus: p.gruStatus
                 }));
                 setProcesses(mapped);
 
@@ -373,6 +383,43 @@ const AsteryskoProcessesView: React.FC = () => {
             setNewStatusData({ status: '', description: '', details: '' });
         } catch (error) {
             alert('Erro ao evoluir status.');
+        }
+    };
+
+    // GRU Management
+    const [uploadingGru, setUploadingGru] = useState(false);
+    const [gruBarcode, setGruBarcode] = useState('');
+
+    const handleGruUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (!gruBarcode) return alert('Por favor, insira o código de barras primeiro.');
+        
+        setUploadingGru(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('barcode', gruBarcode);
+
+            await api.post(`/asterysko/processes/${processId}/gru/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            
+            alert('Boleto GRU enviado com sucesso! O cliente foi notificado.');
+            
+            // Refresh process data
+            const res = await api.get('/asterysko/processes');
+            // Re-map quickly or just update local state
+            setProcesses(prev => prev.map(p => p.id === processId ? { ...p, gruUrl: 'uploaded', gruBarcode, gruStatus: 'WAITING_PAYMENT' } : p));
+            if (selectedProcess?.id === processId) {
+                setSelectedProcess({ ...selectedProcess, gruUrl: 'uploaded', gruBarcode, gruStatus: 'WAITING_PAYMENT' });
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Falha ao enviar GRU.');
+        } finally {
+            setUploadingGru(false);
+            setGruBarcode('');
         }
     };
 
@@ -794,9 +841,55 @@ const AsteryskoProcessesView: React.FC = () => {
                                                             <button onClick={() => handleGenerateProxy(selectedProcess)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
                                                         )}
                                                         <label className="text-xs font-bold text-docka-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 hover:bg-docka-100 cursor-pointer">
-                                                            <Upload size={14} /> Anexar Manualmente
-                                                            <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)} />
                                                         </label>
+                                                    </div>
+                                                )}
+                                                {event.type === 'gru' && (
+                                                    <div className="mt-3 space-y-3">
+                                                        {event.internalState === 'PAID' ? (
+                                                            <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
+                                                                <CheckCircle2 size={16} /> Pagamento Confirmado
+                                                                {selectedProcess.gruReceiptUrl && (
+                                                                     <button 
+                                                                        onClick={() => window.open(`${getBackendUrl()}${selectedProcess.gruReceiptUrl}`, '_blank')}
+                                                                        className="ml-2 text-blue-600 hover:underline"
+                                                                    >
+                                                                        Ver Comprovante
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="p-3 bg-slate-50 dark:bg-zinc-900/50 rounded-lg border border-slate-200 dark:border-zinc-700">
+                                                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Upload de Boleto (PDF) + Código de Barras</label>
+                                                                <div className="flex flex-col gap-2">
+                                                                    <input 
+                                                                        type="text" 
+                                                                        placeholder="Cole o código de barras aqui..."
+                                                                        value={gruBarcode}
+                                                                        onChange={e => setGruBarcode(e.target.value)}
+                                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded outline-none focus:border-blue-400"
+                                                                    />
+                                                                    <label className={`w-full py-2 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg text-xs font-bold transition-colors cursor-pointer
+                                                                        ${uploadingGru ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600'}
+                                                                    `}>
+                                                                        {uploadingGru ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                                                        {selectedProcess.gruUrl ? 'Atualizar Boleto PDF' : 'Enviar Boleto PDF'}
+                                                                        <input 
+                                                                            type="file" 
+                                                                            className="hidden" 
+                                                                            accept=".pdf" 
+                                                                            disabled={uploadingGru}
+                                                                            onChange={(e) => handleGruUpload(e, selectedProcess.id)} 
+                                                                        />
+                                                                    </label>
+                                                                </div>
+                                                                {selectedProcess.gruBarcode && (
+                                                                    <div className="mt-2 text-[10px] text-slate-500 font-mono break-all bg-white dark:bg-zinc-800 p-1.5 rounded border border-slate-100 dark:border-zinc-700">
+                                                                        <strong>Código Atual:</strong> {selectedProcess.gruBarcode}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

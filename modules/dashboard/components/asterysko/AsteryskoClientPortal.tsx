@@ -106,7 +106,7 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         status: process.proxySignStatus
     });
 
-    // 6. Contrato Event
+    // 7. Contrato Event
     events.push({
         id: 'contract',
         type: 'contract',
@@ -115,6 +115,20 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
         status: process.contractSignStatus
     });
+
+    // 8. GRU (Taxa Federal)
+    if (process.planType === 'ESSENCIAL' || process.planType === 'PREMIUM') {
+        events.push({
+            id: 'gru-stage',
+            type: 'gru',
+            title: 'Taxa Federal (GRU)',
+            desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal pela Asterysko.'),
+            status: process.gruStatus,
+            barcode: process.gruBarcode,
+            gruUrl: process.gruUrl,
+            receiptUrl: process.gruReceiptUrl
+        });
+    }
 
     return events;
 };
@@ -264,6 +278,11 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                 brandName: brand.name,
                                 brandType: brand.type,
                                 classes: brand.nclClasses?.join(', ') || 'NCL -',
+                                planType: proc.planType,
+                                gruUrl: proc.gruUrl,
+                                gruBarcode: proc.gruBarcode,
+                                gruReceiptUrl: proc.gruReceiptUrl,
+                                gruStatus: proc.gruStatus
                             });
                         }
                     });
@@ -751,12 +770,12 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                 <div key={step.id || idx} className="relative flex gap-6 pb-8 last:pb-0">
                                                                     {/* Connector Line */}
                                                                     {idx !== arr.length - 1 && (
-                                                                        <div className={`absolute left-[11px] top-8 bottom-0 w-0.5 ${step.type === 'contract' || step.type === 'proxy' || step.status === 'SIGNED' ? 'bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500'}`} />
+                                                                        <div className={`absolute left-[11px] top-8 bottom-0 w-0.5 ${step.type === 'contract' || step.type === 'proxy' || step.type === 'gru' || step.status === 'SIGNED' || step.status === 'PAID' ? 'bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500'}`} />
                                                                     )}
 
                                                                     {/* Status Icon */}
-                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 text-white ${step.type === 'contract' || step.type === 'proxy' || step.status === 'SIGNED' ? 'bg-emerald-500 border-emerald-500' : 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500'}`}>
-                                                                        {step.type === 'contract' ? <FileSignature size={12} /> : step.type === 'proxy' ? <Shield size={12} /> : <CheckCircle2 size={14} />}
+                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 text-white ${step.type === 'contract' || step.type === 'proxy' || step.type === 'gru' || step.status === 'SIGNED' || step.status === 'PAID' ? 'bg-emerald-500 border-emerald-500' : 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500'}`}>
+                                                                        {step.type === 'contract' ? <FileSignature size={12} /> : step.type === 'proxy' ? <Shield size={12} /> : step.type === 'gru' ? <CreditCard size={12} /> : <CheckCircle2 size={14} />}
                                                                     </div>
 
                                                                     {/* Content */}
@@ -795,15 +814,74 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                             {isDownloadingPdf === proc.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                                                                                             1. Baixar Procuração
                                                                                         </button>
-                                                                                        {isUploading ? (
-                                                                                            <div className="text-xs text-slate-500 flex justify-center items-center gap-2 mt-1 px-3 py-1.5 border border-transparent">
-                                                                                                <Loader2 className="animate-spin" size={14} /> Enviando...
+                                                                                        <label className="text-xs flex items-center justify-center gap-1 font-bold text-white border border-blue-600 bg-blue-600 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-700 cursor-pointer shadow-sm">
+                                                                                            <Upload size={14} /> 2. Enviar Procuração Assinada
+                                                                                            <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleProxyFileUpload(e, proc.id)} />
+                                                                                        </label>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* CUSTOM RENDER FOR GRU */}
+                                                                                {step.type === 'gru' && (
+                                                                                    <div className="mt-3">
+                                                                                        {step.status === 'PAID' ? (
+                                                                                            <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800 p-3 rounded-lg flex items-center justify-between">
+                                                                                                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-xs uppercase">
+                                                                                                    <ShieldCheck size={18} /> Taxa Federal Validada
+                                                                                                </div>
+                                                                                                {step.receiptUrl && (
+                                                                                                    <button onClick={() => window.open(`${getBackendUrl()}${step.receiptUrl}`, '_blank')} className="text-[10px] text-blue-600 hover:underline">Ver Comprovante</button>
+                                                                                                )}
                                                                                             </div>
                                                                                         ) : (
-                                                                                            <label className="text-xs flex items-center justify-center gap-1 font-bold text-white border border-blue-600 bg-blue-600 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-blue-700 cursor-pointer transition-colors shadow-sm">
-                                                                                                <Upload size={14} /> 2. Enviar Procuração Assinada
-                                                                                                <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleProxyFileUpload(e, proc.id)} />
-                                                                                            </label>
+                                                                                            <div className="space-y-4">
+                                                                                                {step.gruUrl ? (
+                                                                                                    <div className="bg-slate-50 dark:bg-zinc-800/50 border border-slate-200 dark:border-zinc-700 p-4 rounded-xl">
+                                                                                                        <h5 className="text-[11px] font-bold text-slate-400 dark:text-zinc-500 uppercase mb-3 flex items-center gap-2">
+                                                                                                            <CreditCard size={14} /> Pagamento da Guia Federal (GRU)
+                                                                                                        </h5>
+                                                                                                        
+                                                                                                        {step.barcode && (
+                                                                                                            <div className="mb-4">
+                                                                                                                <div className="flex items-center justify-between mb-1">
+                                                                                                                    <span className="text-[10px] text-slate-500 font-bold uppercase">Código de Barras</span>
+                                                                                                                    <button 
+                                                                                                                        onClick={() => { navigator.clipboard.writeText(step.barcode); alert('Código copiado!'); }}
+                                                                                                                        className="text-[10px] text-blue-600 font-bold hover:underline flex items-center gap-1"
+                                                                                                                    >
+                                                                                                                        <Copy size={12} /> Copiar Código
+                                                                                                                    </button>
+                                                                                                                </div>
+                                                                                                                <div className="bg-white dark:bg-zinc-900 border border-slate-100 dark:border-zinc-700 px-3 py-2 rounded font-mono text-xs text-slate-700 dark:text-zinc-300 break-all select-all">
+                                                                                                                    {step.barcode}
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        )}
+
+                                                                                                        <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                                                                                                            <button 
+                                                                                                                onClick={() => window.open(`${getBackendUrl()}/api/asterysko/processes/${proc.id}/gru/download`, '_blank')}
+                                                                                                                className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                                                                                            >
+                                                                                                                <Download size={16} /> Baixar Boleto PDF
+                                                                                                            </button>
+                                                                                                            
+                                                                                                            <label className="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer whitespace-nowrap">
+                                                                                                                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <UploadCloud size={16} />}
+                                                                                                                Enviar Comprovante
+                                                                                                                <input type="file" className="hidden" accept=".pdf,.jpeg,.jpg,.png" onChange={(e) => handleGruReceiptUpload(e, proc.id)} disabled={isUploading} />
+                                                                                                            </label>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                ) : (
+                                                                                                    <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 p-4 rounded-xl flex items-start gap-3">
+                                                                                                        <Clock size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                                                                                                        <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed font-medium">
+                                                                                                            Nossa equipe está gerando a Guia de Recolhimento da União (Taxa Federal). Assim que estiver pronta, você poderá baixá-la aqui para pagamento.
+                                                                                                        </p>
+                                                                                                    </div>
+                                                                                                )}
+                                                                                            </div>
                                                                                         )}
                                                                                     </div>
                                                                                 )}

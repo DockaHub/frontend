@@ -12,20 +12,22 @@ interface AsteryskoSettingsViewProps {
     organization?: Organization;
 }
 
-interface Fee {
+interface Plan {
     id: string;
     name: string;
     description: string | null;
     value: number | string;
     officialTax: number | string | null;
+    commissionSales: number | string;
+    commissionOps: number | string;
     category: string;
 }
 
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenClientPortal, organization }) => {
-    const [fees, setFees] = useState<Fee[]>([]);
+    const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedFee, setSelectedFee] = useState<Partial<Fee> | null>(null);
+    const [selectedPlan, setSelectedPlan] = useState<Partial<Plan> | null>(null);
     const [saving, setSaving] = useState(false);
     const [inpiHistory, setInpiHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
@@ -59,7 +61,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
     ];
 
     useEffect(() => {
-        fetchFees();
+        fetchPlans();
         fetchInpiHistory();
     }, []);
 
@@ -75,21 +77,21 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         }
     };
 
-    const fetchFees = async () => {
+    const fetchPlans = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/asterysko/fees');
-            setFees(response.data);
+            const response = await api.get('/asterysko/plans');
+            setPlans(response.data);
         } catch (error) {
-            console.error('Error fetching fees:', error);
-            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível carregar a tabela de honorários.' });
+            console.error('Error fetching plans:', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível carregar a tabela de planos.' });
         } finally {
             setLoading(false);
         }
     };
 
     const handleSave = async () => {
-        if (!selectedFee?.name || !selectedFee?.value) {
+        if (!selectedPlan?.name || !selectedPlan?.value) {
             addToast({ type: 'error', title: 'Campos obrigatórios', message: 'Nome e valor são obrigatórios.' });
             return;
         }
@@ -97,23 +99,25 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         try {
             setSaving(true);
             const payload = {
-                ...selectedFee,
-                value: Number(selectedFee.value),
-                officialTax: selectedFee.officialTax ? Number(selectedFee.officialTax) : null
+                ...selectedPlan,
+                value: Number(selectedPlan.value),
+                officialTax: selectedPlan.officialTax ? Number(selectedPlan.officialPlan) : null,
+                commissionSales: Number(selectedPlan.commissionSales || 0),
+                commissionOps: Number(selectedPlan.commissionOps || 0)
             };
 
-            if (selectedFee.id) {
-                await api.put(`/asterysko/fees/${selectedFee.id}`, payload);
-                addToast({ type: 'success', title: 'Sucesso', message: 'Honorário atualizado com sucesso.' });
+            if (selectedPlan.id) {
+                await api.put(`/asterysko/plans/${selectedPlan.id}`, payload);
+                addToast({ type: 'success', title: 'Sucesso', message: 'Plano atualizado com sucesso.' });
             } else {
-                await api.post('/asterysko/fees', payload);
-                addToast({ type: 'success', title: 'Sucesso', message: 'Honorário criado com sucesso.' });
+                await api.post('/asterysko/plans', payload);
+                addToast({ type: 'success', title: 'Sucesso', message: 'Plano criado com sucesso.' });
             }
             setIsModalOpen(false);
-            fetchFees();
+            fetchPlans();
         } catch (error: any) {
-            console.error('Error saving fee:', error);
-            const errorMsg = error.response?.data?.error || 'Erro ao salvar honorário. Verifique o console ou o banco de dados.';
+            console.error('Error saving plan:', error);
+            const errorMsg = error.response?.data?.error || 'Erro ao salvar plano.';
             addToast({ type: 'error', title: 'Erro ao Salvar', message: errorMsg });
         } finally {
             setSaving(false);
@@ -121,14 +125,14 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
     };
 
     const handleDelete = async (id: string) => {
-        if (!window.confirm('Tem certeza que deseja excluir este honorário?')) return;
+        if (!window.confirm('Tem certeza que deseja excluir este plano?')) return;
         try {
-            await api.delete(`/asterysko/fees/${id}`);
-            addToast({ type: 'success', title: 'Excluído', message: 'Honorário removido com sucesso.' });
-            fetchFees();
+            await api.delete(`/asterysko/plans/${id}`);
+            addToast({ type: 'success', title: 'Excluído', message: 'Plano removido com sucesso.' });
+            fetchPlans();
         } catch (error) {
-            console.error('Error deleting fee:', error);
-            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível excluir o honorário.' });
+            console.error('Error deleting plan:', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível excluir o plano.' });
         }
     };
 
@@ -170,7 +174,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             <div className="max-w-4xl mx-auto pb-20">
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 uppercase tracking-tight">Configurações Asterysko</h1>
-                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Preferências do escritório, tabela de honorários e portal do cliente.</p>
+                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Preferências do escritório, tabela de planos e portal do cliente.</p>
                 </div>
 
                 <div className="space-y-8">
@@ -295,13 +299,13 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                     <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                         <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
                             <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-                                <CreditCard size={16} /> Tabela de Honorários Padrão
+                                <CreditCard size={16} /> Tabela de Planos Asterysko
                             </h3>
                             <button
-                                onClick={() => { setSelectedFee({ category: 'registration' }); setIsModalOpen(true); }}
+                                onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0 }); setIsModalOpen(true); }}
                                 className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded text-[10px] font-bold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
                             >
-                                <Plus size={14} /> Novo Serviço
+                                <Plus size={14} /> Novo Plano
                             </button>
                         </div>
                         <div className="p-6">
@@ -312,31 +316,39 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                     <table className="w-full text-sm text-left">
                                         <thead className="text-[10px] text-docka-500 dark:text-zinc-500 uppercase font-bold border-b border-docka-100 dark:border-zinc-800 tracking-widest">
                                             <tr>
-                                                <th className="pb-3 text-left">Serviço</th>
-                                                <th className="pb-3 text-right pr-6">Valor Padrão</th>
+                                                <th className="pb-3 text-left">Plano / Serviço</th>
+                                                <th className="pb-3 text-right">Valor</th>
+                                                <th className="pb-3 text-right">Com. Vendas</th>
+                                                <th className="pb-3 text-right">Com. Op.</th>
                                                 <th className="pb-3 text-right">Ação</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
-                                            {fees.map((fee) => (
-                                                <tr key={fee.id} className="group hover:bg-docka-50/50 dark:hover:bg-zinc-800/30">
+                                            {plans.map((plan) => (
+                                                <tr key={plan.id} className="group hover:bg-docka-50/50 dark:hover:bg-zinc-800/30">
                                                     <td className="py-3">
-                                                        <p className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{fee.name}</p>
-                                                        {fee.description && <p className="text-[10px] text-docka-500 dark:text-zinc-500">{fee.description}</p>}
+                                                        <p className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{plan.name}</p>
+                                                        {plan.description && <p className="text-[10px] text-docka-500 dark:text-zinc-500">{plan.description}</p>}
                                                     </td>
-                                                    <td className="py-3 text-right pr-6 font-mono font-bold text-docka-900 dark:text-zinc-100">
-                                                        R$ {Number(fee.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    <td className="py-3 text-right font-mono font-bold text-docka-900 dark:text-zinc-100">
+                                                        R$ {Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    </td>
+                                                    <td className="py-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                                        R$ {Number(plan.commissionSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    </td>
+                                                    <td className="py-3 text-right font-mono text-blue-600 dark:text-blue-400 font-bold">
+                                                        R$ {Number(plan.commissionOps || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                     </td>
                                                     <td className="py-3 text-right">
                                                         <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button
-                                                                onClick={() => { setSelectedFee(fee); setIsModalOpen(true); }}
+                                                                onClick={() => { setSelectedPlan(plan); setIsModalOpen(true); }}
                                                                 className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
                                                             >
                                                                 <Edit2 size={14} />
                                                             </button>
                                                             <button
-                                                                onClick={() => handleDelete(fee.id)}
+                                                                onClick={() => handleDelete(plan.id)}
                                                                 className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
                                                             >
                                                                 <Trash2 size={14} />
@@ -345,9 +357,9 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {fees.length === 0 && (
+                                            {plans.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={3} className="py-8 text-center text-docka-400 text-xs italic">Nenhum honorário cadastrado.</td>
+                                                    <td colSpan={5} className="py-8 text-center text-docka-400 text-xs italic">Nenhum plano cadastrado.</td>
                                                 </tr>
                                             )}
                                         </tbody>
@@ -507,7 +519,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => { if (!saving) setIsModalOpen(false); }}
-                title={selectedFee?.id ? 'Editar Serviço' : 'Novo Serviço'}
+                title={selectedPlan?.id ? 'Editar Plano' : 'Novo Plano'}
                 size="md"
                 footer={
                     <div className="flex justify-end gap-2 outline-none">
@@ -523,7 +535,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             disabled={saving}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 disabled:opacity-50"
                         >
-                            {saving ? 'Salvando...' : selectedFee?.id ? 'Atualizar' : 'Salvar'}
+                            {saving ? 'Salvando...' : selectedPlan?.id ? 'Atualizar' : 'Salvar'}
                         </button>
                     </div>
                 }
@@ -531,12 +543,12 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 <div className="space-y-5">
                     <div className="grid grid-cols-1 gap-4 text-left">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Nome do Serviço</label>
+                            <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Nome do Plano / Serviço</label>
                             <input
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
-                                placeholder="Ex: Pedido de Registro de Marca"
-                                value={selectedFee?.name || ''}
-                                onChange={(e) => setSelectedFee({ ...selectedFee, name: e.target.value })}
+                                placeholder="Ex: Essencial - Registro de Marca"
+                                value={selectedPlan?.name || ''}
+                                onChange={(e) => setSelectedPlan({ ...selectedPlan, name: e.target.value })}
                             />
                         </div>
                         <div>
@@ -545,21 +557,21 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
                                 placeholder="Breve descrição do que está incluso..."
                                 rows={2}
-                                value={selectedFee?.description || ''}
-                                onChange={(e) => setSelectedFee({ ...selectedFee, description: e.target.value })}
+                                value={selectedPlan?.description || ''}
+                                onChange={(e) => setSelectedPlan({ ...selectedPlan, description: e.target.value })}
                             />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Honorários (R$)</label>
+                                <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Valor do Plano (R$)</label>
                                 <div className="relative">
                                     <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
                                         type="number"
                                         className="w-full pl-8 pr-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 font-bold focus:border-blue-500 outline-none transition-colors"
                                         placeholder="0,00"
-                                        value={selectedFee?.value || ''}
-                                        onChange={(e) => setSelectedFee({ ...selectedFee, value: e.target.value })}
+                                        value={selectedPlan?.value || ''}
+                                        onChange={(e) => setSelectedPlan({ ...selectedPlan, value: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -571,8 +583,37 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                         type="number"
                                         className="w-full pl-8 pr-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-500 dark:text-zinc-400 focus:border-blue-500 outline-none transition-colors"
                                         placeholder="Taxa INPI"
-                                        value={selectedFee?.officialTax || ''}
-                                        onChange={(e) => setSelectedFee({ ...selectedFee, officialTax: e.target.value })}
+                                        value={selectedPlan?.officialTax || ''}
+                                        onChange={(e) => setSelectedPlan({ ...selectedPlan, officialTax: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5 font-mono">Comissão Comercial (R$)</label>
+                                <div className="relative">
+                                    <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-300" />
+                                    <input
+                                        type="number"
+                                        className="w-full pl-8 pr-3 py-2 bg-white dark:bg-zinc-900 border border-emerald-100 dark:border-emerald-900/30 rounded-lg text-sm text-emerald-700 dark:text-emerald-300 font-bold focus:border-emerald-500 outline-none transition-colors"
+                                        placeholder="0,00"
+                                        value={selectedPlan?.commissionSales || ''}
+                                        onChange={(e) => setSelectedPlan({ ...selectedPlan, commissionSales: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5 font-mono">Comissão Operação (R$)</label>
+                                <div className="relative">
+                                    <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300" />
+                                    <input
+                                        type="number"
+                                        className="w-full pl-8 pr-3 py-2 bg-white dark:bg-zinc-900 border border-blue-100 dark:border-blue-900/30 rounded-lg text-sm text-blue-700 dark:text-blue-300 font-bold focus:border-blue-500 outline-none transition-colors"
+                                        placeholder="0,00"
+                                        value={selectedPlan?.commissionOps || ''}
+                                        onChange={(e) => setSelectedPlan({ ...selectedPlan, commissionOps: e.target.value })}
                                     />
                                 </div>
                             </div>
@@ -581,8 +622,8 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Categoria</label>
                             <select
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
-                                value={selectedFee?.category || 'registration'}
-                                onChange={(e) => setSelectedFee({ ...selectedFee, category: e.target.value })}
+                                value={selectedPlan?.category || 'registration'}
+                                onChange={(e) => setSelectedPlan({ ...selectedPlan, category: e.target.value })}
                             >
                                 {categories.map(cat => (
                                     <option key={cat.id} value={cat.id}>{cat.label}</option>

@@ -66,11 +66,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
     // Form State
     const [formData, setFormData] = useState<any>({});
-    const [fees, setFees] = useState<any[]>([]);
+    const [plans, setPlans] = useState<any[]>([]);
     const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
 
     useEffect(() => {
-        api.get('/asterysko/fees').then(res => setFees(res.data)).catch(err => console.error('Error loading fees:', err));
+        api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
         
         // Fetch org members to assign to deals - Now restricted by Organization Context
         if (organization?.id) {
@@ -642,13 +642,19 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                                 // Auto-update price based on plan
                                                 let newValue = '';
                                                 let numericValue = 0;
+                                                const foundPlan = plans.find(p => p.name.toUpperCase().includes(plan));
+
                                                 if (plan === 'ESSENCIAL') { newValue = '997,00'; numericValue = 997; }
-                                                else if (plan === 'PREMIUM') { newValue = '2.200,00'; numericValue = 2200; }
-                                                else if (plan === 'BLINDADO') { newValue = '3.700,00'; numericValue = 3700; }
+                                                else if (plan === 'PREMIUM') { newValue = '2.197,00'; numericValue = 2197; }
+                                                else if (plan === 'BLINDADO') { newValue = '3.697,00'; numericValue = 3697; }
                                                 
                                                 if (newValue) {
                                                     setFormData((prev: any) => ({ ...prev, value: newValue }));
                                                     updateDealPartial('value', numericValue);
+                                                }
+                                                
+                                                if (foundPlan) {
+                                                    updateDealPartial('planId', foundPlan.id);
                                                 }
                                             }}
                                             className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${formData.planType === plan
@@ -660,6 +666,25 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                         </button>
                                     ))}
                                 </div>
+                            </div>
+
+                            {/* COMMISSIONS DISPLAY */}
+                            {formData.planType && (
+                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-docka-800 dark:border-zinc-300">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] text-docka-400 dark:text-zinc-500 uppercase font-bold">Comissão Vendas</span>
+                                        <span className="text-xs font-bold text-green-400 dark:text-green-600">
+                                            R$ {plans.find(p => p.name.toUpperCase().includes(formData.planType))?.commissionSales?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] text-docka-400 dark:text-zinc-500 uppercase font-bold">Comissão Ops</span>
+                                        <span className="text-xs font-bold text-blue-400 dark:text-blue-600">
+                                            R$ {plans.find(p => p.name.toUpperCase().includes(formData.planType))?.commissionOps?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                             </div>
                         </div>
                     </div>

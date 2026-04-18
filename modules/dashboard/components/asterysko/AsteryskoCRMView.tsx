@@ -73,22 +73,22 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
         value: '',
         status: 'leads',
         clientId: '',
-        feeId: '',
         cnpj: '',
         address: '',
         razaoSocial: '',
         planType: 'ESSENCIAL',
-        assignedUserId: ''
+        assignedUserId: '',
+        planId: ''
     });
 
-    const [fees, setFees] = useState<any[]>([]);
+    const [plans, setPlans] = useState<any[]>([]);
     const [clients, setClients] = useState<any[]>([]);
     const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
 
     useEffect(() => {
         // Fetch clients for the dropdown
         api.get('/asterysko/clients').then(res => setClients(res.data)).catch(err => console.error('Error loading clients:', err));
-        api.get('/asterysko/fees').then(res => setFees(res.data)).catch(err => console.error('Error loading fees:', err));
+        api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
 
         // Fetch org members to assign to deals
         if (organization?.id) {
@@ -202,19 +202,16 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
             if (newLead.address) tags.push({ label: `Endereço: ${newLead.address}`, color: 'bg-amber-100 text-amber-700' });
 
             await api.post('/asterysko/crm/deals', {
-                title: newLead.title,
-                subtitle: newLead.contactName,
-                contactName: newLead.contactName,
-                contactEmail: newLead.contactEmail,
-                contactPhone: newLead.contactPhone,
+            const payload = {
+                ...newLead,
+                organizationId: organization?.id,
+                assignedUserId: newLead.assignedUserId || user?.id,
+                planId: newLead.planId,
                 value: newLead.value ? parseFloat(newLead.value.replace('R$', '').replace('.', '').replace(',', '.')) : 0,
-                priority: 'medium',
-                status: newLead.status,
-                clientId: newLead.clientId,
-                assignedUserId: newLead.assignedUserId || user?.id, // Use selecionado ou o atual
-                planType: newLead.planType,
                 tags
-            });
+            };
+
+            await api.post('/asterysko/crm/deals', payload);
             setIsNewLeadModalOpen(false);
             setNewLead({
                 title: '',
@@ -546,13 +543,22 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                             key={plan}
                                             onClick={() => {
                                                 let newValue = '';
-                                                if (plan === 'ESSENCIAL') newValue = '997,00';
-                                                else if (plan === 'PREMIUM') newValue = '2.200,00';
-                                                else if (plan === 'BLINDADO') newValue = '3.700,00';
+                                                let pId = '';
+                                                if (plan === 'ESSENCIAL') {
+                                                    newValue = '997,00';
+                                                    pId = plans.find(p => p.name.includes('Essencial'))?.id || '';
+                                                } else if (plan === 'PREMIUM') {
+                                                    newValue = '2.197,00';
+                                                    pId = plans.find(p => p.name.includes('Premium'))?.id || '';
+                                                } else if (plan === 'BLINDADO') {
+                                                    newValue = '3.697,00';
+                                                    pId = plans.find(p => p.name.includes('Blindado'))?.id || '';
+                                                }
                                                 
                                                 setNewLead(prev => ({ 
                                                     ...prev, 
                                                     planType: plan, 
+                                                    planId: pId,
                                                     value: newValue ? `R$ ${newValue}` : prev.value 
                                                 }));
                                             }}
