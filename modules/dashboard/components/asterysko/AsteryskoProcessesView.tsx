@@ -15,7 +15,50 @@ interface Client {
 const getTimelineEvents = (process: any) => {
     const events = [];
 
-    // 1. Add Dispatches from DB
+    // 1. Contrato Event (Pinned to top as requested)
+    events.push({
+        type: 'contract',
+        title: 'Contrato Assinado',
+        date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
+        desc: process.contractSignStatus === 'SIGNED' ? 'Contrato assinado.' : 'Aguardando assinatura.',
+        status: process.contractSignStatus === 'SIGNED' ? 'completed' : 'pending',
+        internalState: process.contractSignStatus
+    });
+
+    // 2. Procuração Event
+    events.push({
+        type: 'proxy',
+        title: 'Procuração INPI',
+        date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
+        desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada' : 'Aguardando envio da Procuração'),
+        status: process.proxySignStatus === 'VALIDATED' || process.proxySignStatus === 'SIGNED' ? 'completed' : 'pending',
+        internalState: process.proxySignStatus
+    });
+
+    // 3. GRU (Taxa Federal) - Only for ESSENCIAL and PREMIUM
+    if (process.planType === 'ESSENCIAL' || process.planType === 'PREMIUM') {
+        events.push({
+            type: 'gru',
+            title: 'Taxa Federal (GRU)',
+            date: process.gruStatus === 'PAID' ? 'Pago' : (process.gruUrl ? 'Aguardando Pagto.' : ''),
+            desc: process.gruStatus === 'PAID' ? 'Pagamento da GRU confirmado.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da GRU pelo escritório.'),
+            status: process.gruStatus === 'PAID' ? 'completed' : (process.gruUrl ? 'current' : 'pending'),
+            internalState: process.gruStatus
+        });
+    }
+
+    // 4. Depósito do Pedido (Administrative Milestone)
+    if (process.inpiProcessNumber || (process.status && process.status !== 'NEW')) {
+        events.push({
+            type: 'dispatch',
+            title: 'Depósito do Pedido',
+            date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
+            status: 'completed',
+            desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Pendente'}`
+        });
+    }
+
+    // 5. Add Dispatches from DB (Sorted newest first)
     if (process.dispatches && process.dispatches.length > 0) {
         const sorted = [...process.dispatches].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         sorted.forEach((d: any) => {
@@ -26,49 +69,6 @@ const getTimelineEvents = (process: any) => {
                 status: 'completed',
                 desc: d.details || `Publicado na RPI ${d.rpiNumber}`
             });
-        });
-    }
-
-    // 2. Depósito do Pedido
-    if (process.inpiProcessNumber || process.status !== 'NEW') {
-        events.push({
-            type: 'dispatch',
-            title: 'Depósito do Pedido',
-            date: new Date(process.createdAt).toLocaleDateString('pt-BR'),
-            status: 'completed',
-            desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Pendente'}`
-        });
-    }
-
-    // 3. Procuração Event
-    events.push({
-        type: 'proxy',
-        title: 'Procuração INPI',
-        date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
-        desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada' : 'Aguardando envio da Procuração'),
-        status: process.proxySignStatus === 'VALIDATED' || process.proxySignStatus === 'SIGNED' ? 'completed' : 'pending',
-        internalState: process.proxySignStatus
-    });
-
-    // 4. Contrato Event
-    events.push({
-        type: 'contract',
-        title: 'Contrato Assinado',
-        date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
-        desc: process.contractSignStatus === 'SIGNED' ? 'Contrato assinado.' : 'Aguardando assinatura.',
-        status: process.contractSignStatus === 'SIGNED' ? 'completed' : 'pending',
-        internalState: process.contractSignStatus
-    });
-
-    // 5. GRU (Taxa Federal) - Only for ESSENCIAL and PREMIUM
-    if (process.planType === 'ESSENCIAL' || process.planType === 'PREMIUM') {
-        events.push({
-            type: 'gru',
-            title: 'Taxa Federal (GRU)',
-            date: process.gruStatus === 'PAID' ? 'Pago' : (process.gruUrl ? 'Aguardando Pagto.' : ''),
-            desc: process.gruStatus === 'PAID' ? 'Pagamento da GRU confirmado.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da GRU pelo escritório.'),
-            status: process.gruStatus === 'PAID' ? 'completed' : (process.gruUrl ? 'current' : 'pending'),
-            internalState: process.gruStatus
         });
     }
 
