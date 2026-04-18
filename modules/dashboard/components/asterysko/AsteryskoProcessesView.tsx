@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity, Loader2 } from 'lucide-react';
+import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity, Loader2, CreditCard } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
+import { useToast } from '../../../../context/ToastContext';
 
 interface Client {
     id: string;
@@ -79,6 +80,7 @@ import api, { getBackendUrl } from '../../../../services/api';
 const AsteryskoProcessesView: React.FC = () => {
     const [processes, setProcesses] = useState<any[]>([]);
     const [selectedProcess, setSelectedProcess] = useState<any | null>(null);
+    const { addToast } = useToast();
     const [activeTab, setActiveTab] = useState<'timeline' | 'docs'>('timeline');
     const [isNewProcessOpen, setIsNewProcessOpen] = useState(false);
     const [clients, setClients] = useState<Client[]>([]);
@@ -177,7 +179,14 @@ const AsteryskoProcessesView: React.FC = () => {
                     gruUrl: p.gruUrl,
                     gruBarcode: p.gruBarcode,
                     gruReceiptUrl: p.gruReceiptUrl,
-                    gruStatus: p.gruStatus
+                    gruStatus: p.gruStatus,
+                    proxyUrl: p.proxyUrl,
+                    proxySignedUrl: p.proxySignedUrl,
+                    proxySignStatus: p.proxySignStatus,
+                    contractUrl: p.contractUrl,
+                    contractSignStatus: p.contractSignStatus,
+                    contractSignDate: p.contractSignDate,
+                    createdAt: p.createdAt
                 }));
                 setProcesses(mapped);
 
@@ -402,6 +411,7 @@ const AsteryskoProcessesView: React.FC = () => {
     // GRU Management
     const [uploadingGru, setUploadingGru] = useState(false);
     const [gruBarcode, setGruBarcode] = useState('');
+    const [gruFile, setGruFile] = useState<File | null>(null);
 
     const handleGruUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
         const file = e.target.files?.[0];

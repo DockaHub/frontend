@@ -118,16 +118,16 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
     };
 
     const handleFeeSelect = (feeId: string) => {
-        const fee = fees.find(f => f.id === feeId);
+        const fee = plans.find(f => f.id === feeId);
         if (fee) {
             setNewLead(prev => ({
                 ...prev,
-                feeId: fee.id,
+                planId: fee.id,
                 value: Number(fee.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
                 service: fee.name
             }));
         } else {
-            setNewLead(prev => ({ ...prev, feeId: '' }));
+            setNewLead(prev => ({ ...prev, planId: '' }));
         }
     };
 
@@ -608,12 +608,12 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                         <div>
                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Honorário Padrão (Tabela)</label>
                             <select
-                                value={newLead.feeId}
+                                value={newLead.planId}
                                 onChange={(e) => handleFeeSelect(e.target.value)}
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
                             >
                                 <option value="">-- Personalizado / Outro --</option>
-                                {fees.map(f => (
+                                {plans.map(f => (
                                     <option key={f.id} value={f.id}>{f.name} (R$ {Number(f.value).toLocaleString('pt-BR')})</option>
                                 ))}
                             </select>

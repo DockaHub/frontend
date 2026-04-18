@@ -85,7 +85,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     }, [organization?.id]);
 
     const handleFeeSelect = (feeId: string) => {
-        const fee = fees.find(f => f.id === feeId);
+        const fee = plans.find(f => f.id === feeId);
         if (fee) {
             const formattedValue = Number(fee.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             setFormData({ ...formData, value: formattedValue });
