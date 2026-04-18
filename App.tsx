@@ -357,6 +357,7 @@ const AppContent: React.FC = () => {
       <CallOverlay />
       {!location.pathname.startsWith('/portal') && 
        !location.pathname.startsWith('/sign') && 
+       !location.pathname.startsWith('/dashboard') && 
        !location.pathname.startsWith('/login') &&
        !location.pathname.startsWith('/auth') && (
         <UnifiedSidebar
