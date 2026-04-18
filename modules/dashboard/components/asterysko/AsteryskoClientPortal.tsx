@@ -277,7 +277,15 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                 ...proc,
                                 brandName: brand.name,
                                 brandType: brand.type,
+                                brandNature: brand.nature,
+                                brandPresentation: brand.presentation,
+                                holders: brand.holders,
+                                nclSpecification: brand.nclSpecification,
                                 classes: brand.nclClasses?.join(', ') || 'NCL -',
+                                filingDate: proc.filingDate,
+                                concessionDate: proc.concessionDate,
+                                expirationDate: proc.expirationDate,
+                                procurator: proc.procurator,
                                 planType: proc.planType,
                                 gruUrl: proc.gruUrl,
                                 gruBarcode: proc.gruBarcode,
@@ -930,52 +938,86 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
 
                                                     {/* TAB: DATA */}
                                                     {activeTab === 'data' && (
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6 animate-in fade-in duration-300">
-                                                            <div className="col-span-1 md:col-span-2 pb-2 border-b border-slate-200 dark:border-zinc-800 mb-2">
-                                                                <h4 className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Informações Básicas</h4>
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">Titular da Marca</label>
-                                                                <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{clientData?.name}</p>
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">CPF/CNPJ</label>
-                                                                <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{clientData?.cpfCnpj}</p>
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">Apresentação</label>
-                                                                <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.brandType || 'N/A'}</p>
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">Classes</label>
-                                                                <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.classes}</p>
-                                                            </div>
+                                                        <div className="space-y-8 animate-in fade-in duration-300">
+                                                            
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                                {/* Bloco Marca */}
+                                                                <div className="space-y-4">
+                                                                    <div className="pb-2 border-b border-slate-200 dark:border-zinc-800">
+                                                                        <h4 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Apresentação & Natureza</h4>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        <div>
+                                                                            <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Apresentação</label>
+                                                                            <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.brandPresentation || proc.brandType || 'N/A'}</p>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Natureza</label>
+                                                                            <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.brandNature || 'N/A'}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Titular / Representante</label>
+                                                                        <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.holders || clientData?.name}</p>
+                                                                    </div>
+                                                                </div>
 
-                                                            <div className="col-span-1 md:col-span-2 pb-2 border-b border-slate-200 dark:border-zinc-800 mb-2 mt-2">
-                                                                <h4 className="text-xs font-bold text-slate-400 dark:text-zinc-500 uppercase tracking-wider">Dados INPI</h4>
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">Número do Processo</label>
-                                                                <p className="text-sm font-medium text-slate-900 dark:text-zinc-100 font-mono bg-slate-100 dark:bg-zinc-800 w-fit px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700">{proc.inpiProcessNumber || 'Aguardando'}</p>
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">Data de Depósito</label>
-                                                                <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.filingDate ? new Date(proc.filingDate).toLocaleDateString() : 'Não informada'}</p>
-                                                            </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">Procurador</label>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Shield size={14} className="text-blue-600 dark:text-blue-400" />
-                                                                    <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">Asterysko Propriedade Intelectual</p>
+                                                                {/* Bloco Datas */}
+                                                                <div className="space-y-4">
+                                                                    <div className="pb-2 border-b border-slate-200 dark:border-zinc-800">
+                                                                        <h4 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Cronologia INPI</h4>
+                                                                    </div>
+                                                                    <div className="grid grid-cols-2 gap-4">
+                                                                        <div>
+                                                                            <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Data de Depósito</label>
+                                                                            <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.filingDate ? new Date(proc.filingDate).toLocaleDateString('pt-BR') : 'Aguardando'}</p>
+                                                                        </div>
+                                                                        <div>
+                                                                            <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Concessão</label>
+                                                                            <p className="text-sm font-medium text-slate-900 dark:text-zinc-100">{proc.concessionDate ? new Date(proc.concessionDate).toLocaleDateString('pt-BR') : 'Pendente'}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Vigência da Marca</label>
+                                                                        <p className={`text-sm font-bold ${proc.expirationDate ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`}>
+                                                                            {proc.expirationDate ? new Date(proc.expirationDate).toLocaleDateString('pt-BR') : 'Aguardando concessão'}
+                                                                        </p>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                            <div>
-                                                                <label className="text-xs text-slate-500 dark:text-zinc-400 block mb-1 font-medium">Link Externo</label>
-                                                                <a href={`https://busca.inpi.gov.br/pePI/servlet/MarcasServletController?Action=searchMarca&CodPesquisa=${proc.inpiProcessNumber}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
-                                                                    Ver na Busca INPI < ExternalLink size={12} />
-                                                                </a >
-                                                            </div >
-                                                        </div >
+
+                                                            {/* Classe & Especificação */}
+                                                            <div className="bg-slate-50 dark:bg-zinc-800/50 rounded-xl p-5 border border-slate-100 dark:border-zinc-800">
+                                                                <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200 dark:border-zinc-700">
+                                                                    <h4 className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Classificação de Nice (NCL)</h4>
+                                                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">Classe {proc.classes}</span>
+                                                                </div>
+                                                                <div>
+                                                                    <label className="text-[10px] text-slate-500 dark:text-zinc-500 block mb-1 font-bold uppercase">Especificação dos Produtos/Serviços</label>
+                                                                    <p className="text-sm text-slate-700 dark:text-zinc-300 leading-relaxed italic">
+                                                                        {proc.nclSpecification || 'Descrição completa aguardando publicação oficial.'}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* Footer do Card */}
+                                                            <div className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-100 dark:border-zinc-800">
+                                                                <div className="flex items-center gap-2">
+                                                                    <Shield size={14} className="text-emerald-500" />
+                                                                    <span className="text-[11px] text-slate-500 font-medium">Procurador Responsável: {proc.procurator || 'Asterysko Propriedade Intelectual'}</span>
+                                                                </div>
+                                                                <a 
+                                                                    href={`https://busca.inpi.gov.br/pePI/servlet/MarcasServletController?Action=searchMarca&CodPesquisa=${proc.inpiProcessNumber}`} 
+                                                                    target="_blank" 
+                                                                    rel="noopener noreferrer" 
+                                                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                                                >
+                                                                    Validar no Portal do INPI <ExternalLink size={12} />
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    )}
+       </div >
                                                     )}
 
                                                     {/* TAB: DOCUMENTS */}

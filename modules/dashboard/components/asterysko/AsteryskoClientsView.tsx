@@ -201,6 +201,28 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
         }
     };
 
+    const handleImpersonate = async (clientId: string) => {
+        try {
+            const response = await api.post(`/asterysko/impersonate/${clientId}`);
+            const { token, user } = response.data;
+
+            // Store the current admin session to allow coming back later if needed
+            // But for now, simple impersonation: replace token and redirect
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user));
+            
+            addToast({ type: 'success', title: 'Acesso Autorizado', message: `Entrando como ${user.name}...` });
+            
+            // Redirect to client portal
+            setTimeout(() => {
+                window.location.href = '/portal/dashboard';
+            }, 1000);
+        } catch (error: any) {
+            console.error('Failed to impersonate', error);
+            addToast({ type: 'error', title: 'Erro de Autenticação', message: error.response?.data?.error || 'Não foi possível acessar como cliente.' });
+        }
+    };
+
 
 
     return (
@@ -322,6 +344,15 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                         className="w-full text-left px-4 py-3 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 font-medium"
                                                     >
                                                         <Plus size={14} /> Novo Processo
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleImpersonate(client.id);
+                                                        }}
+                                                        className="w-full text-left px-4 py-3 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors flex items-center gap-2 font-bold border-t border-docka-100 dark:border-zinc-800"
+                                                    >
+                                                        <ExternalLink size={14} /> Acessar como Cliente
                                                     </button>
                                                     <button
                                                         onClick={(e) => {

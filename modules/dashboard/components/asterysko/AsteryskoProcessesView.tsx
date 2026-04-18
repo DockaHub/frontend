@@ -398,6 +398,74 @@ const AsteryskoProcessesView: React.FC = () => {
         }
     };
 
+    // Advanced Info Management
+    const [infoForm, setInfoForm] = useState<any>({});
+    const [isSavingInfo, setIsSavingInfo] = useState(false);
+
+    useEffect(() => {
+        if (selectedProcess) {
+            setInfoForm({
+                brandName: selectedProcess.brand?.name || selectedProcess.title,
+                brandType: selectedProcess.brand?.type || '',
+                presentation: selectedProcess.brand?.presentation || '',
+                nature: selectedProcess.brand?.nature || '',
+                filingDate: selectedProcess.filingDate ? new Date(selectedProcess.filingDate).toISOString().split('T')[0] : '',
+                concessionDate: selectedProcess.concessionDate ? new Date(selectedProcess.concessionDate).toISOString().split('T')[0] : '',
+                expirationDate: selectedProcess.expirationDate ? new Date(selectedProcess.expirationDate).toISOString().split('T')[0] : '',
+                nclClass: selectedProcess.brand?.nclClasses?.[0] || selectedProcess.class || '',
+                nclSpecification: selectedProcess.brand?.nclSpecification || '',
+                holders: selectedProcess.brand?.holders || '',
+                procurator: selectedProcess.procurator || '',
+                inpiProcessNumber: selectedProcess.inpiProcessNumber || selectedProcess.displayId || ''
+            });
+        }
+    }, [selectedProcess]);
+
+    const handleSaveInfo = async () => {
+        if (!selectedProcess) return;
+        setIsSavingInfo(true);
+        try {
+            await api.put(`/asterysko/processes/${selectedProcess.id}`, infoForm);
+            
+            // Refresh local state
+            const updated = { 
+                ...selectedProcess, 
+                ...infoForm,
+                title: infoForm.brandName,
+                class: infoForm.nclClass,
+                brand: {
+                    ...selectedProcess.brand,
+                    name: infoForm.brandName,
+                    type: infoForm.brandType,
+                    presentation: infoForm.presentation,
+                    nature: infoForm.nature,
+                    nclClasses: [infoForm.nclClass],
+                    nclSpecification: infoForm.nclSpecification,
+                    holders: infoForm.holders
+                }
+            };
+            setSelectedProcess(updated);
+            setProcesses(prev => prev.map(p => p.id === selectedProcess.id ? updated : p));
+            
+            addToast({ type: 'success', title: 'Sucesso', message: 'Informações do processo atualizadas!' });
+        } catch (error) {
+            console.error(error);
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao salvar informações.' });
+        } finally {
+            setIsSavingInfo(false);
+        }
+    };
+
+    const handleConcessionDateChange = (val: string) => {
+        const newForm = { ...infoForm, concessionDate: val };
+        if (val) {
+            const date = new Date(val);
+            date.setFullYear(date.getFullYear() + 10);
+            newForm.expirationDate = date.toISOString().split('T')[0];
+        }
+        setInfoForm(newForm);
+    };
+
     const handleUpdateStatus = async () => {
         if (!selectedProcess || !newStatusData.status || !newStatusData.description) return alert('Preencha pelo menos Status e Descrição do Despacho.');
         try {
@@ -928,6 +996,12 @@ const AsteryskoProcessesView: React.FC = () => {
                                 className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'docs' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-docka-500 dark:text-zinc-500 hover:text-docka-700 dark:hover:text-zinc-300'}`}
                             >
                                 Documentos & Assinaturas
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('info')}
+                                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'info' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-docka-500 dark:text-zinc-500 hover:text-docka-700 dark:hover:text-zinc-300'}`}
+                            >
+                                Informações
                             </button>
                         </div>
 
