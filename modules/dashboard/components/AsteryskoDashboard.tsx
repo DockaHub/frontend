@@ -45,11 +45,7 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
             return <SearchAssistant onNext={() => { }} organizationId={organization?.id} />;
 
         case 'research':
-            return (
-                <div className="h-full overflow-y-auto">
-                    <AsteryskoResearchView />
-                </div>
-            );
+            return <AsteryskoResearchView />;
 
         case 'crm':
             return <AsteryskoCRMView organization={organization} />;

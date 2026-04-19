@@ -1063,10 +1063,9 @@ const AsteryskoProcessesView: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                    </div>
-                </Modal>
-            )}
-        </div>
+                </div>
+            </div>
+        </DashboardPage>
     );
 };
 
