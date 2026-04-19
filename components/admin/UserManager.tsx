@@ -701,6 +701,9 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                         <th className="px-4 py-2">Função</th>
                                                         <th className="px-4 py-2 text-center">🔐 Financeiro</th>
                                                         <th className="px-4 py-2 text-center">⚙️ Config</th>
+                                                        <th className="px-4 py-2 text-center">👥 CRM</th>
+                                                        <th className="px-4 py-2 text-center">⚖️ Proces.</th>
+                                                        <th className="px-4 py-2 text-center">🔍 Pesq.</th>
                                                         <th className="px-4 py-2 text-right">Ações</th>
                                                     </tr>
                                                 </thead>
@@ -735,6 +738,33 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                                         className="rounded text-docka-900 focus:ring-docka-500"
                                                                         checked={org.memberPermissions?.canAccessSettings !== false}
                                                                         onChange={(e) => handleTogglePermission(org.id, 'canAccessSettings', e.target.checked)}
+                                                                        disabled={org.memberRole === 'OWNER'}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="rounded text-docka-900 focus:ring-docka-500"
+                                                                        checked={org.memberPermissions?.canAccessCRM !== false}
+                                                                        onChange={(e) => handleTogglePermission(org.id, 'canAccessCRM', e.target.checked)}
+                                                                        disabled={org.memberRole === 'OWNER'}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="rounded text-docka-900 focus:ring-docka-500"
+                                                                        checked={org.memberPermissions?.canAccessProcesses !== false}
+                                                                        onChange={(e) => handleTogglePermission(org.id, 'canAccessProcesses', e.target.checked)}
+                                                                        disabled={org.memberRole === 'OWNER'}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="rounded text-docka-900 focus:ring-docka-500"
+                                                                        checked={org.memberPermissions?.canAccessResearch !== false}
+                                                                        onChange={(e) => handleTogglePermission(org.id, 'canAccessResearch', e.target.checked)}
                                                                         disabled={org.memberRole === 'OWNER'}
                                                                     />
                                                                 </td>

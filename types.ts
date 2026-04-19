@@ -28,6 +28,9 @@ export interface Organization {
     canAccessSettings?: boolean;
     canAccessPeople?: boolean;
     canAccessContent?: boolean;
+    canAccessCRM?: boolean;
+    canAccessProcesses?: boolean;
+    canAccessResearch?: boolean;
   };
   logo?: string;
   svgIcon?: string;

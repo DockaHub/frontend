@@ -176,6 +176,13 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         if (!perms) return items; // Fallback se não houver permissões definidas
 
         return items.filter(item => {
+            // Regras específicas da Asterysko
+            if (currentOrg.slug === 'asterysko') {
+                if (item.id === 'crm') return perms.canAccessCRM !== false;
+                if (item.id === 'processes') return perms.canAccessProcesses !== false;
+                if (item.id === 'research') return perms.canAccessResearch !== false;
+            }
+
             // Regras para Financeiro
             if (['financial', 'finance', 'billing', 'financeiro'].includes(item.id.toLowerCase())) {
                 return perms.canAccessFinance !== false;
@@ -186,14 +193,14 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 return perms.canAccessSettings !== false;
             }
 
-            // Regras para Pessoas/Usuários (se aplicável ao item)
-            if (['users', 'members', 'pessoas'].includes(item.id.toLowerCase())) {
-                return perms.canAccessPeople !== false; // Padrão true
+            // Regras para Pessoas/Usuários
+            if (['users', 'members', 'pessoas', 'clients'].includes(item.id.toLowerCase())) {
+                return perms.canAccessPeople !== false;
             }
 
-            // Regras para Conteúdo/Operacional
-            if (['content', 'events', 'artists', 'research', 'properties'].includes(item.id.toLowerCase())) {
-                return perms.canAccessContent !== false; // Padrão true
+            // Regras para Conteúdo/Operacional (Geral)
+            if (['content', 'events', 'artists', 'properties'].includes(item.id.toLowerCase())) {
+                return perms.canAccessContent !== false;
             }
 
             return true;
