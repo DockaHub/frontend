@@ -1,35 +1,8 @@
-
-
 import React, { useEffect, useState } from 'react';
-import { Scale, FileText, AlertCircle, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Scale, FileText, AlertCircle, Clock, CheckCircle2, TrendingUp, ArrowRight } from 'lucide-react';
 import api from '../../../../services/api';
-
-const AsteryskoOverviewView: React.FC = () => {
-    const [stats, setStats] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const response = await api.get('/asterysko/stats');
-                setStats(response.data);
-            } catch (error) {
-                console.error('Failed to fetch stats', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
-    }, []);
-
-    if (loading) return <div className="p-8 text-center text-docka-500">Carregando dados...</div>;
-
-    const metrics = stats?.metrics || { activeProcesses: 0, urgentCount: 0, oppositions: 0, successRate: 0 };
-    const recentDispatches = stats?.recentDispatches || [];
-    const pendingTasks = stats?.pendingTasks || [];
-
 import DashboardPage from '../../../../components/DashboardPage';
+import { getBackendUrl } from '../../../../services/api';
 
 const AsteryskoOverviewView: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
