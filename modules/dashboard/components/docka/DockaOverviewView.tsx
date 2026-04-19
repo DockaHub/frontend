@@ -197,16 +197,18 @@ const DockaOverviewView: React.FC = () => {
                                         <div className="flex justify-between items-start mb-6">
                                             <div className="flex items-center gap-3">
                                                 {icon?.logo ? (
-                                                    <img src={icon.logo} alt={org.name} className="w-10 h-10 rounded-lg object-contain" />
+                                                    <img src={icon.logo} alt={org.name} className="w-10 h-10 rounded-lg object-contain p-1.5 bg-white dark:bg-zinc-800 shadow-sm border border-docka-100 dark:border-zinc-700" />
                                                 ) : icon?.svgIcon ? (
                                                     <div 
                                                         className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm overflow-hidden"
-                                                        style={{ backgroundColor: icon.iconBg || '#f4f4f5' }}
+                                                        style={{ 
+                                                            backgroundColor: icon.iconBg || '#f4f4f5',
+                                                            color: icon.iconColor || '#18181b'
+                                                        }}
                                                     >
                                                         <div 
-                                                            className="flex items-center justify-center w-full h-full [&>svg]:w-full [&>svg]:h-full"
+                                                            className="w-full h-full p-2 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current [&>svg]:block transition-transform duration-300"
                                                             style={{ 
-                                                                color: icon.iconColor || '#18181b',
                                                                 transform: `scale(${icon.iconScale || 1})`
                                                             }}
                                                             dangerouslySetInnerHTML={{ __html: icon.svgIcon }}
