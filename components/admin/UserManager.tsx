@@ -704,6 +704,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                         <th className="px-4 py-2 text-center">👥 CRM</th>
                                                         <th className="px-4 py-2 text-center">⚖️ Proces.</th>
                                                         <th className="px-4 py-2 text-center">🔍 Pesq.</th>
+                                                        <th className="px-4 py-2 text-center">💼 Clien.</th>
                                                         <th className="px-4 py-2 text-right">Ações</th>
                                                     </tr>
                                                 </thead>
@@ -765,6 +766,15 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                                         className="rounded text-docka-900 focus:ring-docka-500"
                                                                         checked={org.memberPermissions?.canAccessResearch !== false}
                                                                         onChange={(e) => handleTogglePermission(org.id, 'canAccessResearch', e.target.checked)}
+                                                                        disabled={org.memberRole === 'OWNER'}
+                                                                    />
+                                                                </td>
+                                                                <td className="px-4 py-3 text-center">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="rounded text-docka-900 focus:ring-docka-500"
+                                                                        checked={org.memberPermissions?.canAccessClients !== false}
+                                                                        onChange={(e) => handleTogglePermission(org.id, 'canAccessClients', e.target.checked)}
                                                                         disabled={org.memberRole === 'OWNER'}
                                                                     />
                                                                 </td>

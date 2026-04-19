@@ -181,6 +181,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 if (item.id === 'crm') return perms.canAccessCRM !== false;
                 if (item.id === 'processes') return perms.canAccessProcesses !== false;
                 if (item.id === 'research') return perms.canAccessResearch !== false;
+                if (item.id === 'clients') return perms.canAccessClients !== false;
             }
 
             // Regras para Financeiro
