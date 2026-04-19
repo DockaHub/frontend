@@ -151,6 +151,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'overview', label: 'Visão Global', icon: Globe },
                 { id: 'finance', label: 'Financeiro do Grupo', icon: Wallet },
                 { id: 'ecosystem', label: 'Ecossistema', icon: Network },
+                { id: 'clients', label: 'Clientes', icon: Users },
                 { id: 'forms', label: 'Formulários & Captura', icon: FileInput },
                 { id: 'audit', label: 'Auditoria & Logs', icon: ShieldAlert },
                 { id: 'billing', label: 'Faturamento Geral', icon: CreditCard },
