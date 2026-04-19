@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Activity, Users, Globe, ShieldCheck, DollarSign, Building2, TrendingUp } from 'lucide-react';
+import { Activity, Users, Globe, ShieldCheck, DollarSign, Building2, TrendingUp, TrendingDown } from 'lucide-react';
 import { ORGANIZATIONS } from '../../../../constants';
 import { api } from '../../../../services/api';
 import { fauvesService } from '../../../../services/fauvesService';
@@ -23,9 +23,19 @@ interface SystemLog {
 }
 
 interface PortfolioItem {
+    id: string;
+    name: string;
     slug: string;
     revenue: number;
     status: string;
+    iconSettings: {
+        logo?: string;
+        svgIcon?: string;
+        iconBg?: string;
+        iconColor?: string;
+        iconScale?: number;
+        logoColor?: string;
+    };
 }
 
 const DockaOverviewView: React.FC = () => {
@@ -35,70 +45,66 @@ const DockaOverviewView: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const portfolioOrgs = ORGANIZATIONS.filter(o => o.slug !== 'docka');
+    const fetchStats = async () => {
+        try {
+            const [dockaResponse, fauvesStats, fauvesUsers] = await Promise.allSettled([
+                api.get('/dashboard/stats'),
+                fauvesService.getStats(),
+                fauvesService.getManagementData('users', 1, 1)
+            ]);
+
+            let dockaStats = null;
+            let dockaLogs = [];
+            let dockaPortfolio = [];
+
+            if (dockaResponse.status === 'fulfilled') {
+                dockaStats = dockaResponse.value.data.stats;
+                dockaLogs = dockaResponse.value.data.logs;
+                dockaPortfolio = dockaResponse.value.data.portfolio;
+            } else {
+                console.error('Docka API failed', dockaResponse.reason);
+                setError('Erro ao carregar dados do Docka.');
+            }
+
+            let fauvesRevenue = 0;
+            let fauvesUserCount = 0;
+
+            if (fauvesStats.status === 'fulfilled') {
+                fauvesRevenue = Number(fauvesStats.value.totalRevenue || fauvesStats.value.revenue || 0);
+            }
+
+            if (fauvesUsers.status === 'fulfilled') {
+                fauvesUserCount = (fauvesUsers.value as any).total || (Array.isArray(fauvesUsers.value) ? fauvesUsers.value.length : 0);
+            }
+
+            if (dockaStats) {
+                // Aggregate real-time stats
+                dockaStats.revenue = (Number(dockaStats.revenue) || 0) + fauvesRevenue;
+                dockaStats.users = (Number(dockaStats.users) || 0) + fauvesUserCount;
+
+                // Sync portfolio with external data
+                const updatedPortfolio = dockaPortfolio.map((p: any) => {
+                    if (p.slug === 'fauves') {
+                        return { ...p, revenue: fauvesRevenue };
+                    }
+                    return p;
+                });
+
+                setStats(dockaStats);
+                setLogs(dockaLogs);
+                setPortfolio(updatedPortfolio);
+            }
+
+        } catch (err) {
+            console.error('Failed to fetch dashboard stats', err);
+            setError('Não foi possível carregar os dados atualizados.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const [dockaResponse, fauvesStats, fauvesUsers] = await Promise.allSettled([
-                    api.get('/dashboard/stats'),
-                    fauvesService.getStats(),
-                    fauvesService.getManagementData('users', 1, 1)
-                ]);
-
-                let dockaStats = null;
-                let dockaLogs = [];
-                let dockaPortfolio = [];
-
-                if (dockaResponse.status === 'fulfilled') {
-                    dockaStats = dockaResponse.value.data.stats;
-                    dockaLogs = dockaResponse.value.data.logs;
-                    dockaPortfolio = dockaResponse.value.data.portfolio;
-                } else {
-                    console.error('Docka API failed', dockaResponse.reason);
-                    setError('Erro ao carregar dados do Docka.');
-                }
-
-                let fauvesRevenue = 0;
-                let fauvesUserCount = 0;
-
-                if (fauvesStats.status === 'fulfilled') {
-                    fauvesRevenue = Number(fauvesStats.value.totalRevenue || fauvesStats.value.revenue || 0);
-                }
-
-                if (fauvesUsers.status === 'fulfilled') {
-                    fauvesUserCount = (fauvesUsers.value as any).total || (Array.isArray(fauvesUsers.value) ? fauvesUsers.value.length : 0);
-                }
-
-                if (dockaStats) {
-                    // Update total revenue
-                    // Update total revenue and users
-                    dockaStats.revenue = (Number(dockaStats.revenue) || 0) + fauvesRevenue;
-                    dockaStats.users = (Number(dockaStats.users) || 0) + fauvesUserCount;
-
-                    // Update portfolio
-                    const updatedPortfolio = dockaPortfolio.map((p: any) => {
-                        if (p.slug === 'fauves') {
-                            return { ...p, revenue: fauvesRevenue };
-                        }
-                        return p;
-                    });
-
-                    setStats(dockaStats);
-                    setLogs(dockaLogs);
-                    setPortfolio(updatedPortfolio);
-                }
-
-            } catch (err) {
-                console.error('Failed to fetch dashboard stats', err);
-                setError('Não foi possível carregar os dados atualizados.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchStats();
-        // Poll every 30 seconds for live-ish updates
         const interval = setInterval(fetchStats, 30000);
         return () => clearInterval(interval);
     }, []);
@@ -111,7 +117,6 @@ const DockaOverviewView: React.FC = () => {
         const date = new Date(dateString);
         const now = new Date();
         const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
         if (diffInSeconds < 60) return 'Agora mesmo';
         if (diffInSeconds < 3600) return `Há ${Math.floor(diffInSeconds / 60)} min`;
         if (diffInSeconds < 86400) return `Há ${Math.floor(diffInSeconds / 3600)} h`;
@@ -121,7 +126,6 @@ const DockaOverviewView: React.FC = () => {
     return (
         <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar transition-colors">
             <div className="max-w-6xl mx-auto">
-
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Visão Global</h1>
                     <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Painel consolidado de todas as organizações e negócios.</p>
@@ -138,19 +142,26 @@ const DockaOverviewView: React.FC = () => {
                                 {error}
                             </div>
                         )}
-                        {/* Consolidated Metrics */}
+                        
+                        {/* Summary Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                            {/* Main Hero Card */}
                             <div className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg relative overflow-hidden group">
                                 <div className="relative z-10">
                                     <div className="flex items-center gap-2 mb-4 text-docka-300 dark:text-zinc-500">
                                         <DollarSign size={20} />
-                                        <span className="text-xs font-bold uppercase tracking-wider">Receita Total do Grupo</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">RECEITA (MÊS ATUAL)</span>
                                     </div>
                                     <h3 className="text-3xl font-bold mb-1">{stats ? formatCurrency(stats.revenue) : 'R$ 0,00'}</h3>
-                                    <p className="text-sm text-emerald-400 dark:text-emerald-600 font-medium flex items-center gap-1">
-                                        <TrendingUp size={12} /> +{stats?.growth}% vs mês anterior
-                                    </p>
+                                    <div className="flex items-center gap-1.5">
+                                        {stats?.growth !== undefined && (
+                                            <>
+                                                {stats.growth >= 0 ? <TrendingUp size={14} className="text-emerald-400" /> : <TrendingDown size={14} className="text-red-400" />}
+                                                <span className={`text-xs font-bold ${stats.growth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {stats.growth >= 0 ? '+' : ''}{stats.growth}% vs mês anterior
+                                                </span>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                                 <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform dark:text-zinc-900 text-white">
                                     <Globe size={120} />
@@ -191,7 +202,6 @@ const DockaOverviewView: React.FC = () => {
                                 const revenue = org.revenue || 0;
                                 const status = org.status || 'Desconhecido';
                                 const icon = org.iconSettings;
-
                                 return (
                                     <div key={org.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 p-6 hover:shadow-md hover:border-docka-300 dark:hover:border-zinc-700 transition-all group">
                                         <div className="flex justify-between items-start mb-6">
@@ -208,9 +218,7 @@ const DockaOverviewView: React.FC = () => {
                                                     >
                                                         <div 
                                                             className="w-full h-full p-2 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current [&>svg]:block transition-transform duration-300"
-                                                            style={{ 
-                                                                transform: `scale(${icon.iconScale || 1})`
-                                                            }}
+                                                            style={{ transform: `scale(${icon.iconScale || 1})` }}
                                                             dangerouslySetInnerHTML={{ __html: icon.svgIcon }}
                                                         />
                                                     </div>
@@ -219,23 +227,19 @@ const DockaOverviewView: React.FC = () => {
                                                         {org.name.substring(0, 1)}
                                                     </div>
                                                 )}
-                                                <div>
-                                                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{org.name}</h3>
-                                                </div>
+                                                <div><h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{org.name}</h3></div>
                                             </div>
                                             <button 
                                                 onClick={() => {
-                                                    // Redireciona mudando a organização ativa na URL
                                                     const url = new URL(window.location.href);
                                                     url.searchParams.set('org', org.slug);
                                                     window.location.href = url.toString();
                                                 }}
-                                                className="text-xs font-semibold text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 bg-docka-50 dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-transparent hover:border-docka-200 transition-all"
+                                                className="text-xs font-semibold text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 bg-docka-50 dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-transparent hover:border-docka-200 transition-all font-sans"
                                             >
                                                 Gerenciar
                                             </button>
                                         </div>
-
                                         <div className="space-y-4">
                                             <div className="flex justify-between items-end">
                                                 <div className="text-xs text-docka-500 dark:text-zinc-400 font-medium uppercase tracking-tight">Receita Consolidada</div>
@@ -258,35 +262,6 @@ const DockaOverviewView: React.FC = () => {
                                     </div>
                                 );
                             })}
-                        </div>
-
-                        {/* System Logs / Audit - Limited to 3 */}
-                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                            <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
-                                <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-                                    <ShieldCheck size={16} className="text-docka-400 dark:text-zinc-500" /> Log de Auditoria Final (3 últimos)
-                                </h3>
-                                <button className="text-xs text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 font-medium">Ver Histórico Completo</button>
-                            </div>
-                            <div className="divide-y divide-docka-50 dark:divide-zinc-800">
-                                {logs.slice(0, 3).length > 0 ? logs.slice(0, 3).map((log, i) => (
-                                    <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-2 h-2 rounded-full ${log.level === 'ERROR' ? 'bg-red-500' : log.level === 'WARN' ? 'bg-amber-500' : 'bg-docka-300 dark:bg-zinc-600'}`} />
-                                            <span className="text-sm font-medium text-docka-800 dark:text-zinc-200">{log.action || log.message}</span>
-                                            <span className="text-xs text-docka-400 dark:text-zinc-500 hidden md:inline">em {log.target}</span>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="text-xs font-bold text-docka-700 dark:text-zinc-300">{log.user}</div>
-                                            <div className="text-docka-400 dark:text-zinc-500 text-[10px]">{getRelativeTime(log.time)}</div>
-                                        </div>
-                                    </div>
-                                )) : (
-                                    <div className="p-6 text-center text-docka-400 dark:text-zinc-500 text-sm">
-                                        Nenhum log registrado recentemente.
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </>
                 )}
