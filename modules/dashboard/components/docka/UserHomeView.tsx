@@ -4,6 +4,8 @@ import { CheckSquare, Clock, Calendar as CalendarIcon, ArrowRight, Building2, Pl
 import { useAuth } from '../../../../context/AuthContext';
 import { Organization } from '../../../../types';
 import { api } from '../../../../services/api';
+import DashboardPage from '../../../../components/DashboardPage';
+import { Home } from 'lucide-react';
 
 interface HomeData {
     organizations: Organization[];
@@ -11,41 +13,6 @@ interface HomeData {
     agenda: any[];
     activity: any[];
 }
-
-const UserHomeView: React.FC = () => {
-    const { user } = useAuth();
-    const [greeting, setGreeting] = useState('');
-    const [data, setData] = useState<HomeData | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const hour = new Date().getHours();
-        if (hour < 12) setGreeting('Bom dia');
-        else if (hour < 18) setGreeting('Boa tarde');
-        else setGreeting('Boa noite');
-
-        const fetchHomeData = async () => {
-            try {
-                const response = await api.get('/dashboard/home');
-                setData(response.data);
-            } catch (error) {
-                console.error('Error fetching home data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchHomeData();
-    }, []);
-
-    const currentDate = new Date().toLocaleDateString('pt-BR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long'
-    });
-
-import DashboardPage from '../../../../components/DashboardPage';
-import { Home } from 'lucide-react';
 
 const UserHomeView: React.FC = () => {
     const { user } = useAuth();
@@ -287,4 +254,8 @@ const UserHomeView: React.FC = () => {
                     <span className="mt-6 text-[10px] font-black uppercase tracking-[0.3em] text-docka-900 dark:text-zinc-100 animate-pulse">Iniciando Docka</span>
                 </div>
             )}
+        </DashboardPage>
+    );
+};
+
 export default UserHomeView;

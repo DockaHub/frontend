@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Search, Filter, Download, Shield } from 'lucide-react';
+import DashboardPage from '../../../../components/DashboardPage';
 
 const LOGS = [
     { id: 'LOG-9921', action: 'Login Bem-sucedido', user: 'Alex Arquiteto', ip: '192.168.1.10', location: 'São Paulo, BR', time: 'Hoje, 10:45', module: 'Auth' },
@@ -9,13 +10,6 @@ const LOGS = [
     { id: 'LOG-9918', action: 'Alteração de Permissões', user: 'Sistema', ip: 'localhost', location: 'Server', time: 'Ontem, 14:00', module: 'Admin' },
 ];
 
-const DockaAuditView: React.FC = () => {
-  return (
-import DashboardPage from '../../../../components/DashboardPage';
-
-const LOGS = [
-    // ... (mantenha logs iguais)
-];
 
 const DockaAuditView: React.FC = () => {
   return (
@@ -83,4 +77,7 @@ const DockaAuditView: React.FC = () => {
             </div>
         </div>
     </DashboardPage>
+  );
+};
+
 export default DockaAuditView;

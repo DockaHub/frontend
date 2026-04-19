@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, CreditCard, TrendingUp, TrendingDown, PieChart, Activity } from 'lucide-react';
 import { api } from '../../../../services/api';
+import DashboardPage from '../../../../components/DashboardPage';
 
 interface Stats {
     revenue: number;
@@ -61,20 +62,6 @@ const DockaBillingView: React.FC = () => {
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
-
-    if (loading) return (
-        <div className="h-full flex items-center justify-center bg-docka-50 dark:bg-zinc-950">
-            <div className="flex flex-col items-center gap-4">
-                <div className="w-12 h-12 border-4 border-docka-900 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-docka-500 font-bold text-sm">Carregando Command Center...</p>
-            </div>
-        </div>
-    );
-
-import DashboardPage from '../../../../components/DashboardPage';
-
-const DockaBillingView: React.FC = () => {
-    // ... (mantenha estados e lógicas iguais)
 
     if (loading) return (
         <DashboardPage title="Faturamento Global" icon={DollarSign}>
@@ -200,4 +187,8 @@ const DockaBillingView: React.FC = () => {
                     </div>
                 </div>
             </div>
+        </DashboardPage>
+    );
+};
+
 export default DockaBillingView;

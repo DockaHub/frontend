@@ -1,18 +1,15 @@
 
 import React from 'react';
 import {
-    Shield, Globe, Key, Save, Server, ToggleLeft, ToggleRight, Database
+    Shield, Globe, Key, Save, Server, ToggleLeft, ToggleRight, Database, Settings
 } from 'lucide-react';
 import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
+import DashboardPage from '../../../../components/DashboardPage';
 
 interface DockaSettingsViewProps {
     organization?: Organization;
 }
-
-const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization }) => {
-    return (
-import DashboardPage from '../../../../components/DashboardPage';
 
 const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization }) => {
     return (
@@ -140,4 +137,8 @@ const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization }) =
                     </div>
                 </div>
             </div>
+        </DashboardPage>
+    );
+};
+
 export default DockaSettingsView;

@@ -9,6 +9,7 @@ import api from '../../../../services/api';
 import { DropResult } from '@hello-pangea/dnd';
 import { useAuth } from '../../../../context/AuthContext';
 import { Organization } from '../../../../types';
+import DashboardPage from '../../../../components/DashboardPage';
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
     constructor(props: any) {
@@ -42,7 +43,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     }
 }
 
-import DashboardPage from '../../../../components/DashboardPage';
+
 
 const AsteryskoCRMView: React.FC<{ organization?: Organization }> = ({ organization }) => {
     return (

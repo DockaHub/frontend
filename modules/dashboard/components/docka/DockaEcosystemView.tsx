@@ -8,6 +8,8 @@ import TrackerSetupView from '../../../asterysko/crm/components/TrackerSetupView
 
 import { api } from '../../../../services/api';
 import { fauvesService } from '../../../../services/fauvesService';
+import DashboardPage from '../../../../components/DashboardPage';
+import { Globe } from 'lucide-react';
 
 const DockaEcosystemView: React.FC = () => {
     const childOrgs = ORGANIZATIONS.filter(o => o.slug !== 'docka');
@@ -74,12 +76,6 @@ const DockaEcosystemView: React.FC = () => {
         document.addEventListener('click', handleClickOutside);
         return () => document.removeEventListener('click', handleClickOutside);
     }, []);
-
-    return (
-import DashboardPage from '../../../../components/DashboardPage';
-
-const DockaEcosystemView: React.FC = () => {
-    // ... (mantenha estados e lógicas iguais)
 
     return (
         <DashboardPage 

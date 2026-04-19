@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Plus, Trash2, Download, TrendingDown, TrendingUp, Wallet, Receipt, Users, Server, CreditCard } from 'lucide-react';
 import { api } from '../../../../services/api';
+import DashboardPage from '../../../../components/DashboardPage';
 
 interface FinancialEntry {
     id: string;
@@ -91,11 +92,6 @@ const DockaGroupFinanceView: React.FC = () => {
             default: return <Receipt size={14} />;
         }
     };
-
-import DashboardPage from '../../../../components/DashboardPage';
-
-const DockaGroupFinanceView: React.FC = () => {
-    // ... (mantenha estados e lógicas iguais até o return)
 
     return (
         <DashboardPage 
@@ -296,5 +292,9 @@ const DockaGroupFinanceView: React.FC = () => {
                         </div>
                     </div>
                 )}
-            </div>
+                </div>
+        </DashboardPage>
+    );
+};
+
 export default DockaGroupFinanceView;
