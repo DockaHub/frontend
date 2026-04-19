@@ -200,11 +200,11 @@ const DockaOverviewView: React.FC = () => {
                                                     <img src={icon.logo} alt={org.name} className="w-10 h-10 rounded-lg object-contain" />
                                                 ) : icon?.svgIcon ? (
                                                     <div 
-                                                        className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm"
+                                                        className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm overflow-hidden"
                                                         style={{ backgroundColor: icon.iconBg || '#f4f4f5' }}
                                                     >
                                                         <div 
-                                                            className="flex items-center justify-center"
+                                                            className="flex items-center justify-center w-full h-full [&>svg]:w-full [&>svg]:h-full"
                                                             style={{ 
                                                                 color: icon.iconColor || '#18181b',
                                                                 transform: `scale(${icon.iconScale || 1})`
