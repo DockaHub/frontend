@@ -4,6 +4,7 @@ import { Activity, Users, Globe, ShieldCheck, DollarSign, Building2, TrendingUp,
 import { ORGANIZATIONS } from '../../../../constants';
 import { api } from '../../../../services/api';
 import { fauvesService } from '../../../../services/fauvesService';
+import DashboardPage from '../../../../components/DashboardPage';
 
 interface DashboardStats {
     revenue: number;
@@ -103,12 +104,6 @@ const DockaOverviewView: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        fetchStats();
-        const interval = setInterval(fetchStats, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
@@ -123,14 +118,11 @@ const DockaOverviewView: React.FC = () => {
         return `Há ${Math.floor(diffInSeconds / 86400)} dias`;
     };
 
-import DashboardPage from '../../../../components/DashboardPage';
-
-interface DashboardStats {
-// ... (mantenha interfaces iguais)
-}
-
-const DockaOverviewView: React.FC = () => {
-    // ... (mantenha os estados iguais)
+    useEffect(() => {
+        fetchStats();
+        const interval = setInterval(fetchStats, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <DashboardPage 
