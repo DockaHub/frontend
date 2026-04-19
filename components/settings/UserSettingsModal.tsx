@@ -47,7 +47,7 @@ const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
         notifications: true
     });
 
-    const isAdmin = user.role === 'admin';
+    const isAdmin = user.role?.toUpperCase() === 'ADMIN';
 
     const { refreshUser } = useAuth(); // Get refreshUser from context
     const [isLoading, setIsLoading] = useState(false);
