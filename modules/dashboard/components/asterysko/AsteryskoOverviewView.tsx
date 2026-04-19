@@ -138,4 +138,8 @@ const AsteryskoOverviewView: React.FC = () => {
                     </div>
                 </div>
             )}
+        </DashboardPage>
+    );
+};
+
 export default AsteryskoOverviewView;
