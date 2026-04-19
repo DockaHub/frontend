@@ -10,6 +10,7 @@ import DockaBillingView from './docka/DockaBillingView';
 import DockaSettingsView from './docka/DockaSettingsView';
 import DockaFormsView from './docka/DockaFormsView';
 import UserHomeView from './docka/UserHomeView';
+import DockaGroupFinanceView from './docka/DockaGroupFinanceView';
 
 interface DockaDashboardProps {
     activeView: string;
@@ -28,6 +29,8 @@ const DockaDashboard: React.FC<DockaDashboardProps> = ({ activeView, organizatio
             return <DockaFormsView />;
         case 'audit':
             return <DockaAuditView />;
+        case 'finance':
+            return <DockaGroupFinanceView />;
         case 'billing':
             return <DockaBillingView />;
         case 'settings':

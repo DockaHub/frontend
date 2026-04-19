@@ -2,7 +2,7 @@ import {
     LayoutDashboard, Ticket, CreditCard, Mic2, LayoutTemplate, Megaphone, Users,
     BarChart3, Settings, Globe, Headphones, FolderOpen, Mail,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
-    Network, FileInput, Server, Search, MessageSquare, Book, Trophy
+    Network, FileInput, Server, Search, MessageSquare, Book, Trophy, Wallet
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization } from '../types';
@@ -149,6 +149,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         if (currentOrg.slug === 'docka') {
             return [
                 { id: 'overview', label: 'Visão Global', icon: Globe },
+                { id: 'finance', label: 'Financeiro do Grupo', icon: Wallet },
                 { id: 'ecosystem', label: 'Ecossistema', icon: Network },
                 { id: 'forms', label: 'Formulários & Captura', icon: FileInput },
                 { id: 'audit', label: 'Auditoria & Logs', icon: ShieldAlert },
