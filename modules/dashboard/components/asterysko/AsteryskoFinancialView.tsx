@@ -232,11 +232,11 @@ const AsteryskoFinancialView: React.FC = () => {
                         <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Taxas INPI (Provisão)</p>
                     </div>
 
-                    <div className="bg-blue-600 dark:bg-blue-600 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
+                    <div className="bg-blue-600 dark:bg-blue-600 text-white p-6 rounded-xl shadow-sm relative overflow-hidden border border-blue-500/20">
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-4 text-blue-100">
                                 <TrendingUp size={20} />
-                                <span className="text-xs font-bold uppercase tracking-wider">Eficiência</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">EficiÃªncia</span>
                             </div>
                             <h3 className="text-3xl font-bold">{Number(metrics?.successRate) || 0}%</h3>
                             <p className="text-sm text-blue-100 mt-1">Processos Concedidos</p>
@@ -263,7 +263,7 @@ const AsteryskoFinancialView: React.FC = () => {
                             </div>
                         </div>
                         <table className="w-full text-sm text-left">
-                            <thead className="bg-white dark:bg-zinc-900 text-docka-500 dark:text-zinc-500 font-semibold text-xs uppercase tracking-wider border-b border-docka-100 dark:border-zinc-800">
+                            <thead className="bg-white dark:bg-zinc-900 text-docka-500 dark:text-zinc-500 font-bold text-xs uppercase tracking-wider border-b border-docka-100 dark:border-zinc-800">
                                 <tr>
                                     <th className="px-6 py-4">Status</th>
                                     <th className="px-6 py-4">Tipo</th>
@@ -288,8 +288,8 @@ const AsteryskoFinancialView: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${inv.type === 'TAX' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400'}`}>
-                                                {inv.type === 'TAX' ? 'TAXA INPI' : 'SERVIÇO'}
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${inv.type === 'TAX' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-bold'}`}>
+                                                {inv.type === 'TAX' ? 'TAXA INPI' : 'SERVIÃ‡O'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-docka-900 dark:text-zinc-100">{inv.clientName}</td>
@@ -349,7 +349,7 @@ const AsteryskoFinancialView: React.FC = () => {
                                 <span className="text-2xl font-bold text-blue-900 dark:text-blue-300">R$ {((Number(metrics?.goals?.target) || 150000) / 1000).toFixed(0)}k</span>
                                 <span className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">{Number(metrics?.goals?.percentage) || 0}% atingido</span>
                             </div>
-                            <div className="w-full h-2 bg-white dark:bg-zinc-800 rounded-full overflow-hidden border border-blue-100 dark:border-blue-900/30">
+                            <div className="w-full h-2 bg-white dark:bg-zinc-800 rounded-lg overflow-hidden border border-blue-100 dark:border-blue-900/30">
                                 <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${Number(metrics?.goals?.percentage) || 0}%` }} />
                             </div>
                             <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mt-3">

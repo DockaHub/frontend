@@ -226,15 +226,15 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 <div className="flex gap-2">
                     <button 
                          onClick={() => addToast({ type: 'info', title: 'Exportar', message: 'Gerando CSV da carteira...' })}
-                        className="p-2.5 bg-white dark:bg-zinc-800 border border-docka-50 dark:border-zinc-700 rounded-xl text-docka-400 hover:text-docka-900 transition-all shadow-sm"
+                        className="p-2 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-docka-400 hover:text-docka-900 transition-all shadow-sm"
                     >
-                        <Download size={18} />
+                        <Download size={16} />
                     </button>
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-5 h-11 rounded-xl text-[11px] font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg flex items-center gap-2"
+                        className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-docka-800 dark:hover:bg-white/90 transition-all shadow-sm flex items-center gap-2"
                     >
-                        <Plus size={16} /> Novo Cliente
+                        <Plus size={14} /> Novo Cliente
                     </button>
                 </div>
             }
@@ -244,51 +244,50 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 {/* TOP METRICS DS 3.0 */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     {[
-                        { label: 'Total Clientes', value: clients.length, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/20' },
-                        { label: 'Processos Ativos', value: clients.reduce((acc, c) => acc + c.processesCount, 0), icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
-                        { label: 'Financeiro Pendente', value: 'R$ 12.450', icon: CreditCard, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/20' },
-                        { label: 'Health Score', value: '98%', icon: Activity, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/20' },
+                        { label: 'Total Clientes', value: clients.length, icon: Users, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-900/10' },
+                        { label: 'Ativos em PI', value: clients.reduce((acc, c) => acc + (c.processesCount || 0), 0), icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-900/10' },
+                        { label: 'Pendente', value: 'R$ 12.450', icon: CreditCard, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-900/10' },
+                        { label: 'Health Score', value: '98%', icon: Activity, color: 'text-rose-500', bg: 'bg-rose-50 dark:bg-rose-900/10' },
                     ].map((m, i) => (
-                        <div key={i} className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-docka-50 dark:border-zinc-800 shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
-                            <div className={`w-12 h-12 ${m.bg} ${m.color} rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110`}>
-                                <m.icon size={24} />
+                        <div key={i} className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm flex items-center gap-4 transition-all">
+                            <div className={`w-10 h-10 ${m.bg} ${m.color} rounded-lg flex items-center justify-center`}>
+                                <m.icon size={20} />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-docka-300">{m.label}</p>
-                                <p className="text-xl font-black text-docka-900 dark:text-zinc-100">{m.value}</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">{m.label}</p>
+                                <p className="text-lg font-bold text-docka-900 dark:text-zinc-100">{m.value}</p>
                             </div>
                         </div>
                     ))}
                 </div>
 
                 {/* SEARCH & FILTERS */}
-                <div className="bg-white/80 dark:bg-zinc-900/80 backdrop-blur-xl border border-white dark:border-zinc-800 rounded-[2.5rem] shadow-2xl overflow-hidden mb-8">
-                    <div className="p-6 border-b border-docka-50 dark:border-zinc-800 flex justify-between items-center">
+                <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden mb-8 transition-all">
+                    <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 flex justify-between items-center bg-docka-50/30 dark:bg-zinc-800/30">
                         <div className="relative w-full max-w-md">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-docka-300" size={18} />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={14} />
                             <input
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-12 pr-6 h-12 bg-docka-50 dark:bg-zinc-800 border-none rounded-[1.2rem] text-sm font-medium outline-none text-docka-900 dark:text-zinc-100 placeholder:text-docka-300 transition-all dark:placeholder:text-zinc-600 focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700"
+                                className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 text-docka-900 dark:text-zinc-100 placeholder:text-docka-400 font-sans shadow-sm"
                                 placeholder="Buscar por cliente, CNPJ ou email..."
                             />
                         </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-black text-docka-300 uppercase tracking-widest">Filtrar por:</span>
-                            <button className="px-4 py-2 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-docka-500 border border-transparent hover:border-docka-100 transition-all">Ativos</button>
-                            <button className="px-4 py-2 bg-white dark:bg-zinc-900 rounded-lg text-[10px] font-black uppercase tracking-widest text-docka-300 border border-docka-50 dark:border-zinc-800 hover:text-docka-500 transition-all">PJs</button>
+                        <div className="flex items-center gap-2">
+                            <button className="px-3 py-2 bg-white dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase tracking-widest text-docka-500 border border-docka-200 dark:border-zinc-700 hover:bg-docka-50/50 transition-all">Ativos</button>
+                            <button className="px-3 py-2 bg-white dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase tracking-widest text-docka-400 border border-docka-200 dark:border-zinc-700 hover:text-docka-900 transition-all">PJs</button>
                         </div>
                     </div>
 
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead className="bg-white/50 dark:bg-zinc-900/50 text-docka-300 font-black text-[9px] uppercase tracking-[0.2em] border-b border-docka-50 dark:border-zinc-800">
+                            <thead className="bg-docka-50 dark:bg-zinc-800/50 text-docka-500 dark:text-zinc-500 font-bold text-xs uppercase tracking-wider border-b border-docka-100 dark:border-zinc-800">
                                 <tr>
-                                    <th className="px-8 py-5">Titular / Empresa</th>
-                                    <th className="px-8 py-5">Contato</th>
-                                    <th className="px-8 py-5 text-center">Ativos</th>
-                                    <th className="px-8 py-5">Status</th>
-                                    <th className="px-8 py-5 text-right">Ações</th>
+                                    <th className="px-6 py-4">Titular / Empresa</th>
+                                    <th className="px-6 py-4">Contato</th>
+                                    <th className="px-6 py-4 text-center">Ativos</th>
+                                    <th className="px-6 py-4">Status</th>
+                                    <th className="px-6 py-4 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
@@ -296,30 +295,30 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                     <tr
                                         key={client.id}
                                         onClick={() => { setSelectedClient(client); setActiveTab('overview'); }}
-                                        className="hover:bg-docka-50/50 dark:hover:bg-zinc-800/30 transition-all group cursor-pointer"
+                                        className="hover:bg-docka-50/50 dark:hover:bg-zinc-800/50 transition-colors group cursor-pointer"
                                     >
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-lg shadow-blue-500/10">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-docka-700 to-indigo-800 rounded-lg flex items-center justify-center text-white font-bold text-base shadow-sm">
                                                     {client.company.substring(0, 1)}
                                                 </div>
                                                 <div>
-                                                    <div className="font-black text-docka-900 dark:text-zinc-100 text-sm tracking-tight">{client.company}</div>
-                                                    <div className="text-[10px] font-bold text-docka-300 uppercase tracking-widest mt-0.5">{client.cnpj}</div>
+                                                    <div className="font-bold text-docka-900 dark:text-zinc-100 text-sm tracking-tight">{client.company}</div>
+                                                    <div className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mt-0.5">{client.cnpj}</div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-8 py-6">
+                                        <td className="px-6 py-4">
                                             <div className="font-bold text-docka-700 dark:text-zinc-300 text-xs">{client.name}</div>
                                             <div className="text-[10px] font-medium text-docka-400 dark:text-zinc-500">{client.email}</div>
                                         </td>
-                                        <td className="px-8 py-6 text-center">
-                                            <span className="inline-flex items-center justify-center w-8 h-8 bg-docka-50 dark:bg-zinc-800 text-docka-900 dark:text-zinc-100 rounded-xl text-xs font-black border border-docka-100 dark:border-zinc-700">
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="inline-flex items-center justify-center w-8 h-8 bg-docka-50 dark:bg-zinc-800 text-docka-900 dark:text-zinc-100 rounded-lg text-xs font-bold border border-docka-100 dark:border-zinc-700">
                                                 {client.processesCount}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6">
-                                            <span className={`inline-flex items-center px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border shadow-sm ${
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest border shadow-sm ${
                                                 client.status === 'active' ? 'bg-emerald-500 text-white border-emerald-500' :
                                                 client.status === 'inactive' ? 'bg-rose-500 text-white border-rose-500' :
                                                 'bg-amber-500 text-white border-amber-500'
@@ -327,17 +326,17 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                 {client.status === 'active' ? 'Ativo' : client.status === 'inactive' ? 'Inativo' : 'Pendente'}
                                             </span>
                                         </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); handleImpersonate(client.id); }}
-                                                    className="p-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all shadow-sm"
+                                                    className="p-1.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 text-blue-500 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all shadow-sm"
                                                     title="Acessar Portal"
                                                 >
-                                                    <ExternalLink size={16} />
+                                                    <ExternalLink size={14} />
                                                 </button>
-                                                <button className="p-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 text-docka-400 rounded-xl hover:text-docka-900 transition-all shadow-sm">
-                                                    <ChevronRight size={16} />
+                                                <button className="p-1.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 text-docka-400 rounded-lg hover:text-docka-900 transition-all shadow-sm">
+                                                    <ChevronRight size={14} />
                                                 </button>
                                             </div>
                                         </td>
@@ -360,26 +359,26 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                              {/* HEADER DOSSIER CLIENTE */}
                              <div className="relative p-8 pb-0 shrink-0">
                                 <div className="flex justify-between items-start mb-6">
-                                    <div className="flex gap-6 items-center">
-                                        <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[1.5rem] flex items-center justify-center text-white font-black text-3xl shadow-xl shadow-blue-500/20">
+                                    <div className="flex gap-4 items-center">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-docka-700 to-indigo-800 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-sm">
                                             {selectedClient.company.substring(0, 1)}
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-3">
-                                                <h2 className="text-3xl font-black text-docka-900 dark:text-zinc-100 tracking-tight">
+                                                <h2 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight">
                                                     {selectedClient.company}
                                                 </h2>
-                                                <span className={`px-4 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${
                                                     selectedClient.status === 'active' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
                                                 }`}>
                                                     {selectedClient.status}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-4 mt-2">
-                                                <p className="text-[10px] font-black text-docka-300 uppercase tracking-widest flex items-center gap-1.5">
+                                            <div className="flex items-center gap-4 mt-1.5">
+                                                <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                     <Building2 size={12} /> {selectedClient.cnpj}
                                                 </p>
-                                                <p className="text-[10px] font-black text-docka-300 uppercase tracking-widest flex items-center gap-1.5">
+                                                <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                                                     <User size={12} /> {selectedClient.name}
                                                 </p>
                                             </div>
@@ -388,21 +387,21 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={() => handleImpersonate(selectedClient.id)} 
-                                            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 dark:border-blue-800"
+                                            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 dark:border-blue-800/50"
                                         >
                                             Portal do Cliente
                                         </button>
                                         <button 
                                             onClick={() => setClientToDelete(selectedClient)}
-                                            className="p-2 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-xl hover:bg-rose-500 hover:text-white transition-all border border-rose-100 dark:border-rose-800"
+                                            className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-100 dark:border-rose-800/50"
                                         >
-                                            <Trash2 size={18} />
+                                            <Trash2 size={16} />
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* TABS PREMIUM */}
-                                <div className="flex gap-8 border-b border-docka-50 dark:border-zinc-800">
+                                <div className="flex gap-8 border-b border-docka-100 dark:border-zinc-800">
                                     {[
                                         { id: 'overview', label: 'Dashboard', icon: Activity },
                                         { id: 'processes', label: 'PortfÃ³lio', icon: Shield },
@@ -412,14 +411,14 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                         <button
                                             key={tab.id}
                                             onClick={() => setActiveTab(tab.id as any)}
-                                            className={`pb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${
-                                                activeTab === tab.id ? 'text-docka-900 dark:text-white' : 'text-docka-300 hover:text-docka-500'
+                                            className={`pb-4 flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest transition-all relative ${
+                                                activeTab === tab.id ? 'text-docka-900 dark:text-white' : 'text-docka-400 hover:text-docka-600'
                                             }`}
                                         >
                                             <tab.icon size={14} />
                                             {tab.label}
                                             {activeTab === tab.id && (
-                                                <div className="absolute bottom-0 left-0 right-0 h-1 bg-docka-900 dark:bg-white rounded-t-full shadow-lg shadow-docka-900/20" />
+                                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-docka-900 dark:bg-white rounded-t-full shadow-sm" />
                                             )}
                                         </button>
                                     ))}
@@ -427,17 +426,17 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                              </div>
 
                              {/* CONTEÃšDO DINÃ‚MICO */}
-                             <div className="p-8 h-[500px] overflow-y-auto custom-scrollbar">
+                             <div className="p-8 h-[500px] overflow-y-auto custom-scrollbar bg-docka-50/20 dark:bg-zinc-900/20">
                                  {activeTab === 'overview' && (
                                      <div className="space-y-8">
                                          <div className="grid grid-cols-2 gap-6">
-                                             <div className="p-6 bg-docka-50 dark:bg-zinc-800/50 rounded-[1.5rem] border border-docka-50 dark:border-zinc-700/50">
-                                                 <h4 className="text-[10px] font-black text-docka-300 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                             <div className="p-6 bg-white dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-700/50 shadow-sm">
+                                                 <h4 className="text-[10px] font-bold text-docka-500 uppercase tracking-widest mb-6 flex items-center gap-2">
                                                      <Building2 size={14} /> Dados Corporativos
                                                  </h4>
                                                  <div className="space-y-6">
                                                      <div>
-                                                         <label className="text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 block">EndereÃ§o Comercial</label>
+                                                         <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">EndereÃ§o Comercial</label>
                                                          <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 flex items-start gap-2">
                                                              <MapPin size={14} className="mt-0.5 text-blue-500" />
                                                              {selectedClient.address ? `${selectedClient.address}, ${selectedClient.city}/${selectedClient.state}` : 'NÃ£o cadastrado'}
@@ -445,27 +444,27 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                      </div>
                                                      <div className="grid grid-cols-2 gap-4">
                                                          <div>
-                                                             <label className="text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 block">CNPJ / Identificador</label>
-                                                             <p className="text-xs font-black text-docka-900 dark:text-zinc-100 font-mono">{selectedClient.cnpj}</p>
+                                                             <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">CNPJ / Identificador</label>
+                                                             <p className="text-xs font-bold text-docka-900 dark:text-zinc-100 font-mono">{selectedClient.cnpj}</p>
                                                          </div>
                                                          <div>
-                                                             <label className="text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 block">Status CRM</label>
-                                                             <p className="text-xs font-black text-emerald-500 uppercase tracking-widest">{selectedClient.status}</p>
+                                                             <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Status CRM</label>
+                                                             <p className="text-xs font-bold text-emerald-500 uppercase tracking-widest">{selectedClient.status}</p>
                                                          </div>
                                                      </div>
                                                  </div>
                                              </div>
-                                             <div className="p-6 bg-docka-50 dark:bg-zinc-800/50 rounded-[1.5rem] border border-docka-50 dark:border-zinc-700/50">
-                                                 <h4 className="text-[10px] font-black text-docka-300 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                             <div className="p-6 bg-white dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-700/50 shadow-sm">
+                                                 <h4 className="text-[10px] font-bold text-docka-500 uppercase tracking-widest mb-6 flex items-center gap-2">
                                                      <User size={14} /> Contato Principal
                                                  </h4>
                                                  <div className="space-y-6">
                                                      <div>
-                                                         <label className="text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 block">Nome Direto</label>
+                                                         <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Nome Direto</label>
                                                          <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{selectedClient.name}</p>
                                                      </div>
                                                      <div>
-                                                         <label className="text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 block">Canais de ComunicaÃ§Ã£o</label>
+                                                         <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Canais de ComunicaÃ§Ã£o</label>
                                                          <div className="flex flex-col gap-2">
                                                             <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                                                 <Mail size={14} className="text-blue-500" /> {selectedClient.email}
@@ -479,8 +478,8 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                              </div>
                                          </div>
                                          <div>
-                                            <h4 className="text-[10px] font-black text-docka-300 uppercase tracking-widest mb-4">Notas EstratÃ©gicas</h4>
-                                            <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100/30 dark:border-amber-800/20 rounded-2xl">
+                                            <h4 className="text-[10px] font-bold text-docka-400 uppercase tracking-widest mb-4">Notas EstratÃ©gicas</h4>
+                                            <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/30 dark:border-amber-800/20 rounded-xl shadow-inner">
                                                 <p className="text-xs text-amber-800 dark:text-amber-300 italic leading-relaxed">
                                                     "Cliente focado em expansÃ£o internacional (EUA e Europa). Priorizar monitoramento de marcas similares nestas jurisdiÃ§Ãµes."
                                                 </p>
@@ -490,19 +489,19 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                  )}
 
                                  {activeTab === 'processes' && (
-                                     <div className="grid grid-cols-1 gap-4">
+                                     <div className="grid grid-cols-1 gap-3">
                                          {selectedClient.processes?.map((proc, idx) => (
-                                             <div key={idx} className="bg-white dark:bg-zinc-900 p-5 rounded-[1.5rem] border border-docka-50 dark:border-zinc-800 flex justify-between items-center group hover:border-blue-400 transition-all cursor-pointer">
-                                                 <div className="flex items-center gap-4">
-                                                     <div className="w-12 h-12 bg-docka-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-center text-docka-300 group-hover:text-blue-500 transition-colors">
-                                                         <Shield size={24} />
+                                             <div key={idx} className="bg-white dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-100 dark:border-zinc-700/50 flex justify-between items-center group hover:border-blue-300 dark:hover:border-blue-900 transition-all cursor-pointer shadow-sm">
+                                                 <div className="flex items-center gap-3">
+                                                     <div className="w-10 h-10 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-docka-400 group-hover:text-blue-500 transition-colors">
+                                                         <Shield size={20} />
                                                      </div>
                                                      <div>
-                                                         <h5 className="text-sm font-black text-docka-900 dark:text-zinc-100 tracking-tight">{proc.brand}</h5>
-                                                         <p className="text-[10px] font-black text-docka-300 uppercase tracking-widest mt-0.5">Proc: {proc.id} â€¢ {proc.class}</p>
+                                                         <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100 tracking-tight">{proc.brand}</h5>
+                                                         <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mt-0.5">Proc: {proc.id} â€¢ {proc.class}</p>
                                                      </div>
                                                  </div>
-                                                 <span className="px-4 py-1.5 bg-docka-50 dark:bg-zinc-800 text-[9px] font-black uppercase tracking-widest text-docka-400 rounded-full border border-transparent group-hover:border-blue-100 dark:group-hover:border-blue-900">
+                                                 <span className="px-3 py-1 bg-docka-50 dark:bg-zinc-800 text-[9px] font-bold uppercase tracking-widest text-docka-500 rounded-lg border border-docka-100 dark:border-zinc-700 group-hover:border-blue-200">
                                                      {proc.status}
                                                  </span>
                                              </div>
@@ -511,9 +510,9 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                  )}
 
                                  {activeTab === 'financial' && (
-                                     <div className="bg-white dark:bg-zinc-900 rounded-[2rem] border border-docka-50 dark:border-zinc-800 overflow-hidden shadow-sm">
+                                     <div className="bg-white dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-700/50 overflow-hidden shadow-sm">
                                          <table className="w-full text-left">
-                                             <thead className="bg-docka-50/50 dark:bg-zinc-800/50 text-docka-300 font-black text-[9px] uppercase tracking-widest border-b border-docka-50 dark:border-zinc-800">
+                                             <thead className="bg-docka-50/50 dark:bg-zinc-800/80 text-docka-400 font-bold text-[9px] uppercase tracking-wider border-b border-docka-100 dark:border-zinc-700">
                                                  <tr>
                                                      <th className="px-6 py-4">Fatura</th>
                                                      <th className="px-6 py-4">Valor</th>
@@ -521,17 +520,17 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                      <th className="px-6 py-4 text-right">Status</th>
                                                  </tr>
                                              </thead>
-                                             <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
+                                             <tbody className="divide-y divide-docka-50 dark:divide-zinc-700/50">
                                                  {selectedClient.invoices?.map((inv, idx) => (
-                                                     <tr key={idx} className="hover:bg-docka-50/30 dark:hover:bg-zinc-800/30">
+                                                     <tr key={idx} className="hover:bg-docka-50/30 dark:hover:bg-zinc-800/50">
                                                          <td className="px-6 py-4">
-                                                             <p className="text-xs font-black text-docka-900 dark:text-zinc-100">{inv.desc}</p>
-                                                             <p className="text-[9px] font-bold text-docka-300 uppercase tracking-widest">ID: {inv.id}</p>
+                                                             <p className="text-xs font-bold text-docka-900 dark:text-zinc-100">{inv.desc}</p>
+                                                             <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest">ID: {inv.id}</p>
                                                          </td>
-                                                         <td className="px-6 py-4 text-sm font-black text-docka-900 dark:text-zinc-100">{inv.value}</td>
-                                                         <td className="px-6 py-4 text-[10px] font-black text-docka-300 uppercase">{inv.date}</td>
+                                                         <td className="px-6 py-4 text-sm font-bold text-docka-900 dark:text-zinc-100">{inv.value}</td>
+                                                         <td className="px-6 py-4 text-[10px] font-bold text-docka-400 uppercase">{inv.date}</td>
                                                          <td className="px-6 py-4 text-right">
-                                                             <span className={`inline-flex px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                             <span className={`inline-flex px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest ${
                                                                  inv.status === 'paid' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
                                                              }`}>
                                                                  {inv.status}
@@ -585,21 +584,21 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                     }
                 >
                     <div className="space-y-6 pt-2">
-                        <div className="grid grid-cols-2 gap-6">
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-black text-docka-300 uppercase tracking-[0.2em] mb-2">RazÃ£o Social / Nome</label>
+                                <label className="block text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">RazÃ£o Social / Nome</label>
                                 <input
                                     value={newClient.company}
                                     onChange={e => setNewClient({ ...newClient, company: e.target.value })}
-                                    className="w-full h-12 px-4 bg-docka-50 dark:bg-zinc-800 border-none rounded-xl text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-docka-300 uppercase tracking-[0.2em] mb-2">ResponsÃ¡vel</label>
+                                <label className="block text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">ResponsÃ¡vel</label>
                                 <input
                                     value={newClient.name}
                                     onChange={e => setNewClient({ ...newClient, name: e.target.value })}
-                                    className="w-full h-12 px-4 bg-docka-50 dark:bg-zinc-800 border-none rounded-xl text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
                                 />
                             </div>
                         </div>
@@ -634,16 +633,16 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                     size="sm"
                 >
                     <div className="p-4 text-center">
-                        <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                        <div className="w-16 h-16 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-xl flex items-center justify-center mx-auto mb-6">
                             <AlertTriangle size={32} />
                         </div>
-                        <h4 className="text-xl font-black text-docka-900 dark:text-zinc-100 tracking-tight mb-2">Encerrar Relacionamento?</h4>
-                        <p className="text-xs font-bold text-docka-300 uppercase tracking-widest leading-relaxed mb-8 px-4">
+                        <h4 className="text-xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight mb-2">Encerrar Relacionamento?</h4>
+                        <p className="text-xs font-bold text-docka-400 dark:text-zinc-400 uppercase tracking-widest leading-relaxed mb-8 px-4">
                             Esta aÃ§Ã£o removerÃ¡ {clientToDelete?.company} permanentemente do ecossistema.
                         </p>
                         <div className="flex flex-col gap-3">
-                            <button onClick={confirmDelete} className="w-full py-4 bg-rose-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-rose-500/20 hover:scale-[1.02] transition-all">Confirmar ExclusÃ£o</button>
-                            <button onClick={() => setClientToDelete(null)} className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-docka-300 hover:text-docka-500">Manter Cliente</button>
+                            <button onClick={confirmDelete} className="w-full py-3.5 bg-rose-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm hover:bg-rose-600 transition-all">Confirmar ExclusÃ£o</button>
+                            <button onClick={() => setClientToDelete(null)} className="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-docka-300 hover:text-docka-500">Manter Cliente</button>
                         </div>
                     </div>
                 </Modal>
