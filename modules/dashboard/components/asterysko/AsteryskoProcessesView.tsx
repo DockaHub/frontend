@@ -681,7 +681,11 @@ const AsteryskoProcessesView: React.FC = () => {
                                 );
                             })}
                         </tbody>
-                              {/* NEW PROCESS MODAL DS 3.0 */}
+                    </table>
+                </div>
+            </div>
+
+            {/* NEW PROCESS MODAL DS 3.0 */}
             <Modal
                 isOpen={isNewProcessOpen}
                 onClose={() => setIsNewProcessOpen(false)}
@@ -1066,7 +1070,6 @@ const AsteryskoProcessesView: React.FC = () => {
                         </div>
                     </Modal>
                 )}
-            </div>
         </DashboardPage>
     );
 };
