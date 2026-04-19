@@ -63,16 +63,17 @@ A aplicação segue um layout de **Sidebar Fixa + Área de Conteúdo Fluida**.
     *   Container: `flex-1 h-full overflow-hidden flex flex-col`.
     *   Background: `bg-white dark:bg-zinc-950`.
 
-### View Header (Padrão de Página)
-Barra superior fixa dentro da área de conteúdo.
+### View Header (Padrão de Página DS 3.0)
+As páginas devem utilizar o componente `<DashboardPage />` para garantir consistência. O cabeçalho é fixo em 64px (`h-16`) e o conteúdo ocupa o restante da viewport com scroll interno.
 
 ```tsx
-<div className="h-16 border-b border-docka-200 dark:border-zinc-800 flex items-center justify-between px-6 shrink-0 bg-white dark:bg-zinc-950 z-20">
-  <h1 className="text-xl font-bold text-docka-900 dark:text-zinc-100">Título da Página</h1>
-  <div className="flex gap-2">
-    {/* Ações / Filtros */}
-  </div>
-</div>
+<DashboardPage 
+  title="Título da Página" 
+  icon={Users} 
+  actions={<button>Ação</button>}
+>
+  {/* Conteúdo flui aqui com 100% de aproveitamento de tela */}
+</DashboardPage>
 ```
 
 ---
@@ -95,16 +96,9 @@ Barra superior fixa dentro da área de conteúdo.
 </button>
 ```
 
-**Icon Button**
-```tsx
-<button className="p-1.5 text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-md transition-colors">
-  <MoreHorizontal size={16} />
-</button>
-```
-
 ### Cards & Surfaces
 
-**Card Padrão**
+**Card Padrão (Solid)**
 ```tsx
 <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm hover:border-docka-300 dark:hover:border-zinc-700 transition-all">
   {/* Conteúdo */}
@@ -115,19 +109,20 @@ Barra superior fixa dentro da área de conteúdo.
 ```tsx
 <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
     <div className="flex items-center justify-between mb-4">
-       <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><Icon size={20} /></div>
+       <div className="p-2 bg-docka-50 dark:bg-zinc-800 text-docka-600 dark:text-zinc-400 rounded-lg"><Icon size={20} /></div>
     </div>
     <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">Valor</h3>
-    <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Legenda</p>
+    <p className="text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mt-1">Legenda</p>
 </div>
 ```
 
 ### Tabelas (Data Grid)
+No DS 3.0, as tabelas ocupam toda a largura do card sem limites laterais estritos.
 
 ```tsx
 <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
     <table className="w-full text-sm text-left">
-        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-docka-500 dark:text-zinc-500 font-semibold text-xs uppercase tracking-wider border-b border-docka-100 dark:border-zinc-800">
+        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-docka-500 dark:text-zinc-500 font-bold text-xs uppercase tracking-wider border-b border-docka-100 dark:border-zinc-800">
             <tr>
                 <th className="px-6 py-4">Coluna 1</th>
                 <th className="px-6 py-4 text-right">Ações</th>

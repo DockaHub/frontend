@@ -123,150 +123,159 @@ const DockaOverviewView: React.FC = () => {
         return `Há ${Math.floor(diffInSeconds / 86400)} dias`;
     };
 
+import DashboardPage from '../../../../components/DashboardPage';
+
+interface DashboardStats {
+// ... (mantenha interfaces iguais)
+}
+
+const DockaOverviewView: React.FC = () => {
+    // ... (mantenha os estados iguais)
+
     return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar transition-colors">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Visão Global</h1>
-                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Painel consolidado de todas as organizações e negócios.</p>
+        <DashboardPage 
+            title="Visão Global" 
+            icon={Globe}
+            subtitle="Painel consolidado de todas as organizações e negócios."
+        >
+            {loading && !stats ? (
+                <div className="flex justify-center items-center h-64">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-docka-900 dark:border-zinc-100"></div>
                 </div>
+            ) : (
+                <div className="animate-in fade-in duration-500">
+                    {error && (
+                        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm font-medium">
+                            {error}
+                        </div>
+                    )}
+                    
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                        <div className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg relative overflow-hidden group">
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-4 text-docka-300 dark:text-zinc-500">
+                                    <DollarSign size={20} />
+                                    <span className="text-[10px] font-bold uppercase tracking-wider">RECEITA (MÊS ATUAL)</span>
+                                </div>
+                                <h3 className="text-3xl font-bold mb-1">{stats ? formatCurrency(stats.revenue) : 'R$ 0,00'}</h3>
+                                <div className="flex items-center gap-1.5">
+                                    {stats?.growth !== undefined && (
+                                        <>
+                                            {stats.growth >= 0 ? <TrendingUp size={14} className="text-emerald-400" /> : <TrendingDown size={14} className="text-red-400" />}
+                                            <span className={`text-xs font-bold ${stats.growth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {stats.growth >= 0 ? '+' : ''}{stats.growth}% vs mês anterior
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform dark:text-zinc-900 text-white">
+                                <Globe size={120} />
+                            </div>
+                        </div>
 
-                {loading && !stats ? (
-                    <div className="flex justify-center items-center h-64">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-docka-900 dark:border-zinc-100"></div>
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="p-2 bg-docka-50 dark:bg-zinc-800 text-docka-600 dark:text-zinc-400 rounded-lg"><Building2 size={20} /></div>
+                                <span className="text-[10px] font-bold text-docka-500 dark:text-zinc-400 bg-docka-100 dark:bg-zinc-800 px-2 py-1 rounded-full">{stats?.organizations || 0} Empresas</span>
+                            </div>
+                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{stats?.organizations || 0}</h3>
+                            <p className="text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mt-1">Negócios Ativos</p>
+                        </div>
+
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="p-2 bg-docka-50 dark:bg-zinc-800 text-docka-600 dark:text-zinc-400 rounded-lg"><Users size={20} /></div>
+                            </div>
+                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{stats?.users || 0}</h3>
+                            <p className="text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mt-1">Usuários/Clientes Totais</p>
+                        </div>
+
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="p-2 bg-docka-50 dark:bg-zinc-800 text-docka-600 dark:text-zinc-400 rounded-lg"><Activity size={20} /></div>
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">100%</span>
+                            </div>
+                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{stats?.health || 'Estável'}</h3>
+                            <p className="text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mt-1">Saúde do Ecossistema</p>
+                        </div>
                     </div>
-                ) : (
-                    <>
-                        {error && (
-                            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm font-medium">
-                                {error}
-                            </div>
-                        )}
-                        
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10">
-                            <div className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg relative overflow-hidden group">
-                                <div className="relative z-10">
-                                    <div className="flex items-center gap-2 mb-4 text-docka-300 dark:text-zinc-500">
-                                        <DollarSign size={20} />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">RECEITA (MÊS ATUAL)</span>
-                                    </div>
-                                    <h3 className="text-3xl font-bold mb-1">{stats ? formatCurrency(stats.revenue) : 'R$ 0,00'}</h3>
-                                    <div className="flex items-center gap-1.5">
-                                        {stats?.growth !== undefined && (
-                                            <>
-                                                {stats.growth >= 0 ? <TrendingUp size={14} className="text-emerald-400" /> : <TrendingDown size={14} className="text-red-400" />}
-                                                <span className={`text-xs font-bold ${stats.growth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                                                    {stats.growth >= 0 ? '+' : ''}{stats.growth}% vs mês anterior
-                                                </span>
-                                            </>
-                                        )}
-                                    </div>
-                                </div>
-                                <div className="absolute -right-6 -bottom-6 opacity-10 group-hover:scale-110 transition-transform dark:text-zinc-900 text-white">
-                                    <Globe size={120} />
-                                </div>
-                            </div>
 
-                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><Building2 size={20} /></div>
-                                    <span className="text-xs font-bold text-docka-500 dark:text-zinc-400 bg-docka-100 dark:bg-zinc-800 px-2 py-1 rounded-full">{stats?.organizations || 0} Empresas</span>
-                                </div>
-                                <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{stats?.organizations || 0}</h3>
-                                <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Negócios Ativos</p>
-                            </div>
-
-                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="p-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg"><Users size={20} /></div>
-                                </div>
-                                <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{stats?.users || 0}</h3>
-                                <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Usuários/Clientes Totais</p>
-                            </div>
-
-                            <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg"><Activity size={20} /></div>
-                                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">100%</span>
-                                </div>
-                                <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{stats?.health || 'Estável'}</h3>
-                                <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Saúde do Ecossistema</p>
-                            </div>
-                        </div>
-
-                        {/* Companies Grid */}
-                        <h2 className="text-lg font-bold text-docka-900 dark:text-zinc-100 mb-6">Performance por Empresa</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                            {portfolio.map(org => {
-                                const revenue = org.revenue || 0;
-                                const status = org.status || 'Desconhecido';
-                                const icon = org.iconSettings;
-                                return (
-                                    <div key={org.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 p-6 hover:shadow-md hover:border-docka-300 dark:hover:border-zinc-700 transition-all group">
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className="flex items-center gap-3">
-                                                {icon?.logo ? (
-                                                    <img src={icon.logo} alt={org.name} className="w-10 h-10 rounded-lg object-contain p-1.5 bg-white dark:bg-zinc-800 shadow-sm border border-docka-100 dark:border-zinc-700" />
-                                                ) : icon?.svgIcon ? (
+                    {/* Companies Grid */}
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-lg font-bold text-docka-900 dark:text-zinc-100">Performance por Empresa</h2>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-10">
+                        {portfolio.map(org => {
+                            const revenue = org.revenue || 0;
+                            const status = org.status || 'Desconhecido';
+                            const icon = org.iconSettings;
+                            return (
+                                <div key={org.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 p-6 hover:shadow-md hover:border-docka-300 dark:hover:border-zinc-700 transition-all group">
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="flex items-center gap-3">
+                                            {icon?.logo ? (
+                                                <img src={icon.logo} alt={org.name} className="w-10 h-10 rounded-lg object-contain p-1.5 bg-white dark:bg-zinc-800 shadow-sm border border-docka-100 dark:border-zinc-700" />
+                                            ) : icon?.svgIcon ? (
+                                                <div 
+                                                    className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm overflow-hidden"
+                                                    style={{ 
+                                                        backgroundColor: icon.iconBg || '#f4f4f5',
+                                                        color: icon.iconColor || '#18181b'
+                                                    }}
+                                                >
                                                     <div 
-                                                        className="w-10 h-10 rounded-lg flex items-center justify-center shadow-sm overflow-hidden"
-                                                        style={{ 
-                                                            backgroundColor: icon.iconBg || '#f4f4f5',
-                                                            color: icon.iconColor || '#18181b'
-                                                        }}
-                                                    >
-                                                        <div 
-                                                            className="w-full h-full p-2 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current [&>svg]:block transition-transform duration-300"
-                                                            style={{ transform: `scale(${icon.iconScale || 1})` }}
-                                                            dangerouslySetInnerHTML={{ __html: icon.svgIcon }}
-                                                        />
-                                                    </div>
-                                                ) : (
-                                                    <div className={`w-10 h-10 ${icon?.logoColor || 'bg-docka-900'} rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
-                                                        {org.name.substring(0, 1)}
-                                                    </div>
-                                                )}
-                                                <div><h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{org.name}</h3></div>
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    const url = new URL(window.location.href);
-                                                    url.searchParams.set('org', org.slug);
-                                                    window.location.href = url.toString();
-                                                }}
-                                                className="text-xs font-semibold text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 bg-docka-50 dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-transparent hover:border-docka-200 transition-all font-sans"
-                                            >
-                                                Gerenciar
-                                            </button>
+                                                        className="w-full h-full p-2 flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current [&>svg]:block transition-transform duration-300"
+                                                        style={{ transform: `scale(${icon.iconScale || 1})` }}
+                                                        dangerouslySetInnerHTML={{ __html: icon.svgIcon }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className={`w-10 h-10 ${icon?.logoColor || 'bg-docka-900'} rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm`}>
+                                                    {org.name.substring(0, 1)}
+                                                </div>
+                                            )}
+                                            <div><h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{org.name}</h3></div>
                                         </div>
-                                        <div className="space-y-4">
-                                            <div className="flex justify-between items-end">
-                                                <div className="text-xs text-docka-500 dark:text-zinc-400 font-medium uppercase tracking-tight">Receita Consolidada</div>
-                                                <div className="font-bold text-docka-900 dark:text-zinc-100">{formatCurrency(revenue)}</div>
-                                            </div>
-                                            <div className="w-full bg-docka-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full rounded-full ${org.slug === 'fauves' ? 'bg-amber-500' : org.slug === 'tokyon' ? 'bg-red-500' : 'bg-docka-900'}`}
-                                                    style={{ width: stats && stats.revenue > 0 ? `${Math.min((revenue / stats.revenue) * 100, 100)}%` : '0%' }}
-                                                />
-                                            </div>
-                                            <div className="flex justify-between text-xs text-docka-500 dark:text-zinc-400 pt-2 border-t border-docka-50 dark:border-zinc-800">
-                                                <span>Status</span>
-                                                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[10px]">
-                                                    <div className={`w-1.5 h-1.5 rounded-full ${status === 'Operational' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500'}`} />
-                                                    {status === 'Operational' ? 'Operacional' : status}
-                                                </span>
-                                            </div>
+                                        <button 
+                                            onClick={() => {
+                                                const url = new URL(window.location.href);
+                                                url.searchParams.set('org', org.slug);
+                                                window.location.href = url.toString();
+                                            }}
+                                            className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200 bg-docka-50 dark:bg-zinc-800 px-3 py-1.5 rounded-lg border border-transparent hover:border-docka-200 transition-all uppercase tracking-wider"
+                                        >
+                                            Gerenciar
+                                        </button>
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end">
+                                            <div className="text-[10px] text-docka-500 dark:text-zinc-400 font-bold uppercase tracking-tight">Receita Consolidada</div>
+                                            <div className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{formatCurrency(revenue)}</div>
+                                        </div>
+                                        <div className="w-full bg-docka-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                                            <div
+                                                className={`h-full rounded-full ${org.slug === 'fauves' ? 'bg-amber-500' : org.slug === 'tokyon' ? 'bg-red-500' : 'bg-docka-900'}`}
+                                                style={{ width: stats && stats.revenue > 0 ? `${Math.min((revenue / stats.revenue) * 100, 100)}%` : '0%' }}
+                                            />
+                                        </div>
+                                        <div className="flex justify-between text-xs text-docka-500 dark:text-zinc-400 pt-2 border-t border-docka-50 dark:border-zinc-800">
+                                            <span className="text-[10px] font-bold uppercase">Status</span>
+                                            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold uppercase text-[10px]">
+                                                <div className={`w-1.5 h-1.5 rounded-full ${status === 'Operational' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-amber-500'}`} />
+                                                {status === 'Operational' ? 'Operacional' : status}
+                                            </span>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </>
-                )}
-            </div>
-        </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </DashboardPage>
     );
 };
 

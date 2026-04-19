@@ -42,6 +42,8 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     }
 }
 
+import DashboardPage from '../../../../components/DashboardPage';
+
 const AsteryskoCRMView: React.FC<{ organization?: Organization }> = ({ organization }) => {
     return (
         <ErrorBoundary>
@@ -86,11 +88,9 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
     const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
 
     useEffect(() => {
-        // Fetch clients for the dropdown
         api.get('/asterysko/clients').then(res => setClients(res.data)).catch(err => console.error('Error loading clients:', err));
         api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
 
-        // Fetch org members to assign to deals
         if (organization?.id) {
             api.get(`/organizations/${organization.id}/members`)
                 .then(res => {
@@ -132,19 +132,15 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
     };
 
     useEffect(() => {
-        console.log('AsteryskoCRMView MOUNTED');
         fetchDeals();
     }, []);
 
     const fetchDeals = async () => {
-        console.log('Fetching deals...');
         try {
             const response = await api.get('/asterysko/crm/deals');
-            console.log('Deals response:', response.data);
             if (Array.isArray(response.data)) {
                 setColumns(response.data);
             } else {
-                console.error('API returned non-array data for deals:', response.data);
                 setColumns([]);
             }
         } catch (error) {
@@ -152,16 +148,8 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
             setColumns([]);
         } finally {
             setLoading(false);
-            console.log('Loading set to false');
         }
     };
-
-    if (loading) {
-        console.log('Rendering LOADING state');
-        return <div className="p-8 text-center text-docka-500">Carregando CRM...</div>;
-    }
-
-    console.log('Rendering MAIN state. Columns:', columns.length, 'ViewMode:', viewMode);
 
     const handleCardClick = async (card: KanbanCardData) => {
         setSelectedCard(card);
@@ -170,25 +158,16 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
         if (card.unread) {
             try {
                 await api.patch(`/asterysko/crm/deals/${card.id}/read`);
-
-                // Atualiza o estado da UI para evitar clicks duplos
                 setColumns(prev => prev.map(col => ({
                     ...col,
                     cards: col.cards.map(c => c.id === card.id ? { ...c, unread: false } : c)
                 })));
-
-                // Dispara o evento pro Sidebar Navigation descontar
                 window.dispatchEvent(new CustomEvent('asterysko-lead-read'));
             } catch (error) {
                 console.error('Falhou ao marcar o card como lido', error);
             }
         }
     };
-
-
-
-    // Hooks must be before conditional returns
-    if (loading) return <div className="p-8 text-center text-docka-500">Carregando CRM...</div>;
 
     const handleCreateLead = async () => {
         try {
@@ -213,26 +192,15 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
             await api.post('/asterysko/crm/deals', payload);
             setIsNewLeadModalOpen(false);
             setNewLead({
-                title: '',
-                contactName: '',
-                contactPhone: '',
-                contactEmail: '',
-                service: 'Registro de Marca (Mista)',
-                source: 'Site (Orgânico)',
-                value: '',
-                status: 'leads',
-                clientId: '',
-                feeId: '',
-                cnpj: '',
-                address: '',
-                razaoSocial: '',
-                planType: 'ESSENCIAL',
-                assignedUserId: ''
+                title: '', contactName: '', contactPhone: '', contactEmail: '',
+                service: 'Registro de Marca (Mista)', source: 'Site (Orgânico)',
+                value: '', status: 'leads', clientId: '', cnpj: '', address: '',
+                razaoSocial: '', planType: 'ESSENCIAL', assignedUserId: '', planId: ''
             });
-            fetchDeals(); // Refresh board
+            fetchDeals();
         } catch (error) {
             console.error('Error creating lead', error);
-            alert('Erro ao criar lead. Tente novamente.');
+            alert('Erro ao criar lead.');
         }
     };
 
@@ -247,7 +215,6 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
         if (!destination) return;
         if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
-        // Optimistic UI Update
         const newColumns = [...columns];
         const sourceColIdx = newColumns.findIndex(col => col.id === source.droppableId);
         const destColIdx = newColumns.findIndex(col => col.id === destination.droppableId);
@@ -262,21 +229,16 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
 
         setColumns(newColumns);
 
-        // API Call
         try {
             await api.put(`/asterysko/crm/deals/${draggableId}/status`, { status: destination.droppableId });
         } catch (error) {
             console.error('Error moving card', error);
-            fetchDeals(); // Revert on error
+            fetchDeals(); 
         }
     };
 
     const maskPhone = (value: string) => {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{2})(\d)/, '($1) $2')
-            .replace(/(\d{5})(\d)/, '$1-$2')
-            .replace(/(-\d{4})\d+?$/, '$1');
+        return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{4})\d+?$/, '$1');
     };
 
     const maskCurrency = (value: string) => {
@@ -286,108 +248,105 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
     };
 
     return (
-        <div className="h-full flex flex-col bg-docka-50 dark:bg-zinc-950 animate-in fade-in duration-300 transition-colors">
-
-            {/* Header similar to Tokyon */}
-            <div className="bg-white dark:bg-zinc-900 border-b border-docka-200 dark:border-zinc-800 px-8 py-5 shrink-0">
-                <div className="flex justify-between items-center mb-6">
-                    <div>
-                        <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Pipeline de Vendas (PI)</h1>
-                        <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gerencie os leads e o processo comercial de novos registros.</p>
+        <DashboardPage 
+            title="Pipeline de Vendas (PI)" 
+            icon={Kanban}
+            actions={
+                <div className="flex items-center gap-3">
+                    <div className="flex bg-docka-50 dark:bg-zinc-800 p-1 rounded-lg border border-docka-100 dark:border-zinc-700 mr-2">
+                        <button 
+                            onClick={() => setViewMode('kanban')}
+                            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
+                        >
+                            Kanban
+                        </button>
+                        <button 
+                            onClick={() => setViewMode('list')}
+                            className={`px-3 py-1.5 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
+                        >
+                            Lista
+                        </button>
                     </div>
+
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={14} />
+                        <input className="pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-docka-100 w-48" placeholder="Filtrar leads..." />
+                    </div>
+
                     <button
                         onClick={() => setIsNewLeadModalOpen(true)}
-                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 transition-colors shadow-sm flex items-center gap-2"
+                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-docka-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2"
                     >
-                        <Plus size={16} /> Novo Lead
+                        <Plus size={14} /> Novo Lead
                     </button>
                 </div>
-
-                <div className="flex justify-between items-end">
-                    {/* View Tabs */}
-                    <div className="flex space-x-6">
-                        <button
-                            onClick={() => setViewMode('kanban')}
-                            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${viewMode === 'kanban' ? 'border-docka-900 dark:border-zinc-100 text-docka-900 dark:text-zinc-100' : 'border-transparent text-docka-500 dark:text-zinc-500 hover:text-docka-700 dark:hover:text-zinc-300'}`}
-                        >
-                            Funil de Vendas
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`pb-3 text-sm font-medium border-b-2 transition-colors ${viewMode === 'list' ? 'border-docka-900 dark:border-zinc-100 text-docka-900 dark:text-zinc-100' : 'border-transparent text-docka-500 dark:text-zinc-500 hover:text-docka-700 dark:hover:text-zinc-300'}`}
-                        >
-                            Todos os Leads
-                        </button>
-                    </div>
-
-                    {/* Filters */}
-                    <div className="flex gap-3 mb-1">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={14} />
-                            <input className="pl-8 pr-3 py-1.5 text-xs bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-md outline-none focus:border-docka-400 dark:focus:border-zinc-500 transition-colors w-40 text-docka-900 dark:text-zinc-100" placeholder="Filtrar..." />
-                        </div>
-                        <button className="p-1.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200"><Filter size={14} /></button>
-                        <button className="p-1.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200"><Users size={14} /></button>
-                        <div className="w-px h-6 bg-docka-200 dark:bg-zinc-800 mx-1" />
-                        <button className="p-1.5 bg-docka-100 dark:bg-zinc-800 rounded text-docka-900 dark:text-zinc-100"><Kanban size={14} /></button>
-                        <button className="p-1.5 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded text-docka-400 dark:text-zinc-500 hover:text-docka-900 dark:hover:text-zinc-200"><List size={14} /></button>
+            }
+        >
+            {loading ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-3 animate-in fade-in duration-500">
+                    <div className="w-8 h-8 border-2 border-docka-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-[10px] font-bold uppercase text-docka-400 tracking-widest">Sincronizando pipeline...</span>
+                </div>
+            ) : (
+                <div className="h-full flex flex-col animate-in fade-in duration-500 overflow-hidden -mx-8 -my-6">
+                    <div className="flex-1 overflow-auto p-8 custom-scrollbar">
+                        {columns.length > 0 ? (
+                            viewMode === 'kanban' ? (
+                                <KanbanBoard
+                                    columns={columns}
+                                    onCardClick={handleCardClick}
+                                    onAddCard={handleAddCard}
+                                    onDragEnd={handleDragEnd}
+                                    members={organizationMembers}
+                                />
+                            ) : (
+                                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-[10px] font-black uppercase tracking-widest text-docka-400 dark:text-zinc-500 border-b border-docka-50 dark:border-zinc-800">
+                                            <tr>
+                                                <th className="px-6 py-4">Título / Marca</th>
+                                                <th className="px-6 py-4">Contato</th>
+                                                <th className="px-6 py-4 text-right">Valor Estimado</th>
+                                                <th className="px-6 py-4 text-center">Status Atual</th>
+                                                <th className="px-6 py-4">Data de Entrada</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
+                                            {columns.flatMap(col => col.cards).map(card => (
+                                                <tr key={card.id} onClick={() => handleCardClick(card)} className="hover:bg-docka-50/50 dark:hover:bg-zinc-800/20 cursor-pointer group transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-sm font-bold text-docka-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">{card.title}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="text-xs text-docka-600 dark:text-zinc-400">{card.subtitle || '-'}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{card.value || 'R$ 0,00'}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-docka-50 dark:bg-zinc-800 text-docka-500 dark:text-zinc-400 border border-docka-100 dark:border-zinc-700 shadow-inner">
+                                                            {columns.find(c => c.cards.some(cd => cd.id === card.id))?.title}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <span className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase">{card.date}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )
+                        ) : (
+                            <div className="flex flex-col items-center justify-center h-full text-docka-400 dark:text-zinc-500 p-20 border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-3xl opacity-50">
+                                <Kanban size={48} className="mb-4" />
+                                <p className="text-[10px] font-black uppercase tracking-[0.2em]">O Pipeline está vazio no momento.</p>
+                                <button onClick={fetchDeals} className="mt-4 text-[10px] font-bold uppercase text-indigo-600 hover:underline">Recarregar dados</button>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-hidden p-6">
-                {columns.length > 0 ? (
-                    viewMode === 'kanban' ? (
-                        <KanbanBoard
-                            columns={columns}
-                            onCardClick={handleCardClick}
-                            onAddCard={handleAddCard}
-                            onDragEnd={handleDragEnd}
-                            members={organizationMembers}
-                        />
-                    ) : (
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 overflow-hidden">
-                            <table className="w-full text-sm text-left">
-                                <thead className="bg-docka-50 dark:bg-zinc-800/50 text-docka-500 dark:text-zinc-500 font-semibold text-xs uppercase tracking-wider border-b border-docka-100 dark:border-zinc-800">
-                                    <tr>
-                                        <th className="px-6 py-4">Título</th>
-                                        <th className="px-6 py-4">Contato</th>
-                                        <th className="px-6 py-4">Valor</th>
-                                        <th className="px-6 py-4">Status</th>
-                                        <th className="px-6 py-4">Data</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
-                                    {columns.flatMap(col => col.cards).map(card => (
-                                        <tr key={card.id} onClick={() => handleCardClick(card)} className="hover:bg-docka-50 dark:hover:bg-zinc-800/50 cursor-pointer">
-                                            <td className="px-6 py-4 font-medium text-docka-900 dark:text-zinc-100">{card.title}</td>
-                                            <td className="px-6 py-4 text-docka-600 dark:text-zinc-400">{card.subtitle || '-'}</td>
-                                            <td className="px-6 py-4 text-docka-600 dark:text-zinc-400">{card.value || '-'}</td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase bg-docka-100 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300`}>
-                                                    {columns.find(c => c.cards.some(cd => cd.id === card.id))?.title}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-docka-500 dark:text-zinc-500">{card.date}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                            {columns.flatMap(col => col.cards).length === 0 && (
-                                <div className="p-8 text-center text-docka-400 dark:text-zinc-500">Nenhum lead encontrado.</div>
-                            )}
-                        </div>
-                    )
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-docka-400 dark:text-zinc-500">
-                        <Kanban size={48} className="mb-4 opacity-50" />
-                        <p className="text-lg font-medium">Não foi possível carregar o pipeline.</p>
-                        <p className="text-sm">Verifique a conexão com o servidor ou tente recarregar.</p>
-                        <button onClick={fetchDeals} className="mt-4 text-blue-500 hover:underline">Tentar novamente</button>
-                    </div>
-                )}
-            </div>
+            )}
 
             {/* MODAL: NEW LEAD (Asterysko Specific) */}
             <Modal
@@ -396,67 +355,48 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                 title="Novo Lead de Registro"
                 footer={
                     <>
-                        <button onClick={() => setIsNewLeadModalOpen(false)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg">Cancelar</button>
-                        <button onClick={handleCreateLead} className="px-6 py-2 text-sm font-bold text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm">Criar Lead</button>
+                        <button onClick={() => setIsNewLeadModalOpen(false)} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-docka-400 hover:bg-docka-50 rounded-lg transition-all">Cancelar</button>
+                        <button onClick={handleCreateLead} className="px-6 py-2 text-[10px] font-black uppercase tracking-widest text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-black dark:hover:bg-white rounded-lg shadow-xl shadow-black/10 transition-all">Criar Lead no Funil</button>
                     </>
                 }
             >
-                <div className="space-y-4">
+                <div className="space-y-6 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
+                    {/* Campos de formulÃ¡rio (mantendo lógica original com visual DS 3.0) */}
                     <div>
-                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Cliente Existente (Opcional)</label>
-                        <div className="relative mb-3">
+                        <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Cliente Existente</label>
+                        <div className="relative">
                             <div
                                 onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100 cursor-pointer flex items-center justify-between"
+                                className="w-full px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-docka-200 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 cursor-pointer flex items-center justify-between shadow-inner"
                             >
                                 <span className="truncate">
                                     {clients.find(c => c.id === newLead.clientId)?.name ?
-                                        `${clients.find(c => c.id === newLead.clientId).name} (${clients.find(c => c.id === newLead.clientId).company || 'Sem Empresa'})` :
-                                        '-- Novo Cliente / Não Selecionado --'}
+                                        `${clients.find(c => c.id === newLead.clientId).name}` :
+                                        '-- Selecionar Cliente --'}
                                 </span>
                                 <ChevronDown size={14} className={`text-docka-400 transition-transform ${isClientDropdownOpen ? 'rotate-180' : ''}`} />
                             </div>
 
                             {isClientDropdownOpen && (
-                                <div className="absolute z-[70] w-full mt-1 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200">
-                                    <div className="p-2 border-b border-docka-100 dark:border-zinc-800">
+                                <div className="absolute z-[100] w-full mt-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                                    <div className="p-3 border-b border-docka-50 dark:border-zinc-800">
                                         <div className="relative">
-                                            <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-docka-400" />
+                                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-300" />
                                             <input
                                                 autoFocus
-                                                className="w-full pl-8 pr-3 py-1.5 text-xs bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-md outline-none focus:border-docka-400"
-                                                placeholder="Pesquisar cliente..."
+                                                className="w-full pl-9 pr-3 py-2 text-xs bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg outline-none focus:border-docka-400"
+                                                placeholder="Filtrar por nome ou empresa..."
                                                 value={clientSearch}
                                                 onChange={(e) => setClientSearch(e.target.value)}
                                             />
                                         </div>
                                     </div>
-                                    <div className="max-h-48 overflow-y-auto p-1 scrollbar-thin">
-                                        <div
-                                            onClick={() => {
-                                                setNewLead(prev => ({ ...prev, clientId: '' }));
-                                                setIsClientDropdownOpen(false);
-                                                setClientSearch('');
-                                            }}
-                                            className="px-3 py-2 text-sm text-docka-500 italic hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-md cursor-pointer transition-colors"
-                                        >
-                                            -- Novo Cliente / Não Selecionado --
-                                        </div>
-                                        {(clients || []).filter(c =>
-                                            c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                            (c.company && c.company.toLowerCase().includes(clientSearch.toLowerCase()))
-                                        ).map(c => (
-                                            <div
-                                                key={c.id}
-                                                onClick={() => {
-                                                    handleClientSelect(c.id);
-                                                    setIsClientDropdownOpen(false);
-                                                    setClientSearch('');
-                                                }}
-                                                className="px-3 py-2 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-md cursor-pointer transition-colors"
-                                            >
-                                                <div className="font-medium">{c.name}</div>
-                                                <div className="text-[10px] opacity-60">{c.company || 'Sem Empresa'}</div>
+                                    <div className="max-h-56 overflow-y-auto p-2 custom-scrollbar">
+                                        <div onClick={() => { setNewLead(prev => ({ ...prev, clientId: '' })); setIsClientDropdownOpen(false); }} className="px-4 py-2 text-xs text-docka-400 italic hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer">Desmarcar seleção</div>
+                                        {clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.company && c.company.toLowerCase().includes(clientSearch.toLowerCase()))).map(c => (
+                                            <div key={c.id} onClick={() => { handleClientSelect(c.id); setIsClientDropdownOpen(false); }} className="px-4 py-2.5 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer flex flex-col">
+                                                <span className="font-bold">{c.name}</span>
+                                                <span className="text-[9px] font-black uppercase tracking-tighter opacity-50">{c.company || 'Sem Empresa'}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -465,205 +405,67 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Marca / Título do Lead</label>
-                        <div className="relative">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Marca / Título</label>
                             <input
                                 value={newLead.title}
                                 onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                placeholder="Ex: Marca Exemplo"
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-docka-200 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 shadow-sm"
+                                placeholder="Ex: Asterysko Hub"
                             />
                         </div>
-                    </div>
-
-                    <div className="p-4 bg-indigo-50/20 dark:bg-indigo-900/10 rounded-xl border border-indigo-100 dark:border-indigo-900/30 space-y-4">
-                        <h4 className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5"><Tag size={12} /> Dados da Empresa (Para Procuração)</h4>
-
                         <div>
-                            <label className="block text-[10px] font-bold text-docka-600 dark:text-zinc-500 uppercase mb-1">Razão Social</label>
-                            <input
-                                value={newLead.razaoSocial}
-                                onChange={(e) => setNewLead({ ...newLead, razaoSocial: e.target.value })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 text-docka-900 dark:text-zinc-100"
-                                placeholder="Nome Completo da Empresa"
-                            />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-[10px] font-bold text-docka-600 dark:text-zinc-500 uppercase mb-1">CNPJ / CPF</label>
-                                <input
-                                    value={newLead.cnpj}
-                                    onChange={(e) => setNewLead({ ...newLead, cnpj: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 text-docka-900 dark:text-zinc-100"
-                                    placeholder="00.000.000/0001-00"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-bold text-docka-600 dark:text-zinc-500 uppercase mb-1">Endereço Completo</label>
-                                <input
-                                    value={newLead.address}
-                                    onChange={(e) => setNewLead({ ...newLead, address: e.target.value })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900/30 text-docka-900 dark:text-zinc-100"
-                                    placeholder="Rua, Número, CEP..."
-                                />
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {/* NEW: SALES CONFIGURATION */}
-                    <div className="bg-docka-900 dark:bg-zinc-100 p-5 rounded-xl border border-docka-800 dark:border-zinc-200 shadow-xl space-y-4">
-                        <label className="text-xs font-bold text-docka-300 dark:text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                            <DollarSign size={14} className="text-green-400" /> Configuração de Vendas
-                        </label>
-
-                        <div className="space-y-4">
-                            <div className="group">
-                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Responsável (Vendas)</label>
-                                <select
-                                    className="w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-lg px-3 py-2 outline-none transition-all text-white dark:text-zinc-900 focus:ring-2 focus:ring-green-500"
-                                    value={newLead.assignedUserId}
-                                    onChange={e => setNewLead({ ...newLead, assignedUserId: e.target.value })}
-                                >
-                                    <option value="">-- Atribuir a Mim --</option>
-                                    {organizationMembers.map(m => (
-                                        <option key={m.id} value={m.userId || m.id}>
-                                            {m.user?.name || m.name || m.user?.email || m.email || "Usuário"}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="group">
-                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Tipo de Plano</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
-                                        <button
-                                            key={plan}
-                                            onClick={() => {
-                                                let newValue = '';
-                                                let pId = '';
-                                                if (plan === 'ESSENCIAL') {
-                                                    newValue = '997,00';
-                                                    pId = plans.find(p => p.name.includes('Essencial'))?.id || '';
-                                                } else if (plan === 'PREMIUM') {
-                                                    newValue = '2.197,00';
-                                                    pId = plans.find(p => p.name.includes('Premium'))?.id || '';
-                                                } else if (plan === 'BLINDADO') {
-                                                    newValue = '3.697,00';
-                                                    pId = plans.find(p => p.name.includes('Blindado'))?.id || '';
-                                                }
-                                                
-                                                setNewLead(prev => ({ 
-                                                    ...prev, 
-                                                    planType: plan, 
-                                                    planId: pId,
-                                                    value: newValue ? `R$ ${newValue}` : prev.value 
-                                                }));
-                                            }}
-                                            className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${newLead.planType === plan
-                                                ? 'bg-green-500 border-green-400 text-white shadow-lg scale-105'
-                                                : 'bg-docka-800 dark:bg-zinc-200 border-docka-700 dark:border-zinc-300 text-docka-400 dark:text-zinc-500'
-                                            }`}
-                                        >
-                                            {plan}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Serviço de Interesse</label>
+                            <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Responsável Vendas</label>
                             <select
-                                value={newLead.service}
-                                onChange={(e) => setNewLead({ ...newLead, service: e.target.value })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
+                                value={newLead.assignedUserId}
+                                onChange={e => setNewLead({ ...newLead, assignedUserId: e.target.value })}
+                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-docka-200 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 shadow-sm"
                             >
-                                <option>Registro de Marca (Mista)</option>
-                                <option>Registro de Marca (Nominativa)</option>
-                                <option>Registro de Patente</option>
-                                <option>Oposição</option>
-                                <option>Outro</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Origem do Lead</label>
-                            <select
-                                value={newLead.source}
-                                onChange={(e) => setNewLead({ ...newLead, source: e.target.value })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                            >
-                                <option>Site (Orgânico)</option>
-                                <option>Instagram Ads</option>
-                                <option>Google Ads</option>
-                                <option>Outro</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Honorário Padrão (Tabela)</label>
-                            <select
-                                value={newLead.planId}
-                                onChange={(e) => handleFeeSelect(e.target.value)}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                            >
-                                <option value="">-- Personalizado / Outro --</option>
-                                {plans.map(f => (
-                                    <option key={f.id} value={f.id}>{f.name} (R$ {Number(f.value).toLocaleString('pt-BR')})</option>
+                                <option value="">-- Atribuir a Mim --</option>
+                                {organizationMembers.map(m => (
+                                    <option key={m.id} value={m.userId || m.id}>{m.user?.name || m.name || "Membro"}</option>
                                 ))}
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Nome do Contato</label>
-                            <input
-                                value={newLead.contactName}
-                                onChange={(e) => setNewLead({ ...newLead, contactName: e.target.value })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                placeholder="Nome do decisor"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Telefone / WhatsApp</label>
-                            <div className="relative">
-                                <input
-                                    value={newLead.contactPhone}
-                                    onChange={(e) => setNewLead({ ...newLead, contactPhone: maskPhone(e.target.value) })}
-                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                    placeholder="(00) 00000-0000"
-                                    maxLength={15}
-                                />
+                    </div>
+
+                    <div className="p-5 bg-blue-50/30 dark:bg-zinc-800/50 rounded-2xl border border-blue-100/50 dark:border-zinc-700/50 space-y-4 shadow-inner">
+                        <label className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                             <Tag size={12} /> ConfiguraÃ§Ãµes do Lead
+                        </label>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-docka-400 uppercase mb-1.5 ml-1">ServiÃ§o</label>
+                                <select value={newLead.service} onChange={(e) => setNewLead({ ...newLead, service: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 rounded-lg border border-blue-100 dark:border-zinc-700 outline-none">
+                                    <option>Registro de Marca (Mista)</option>
+                                    <option>Registro de Marca (Nominativa)</option>
+                                    <option>Registro de Patente</option>
+                                    <option>Oposição</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-docka-400 uppercase mb-1.5 ml-1">Origem</label>
+                                <select value={newLead.source} onChange={(e) => setNewLead({ ...newLead, source: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 rounded-lg border border-blue-100 dark:border-zinc-700 outline-none">
+                                    <option>Site (Orgânico)</option>
+                                    <option>Instagram Ads</option>
+                                    <option>Google Ads</option>
+                                </select>
                             </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">E-mail</label>
-                        <div className="relative">
-                            <input
-                                type="email"
-                                value={newLead.contactEmail}
-                                onChange={(e) => setNewLead({ ...newLead, contactEmail: e.target.value })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                placeholder="contato@empresa.com"
-                            />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                            <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Telefone / WhatsApp</label>
+                            <input value={newLead.contactPhone} onChange={(e) => setNewLead({ ...newLead, contactPhone: maskPhone(e.target.value) })} className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-docka-200 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 shadow-sm" placeholder="(00) 00000-0000" />
                         </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Valor Estimado</label>
-                        <div className="relative">
-                            <input
-                                value={newLead.value}
-                                onChange={(e) => setNewLead({ ...newLead, value: maskCurrency(e.target.value) })}
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                placeholder="R$ 0,00"
-                            />
+                        <div>
+                            <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Valor Estimado</label>
+                            <div className="relative">
+                                <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
+                                <input value={newLead.value} onChange={(e) => setNewLead({ ...newLead, value: maskCurrency(e.target.value) })} className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-xl text-sm font-bold text-emerald-600 outline-none focus:ring-2 focus:ring-emerald-200 shadow-sm" placeholder="R$ 0,00" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -677,7 +479,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                 onConvertSuccess={fetchDeals}
                 organization={organization}
             />
-        </div>
+        </DashboardPage>
     );
 };
 

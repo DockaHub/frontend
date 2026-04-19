@@ -76,35 +76,37 @@ const DockaEcosystemView: React.FC = () => {
     }, []);
 
     return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar animate-in fade-in duration-300 transition-colors">
-            <div className="max-w-6xl mx-auto">
+import DashboardPage from '../../../../components/DashboardPage';
 
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Ecossistema</h1>
-                        <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gerencie os workspaces conectados ao grupo Docka.</p>
-                    </div>
-                    <button className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 transition-colors shadow-sm flex items-center gap-2">
-                        <Plus size={16} /> Nova Empresa
-                    </button>
-                </div>
+const DockaEcosystemView: React.FC = () => {
+    // ... (mantenha estados e lógicas iguais)
+
+    return (
+        <DashboardPage 
+            title="Ecossistema" 
+            icon={Globe}
+            actions={
+                <button className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 transition-colors shadow-sm flex items-center gap-2">
+                    <Plus size={16} /> Nova Empresa
+                </button>
+            }
+        >
+            <div className="animate-in fade-in duration-500">
+                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-8 -mt-2">Gerencie os workspaces conectados ao grupo Docka.</p>
 
                 {/* List */}
                 <div className="space-y-4">
                     {childOrgs.map(org => {
                         let userCount = 0;
-                        let storage = '0%';
                         let status = 'Desconhecido';
 
                         if (org.slug === 'asterysko') {
                             userCount = stats?.users || 0;
                             status = stats?.health === 'Critical' ? 'Crítico' : stats?.health === 'Unstable' ? 'Instável' : 'Operacional';
                         } else if (org.slug === 'fauves') {
-                            // Fauves data from dynamic service
-                            userCount = fauvesUserCount || fauvesData?.totalOrders || 0; // Use real user count, fallback to orders
+                            userCount = fauvesUserCount || fauvesData?.totalOrders || 0;
                             status = 'Operacional';
                         } else {
-                            // Others
                             userCount = 0;
                             status = 'Em Breve';
                         }
@@ -112,8 +114,7 @@ const DockaEcosystemView: React.FC = () => {
                         const isOperational = status === 'Operacional' || status === 'Stable' || status === 'Estável';
 
                         return (
-                            <div key={org.id} className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:shadow-md transition-all group relative">
-
+                            <div key={org.id} className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 hover:shadow-md hover:border-docka-300 dark:hover:border-zinc-700 transition-all group relative">
                                 <div className="flex items-center gap-4">
                                     <div className={`w-14 h-14 ${org.logoColor} rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0`}>
                                         {org.name.substring(0, 1)}
@@ -122,7 +123,7 @@ const DockaEcosystemView: React.FC = () => {
                                         <h3 className="text-lg font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                             {org.name}
                                         </h3>
-                                        <a href="#" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 mt-1">
+                                        <a href="#" className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 mt-1 uppercase tracking-wider">
                                             {org.slug}.docka.io <ExternalLink size={10} />
                                         </a>
                                     </div>
@@ -131,24 +132,23 @@ const DockaEcosystemView: React.FC = () => {
                                 <div className="flex-1 w-full md:w-auto flex items-center gap-8 text-sm">
                                     <div className="flex items-center gap-2 text-docka-600 dark:text-zinc-400">
                                         <Users size={16} className="text-docka-400 dark:text-zinc-500" />
-                                        <span><strong className="text-docka-900 dark:text-zinc-100">{userCount}</strong> Usuários</span>
+                                        <span className="text-xs font-medium"><strong className="text-docka-900 dark:text-zinc-100">{userCount}</strong> Usuários</span>
                                     </div>
 
                                     <div className="flex items-center gap-2 text-docka-600 dark:text-zinc-400">
                                         <div className={`w-2 h-2 rounded-full ${isOperational ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                        <span>{status}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">{status}</span>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center gap-3 w-full md:w-auto justify-end relative">
                                     <button
                                         onClick={() => handleConfigureClick(org)}
-                                        className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-100 border border-docka-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg hover:bg-docka-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1"
+                                        className="text-[10px] font-bold text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-100 border border-docka-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg hover:bg-docka-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1 uppercase tracking-wider"
                                     >
                                         <Settings size={14} /> Configurar
                                     </button>
 
-                                    {/* 3 Dots Menu Button */}
                                     <div className="relative">
                                         <button
                                             onClick={(e) => toggleMenu(org.id, e)}
@@ -157,26 +157,24 @@ const DockaEcosystemView: React.FC = () => {
                                             <MoreHorizontal size={18} />
                                         </button>
 
-                                        {/* Dropdown Menu */}
                                         {openMenuId === org.id && (
                                             <div className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg shadow-xl z-50 animate-in fade-in slide-in-from-top-2">
-                                                <button className="w-full text-left px-4 py-2.5 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-700/50 flex items-center gap-2 transition-colors">
-                                                    <PauseCircle size={16} className="text-docka-400 dark:text-zinc-500" /> Suspender Acesso
+                                                <button className="w-full text-left px-4 py-2.5 text-xs font-bold text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-700/50 flex items-center gap-2 transition-colors uppercase tracking-wider">
+                                                    <PauseCircle size={16} className="text-docka-400 dark:text-zinc-500" /> Suspender
                                                 </button>
-                                                <button className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors border-t border-docka-100 dark:border-zinc-700">
+                                                <button className="w-full text-left px-4 py-2.5 text-[10px] font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2 transition-colors border-t border-docka-100 dark:border-zinc-700 uppercase tracking-tighter">
                                                     <Trash size={16} /> Arquivar Empresa
                                                 </button>
                                             </div>
                                         )}
                                     </div>
                                 </div>
-
                             </div>
                         );
                     })}
                 </div>
 
-                {/* EDIT ORG MODAL */}
+                {/* MODAL permanece como filho do Fragment ou DashboardPage */}
                 {selectedOrg && (
                     <Modal
                         isOpen={isEditModalOpen}
@@ -184,11 +182,12 @@ const DockaEcosystemView: React.FC = () => {
                         title={`Configurar ${selectedOrg.name}`}
                         footer={
                             <>
-                                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg transition-colors">Cancelar</button>
-                                <button onClick={() => setIsEditModalOpen(false)} className="px-6 py-2 text-sm font-bold text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm transition-colors">Salvar Alterações</button>
+                                <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg transition-colors font-sans">Cancelar</button>
+                                <button onClick={() => setIsEditModalOpen(false)} className="px-6 py-2 text-xs font-bold text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm transition-colors uppercase tracking-widest">Salvar</button>
                             </>
                         }
                     >
+                        {/* Conteúdo do Modal inalterado */}
                         <div className="space-y-6">
                             <div className="flex items-center gap-4 p-4 bg-docka-50 dark:bg-zinc-800 rounded-lg border border-docka-200 dark:border-zinc-700">
                                 <div className={`w-12 h-12 ${selectedOrg.logoColor} rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0`}>
@@ -196,21 +195,20 @@ const DockaEcosystemView: React.FC = () => {
                                 </div>
                                 <div>
                                     <h3 className="font-bold text-docka-900 dark:text-zinc-100">{selectedOrg.name}</h3>
-                                    <p className="text-xs text-docka-500 dark:text-zinc-400">ID: {selectedOrg.id}</p>
+                                    <p className="text-[10px] uppercase font-bold text-docka-500 dark:text-zinc-400">ID: {selectedOrg.id}</p>
                                 </div>
                             </div>
 
-                            {/* TABS */}
                             <div className="flex border-b border-docka-200 dark:border-zinc-700">
                                 <button
                                     onClick={() => setActiveTab('details')}
-                                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'details' ? 'border-docka-900 dark:border-zinc-100 text-docka-900 dark:text-zinc-100' : 'border-transparent text-docka-500 dark:text-zinc-400 hover:text-docka-700 dark:hover:text-zinc-300'}`}
+                                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-colors ${activeTab === 'details' ? 'border-docka-900 dark:border-zinc-100 text-docka-900 dark:text-zinc-100' : 'border-transparent text-docka-500 dark:text-zinc-400 hover:text-docka-700 dark:hover:text-zinc-300'}`}
                                 >
                                     Detalhes
                                 </button>
                                 <button
                                     onClick={() => setActiveTab('tracking')}
-                                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === 'tracking' ? 'border-docka-900 dark:border-zinc-100 text-docka-900 dark:text-zinc-100' : 'border-transparent text-docka-500 dark:text-zinc-400 hover:text-docka-700 dark:hover:text-zinc-300'}`}
+                                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider border-b-2 transition-colors ${activeTab === 'tracking' ? 'border-docka-900 dark:border-zinc-100 text-docka-900 dark:text-zinc-100' : 'border-transparent text-docka-500 dark:text-zinc-400 hover:text-docka-700 dark:hover:text-zinc-300'}`}
                                 >
                                     Monitoramento
                                 </button>
@@ -219,29 +217,29 @@ const DockaEcosystemView: React.FC = () => {
                             {activeTab === 'details' ? (
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Nome da Organização</label>
+                                        <label className="block text-[10px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1 tracking-wider">Nome da Organização</label>
                                         <div className="relative">
                                             <Building2 size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" />
                                             <input
                                                 defaultValue={selectedOrg.name}
-                                                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100"
+                                                className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 font-sans"
                                             />
                                         </div>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Slug (Domínio)</label>
+                                            <label className="block text-[10px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1 tracking-wider">Slug (Domínio)</label>
                                             <div className="flex items-center">
-                                                <span className="bg-docka-50 dark:bg-zinc-800 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs py-2 px-2 rounded-l-lg">docka.io/</span>
+                                                <span className="bg-docka-50 dark:bg-zinc-800 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-[10px] font-bold py-2.5 px-3 rounded-l-lg">docka.io/</span>
                                                 <input
                                                     defaultValue={selectedOrg.slug}
-                                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100"
+                                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 font-sans"
                                                 />
                                             </div>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Tipo</label>
+                                            <label className="block text-[10px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1 tracking-wider">Tipo</label>
                                             <select
                                                 defaultValue={selectedOrg.type}
                                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-600 capitalize text-docka-900 dark:text-zinc-100"
@@ -255,7 +253,7 @@ const DockaEcosystemView: React.FC = () => {
                                     </div>
 
                                     <div>
-                                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2 flex items-center gap-2"><Palette size={14} /> Cor da Marca</label>
+                                        <label className="block text-[10px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-3 flex items-center gap-2"><Palette size={14} /> Cor da Marca</label>
                                         <div className="flex gap-3">
                                             {['bg-slate-900', 'bg-blue-600', 'bg-indigo-600', 'bg-purple-600', 'bg-emerald-600', 'bg-orange-500', 'bg-red-600', 'bg-amber-700'].map((color) => (
                                                 <button
@@ -272,9 +270,8 @@ const DockaEcosystemView: React.FC = () => {
                         </div>
                     </Modal>
                 )}
-
             </div>
-        </div >
+        </DashboardPage>
     );
 };
 

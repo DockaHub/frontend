@@ -1,8 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, Filter, Plus, FileText, CheckCircle2, Clock, AlertCircle, FileSignature, Shield, Download, Upload, File, FilePlus, Scale, ChevronRight, Briefcase, Trash2, ChevronDown, Activity, Loader2, CreditCard, Camera } from 'lucide-react';
+import { 
+    Search, 
+    Plus, 
+    Filter, 
+    ChevronRight, 
+    ChevronDown, 
+    Briefcase, 
+    Scale, 
+    Clock, 
+    FileText, 
+    CheckCircle2, 
+    AlertCircle, 
+    FileSignature, 
+    Activity, 
+    Download, 
+    Upload, 
+    Shield, 
+    FilePlus, 
+    CreditCard, 
+    Camera, 
+    Loader2, 
+    Trash2 
+} from 'lucide-react';
+import api, { getBackendUrl } from '../../../../services/api';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
+import DashboardPage from '../../../../components/DashboardPage';
 
 interface Client {
     id: string;
@@ -75,17 +99,17 @@ const getTimelineEvents = (process: any) => {
     return events;
 };
 
-import api, { getBackendUrl } from '../../../../services/api';
 
 const AsteryskoProcessesView: React.FC = () => {
     const [processes, setProcesses] = useState<any[]>([]);
     const [selectedProcess, setSelectedProcess] = useState<any | null>(null);
     const { addToast } = useToast();
-    const [activeTab, setActiveTab] = useState<'timeline' | 'docs'>('timeline');
+    const [activeTab, setActiveTab] = useState<'timeline' | 'docs' | 'info'>('timeline');
     const [isNewProcessOpen, setIsNewProcessOpen] = useState(false);
     const [clients, setClients] = useState<Client[]>([]);
     const [clientSearch, setClientSearch] = useState('');
     const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const [isDownloadingPdf, setIsDownloadingPdf] = useState<string | null>(null);
 
@@ -186,7 +210,8 @@ const AsteryskoProcessesView: React.FC = () => {
                     contractUrl: p.contractUrl,
                     contractSignStatus: p.contractSignStatus,
                     contractSignDate: p.contractSignDate,
-                    createdAt: p.createdAt
+                    createdAt: p.createdAt,
+                    brand: p.brand
                 }));
                 setProcesses(mapped);
 
@@ -195,6 +220,8 @@ const AsteryskoProcessesView: React.FC = () => {
                 setClients(clientRes.data);
             } catch (error) {
                 console.error('Failed to fetch data', error);
+            } finally {
+                setLoading(false);
             }
         };
         fetchData();
@@ -567,923 +594,478 @@ const AsteryskoProcessesView: React.FC = () => {
     };
 
     return (
-        <div className="h-full flex flex-col bg-docka-50 dark:bg-zinc-950 animate-in fade-in duration-300 p-8 overflow-hidden transition-colors">
-
-            <div className="max-w-6xl mx-auto w-full h-full flex flex-col">
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8 shrink-0">
-                    <div>
-                        <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Processos INPI</h1>
-                        <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gestão de marcas, patentes e acompanhamento processual.</p>
+        <DashboardPage 
+            title="Gestão de Processos (INPI)" 
+            icon={FileText}
+            actions={
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={14} />
+                        <input className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-docka-100 w-64 shadow-sm" placeholder="Buscar marca, cliente ou número..." />
                     </div>
                     <button
                         onClick={() => setIsNewProcessOpen(true)}
-                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 transition-colors shadow-sm flex items-center gap-2"
+                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-5 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-docka-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2"
                     >
-                        <Plus size={16} /> Novo Processo
+                        <Plus size={14} /> Novo Processo
                     </button>
                 </div>
-
-                {/* Filters & List */}
-                <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm flex flex-col flex-1 min-h-0">
-                    <div className="p-4 border-b border-docka-200 dark:border-zinc-800 flex flex-col md:flex-row gap-4 justify-between items-center bg-docka-50/30 dark:bg-zinc-800/30 shrink-0">
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={14} />
-                            <input className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-400 dark:focus:border-blue-500 text-docka-900 dark:text-zinc-100 placeholder:text-docka-400 dark:placeholder:text-zinc-600" placeholder="Buscar por marca, cliente ou número..." />
-                        </div>
-                        <div className="flex gap-2 w-full md:w-auto">
-                            <select className="px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-docka-600 dark:text-zinc-400 outline-none focus:border-blue-400">
-                                <option>Todos os Status</option>
-                                <option>Aguardando Exame</option>
-                                <option>Publicado</option>
-                                <option>Deferido</option>
-                                <option>Concedido</option>
-                            </select>
-                            <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-bold text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-700/50">
-                                <Filter size={14} /> Mais Filtros
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="overflow-y-auto custom-scrollbar flex-1">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-docka-50 dark:bg-zinc-800/50 text-docka-500 dark:text-zinc-500 font-semibold text-xs uppercase tracking-wider sticky top-0 z-10 shadow-sm">
-                                <tr>
-                                    <th className="px-6 py-3">Marca</th>
-                                    <th className="px-6 py-3">Número INPI</th>
-                                    <th className="px-6 py-3">Cliente</th>
-                                    <th className="px-6 py-3">Classe</th>
-                                    <th className="px-6 py-3">Status Atual</th>
-                                    <th className="px-6 py-3 text-right">Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-docka-100 dark:divide-zinc-800">
-                                {processes.map((proc) => {
-                                    const isAlert = proc.nextStep === 'Pagar Taxas' || proc.nextStep === 'Cumprir Exigência';
-                                    return (
-                                        <tr key={proc.id} className="hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors group cursor-pointer" onClick={() => setSelectedProcess(proc)}>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center text-white font-bold text-[10px] shrink-0 overflow-hidden border border-docka-100 dark:border-zinc-800">
-                                                        {proc.logoUrl ? (
-                                                            <img 
-                                                                src={`${getBackendUrl()}${proc.logoUrl}`} 
-                                                                alt="" 
-                                                                className="w-full h-full object-cover" 
-                                                                onError={(e) => {
-                                                                    (e.target as HTMLImageElement).style.display = 'none';
-                                                                    (e.target as HTMLImageElement).parentElement!.innerText = proc.title.substring(0, 2);
-                                                                }}
-                                                            />
-                                                        ) : (proc.title.substring(0, 2))}
-                                                    </div>
-                                                    <span className="font-bold text-docka-900 dark:text-zinc-100">{proc.title}</span>
+            }
+        >
+            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm flex flex-col h-full animate-in fade-in duration-500">
+                <div className="overflow-auto custom-scrollbar">
+                    <table className="w-full text-left">
+                        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-[10px] font-black uppercase tracking-widest text-docka-400 dark:text-zinc-500 border-b border-docka-50 dark:border-zinc-800 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th className="px-6 py-4">Ativo / Marca</th>
+                                <th className="px-6 py-4">Número INPI</th>
+                                <th className="px-6 py-4">Titular</th>
+                                <th className="px-6 py-4">Classe</th>
+                                <th className="px-6 py-4">Evolução / Status</th>
+                                <th className="px-6 py-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
+                            {processes.map((proc) => {
+                                const isAlert = proc.nextStep === 'Pagar Taxas' || proc.nextStep === 'Cumprir Exigência';
+                                return (
+                                    <tr key={proc.id} className="hover:bg-docka-50/50 dark:hover:bg-zinc-800/20 transition-colors group cursor-pointer" onClick={() => setSelectedProcess(proc)}>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 bg-docka-100 dark:bg-zinc-800 rounded-xl flex items-center justify-center text-docka-900 dark:text-zinc-100 font-black text-[10px] shrink-0 overflow-hidden border border-docka-50 dark:border-zinc-700 shadow-inner translate-y-0.5">
+                                                    {proc.logoUrl ? (
+                                                        <img 
+                                                            src={`${getBackendUrl()}${proc.logoUrl}`} 
+                                                            alt="" 
+                                                            className="w-full h-full object-cover" 
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                                (e.target as HTMLImageElement).parentElement!.innerText = proc.title.substring(0, 2);
+                                                            }}
+                                                        />
+                                                    ) : (proc.title.substring(0, 2))}
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 font-mono text-docka-600 dark:text-zinc-400 text-xs">{proc.displayId}</td>
-                                            <td className="px-6 py-4 text-docka-700 dark:text-zinc-300">{proc.client}</td>
-                                            <td className="px-6 py-4"><span className="px-2 py-1 bg-docka-100 dark:bg-zinc-800 rounded text-xs font-medium text-docka-600 dark:text-zinc-400">{proc.class}</span></td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col gap-1">
-                                                    <span className={`w-fit px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${getStatusColor(proc.status)}`}>
-                                                        {formatStatus(proc.status)}
-                                                    </span>
-                                                    <div className={`flex items-center gap-1 text-[10px] font-bold ${isAlert ? 'text-rose-500' : 'text-amber-500'}`}>
-                                                        {isAlert && <AlertCircle size={10} />}
-                                                        {proc.nextStep}
-                                                    </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-bold text-docka-900 dark:text-zinc-100 group-hover:text-black transition-colors">{proc.title}</span>
+                                                    <span className="text-[9px] font-black uppercase tracking-tighter opacity-40">{proc.client}</span>
                                                 </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <button
-                                                        onClick={(e) => handleDeleteProcess(e, proc.id)}
-                                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                        title="Excluir Processo"
-                                                    >
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                    <button className="text-docka-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
-                                                        <ChevronRight size={18} />
-                                                    </button>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-xs font-mono font-bold text-docka-500 dark:text-zinc-400 bg-docka-50 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-docka-100 dark:border-zinc-700">{proc.displayId}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-xs font-medium text-docka-600 dark:text-zinc-400">{proc.client}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-2 py-1 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-docka-400 dark:text-zinc-500 border border-docka-100 dark:border-zinc-700">{proc.class}</span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col gap-1.5">
+                                                <span className={`w-fit px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${getStatusColor(proc.status)} border border-white/20 shadow-sm`}>
+                                                    {formatStatus(proc.status)}
+                                                </span>
+                                                <div className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest ${isAlert ? 'text-rose-500' : 'text-amber-500/80'} ml-1`}>
+                                                    {isAlert && <AlertCircle size={10} />}
+                                                    {proc.nextStep}
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            {/* NEW PROCESS MODAL */}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1">
+                                                <button onClick={(e) => handleDeleteProcess(e, proc.id)} className="p-2 text-docka-200 hover:text-red-500 rounded-xl transition-all opacity-0 group-hover:opacity-100"><Trash2 size={16} /></button>
+                                                <div className="p-2 bg-docka-50 dark:bg-zinc-800 rounded-xl text-docka-400 group-hover:bg-docka-900 dark:group-hover:bg-zinc-100 group-hover:text-white dark:group-hover:text-zinc-900 transition-all shadow-sm">
+                                                    <ChevronRight size={16} />
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                              {/* NEW PROCESS MODAL DS 3.0 */}
             <Modal
                 isOpen={isNewProcessOpen}
                 onClose={() => setIsNewProcessOpen(false)}
-                title="Cadastrar Novo Processo INPI"
+                title="Novo Ativo / Processo INPI"
                 size="lg"
-                footer={
-                    <>
-                        <button onClick={() => setIsNewProcessOpen(false)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg">Cancelar</button>
-                        <button onClick={handleCreateProcess} className="px-6 py-2 text-sm font-bold text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white/90 rounded-lg shadow-sm">Cadastrar</button>
-                    </>
-                }
             >
-                <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Número do Processo</label>
-                            <div className="relative">
-                                <Scale size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" />
-                                <input
-                                    className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                    placeholder="900000000"
-                                    value={newProcessData.inpiProcessNumber}
-                                    onChange={(e) => setNewProcessData({ ...newProcessData, inpiProcessNumber: e.target.value })}
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Data de Depósito</label>
-                            <input
-                                type="date"
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                value={newProcessData.date}
-                                onChange={(e) => setNewProcessData({ ...newProcessData, date: e.target.value })}
-                            />
-                        </div>
-                    </div>
-
-                    <div>
-                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Nome da Marca</label>
-                        <input
-                            className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                            placeholder="Ex: ASTERY"
-                            value={newProcessData.brandName}
-                            onChange={(e) => setNewProcessData({ ...newProcessData, brandName: e.target.value })}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Tipo de Marca</label>
-                            <select
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                value={newProcessData.type}
-                                onChange={(e) => setNewProcessData({ ...newProcessData, type: e.target.value })}
-                            >
-                                <option value="NOMINATIVA">Nominativa</option>
-                                <option value="MISTA">Mista</option>
-                                <option value="FIGURATIVA">Figurativa</option>
-                                <option value="TRIDIMENSIONAL">Tridimensional</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Logotipo (Opcional)</label>
-                            <div className="flex items-center gap-2">
-                                <label className="cursor-pointer bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400 px-3 py-2 rounded-lg text-sm w-full text-center truncate transition-colors">
-                                    {newProcessData.logoUrl ? 'Imagem Selecionada' : 'Escolher Arquivo...'}
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                                </label>
-                                {newProcessData.logoUrl && (
-                                    <img src={newProcessData.logoUrl} alt="Preview" className="w-9 h-9 object-contain rounded bg-white border border-docka-200" />
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Cliente Titular</label>
-                            <div className="relative">
-                                <div
-                                    onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
-                                    className="w-full pl-9 pr-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100 cursor-pointer flex items-center justify-between"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <Briefcase size={16} className="text-docka-400 dark:text-zinc-500" />
-                                        <span className="truncate">
-                                            {newProcessData.clientName || 'Selecionar cliente...'}
-                                        </span>
+                <div className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-docka-300 ml-1 text-left">Dados Básicos</h4>
+                            <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-6 rounded-[2rem] border border-docka-50 dark:border-zinc-800 shadow-inner">
+                                <div>
+                                    <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Número do Processo</label>
+                                    <div className="relative">
+                                        <Scale size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-docka-300" />
+                                        <input
+                                            className="w-full pl-10 pr-4 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-sm font-mono font-bold text-docka-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-docka-100"
+                                            placeholder="900000000"
+                                            value={newProcessData.inpiProcessNumber}
+                                            onChange={(e) => setNewProcessData({ ...newProcessData, inpiProcessNumber: e.target.value })}
+                                        />
                                     </div>
-                                    <ChevronDown size={14} className={`text-docka-400 transition-transform ${isClientDropdownOpen ? 'rotate-180' : ''}`} />
                                 </div>
-
-                                {isClientDropdownOpen && (
-                                    <div className="absolute z-[70] w-full mt-1 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg shadow-xl animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="p-2 border-b border-docka-100 dark:border-zinc-800">
-                                            <div className="relative">
-                                                <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-docka-400" />
-                                                <input
-                                                    autoFocus
-                                                    className="w-full pl-8 pr-3 py-1.5 text-xs bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-md outline-none focus:border-docka-400"
-                                                    placeholder="Pesquisar cliente..."
-                                                    value={clientSearch}
-                                                    onChange={(e) => setClientSearch(e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="max-h-48 overflow-y-auto p-1 scrollbar-thin">
-                                            {(clients || []).filter(c =>
-                                                c.name.toLowerCase().includes(clientSearch.toLowerCase()) ||
-                                                (c.company && c.company.toLowerCase().includes(clientSearch.toLowerCase()))
-                                            ).map(c => (
-                                                <div
-                                                    key={c.id}
-                                                    onClick={() => {
-                                                        setNewProcessData({ ...newProcessData, clientName: c.name });
-                                                        setIsClientDropdownOpen(false);
-                                                        setClientSearch('');
-                                                    }}
-                                                    className="px-3 py-2 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-md cursor-pointer transition-colors"
-                                                >
-                                                    <div className="font-medium">{c.name}</div>
-                                                    <div className="text-[10px] opacity-60">{c.company || 'Sem Empresa'}</div>
-                                                </div>
-                                            ))}
-                                            {(clients || []).filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase())).length === 0 && (
-                                                <div className="px-3 py-4 text-xs text-center text-docka-400 italic">
-                                                    Nenhum cliente encontrado.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
+                                <div>
+                                    <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Nome da Ativo (Marca)</label>
+                                    <input
+                                        className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-sm font-bold text-docka-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-docka-100"
+                                        placeholder="EX: NOME DA MARCA"
+                                        value={newProcessData.brandName}
+                                        onChange={(e) => setNewProcessData({ ...newProcessData, brandName: e.target.value })}
+                                    />
+                                </div>
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Classe NCL</label>
-                            <input
-                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                                placeholder="Ex: 35"
-                                value={newProcessData.nclClass}
-                                onChange={(e) => setNewProcessData({ ...newProcessData, nclClass: e.target.value })}
-                            />
+
+                        <div className="space-y-6">
+                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-docka-300 ml-1 text-left">Classificação e Titular</h4>
+                            <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-6 rounded-[2rem] border border-docka-50 dark:border-zinc-800 shadow-inner">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Classe NCL</label>
+                                        <input
+                                            className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-[10px] font-black text-center text-docka-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-docka-100"
+                                            placeholder="35"
+                                            value={newProcessData.nclClass}
+                                            onChange={(e) => setNewProcessData({ ...newProcessData, nclClass: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Data Depósito</label>
+                                        <input
+                                            type="date"
+                                            className="w-full px-3 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-[10px] font-bold text-docka-600 outline-none shadow-sm"
+                                            value={newProcessData.date}
+                                            onChange={(e) => setNewProcessData({ ...newProcessData, date: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Titular (Cliente)</label>
+                                    <div className="relative">
+                                        <div
+                                            onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
+                                            className="w-full pl-4 pr-10 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-[10px] font-black uppercase tracking-widest text-docka-900 dark:text-zinc-100 cursor-pointer shadow-sm flex items-center justify-between"
+                                        >
+                                            <span className="truncate">{newProcessData.clientName || 'Selecionar...'}</span>
+                                            <ChevronDown size={14} className={`text-docka-300 transition-transform ${isClientDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </div>
+
+                                        {isClientDropdownOpen && (
+                                            <div className="absolute z-[70] w-full mt-2 bg-white dark:bg-zinc-900 border border-docka-50 dark:border-zinc-800 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+                                                <div className="p-3 border-b border-docka-50 dark:border-zinc-800">
+                                                    <div className="relative">
+                                                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-300" />
+                                                        <input
+                                                            autoFocus
+                                                            className="w-full pl-9 pr-4 py-2 text-[10px] font-bold bg-docka-50 dark:bg-zinc-800 border-none rounded-lg outline-none"
+                                                            placeholder="Pesquisar..."
+                                                            value={clientSearch}
+                                                            onChange={(e) => setClientSearch(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="max-h-48 overflow-y-auto p-2 custom-scrollbar">
+                                                    {(clients || []).filter(c =>
+                                                        c.name.toLowerCase().includes(clientSearch.toLowerCase())
+                                                    ).map(c => (
+                                                        <div
+                                                            key={c.id}
+                                                            onClick={() => {
+                                                                setNewProcessData({ ...newProcessData, clientName: c.name });
+                                                                setIsClientDropdownOpen(false);
+                                                                setClientSearch('');
+                                                            }}
+                                                            className="px-4 py-3 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-xl cursor-pointer transition-all group text-left"
+                                                        >
+                                                            <div className="text-[10px] font-black uppercase tracking-widest text-docka-900 dark:text-zinc-100 group-hover:text-black">{c.name}</div>
+                                                            <div className="text-[9px] font-bold text-docka-400 uppercase tracking-tighter">{c.company || 'Sem Empresa'}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Status Inicial</label>
-                        <input
-                            className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100"
-                            placeholder="Ex: Aguardando Exame de Mérito"
-                            value={newProcessData.status}
-                            onChange={(e) => setNewProcessData({ ...newProcessData, status: e.target.value })}
-                        />
+                    <div className="flex justify-end gap-3 items-center pt-4 border-t border-docka-50 dark:border-zinc-800 text-left">
+                        <button onClick={() => setIsNewProcessOpen(false)} className="px-6 py-3 text-[10px] font-black uppercase tracking-[0.2em] text-docka-300 hover:text-docka-900 transition-colors">Cancelar</button>
+                        <button onClick={handleCreateProcess} className="px-10 py-3 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl shadow-xl hover:bg-black transition-all">Sincronizar Ativo</button>
                     </div>
                 </div>
             </Modal>
 
-            {/* PROCESS DETAILS MODAL */}
             {selectedProcess && (
                 <Modal
                     isOpen={!!selectedProcess}
                     onClose={() => setSelectedProcess(null)}
-                    title={`Processo: ${selectedProcess.title}`}
+                    title={selectedProcess.title}
                     size="xl"
                 >
-                    {isStatusEditOpen ? (
-                        <div className="flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200 p-4 border border-blue-200 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-900/10 rounded-xl mb-6">
-                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
-                                <Activity size={18} className="text-blue-600" /> Evoluir Processo
-                            </h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-bold text-docka-700 dark:text-zinc-300 mb-1 block">Novo Status</label>
-                                    <select
-                                        className="w-full bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-docka-900 dark:text-zinc-100"
-                                        value={newStatusData.status}
-                                        onChange={e => setNewStatusData({ ...newStatusData, status: e.target.value })}
-                                    >
-                                        <option value="">Selecione...</option>
-                                        <option value="WAITING_PAYMENT">Aguardando Pagto.</option>
-                                        <option value="PROTOCOL_PENDING">Aguardando Protocolo</option>
-                                        <option value="PUBLISHED">Publicado RPI</option>
-                                        <option value="OPPOSITION_OPEN">Oposição Aberta</option>
-                                        <option value="WAITING_MERIT">Aguardando Exame de Mérito</option>
-                                        <option value="DEFERRED">Processo Deferido</option>
-                                        <option value="REJECTED">Processo Indeferido</option>
-                                        <option value="CONCESSAO_EMITIDA">Concessão Emitida</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-docka-700 dark:text-zinc-300 mb-1 block">Título do Andamento</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Ex: Protocolo Realizado"
-                                        className="w-full bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-docka-900 dark:text-zinc-100"
-                                        value={newStatusData.description}
-                                        onChange={e => setNewStatusData({ ...newStatusData, description: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-docka-700 dark:text-zinc-300 mb-1 block">Detalhes Adicionais (Público)</label>
-                                <textarea
-                                    className="w-full bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-docka-900 dark:text-zinc-100 min-h-[80px]"
-                                    placeholder="Descreva o que ocorreu ou instruções para o cliente..."
-                                    value={newStatusData.details}
-                                    onChange={e => setNewStatusData({ ...newStatusData, details: e.target.value })}
-                                ></textarea>
-                            </div>
-                            <div className="flex justify-end gap-2 mt-2">
-                                <button onClick={() => setIsStatusEditOpen(false)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg">Cancelar</button>
-                                <button onClick={handleUpdateStatus} className="px-4 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2">
-                                    <CheckCircle2 size={16} /> Salvar Evolução
-                                </button>
-                            </div>
-                        </div>
-                    ) : null}
-
-                    <div className="flex flex-col h-[600px] -mt-2">
-
-                        {/* Header Info */}
-                        <div className="flex justify-between items-start pb-6 border-b border-docka-100 dark:border-zinc-800 mb-6 shrink-0">
-                            <div className="flex gap-4">
-                                <div className="relative group">
-                                    <div className="w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm overflow-hidden border-2 border-transparent group-hover:border-blue-400 transition-all">
-                                        {selectedProcess.logoUrl && !logoError ? (
-                                            <img 
-                                                src={`${getBackendUrl()}${selectedProcess.logoUrl}`} 
-                                                alt="Logo" 
-                                                className="w-full h-full object-cover"
-                                                onError={() => setLogoError(true)}
-                                            />
-                                        ) : (
-                                            selectedProcess.title.substring(0, 2)
-                                        )}
-                                        
-                                        {uploadingLogo && (
-                                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                <Loader2 size={20} className="text-white animate-spin" />
-                                            </div>
-                                        )}
+                    <div className="flex flex-col h-[75vh] -mx-1 px-1">
+                        {isStatusEditOpen && (
+                            <div className="absolute inset-x-0 top-0 z-50 p-6 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-docka-100 dark:border-zinc-800 animate-in fade-in slide-in-from-top-4 duration-300 rounded-t-3xl">
+                                <div className="max-w-2xl mx-auto space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 flex items-center gap-2">
+                                            <Activity size={14} /> Evoluir Processo / Lançar Despacho
+                                        </h3>
+                                        <button onClick={() => setIsStatusEditOpen(false)} className="text-[10px] font-black uppercase text-docka-300 hover:text-rose-500 transition-colors">Cancelar</button>
                                     </div>
-
-                                    {/* Action Buttons for Logo */}
-                                    <div className="absolute -bottom-2 -right-2 flex gap-1">
-                                        <label className="w-7 h-7 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-full flex items-center justify-center text-docka-600 dark:text-zinc-400 cursor-pointer hover:bg-docka-50 dark:hover:bg-zinc-700 shadow-sm transition-all" title="Alterar Logotipo">
-                                            <Camera size={14} />
-                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, selectedProcess.id)} />
-                                        </label>
-                                        {selectedProcess.logoUrl && (
-                                            <button 
-                                                onClick={() => handleDownloadLogo(selectedProcess.id)}
-                                                className="w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 shadow-sm transition-all" 
-                                                title="Baixar Logotipo"
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1">Novo Status Geral</label>
+                                            <select 
+                                                value={newStatusData.status}
+                                                onChange={e => setNewStatusData({...newStatusData, status: e.target.value})}
+                                                className="w-full px-4 py-3 bg-docka-50 dark:bg-zinc-800 border-none rounded-xl text-xs font-bold text-docka-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-100"
                                             >
-                                                <Download size={14} />
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{selectedProcess.title}</h2>
-                                    <div className="flex items-center gap-3 mt-1 text-sm text-docka-500 dark:text-zinc-400">
-                                        <span className="flex items-center gap-1 font-mono bg-docka-100 dark:bg-zinc-800 px-1.5 rounded"><Scale size={12} /> {selectedProcess.displayId}</span>
-                                        <span>•</span>
-                                        <span>{selectedProcess.client}</span>
-                                        <span>•</span>
-                                        <select 
-                                            value={selectedProcess.planType || ''} 
-                                            onChange={(e) => handleUpdatePlan(e.target.value)}
-                                            className="bg-transparent border-none text-xs font-bold text-docka-700 dark:text-zinc-300 outline-none hover:bg-docka-50 dark:hover:bg-zinc-800 rounded px-1"
-                                        >
-                                            <option value="">DEF. PLANO</option>
-                                            <option value="ESSENCIAL">ESSENCIAL</option>
-                                            <option value="PREMIUM">PREMIUM</option>
-                                            <option value="BLINDADO">BLINDADO</option>
-                                        </select>
-                                        <span>•</span>
-                                        <div className="flex items-center gap-1 group/class">
-                                            <span className="font-bold text-docka-700 dark:text-zinc-300">NCL</span>
+                                                <option value="">Selecione...</option>
+                                                <option value="NEW">NOVO</option>
+                                                <option value="WAITING_PAYMENT">AGUARDANDO PAGAMENTO</option>
+                                                <option value="FILED">PROTOCOLADO</option>
+                                                <option value="EXAMINATION">EM EXAME</option>
+                                                <option value="GRANTED">DEFERIDO / CONCEDIDO</option>
+                                                <option value="DENIED">INDEFERIDO</option>
+                                                <option value="OPPOSITION">OPOSIÇÃO</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1">Título do Despacho (Ex: 3.1)</label>
                                             <input 
-                                                type="text"
-                                                defaultValue={selectedProcess.class || ''}
-                                                onBlur={(e) => handleUpdateClass(e.target.value)}
-                                                className="w-8 bg-transparent border-b border-transparent hover:border-docka-200 focus:border-blue-500 text-xs font-bold text-docka-700 dark:text-zinc-300 outline-none transition-all text-center"
-                                                title="Clique para editar a Classe"
+                                                className="w-full px-4 py-3 bg-docka-50 dark:bg-zinc-800 border-none rounded-xl text-xs font-bold text-docka-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-100"
+                                                placeholder="Publicação de Pedido"
+                                                value={newStatusData.description}
+                                                onChange={e => setNewStatusData({...newStatusData, description: e.target.value})}
                                             />
                                         </div>
                                     </div>
+                                    <textarea 
+                                        className="w-full px-4 py-3 bg-docka-50 dark:bg-zinc-800 border-none rounded-xl text-xs font-medium text-docka-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-blue-100 h-24 resize-none"
+                                        placeholder="Detalhes adicionais do despacho..."
+                                        value={newStatusData.details}
+                                        onChange={e => setNewStatusData({...newStatusData, details: e.target.value})}
+                                    />
+                                    <button onClick={handleUpdateStatus} className="w-full py-4 bg-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-blue-900/10 hover:bg-blue-700 transition-all">Lançar Evolução</button>
                                 </div>
                             </div>
-                            <div className="flex flex-col items-end">
-                                <div className="text-xs text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1">Próxima Ação</div>
-                                <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-3 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/30">
-                                    <Clock size={16} /> {selectedProcess.nextStep}
+                        )}
+
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-6 pb-8 border-b border-docka-50 dark:border-zinc-800 mb-6 shrink-0 pt-2 px-2">
+                            <div className="flex gap-6">
+                                <div className="relative group">
+                                    <div className="w-24 h-24 bg-white dark:bg-zinc-800 rounded-[2rem] border border-docka-50 dark:border-zinc-700 shadow-xl flex items-center justify-center overflow-hidden p-2">
+                                        {selectedProcess.logoUrl && !logoError ? (
+                                            <img src={`${getBackendUrl()}${selectedProcess.logoUrl}`} alt="" className="w-full h-full object-contain" onError={() => setLogoError(true)} />
+                                        ) : (
+                                            <div className="text-2xl font-black text-docka-200 dark:text-zinc-700 uppercase">{selectedProcess.title.substring(0, 2)}</div>
+                                        )}
+                                        {uploadingLogo && <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 flex items-center justify-center backdrop-blur-sm"><Loader2 size={24} className="animate-spin text-docka-900" /></div>}
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 flex gap-1">
+                                        <label className="w-8 h-8 bg-white dark:bg-zinc-800 rounded-full shadow-lg flex items-center justify-center text-docka-400 cursor-pointer hover:text-docka-900 transition-all border border-docka-50 dark:border-zinc-700">
+                                            <Camera size={14} />
+                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleLogoUpload(e, selectedProcess.id)} />
+                                        </label>
+                                    </div>
+                                </div>
+                                <div className="space-y-1">
+                                    <h2 className="text-2xl font-black text-docka-900 dark:text-zinc-100 tracking-tight">{selectedProcess.title}</h2>
+                                    <div className="flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-docka-400">
+                                        <span className="flex items-center gap-1.5"><Briefcase size={12} className="text-docka-200" /> {selectedProcess.client}</span>
+                                        <span className="w-1 h-1 bg-docka-100 rounded-full" />
+                                        <span className="flex items-center gap-1.5 px-2 py-0.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-docka-900 dark:text-zinc-100 border border-docka-100 dark:border-zinc-700"><Scale size={12} className="text-docka-300" /> {selectedProcess.displayId}</span>
+                                    </div>
+                                    <div className="flex gap-2 mt-4">
+                                        {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
+                                            <button 
+                                                key={plan}
+                                                onClick={() => handleUpdatePlan(plan)}
+                                                className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border ${selectedProcess.planType === plan ? 'bg-docka-900 text-white border-docka-900 shadow-lg' : 'bg-white dark:bg-zinc-800 text-docka-300 border-docka-100 dark:border-zinc-700 hover:border-docka-300'}`}
+                                            >
+                                                {plan}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col items-end gap-3">
+                                <div className="space-y-1 text-right">
+                                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-docka-300">Ação Recomendada</span>
+                                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/20 text-amber-600 dark:text-amber-400 rounded-2xl shadow-sm text-[10px] font-black uppercase tracking-widest">
+                                        <Clock size={14} /> {selectedProcess.nextStep}
+                                    </div>
                                 </div>
                                 <button
                                     onClick={() => setIsStatusEditOpen(true)}
-                                    className="mt-3 text-[11px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 flex items-center gap-1 rounded uppercase tracking-wider hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                                    className="px-6 py-2 bg-white dark:bg-zinc-800 border-2 border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
                                 >
-                                    <Activity size={12} /> Evoluir Status
+                                    Evoluir Status
                                 </button>
                             </div>
                         </div>
 
-                        {/* Tabs */}
-                        <div className="flex gap-6 border-b border-docka-200 dark:border-zinc-800 mb-6 shrink-0">
-                            <button
-                                onClick={() => setActiveTab('timeline')}
-                                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'timeline' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-docka-500 dark:text-zinc-500 hover:text-docka-700 dark:hover:text-zinc-300'}`}
-                            >
-                                Linha do Tempo
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('docs')}
-                                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'docs' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-docka-500 dark:text-zinc-500 hover:text-docka-700 dark:hover:text-zinc-300'}`}
-                            >
-                                Documentos & Assinaturas
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('info')}
-                                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'info' ? 'border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400' : 'border-transparent text-docka-500 dark:text-zinc-500 hover:text-docka-700 dark:hover:text-zinc-300'}`}
-                            >
-                                Informações
-                            </button>
+                        <div className="flex gap-8 mb-8 border-b border-docka-50 dark:border-zinc-800 shrink-0 px-2">
+                            {['timeline', 'docs', 'info'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab as any)}
+                                    className={`pb-4 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative ${activeTab === tab ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-200 dark:text-zinc-600 hover:text-docka-400'}`}
+                                >
+                                    {tab === 'timeline' ? 'Linha do Tempo' : tab === 'docs' ? 'Documentos' : 'Dossiê Técnico'}
+                                    {activeTab === tab && (
+                                        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-docka-900 dark:bg-zinc-100 rounded-full animate-in slide-in-from-left-full duration-300" />
+                                    )}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Content Area */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
-
-                            {/* TIMELINE VIEW */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-8">
                             {activeTab === 'timeline' && (
-                                <div className="relative pl-4 space-y-8 before:absolute before:left-[27px] before:top-2 before:bottom-2 before:w-0.5 before:bg-docka-200 dark:before:bg-zinc-800">
+                                <div className="space-y-6 relative pl-10 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-docka-50 dark:before:bg-zinc-800">
                                     {getTimelineEvents(selectedProcess).map((event: any, idx: number) => (
-                                        <div key={idx} className="relative flex gap-6 group">
-                                            {/* Icon */}
-                                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 z-10 bg-white dark:bg-zinc-900 transition-colors
-                                            ${event.type === 'contract' || event.type === 'proxy' || event.status === 'completed' ? 'border-emerald-500 text-emerald-500' :
-                                                    event.status === 'current' ? 'border-blue-500 text-blue-500 ring-4 ring-blue-50 dark:ring-blue-900/30' :
-                                                        'border-docka-300 dark:border-zinc-700 text-docka-300 dark:text-zinc-600'}
-                                        `}>
-                                                {event.type === 'contract' ? <FileSignature size={12} /> : event.type === 'proxy' ? <Shield size={12} /> : event.status === 'completed' ? <CheckCircle2 size={14} /> :
-                                                    event.status === 'current' ? <div className="w-2.5 h-2.5 bg-blue-500 rounded-full animate-pulse" /> :
-                                                        <div className="w-2 h-2 bg-docka-300 dark:bg-zinc-600 rounded-full" />}
+                                        <div key={idx} className="relative group animate-in fade-in slide-in-from-left-4" style={{ animationDelay: `${idx * 50}ms` }}>
+                                            <div className={`absolute -left-10 top-0 w-10 h-10 rounded-2xl flex items-center justify-center border-2 z-10 transition-all ${event.status === 'completed' ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800 text-emerald-600' : event.status === 'current' ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-600/20 scale-110' : 'bg-white dark:bg-zinc-900 border-docka-50 dark:border-zinc-800 text-docka-200'}`}>
+                                                {event.status === 'completed' ? <CheckCircle2 size={16} /> : event.status === 'current' ? <Activity size={18} className="animate-pulse" /> : <Clock size={16} />}
                                             </div>
-
-                                            {/* Card */}
-                                            <div className={`flex-1 p-4 rounded-xl border transition-all ${event.status === 'current' ? 'bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800 shadow-sm' : 'bg-white dark:bg-zinc-800 border-docka-200 dark:border-zinc-700 hover:border-docka-300 dark:hover:border-zinc-600'}`}>
-                                                <div className="flex justify-between items-start mb-1">
-                                                    <h4 className={`font-bold text-sm ${event.status === 'future' ? 'text-docka-500 dark:text-zinc-500' : 'text-docka-900 dark:text-zinc-100'}`}>{event.title}</h4>
-                                                    <span className="text-xs font-mono text-docka-500 dark:text-zinc-400 bg-white dark:bg-zinc-900 px-1.5 py-0.5 rounded border border-docka-100 dark:border-zinc-700">{event.date}</span>
+                                            <div className={`p-6 rounded-[2rem] border transition-all ${event.status === 'current' ? 'bg-blue-50/20 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/30' : 'bg-white dark:bg-zinc-800 border-docka-50 dark:border-zinc-800 hover:border-docka-100 dark:hover:border-zinc-700'}`}>
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div>
+                                                        <h4 className="text-xs font-black uppercase tracking-widest text-docka-900 dark:text-zinc-100">{event.title}</h4>
+                                                        <span className="text-[9px] font-black uppercase text-docka-300 mt-1 block">{event.date}</span>
+                                                    </div>
                                                 </div>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-400 leading-relaxed">{event.desc}</p>
-
-                                                {/* IN-TIMELINE ACTIONS FOR DOCS */}
-                                                {event.type === 'contract' && event.status === 'completed' && selectedProcess.contractUrl && (
-                                                    <div className="mt-2">
-                                                        <button onClick={() => handleDownloadContract(selectedProcess)} className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1"><Download size={14} /> Baixar Cópia</button>
-                                                    </div>
-                                                )}
-                                                {event.type === 'proxy' && (
-                                                    <div className="mt-3 flex flex-wrap gap-2">
-                                                        {(event.internalState === 'VALIDATED' || event.internalState === 'SIGNED') && selectedProcess.proxyUrl && (
-                                                            <button
-                                                                onClick={() => selectedProcess.proxySignedUrl ? window.open(`${getBackendUrl()}${selectedProcess.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title || 'Marca')}
-                                                                disabled={isDownloadingPdf === selectedProcess.id}
-                                                                className="text-xs font-medium text-docka-600 hover:text-emerald-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 dark:bg-zinc-800 disabled:opacity-50"
-                                                            >
-                                                                {isDownloadingPdf === selectedProcess.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-                                                                Ver Cópia
-                                                            </button>
-                                                        )}
-                                                        {event.internalState !== 'VALIDATED' && event.internalState !== 'SIGNED' && (
-                                                            <button onClick={() => handleGenerateProxy(selectedProcess)} className="text-xs font-bold text-blue-600 flex items-center gap-1 border border-blue-200 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30">Gerar Documento</button>
-                                                        )}
-                                                        <label className="text-xs font-bold text-docka-600 flex items-center gap-1 border border-docka-200 px-2 py-1 rounded bg-docka-50 hover:bg-docka-100 cursor-pointer">
-                                                        </label>
-                                                    </div>
-                                                )}
-                                                {event.type === 'gru' && (
-                                                    <div className="mt-3 space-y-3">
-                                                        {event.internalState === 'PAID' ? (
-                                                            <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs">
-                                                                <CheckCircle2 size={16} /> Pagamento Confirmado
-                                                                {selectedProcess.gruReceiptUrl && (
-                                                                     <button 
-                                                                        onClick={() => window.open(`${getBackendUrl()}${selectedProcess.gruReceiptUrl}`, '_blank')}
-                                                                        className="ml-2 text-blue-600 hover:underline"
-                                                                    >
-                                                                        Ver Comprovante
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="p-3 bg-slate-50 dark:bg-zinc-900/50 rounded-lg border border-slate-200 dark:border-zinc-700">
-                                                                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Upload de Boleto (PDF) + Código de Barras</label>
-                                                                <div className="flex flex-col gap-2">
-                                                                    <input 
-                                                                        type="text" 
-                                                                        placeholder="Cole o código de barras aqui..."
-                                                                        value={gruBarcode}
-                                                                        onChange={e => setGruBarcode(e.target.value)}
-                                                                        className="w-full px-3 py-1.5 text-xs border border-docka-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 rounded outline-none focus:border-blue-400"
-                                                                    />
-                                                                    <label className={`w-full py-2 flex items-center justify-center gap-2 border-2 border-dashed rounded-lg text-xs font-bold transition-colors cursor-pointer
-                                                                        ${uploadingGru ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-50 dark:hover:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-600'}
-                                                                    `}>
-                                                                        {uploadingGru ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-                                                                        {selectedProcess.gruUrl ? 'Atualizar Boleto PDF' : 'Enviar Boleto PDF'}
-                                                                        <input 
-                                                                            type="file" 
-                                                                            className="hidden" 
-                                                                            accept=".pdf" 
-                                                                            disabled={uploadingGru}
-                                                                            onChange={(e) => handleGruUpload(e, selectedProcess.id)} 
-                                                                        />
-                                                                    </label>
-                                                                </div>
-                                                                {selectedProcess.gruBarcode && (
-                                                                    <div className="mt-2 text-[10px] text-slate-500 font-mono break-all bg-white dark:bg-zinc-800 p-1.5 rounded border border-slate-100 dark:border-zinc-700">
-                                                                        <strong>Código Atual:</strong> {selectedProcess.gruBarcode}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                )}
+                                                <p className="text-[11px] font-medium leading-relaxed text-docka-500 dark:text-zinc-400 mt-3">{event.desc}</p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             )}
 
-                            {/* DOCUMENTS VIEW */}
                             {activeTab === 'docs' && (
-                                <div className="space-y-6">
-
-                                    {/* GRU SECTION IN DOCS TAB FOR DISCOVERY */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     {(selectedProcess.planType === 'ESSENCIAL' || selectedProcess.planType === 'PREMIUM') && (
-                                        <div className="bg-blue-50/50 dark:bg-blue-900/10 border-2 border-dashed border-blue-200 dark:border-blue-800 rounded-xl p-5 space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-lg"><CreditCard size={20} /></div>
+                                        <div className="p-8 rounded-[2.5rem] bg-amber-50/30 dark:bg-amber-900/10 border border-amber-100/50 dark:border-amber-900/30 flex flex-col justify-between">
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-6">
+                                                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900 rounded-2xl flex items-center justify-center text-amber-600"><CreditCard size={24} /></div>
                                                     <div>
-                                                        <h4 className="font-bold text-sm text-docka-900 dark:text-zinc-100">Taxa Federal (GRU)</h4>
-                                                        <p className="text-[10px] text-docka-500 dark:text-zinc-400 font-bold uppercase tracking-wider">Obrigatório para planos {selectedProcess.planType}</p>
+                                                        <h4 className="text-[10px] font-black uppercase tracking-widest text-amber-900 dark:text-amber-400">Guia INPI (GRU)</h4>
+                                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-lg border ${selectedProcess.gruStatus === 'PAID' ? 'bg-emerald-500 text-white border-emerald-500' : 'bg-white dark:bg-zinc-800 text-amber-600 border-amber-200 dark:border-zinc-700'}`}>
+                                                            {selectedProcess.gruStatus === 'PAID' ? 'Liquidada' : 'Aguardando'}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                                {selectedProcess.gruStatus === 'PAID' ? (
-                                                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-700 px-2 py-1 rounded uppercase tracking-wider">Validado / Pago</span>
-                                                ) : selectedProcess.gruUrl ? (
-                                                    <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-2 py-1 rounded uppercase tracking-wider">Aguardando Cliente</span>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded uppercase tracking-wider">Pendente</span>
+                                                {selectedProcess.gruStatus !== 'PAID' && (
+                                                    <div className="space-y-4">
+                                                        <input 
+                                                            type="text" placeholder="Código de Barras..." value={gruBarcode} onChange={e => setGruBarcode(e.target.value)}
+                                                            className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-xs font-mono font-bold shadow-sm outline-none"
+                                                        />
+                                                        <label className="flex items-center justify-center gap-2 w-full py-4 bg-white dark:bg-zinc-800 border-2 border-dashed border-amber-200 dark:border-zinc-700 rounded-2xl text-[10px] font-black uppercase tracking-widest text-amber-600 cursor-pointer hover:bg-amber-50 transition-all">
+                                                            <Upload size={14} /> Selecionar PDF
+                                                            <input type="file" hidden accept=".pdf" onChange={(e) => handleGruUpload(e, selectedProcess.id)} />
+                                                        </label>
+                                                    </div>
                                                 )}
                                             </div>
-
-                                            {!selectedProcess.gruUrl ? (
-                                                <div className="space-y-3">
-                                                    <p className="text-xs text-docka-600 dark:text-zinc-400">Ao subir o boleto, enviaremos automaticamente um e-mail para o cliente realizar o pagamento.</p>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Cole aqui o código de barras da Guia..."
-                                                        value={gruBarcode}
-                                                        onChange={(e) => setGruBarcode(e.target.value)}
-                                                        className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 px-4 py-2.5 rounded-lg outline-none focus:border-blue-500 font-mono"
-                                                    />
-                                                    <div className="flex gap-2">
-                                                        <label className="flex-1 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-4 py-2.5 flex items-center justify-center gap-2 text-sm text-docka-600 dark:text-zinc-400 cursor-pointer hover:bg-docka-50 transition-colors border-dashed border-2">
-                                                            <Upload size={16} /> {gruFile ? <span className="text-blue-600 font-bold">{gruFile.name}</span> : 'Selecionar Boleto (PDF)'}
-                                                            <input type="file" hidden accept=".pdf" onChange={(e) => setGruFile(e.target.files?.[0] || null)} />
-                                                        </label>
-                                                        <button
-                                                            onClick={() => handleGruUpload({ target: { files: [gruFile] } } as any, selectedProcess.id)}
-                                                            disabled={uploadingGru || !gruFile || !gruBarcode}
-                                                            className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-blue-700 disabled:opacity-50 transition-all shadow-sm"
-                                                        >
-                                                            {uploadingGru ? <Loader2 size={16} className="animate-spin" /> : 'Enviar p/ Cliente'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-900 rounded-lg border border-docka-100 dark:border-zinc-800">
-                                                    <div>
-                                                        <span className="block text-[10px] uppercase font-bold text-docka-400 mb-1">Código de Barras</span>
-                                                        <span className="font-mono text-xs">{selectedProcess.gruBarcode}</span>
-                                                    </div>
-                                                    <div className="flex gap-2">
-                                                        <button 
-                                                            onClick={() => window.open(`${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/gru/download`, '_blank')}
-                                                            className="text-xs font-bold text-blue-600 hover:underline"
-                                                        >
-                                                            Ver Boleto
-                                                        </button>
-                                                        <span className="text-docka-200">|</span>
-                                                        <button 
-                                                            onClick={() => setSelectedProcess({ ...selectedProcess, gruUrl: null })}
-                                                            className="text-xs font-bold text-rose-500 hover:underline"
-                                                        >
-                                                            Substituir
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
+                                            {selectedProcess.gruUrl && <button onClick={() => window.open(`${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/gru/download`, '_blank')} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-amber-100 dark:border-zinc-700 hover:shadow-lg transition-all">Ver Guia Atual</button>}
                                         </div>
                                     )}
 
-                                    {/* Contract Section */}
-                                    <div className="bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl p-5">
-                                        <div className="flex justify-between items-center mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg"><FileSignature size={20} /></div>
+                                    <div className="p-8 rounded-[2.5rem] bg-blue-50/30 dark:bg-blue-900/10 border border-blue-100/50 dark:border-blue-900/30 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-2xl flex items-center justify-center text-blue-600"><FileSignature size={24} /></div>
                                                 <div>
-                                                    <h4 className="font-bold text-sm text-docka-900 dark:text-zinc-100">Contrato de Prestação de Serviços</h4>
-                                                    <p className="text-xs text-docka-500 dark:text-zinc-400">
-                                                        Status: {(selectedProcess.contractSignStatus === 'SIGNED' || selectedProcess.contractUrl)
-                                                            ? <span className="text-emerald-600 dark:text-emerald-400 font-bold">Assinado</span>
-                                                            : <span className="text-amber-600 dark:text-amber-400 font-bold">Pendente</span>}
-                                                    </p>
+                                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-900 dark:text-blue-400">Procuração</h4>
+                                                    <span className="text-[9px] font-black uppercase text-docka-300">Representação INPI</span>
                                                 </div>
                                             </div>
-                                            {selectedProcess.contractUrl ? (
-                                                <button
-                                                    onClick={() => handleDownloadContract(selectedProcess)}
-                                                    className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700"
-                                                >
-                                                    <Download size={12} /> Baixar PDF
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => alert('Em breve: Gerador de Contrato Automático do Processo (Isolado)')}
-                                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:border-blue-200 transition-colors"
-                                                >
-                                                    <FilePlus size={14} /> Gerar Contrato
-                                                </button>
-                                            )}
+                                            <div className="grid grid-cols-2 gap-3">
+                                                <button onClick={() => handleGenerateProxy(selectedProcess)} className="py-4 bg-white dark:bg-zinc-800 rounded-2xl border border-blue-100 dark:border-zinc-700 text-[9px] font-black uppercase text-blue-600 hover:shadow-md transition-all">Gerar Modelo</button>
+                                                <label className="py-4 bg-blue-600 rounded-2xl text-[9px] font-black uppercase text-white shadow-xl shadow-blue-600/20 cursor-pointer flex items-center justify-center gap-2 hover:bg-blue-700 transition-all">
+                                                    <Upload size={12} /> Upload Final
+                                                    <input type="file" hidden accept=".pdf" onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)} />
+                                                </label>
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    {/* Procuração Section */}
-                                    <div className="bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl p-5 relative overflow-hidden">
-                                        <div className="absolute top-0 left-0 w-1 h-full bg-amber-400" />
-
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg"><FileText size={20} /></div>
-                                                <div>
-                                                    <h4 className="font-bold text-sm text-docka-900 dark:text-zinc-100">Procuração INPI</h4>
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded uppercase ${selectedProcess.proxySignStatus === 'VALIDATED' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                                                            selectedProcess.proxySignStatus === 'SIGNED' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-                                                                'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                                                            }`}>
-                                                            {selectedProcess.proxySignStatus === 'VALIDATED' ? 'Validada' :
-                                                                selectedProcess.proxySignStatus === 'SIGNED' ? 'Enviada' : 'Pendente'}
-                                                        </span>
-                                                        <p className="text-[10px] text-docka-500 dark:text-zinc-400">Representação junto ao INPI</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {selectedProcess.proxyUrl ? (
-                                                <button
-                                                    onClick={() => handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title || 'Marca')}
-                                                    disabled={isDownloadingPdf === selectedProcess.id}
-                                                    className="text-xs font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 flex items-center gap-1 border border-docka-200 dark:border-zinc-700 px-2 py-1 rounded hover:bg-docka-50 dark:hover:bg-zinc-700 disabled:opacity-50"
-                                                >
-                                                    {isDownloadingPdf === selectedProcess.id ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
-                                                    Baixar Procuração
-                                                </button>
-                                            ) : (
-                                                <button
-                                                    onClick={() => handleGenerateProxy(selectedProcess)}
-                                                    className={`text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 flex items-center gap-1 bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/30 hover:border-blue-200 transition-colors ${selectedProcess.proxySignStatus === 'PENDING' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                    disabled={selectedProcess.proxySignStatus === 'PENDING'}
-                                                >
-                                                    <FileText size={14} /> {selectedProcess.proxySignStatus === 'PENDING' ? 'Enviado ao Cliente' : 'Gerar Modelo'}
-                                                </button>
-                                            )}
-                                        </div>
-
-                                        {/* Upload/Status Area */}
-                                        <div className="space-y-3">
-                                            {(selectedProcess.proxyUrl || selectedProcess.proxySignedUrl) ? (
-                                                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/50 rounded-xl p-4 flex items-center justify-between shadow-sm">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center">
-                                                            <CheckCircle2 size={20} />
-                                                        </div>
-                                                        <div>
-                                                            <h5 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">
-                                                                {selectedProcess.proxySignStatus === 'VALIDATED' ? 'Procuração Validada' : 'Procuração Recebida'}
-                                                            </h5>
-                                                            <p className="text-xs text-emerald-600 dark:text-emerald-400">
-                                                                {selectedProcess.proxySignStatus === 'VALIDATED' ? 'Documento pronto para uso no INPI.' : 'Aguardando validação interna da equipe.'}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        {selectedProcess.proxySignStatus === 'SIGNED' && (
-                                                            <button
-                                                                onClick={() => handleValidateProxy(selectedProcess.id)}
-                                                                className="text-[11px] font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-900/40 hover:bg-emerald-200 px-3 py-1.5 rounded-lg transition-colors border border-emerald-200 dark:border-emerald-800"
-                                                            >
-                                                                Validar
-                                                            </button>
-                                                        )}
-                                                        <label className="text-[11px] font-bold text-docka-600 dark:text-zinc-400 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors">
-                                                            Substituir
-                                                            <input type="file" className="hidden" accept="application/pdf" onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)} />
-                                                        </label>
-                                                        <button
-                                                            onClick={() => selectedProcess.proxySignedUrl ? window.open(`${getBackendUrl()}${selectedProcess.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title || 'Marca')}
-                                                            className="text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors shadow-lg shadow-emerald-900/10"
-                                                        >
-                                                            <Download size={14} /> Ver Cópia
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                <div
-                                                    className={`relative border-2 border-dashed border-docka-300 dark:border-zinc-600 rounded-xl bg-docka-50 dark:bg-zinc-800/50 p-6 flex flex-col items-center justify-center text-center transition-all hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/30 dark:hover:bg-blue-900/10 group overflow-hidden ${uploadingProxy ? 'opacity-70 pointer-events-none' : 'cursor-pointer'}`}
-                                                >
-                                                    <input
-                                                        type="file"
-                                                        accept="application/pdf"
-                                                        onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)}
-                                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                    />
-                                                    <div className="w-12 h-12 bg-white dark:bg-zinc-700 rounded-full shadow-sm flex items-center justify-center text-docka-400 dark:text-zinc-400 mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 group-hover:scale-110 transition-all">
-                                                        {uploadingProxy ? <Loader2 className="animate-spin" size={20} /> : <Upload size={20} />}
-                                                    </div>
-                                                    <h5 className="text-xs font-bold text-docka-800 dark:text-zinc-200">
-                                                        {uploadingProxy ? 'Enviando documento...' : 'Anexar Procuração Assinada'}
-                                                    </h5>
-                                                    <p className="text-[10px] text-docka-500 dark:text-zinc-400 mt-1 max-w-[200px]">
-                                                        Envie o arquivo PDF assinado manualmente ou pelo sistema de assinatura.
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Files List - Dynamic or Empty */}
-                                    <div>
-                                        <h4 className="text-xs font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-wider mb-3">Outros Arquivos</h4>
-                                        {selectedProcess.files && selectedProcess.files.length > 0 ? (
-                                            <div className="space-y-2">
-                                                {selectedProcess.files.map((file: any, i: number) => (
-                                                    <div key={i} className="flex items-center justify-between p-3 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg hover:border-docka-300 dark:hover:border-zinc-600 transition-colors">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-8 h-8 bg-docka-100 dark:bg-zinc-700 rounded flex items-center justify-center text-docka-500 dark:text-zinc-400"><File size={16} /></div>
-                                                            <span className="text-sm font-medium text-docka-700 dark:text-zinc-300">{file.name}</span>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="text-center py-4 border border-dashed border-docka-200 dark:border-zinc-800 rounded-lg text-docka-400 dark:text-zinc-600 text-xs">
-                                                Nenhum outro arquivo anexado.
-                                            </div>
+                                        {selectedProcess.proxyUrl && (
+                                            <button onClick={() => handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title)} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-100 dark:border-zinc-700 hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                                                <Download size={14} /> Baixar Cópia
+                                            </button>
                                         )}
                                     </div>
                                 </div>
                             )}
 
-                            {/* INFORMATION VIEW */}
                             {activeTab === 'info' && (
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-4">
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Nome da Marca</label>
-                                                <input 
-                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
-                                                    value={infoForm.brandName || ''}
-                                                    onChange={e => setInfoForm({ ...infoForm, brandName: e.target.value })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Número do Processo INPI</label>
-                                                <input 
-                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500 font-mono"
-                                                    value={infoForm.inpiProcessNumber || ''}
-                                                    onChange={e => setInfoForm({ ...infoForm, inpiProcessNumber: e.target.value })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Titulares / Nome Empresarial</label>
-                                                <textarea 
-                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500 h-20 resize-none"
-                                                    value={infoForm.holders || ''}
-                                                    onChange={e => setInfoForm({ ...infoForm, holders: e.target.value })}
-                                                />
+                                <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-docka-300 ml-1">Informações do Ativo</h4>
+                                            <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-8 rounded-[2.5rem] border border-docka-50 dark:border-zinc-800 shadow-inner">
+                                                {['brandName', 'nature', 'presentation'].map(field => (
+                                                    <div key={field}>
+                                                        <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'brandName' ? 'Nome da Marca' : field === 'nature' ? 'Natureza' : 'Apresentação'}</label>
+                                                        <input 
+                                                            className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-xs font-bold text-docka-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-docka-100"
+                                                            value={infoForm[field] || ''}
+                                                            onChange={e => setInfoForm({...infoForm, [field]: e.target.value})}
+                                                        />
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Tipo</label>
-                                                    <select 
-                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
-                                                        value={infoForm.brandType || ''}
-                                                        onChange={e => setInfoForm({ ...infoForm, brandType: e.target.value })}
-                                                    >
-                                                        <option value="MISTA">Mista</option>
-                                                        <option value="NOMINATIVA">Nominativa</option>
-                                                        <option value="FIGURATIVA">Figurativa</option>
-                                                        <option value="TRIDIMENSIONAL">Tridim.</option>
-                                                    </select>
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-docka-300 ml-1">Prazos e Vigência</h4>
+                                            <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-8 rounded-[2.5rem] border border-docka-50 dark:border-zinc-800 shadow-inner">
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    {['filingDate', 'concessionDate'].map(field => (
+                                                        <div key={field}>
+                                                            <label className="block text-[9px] font-black text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'filingDate' ? 'Depósito' : 'Concessão'}</label>
+                                                            <input 
+                                                                type="date"
+                                                                className="w-full px-3 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-[10px] font-bold text-docka-600 outline-none"
+                                                                value={infoForm[field] || ''}
+                                                                onChange={e => field === 'concessionDate' ? handleConcessionDateChange(e.target.value) : setInfoForm({...infoForm, [field]: e.target.value})}
+                                                            />
+                                                        </div>
+                                                    ))}
                                                 </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Apresentação</label>
+                                                <div className="p-4 bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 rounded-2xl">
+                                                    <label className="block text-[9px] font-black text-rose-500 uppercase tracking-widest mb-1 ml-1 flex items-center gap-1.5"><Clock size={10} /> Expiração do Decênio</label>
                                                     <input 
-                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
-                                                        value={infoForm.presentation || ''}
-                                                        onChange={e => setInfoForm({ ...infoForm, presentation: e.target.value })}
+                                                        type="date"
+                                                        className="w-full bg-transparent border-none text-sm font-black text-rose-600 dark:text-rose-400 outline-none"
+                                                        value={infoForm.expirationDate || ''}
+                                                        onChange={e => setInfoForm({...infoForm, expirationDate: e.target.value})}
                                                     />
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Natureza</label>
-                                                    <input 
-                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
-                                                        value={infoForm.nature || ''}
-                                                        onChange={e => setInfoForm({ ...infoForm, nature: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Procurador</label>
-                                                    <input 
-                                                        className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
-                                                        value={infoForm.procurator || ''}
-                                                        onChange={e => setInfoForm({ ...infoForm, procurator: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Classe NCL</label>
-                                                <input 
-                                                    className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-2 rounded-lg outline-none focus:border-blue-500"
-                                                    value={infoForm.nclClass || ''}
-                                                    onChange={e => setInfoForm({ ...infoForm, nclClass: e.target.value })}
-                                                />
-                                            </div>
                                         </div>
                                     </div>
-
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">Especificação de Produtos e Serviços</label>
-                                        <textarea 
-                                            className="w-full text-sm bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 px-3 py-3 rounded-lg outline-none focus:border-blue-500 h-24 resize-none leading-relaxed"
-                                            value={infoForm.nclSpecification || ''}
-                                            onChange={e => setInfoForm({ ...infoForm, nclSpecification: e.target.value })}
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-zinc-900/50 rounded-xl border border-dotted border-slate-300 dark:border-zinc-700">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Depósito</label>
-                                            <input 
-                                                type="date"
-                                                className="w-full text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded outline-none"
-                                                value={infoForm.filingDate || ''}
-                                                onChange={e => setInfoForm({ ...infoForm, filingDate: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Data Concessão</label>
-                                            <input 
-                                                type="date"
-                                                className="w-full text-xs bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded outline-none"
-                                                value={infoForm.concessionDate || ''}
-                                                onChange={e => handleConcessionDateChange(e.target.value)}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-rose-500 dark:text-rose-400 uppercase mb-1 flex items-center gap-1"><AlertCircle size={10} /> Data Expiração</label>
-                                            <input 
-                                                type="date"
-                                                className="w-full text-xs bg-white dark:bg-zinc-800 border border-rose-100 dark:border-rose-900/30 px-2 py-1.5 rounded outline-none text-rose-600 dark:text-rose-400 font-bold"
-                                                value={infoForm.expirationDate || ''}
-                                                onChange={e => setInfoForm({ ...infoForm, expirationDate: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="flex justify-end pt-2">
+                                    <div className="flex justify-end pt-4">
                                         <button 
                                             onClick={handleSaveInfo}
                                             disabled={isSavingInfo}
-                                            className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-6 py-2.5 rounded-lg text-sm font-bold hover:bg-docka-800 dark:hover:bg-white disabled:opacity-50 transition-all shadow-md flex items-center gap-2"
+                                            className="px-12 py-4 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl shadow-2xl hover:bg-black transition-all flex items-center gap-3"
                                         >
                                             {isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                                            Salvar Informações Técnicas
+                                            Atualizar Dossiê Técnico
                                         </button>
                                     </div>
                                 </div>
                             )}
-
                         </div>
                     </div>
                 </Modal>
             )}
-
         </div>
     );
 };

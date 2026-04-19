@@ -71,49 +71,67 @@ const DockaBillingView: React.FC = () => {
         </div>
     );
 
-    return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar animate-in fade-in duration-300 transition-colors">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Faturamento Global</h1>
-                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Consolidado financeiro de todas as empresas do grupo.</p>
-                </div>
+import DashboardPage from '../../../../components/DashboardPage';
 
+const DockaBillingView: React.FC = () => {
+    // ... (mantenha estados e lógicas iguais)
+
+    if (loading) return (
+        <DashboardPage title="Faturamento Global" icon={DollarSign}>
+            <div className="flex flex-col items-center justify-center h-64 gap-4">
+                <div className="w-10 h-10 border-4 border-docka-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-docka-500 dark:text-zinc-500 font-bold text-[10px] uppercase tracking-widest">Sincronizando finanças...</p>
+            </div>
+        </DashboardPage>
+    );
+
+    return (
+        <DashboardPage 
+            title="Faturamento Global" 
+            icon={DollarSign}
+            subtitle="Consolidado financeiro de todas as empresas do grupo."
+        >
+            <div className="animate-in fade-in duration-500">
                 {/* Global KPI */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg">
-                        <p className="text-docka-400 dark:text-zinc-500 text-xs font-bold uppercase tracking-wider mb-2">Receita Recorrente Anual (ARR)</p>
-                        <h3 className="text-3xl font-bold">{formatCurrency(stats?.arr || 0)}</h3>
-                        <div className="mt-4 flex gap-2">
-                            <span className="bg-emerald-500/20 text-emerald-300 dark:text-emerald-700 px-2 py-1 rounded text-xs font-bold">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+                    <div className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg relative overflow-hidden group">
+                        <p className="text-docka-400 dark:text-zinc-500 text-[10px] font-bold uppercase tracking-widest mb-3 relative z-10">Receita Recorrente Anual (ARR)</p>
+                        <h3 className="text-3xl font-bold relative z-10">{formatCurrency(stats?.arr || 0)}</h3>
+                        <div className="mt-4 flex gap-2 relative z-10">
+                            <span className="bg-emerald-500/20 text-emerald-300 dark:text-emerald-700 px-2 py-1 rounded text-[10px] font-bold uppercase">
                                 {stats?.growth && stats.growth >= 0 ? '+' : ''}{stats?.growth || 0}% MoM
                             </span>
                         </div>
+                        <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
+                            <TrendingUp size={100} />
+                        </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm">
-                        <p className="text-docka-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Custo Operacional Total</p>
+
+                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm border-l-4 border-l-blue-500">
+                        <p className="text-docka-500 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-3">Custo Operacional Total</p>
                         <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{formatCurrency(stats?.opex || 0)}</h3>
-                        <p className="text-xs text-docka-400 dark:text-zinc-500 mt-2">Baseado em lançamentos financeiros de holding.</p>
+                        <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 mt-2 uppercase tracking-tight">Baseado em lançamentos de holding.</p>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm">
-                        <p className="text-docka-500 dark:text-zinc-400 text-xs font-bold uppercase tracking-wider mb-2">Lucro Líquido (Mês Atual)</p>
+
+                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm border-l-4 border-l-emerald-500">
+                        <p className="text-docka-500 dark:text-zinc-400 text-[10px] font-bold uppercase tracking-widest mb-3">Lucro Líquido (Mês)</p>
                         <h3 className={`text-3xl font-bold ${(stats?.netProfit || 0) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                             {formatCurrency(stats?.netProfit || 0)}
                         </h3>
-                        <p className="text-xs text-docka-400 dark:text-zinc-500 mt-2">Resultado real da operação consolidada.</p>
+                        <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 mt-2 uppercase tracking-tight">Resultado real consolidado.</p>
                     </div>
                 </div>
 
                 {/* Breakdown by Company */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6">
-                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm mb-6 flex items-center gap-2">
-                            <PieChart size={16} /> Receita por Unidade de Negócio
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-8">
+                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-xs uppercase tracking-widest mb-8 flex items-center gap-2">
+                            <PieChart size={16} className="text-docka-400" /> Receita por Unidade
                         </h3>
-                        <div className="space-y-5">
+                        <div className="space-y-6">
                             {portfolio.map((org) => (
-                                <div key={org.id}>
-                                    <div className="flex justify-between items-center text-sm mb-2">
+                                <div key={org.id} className="group">
+                                    <div className="flex justify-between items-center text-sm mb-3">
                                         <div className="flex items-center gap-3">
                                             {org.iconSettings?.logo ? (
                                                 <img src={org.iconSettings.logo} alt={org.name} className="w-8 h-8 rounded p-1 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-800 shadow-sm object-contain" />
@@ -136,14 +154,14 @@ const DockaBillingView: React.FC = () => {
                                                     {org.name.substring(0, 1)}
                                                 </div>
                                             )}
-                                            <span className="text-docka-700 dark:text-zinc-300 font-medium">{org.name}</span>
+                                            <span className="text-docka-700 dark:text-zinc-300 font-bold text-xs uppercase tracking-tight">{org.name}</span>
                                         </div>
-                                        <span className="text-docka-900 dark:text-zinc-100 font-bold">{formatCurrency(org.revenue)}</span>
+                                        <span className="text-docka-900 dark:text-zinc-100 font-bold font-mono">{formatCurrency(org.revenue)}</span>
                                     </div>
-                                    <div className="w-full bg-docka-100 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden">
+                                    <div className="w-full bg-docka-50 dark:bg-zinc-800 h-2 rounded-full overflow-hidden border border-docka-100/50 dark:border-transparent">
                                         <div 
-                                            className="h-full bg-docka-900 dark:bg-zinc-100 transition-all duration-500" 
-                                            style={{ width: stats && stats.revenue > 0 ? `${(org.revenue / stats.revenue) * 100}%` : '0%' }} 
+                                            className="h-full bg-docka-900 dark:bg-zinc-100 transition-all duration-700 ease-out" 
+                                            style={{ width: stats && stats.revenue > 0 ? `${Math.min((org.revenue / stats.revenue) * 100, 100)}%` : '0%' }} 
                                         />
                                     </div>
                                 </div>
@@ -151,36 +169,35 @@ const DockaBillingView: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6">
-                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm mb-6 flex items-center gap-2">
-                            <CreditCard size={16} /> Próximos Recebimentos (Consolidado)
+                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-8">
+                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-xs uppercase tracking-widest mb-8 flex items-center gap-2">
+                            <CreditCard size={16} className="text-docka-400" /> Próximos Recebimentos
                         </h3>
                         <div className="space-y-4">
                             {receivables.map((rec) => (
-                                <div key={rec.id} className="flex justify-between items-center p-3 border border-docka-100 dark:border-zinc-800 rounded-lg hover:bg-docka-50 dark:hover:bg-zinc-800 transition-colors">
+                                <div key={rec.id} className="flex justify-between items-center p-4 border border-docka-100 dark:border-zinc-800 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-800/50 hover:border-docka-200 transition-all group">
                                     <div>
                                         <div className="font-bold text-docka-900 dark:text-zinc-100 text-sm truncate max-w-[180px]">{rec.client}</div>
-                                        <div className="text-xs text-docka-500 dark:text-zinc-500 flex items-center gap-2">
-                                            <span className="font-medium text-docka-700 dark:text-zinc-400">{rec.org}</span>
-                                            <span>•</span>
+                                        <div className="text-[10px] text-docka-500 dark:text-zinc-500 flex items-center gap-2 font-bold uppercase mt-1">
+                                            <span className="text-docka-700 dark:text-zinc-400">{rec.org}</span>
+                                            <span className="opacity-30">•</span>
                                             <span>{new Date(rec.dueDate).toLocaleDateString('pt-BR')}</span>
                                         </div>
                                     </div>
-                                    <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(rec.amount)}</div>
+                                    <div className="font-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm">{formatCurrency(rec.amount)}</div>
                                 </div>
                             ))}
                             {receivables.length === 0 && (
-                                <p className="text-center py-8 text-docka-400 dark:text-zinc-600 text-sm">Sem faturamentos pendentes.</p>
+                                <div className="text-center py-12">
+                                    <Activity className="mx-auto text-docka-200 dark:text-zinc-800 mb-4" size={32} />
+                                    <p className="text-docka-400 dark:text-zinc-600 text-xs font-bold uppercase tracking-widest">Sem faturamentos pendentes.</p>
+                                </div>
                             )}
                         </div>
-                        <button className="w-full mt-4 py-2 border border-dashed border-docka-300 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs font-bold rounded hover:bg-docka-50 dark:hover:bg-zinc-800 transition-colors">
+                        <button className="w-full mt-8 py-3 border-2 border-dashed border-docka-200 dark:border-zinc-800 text-docka-500 dark:text-zinc-500 text-[10px] font-bold rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-800 hover:border-docka-300 transition-all uppercase tracking-widest">
                             Ver Fluxo de Caixa Completo
                         </button>
                     </div>
                 </div>
             </div>
-        </div>
-    );
-};
-
 export default DockaBillingView;

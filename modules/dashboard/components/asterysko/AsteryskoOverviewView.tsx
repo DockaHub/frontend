@@ -29,101 +29,140 @@ const AsteryskoOverviewView: React.FC = () => {
     const recentDispatches = stats?.recentDispatches || [];
     const pendingTasks = stats?.pendingTasks || [];
 
+import DashboardPage from '../../../../components/DashboardPage';
+
+const AsteryskoOverviewView: React.FC = () => {
+    const [stats, setStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const response = await api.get('/asterysko/stats');
+                setStats(response.data);
+            } catch (error) {
+                console.error('Failed to fetch stats', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStats();
+    }, []);
+
+    const metrics = stats?.metrics || { activeProcesses: 0, urgentCount: 0, oppositions: 0, successRate: 0 };
+    const recentDispatches = stats?.recentDispatches || [];
+    const pendingTasks = stats?.pendingTasks || [];
+
     return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar transition-colors">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Visão Geral Asterysko</h1>
-                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Monitoramento de processos e performance do escritório.</p>
+        <DashboardPage title="Visão Geral Asterysko" icon={TrendingUp}>
+            {loading ? (
+                <div className="flex flex-col items-center justify-center h-64 gap-3 animate-in fade-in duration-500">
+                    <div className="w-8 h-8 border-2 border-docka-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin"></div>
+                    <span className="text-[10px] font-bold uppercase text-docka-400 tracking-widest">Sincronizando processos...</span>
                 </div>
+            ) : (
+                <div className="animate-in fade-in duration-500">
+                    <p className="text-docka-500 dark:text-zinc-400 text-sm mb-10 -mt-2">Monitoramento analítico de processos, prazos e performance jurídica.</p>
 
-                {/* Metrics */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><Scale size={20} /></div>
-                        </div>
-                        <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{metrics.activeProcesses}</h3>
-                        <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Processos Ativos</p>
-                    </div>
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg"><Clock size={20} /></div>
-                            {metrics.urgentCount > 0 && (
-                                <span className="text-xs font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded-full">{metrics.urgentCount} Urgentes</span>
-                            )}
-                        </div>
-                        <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{metrics.urgentCount}</h3>
-                        <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Prazos Próximos</p>
-                    </div>
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-lg"><FileText size={20} /></div>
-                        </div>
-                        <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{metrics.oppositions}</h3>
-                        <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Oposições Recebidas</p>
-                    </div>
-                    <div className="bg-emerald-600 dark:bg-emerald-700 text-white p-6 rounded-xl shadow-lg relative overflow-hidden">
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-4 text-emerald-200">
-                                <CheckCircle2 size={20} />
-                                <span className="text-xs font-bold uppercase tracking-wider">Taxa de Sucesso</span>
+                    {/* Metrics Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm border-l-4 border-l-blue-500">
+                            <div className="flex items-center gap-3 mb-4 text-blue-600 dark:text-blue-400">
+                                <Scale size={18} />
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Processos Ativos</span>
                             </div>
-                            <h3 className="text-3xl font-bold">{metrics.successRate}%</h3>
-                            <p className="text-sm text-emerald-100 mt-1">Registros Concedidos</p>
+                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100 font-mono tracking-tight">{metrics.activeProcesses}</h3>
                         </div>
-                        <div className="absolute -right-6 -bottom-6 opacity-20">
-                            <TrendingUp size={100} />
+
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm border-l-4 border-l-amber-500 relative overflow-hidden group">
+                            <div className="flex items-center gap-3 mb-4 text-amber-600 dark:text-amber-400">
+                                <Clock size={18} />
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Prazos Próximos</span>
+                            </div>
+                            <div className="flex items-baseline gap-2">
+                                <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100 font-mono tracking-tight">{metrics.urgentCount}</h3>
+                                {metrics.urgentCount > 0 && (
+                                    <span className="text-[10px] font-black text-red-600 dark:text-red-400 uppercase tracking-tighter bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded border border-red-100 dark:border-red-900 shadow-sm">Urgentes</span>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm border-l-4 border-l-purple-500">
+                            <div className="flex items-center gap-3 mb-4 text-purple-600 dark:text-purple-400">
+                                <FileText size={18} />
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Oposições</span>
+                            </div>
+                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100 font-mono tracking-tight">{metrics.oppositions}</h3>
+                        </div>
+
+                        <div className="bg-emerald-600 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg relative overflow-hidden group">
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-4 text-emerald-100 dark:text-zinc-500">
+                                    <CheckCircle2 size={18} />
+                                    <span className="text-[10px] font-bold uppercase tracking-widest">Taxa de Sucesso</span>
+                                </div>
+                                <h3 className="text-3xl font-bold font-mono tracking-tight">{metrics.successRate}%</h3>
+                                <p className="text-[10px] font-medium uppercase mt-2 opacity-80 tracking-widest">Registros Concedidos</p>
+                            </div>
+                            <div className="absolute -right-6 -bottom-6 opacity-20 group-hover:scale-125 transition-transform duration-500">
+                                <TrendingUp size={120} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* RPI Updates List */}
+                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                            <div className="px-6 py-4 border-b border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/20 flex justify-between items-center">
+                                <h3 className="text-[10px] font-black text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+                                    <FileText size={14} className="text-docka-400 dark:text-zinc-500" /> últimos Despachos (RPI)
+                                </h3>
+                                <button className="text-[9px] font-black uppercase text-docka-400 hover:text-docka-600 tracking-widest transition-colors">Ver Completo</button>
+                            </div>
+                            <div className="divide-y divide-docka-50 dark:divide-zinc-800">
+                                {recentDispatches.length === 0 ? (
+                                    <div className="p-10 text-center text-[10px] font-bold uppercase text-docka-300 tracking-widest italic">Nenhum despacho recente.</div>
+                                ) : recentDispatches.map((item: any, i: number) => (
+                                    <div key={i} className="flex gap-4 items-center p-5 hover:bg-docka-50 dark:hover:bg-zinc-800/30 transition-colors group">
+                                        <div className={`w-2.5 h-2.5 rounded-full shadow-sm shrink-0 ${item.type === 'success' ? 'bg-emerald-500 ring-4 ring-emerald-500/10' :
+                                                item.type === 'warning' ? 'bg-amber-500 ring-4 ring-amber-500/10' : 'bg-blue-500 ring-4 ring-blue-500/10'
+                                            }`} />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm text-docka-900 dark:text-zinc-100 font-bold leading-tight group-hover:text-black dark:group-hover:text-white transition-colors truncate">{item.brand}</p>
+                                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-1 uppercase font-bold tracking-tight opacity-70">{item.status}</p>
+                                        </div>
+                                        <ArrowRight size={14} className="text-docka-100 dark:text-zinc-800 group-hover:text-docka-300 group-hover:translate-x-1 transition-all" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Customer Pendencies List */}
+                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                            <div className="px-6 py-4 border-b border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/20 flex justify-between items-center">
+                                <h3 className="text-[10px] font-black text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+                                    <AlertCircle size={14} className="text-amber-500" /> Pendências de Clientes
+                                </h3>
+                                <button className="text-[9px] font-black uppercase text-amber-600 hover:text-amber-700 tracking-widest transition-colors">Alertar Todos</button>
+                            </div>
+                            <div className="divide-y divide-docka-50 dark:divide-zinc-800">
+                                {pendingTasks.length === 0 ? (
+                                    <div className="p-10 text-center text-[10px] font-bold uppercase text-docka-300 tracking-widest italic">Tudo em dia com os clientes.</div>
+                                ) : pendingTasks.map((task: any, i: number) => (
+                                    <div key={i} className="flex justify-between items-center p-5 hover:bg-docka-50 dark:hover:bg-zinc-800/30 transition-colors group">
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-bold text-docka-900 dark:text-zinc-100 leading-tight truncate group-hover:text-black dark:group-hover:text-white transition-colors">{task.client}</div>
+                                            <div className="text-[10px] text-docka-500 dark:text-zinc-500 mt-1 uppercase font-medium tracking-tight truncate">{task.task}</div>
+                                        </div>
+                                        <span className="shrink-0 text-[10px] font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm uppercase tracking-tighter">
+                                            {task.days}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* RPI Updates */}
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6">
-                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm mb-6 flex items-center gap-2">
-                            <FileText size={16} className="text-docka-400 dark:text-zinc-500" />
-                            Últimos Despachos (RPI)
-                        </h3>
-                        <div className="space-y-4">
-                            {recentDispatches.length === 0 ? <p className="text-sm text-gray-500">Nenhum despacho recente.</p> : recentDispatches.map((item: any, i: number) => (
-                                <div key={i} className="flex gap-4 items-start pb-4 border-b border-docka-50 dark:border-zinc-800 last:border-0 last:pb-0">
-                                    <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${item.type === 'success' ? 'bg-emerald-500' :
-                                            item.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500'
-                                        }`} />
-                                    <div>
-                                        <p className="text-sm text-docka-900 dark:text-zinc-100 font-bold leading-none">{item.brand}</p>
-                                        <p className="text-xs text-docka-500 dark:text-zinc-500 mt-1">{item.status}</p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Pendências de Clientes */}
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6">
-                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm mb-6 flex items-center gap-2">
-                            <AlertCircle size={16} className="text-amber-500" />
-                            Pendências de Clientes
-                        </h3>
-                        <div className="space-y-3">
-                            {pendingTasks.length === 0 ? <p className="text-sm text-gray-500">Nenhuma pendência.</p> : pendingTasks.map((task: any, i: number) => (
-                                <div key={i} className="flex justify-between items-center p-3 bg-docka-50 dark:bg-zinc-800 rounded-lg border border-docka-100 dark:border-zinc-700">
-                                    <div>
-                                        <div className="text-sm font-medium text-docka-900 dark:text-zinc-100">{task.client}</div>
-                                        <div className="text-xs text-docka-500 dark:text-zinc-500">{task.task}</div>
-                                    </div>
-                                    <span className="text-[10px] font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
-                                        {task.days}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
+            )}
 export default AsteryskoOverviewView;
