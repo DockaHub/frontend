@@ -291,7 +291,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                 </div>
             ) : (
                 <div className="h-full flex flex-col animate-in fade-in duration-500 overflow-hidden -mx-8 -my-6">
-                    <div className="flex-1 overflow-auto p-8 custom-scrollbar">
+                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 custom-scrollbar">
                         {columns.length > 0 ? (
                             viewMode === 'kanban' ? (
                                 <KanbanBoard
@@ -302,8 +302,8 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                     members={organizationMembers}
                                 />
                             ) : (
-                                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                                    <table className="w-full text-left">
+                                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 overflow-x-auto shadow-sm custom-scrollbar">
+                                    <table className="w-full text-left min-w-[800px]">
                                         <thead className="bg-docka-50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-widest text-docka-500 dark:text-zinc-500 border-b border-docka-100 dark:border-zinc-800">
                                             <tr>
                                                 <th className="px-6 py-4">Título / Marca</th>
