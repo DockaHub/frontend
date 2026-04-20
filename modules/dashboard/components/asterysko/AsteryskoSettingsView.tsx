@@ -1,5 +1,27 @@
-
+import React, { useState, useEffect } from 'react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload } from 'lucide-react';
+import Modal from '../../../../components/common/Modal';
+import api from '../../../../services/api';
+import { useToast } from '../../../../context/ToastContext';
+import { Organization } from '../../../../types';
+import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
 import DashboardPage from '../../../../components/DashboardPage';
+
+interface AsteryskoSettingsViewProps {
+    onOpenClientPortal?: () => void;
+    organization?: Organization;
+}
+
+interface Plan {
+    id: string;
+    name: string;
+    description: string | null;
+    value: number | string;
+    officialTax: number | string | null;
+    commissionSales: number | string;
+    commissionOps: number | string;
+    category: string;
+}
 
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenClientPortal, organization }) => {
     const [plans, setPlans] = useState<Plan[]>([]);

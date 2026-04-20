@@ -3,6 +3,7 @@ import { DollarSign, TrendingUp, TrendingDown, FileText, Download, Plus, Filter,
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
+import DashboardPage from '../../../../components/DashboardPage';
 
 interface InvoiceItem {
     description: string;

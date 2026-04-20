@@ -3,19 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { FileSignature, Search, Filter, Download, FileText, CheckCircle2, Clock, ExternalLink } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
+import DashboardPage from '../../../../components/DashboardPage';
 
 interface DocumentItem {
-    id: string;
-    type: string;
-    title: string;
-    client: string;
-    status: 'signed' | 'pending';
-    date: string;
-    source: 'deal' | 'process';
-    downloadUrl: string;
-}
-
-import DashboardPage from '../../../../components/DashboardPage';
 
 const AsteryskoDocumentsView: React.FC = () => {
     const [documents, setDocuments] = useState<DocumentItem[]>([]);
