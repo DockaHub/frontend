@@ -25,13 +25,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             const storedUser = authService.getStoredUser();
             if (storedUser) {
                 // 1. Set initial state from storage (fast load)
-                setUser(storedUser);
+                const normalizedStored = { ...storedUser, role: (storedUser.role || 'user').toUpperCase() };
+                setUser(normalizedStored);
 
                 // 2. Fetch latest data from API (background refresh)
                 try {
                     const data = await authService.getCurrentUser();
-                    setUser(data);
-                    localStorage.setItem('user', JSON.stringify(data)); // Update storage
+                    const normalizedUser = { ...data, role: (data.role || 'user').toUpperCase() };
+                    setUser(normalizedUser);
+                    localStorage.setItem('user', JSON.stringify(normalizedUser)); // Update storage
                 } catch (error) {
                     console.error('Failed to refresh user on mount:', error);
                 }
@@ -48,8 +50,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const refreshUser = async () => {
         try {
             const data = await authService.getCurrentUser();
-            setUser(data);
-            localStorage.setItem('user', JSON.stringify(data));
+            const normalizedUser = { ...data, role: (data.role || 'user').toUpperCase() };
+            setUser(normalizedUser);
+            localStorage.setItem('user', JSON.stringify(normalizedUser));
         } catch (error) {
             console.error('Failed to refresh user:', error);
         }
@@ -59,8 +62,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const response = await authService.login(credentials);
             if (response.user && response.token) {
-                setUser(response.user);
-                localStorage.setItem('user', JSON.stringify(response.user));
+                const normalizedUser = { ...response.user, role: (response.user.role || 'user').toUpperCase() };
+                setUser(normalizedUser);
+                localStorage.setItem('user', JSON.stringify(normalizedUser));
             }
         } catch (error) {
             console.error('Login failed:', error);
