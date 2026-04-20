@@ -208,8 +208,11 @@ const AsteryskoFinancialView: React.FC = () => {
                             <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><DollarSign size={20} /></div>
                             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-xl">+0%</span>
                         </div>
+                        <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">R$ {(Number(metrics?.totalRevenue) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                        <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Honorários Recebidos</p>
+                    </div>
 
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                         <div className="flex items-center justify-between mb-4">
                             <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl"><TrendingDown size={20} /></div>
                             <span className="text-xs font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/10 px-2 py-1 rounded-xl">{Number(metrics?.pendingPaymentsCount) || 0} pendentes</span>
@@ -218,11 +221,20 @@ const AsteryskoFinancialView: React.FC = () => {
                         <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Taxas INPI (Provisão)</p>
                     </div>
 
-                    <div className="bg-blue-600 dark:bg-blue-600 text-white p-6 rounded-xl shadow-sm relative overflow-hidden border border-blue-500/20">
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl"><Clock size={20} /></div>
+                            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-xl">Média 45d</span>
+                        </div>
+                        <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">R$ 1.250</h3>
+                        <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Ticket Médio (Honor)</p>
+                    </div>
+
+                    <div className="bg-blue-600 dark:bg-blue-600 text-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(37,99,235,0.3)] relative overflow-hidden border border-blue-500/20">
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-4 text-blue-100">
                                 <TrendingUp size={20} />
-                                <span className="text-xs font-bold uppercase tracking-wider">EficiÃªncia</span>
+                                <span className="text-xs font-bold uppercase tracking-wider">Eficiência</span>
                             </div>
                             <h3 className="text-3xl font-bold">{Number(metrics?.successRate) || 0}%</h3>
                             <p className="text-sm text-blue-100 mt-1">Processos Concedidos</p>
