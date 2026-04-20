@@ -197,10 +197,10 @@ const AsteryskoResearchView = () => {
 
                                 <div className="space-y-4">
                                     <div className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] ${getRiskColor(result.riskLevel)}`}>
-                                        {result.riskLevel === 'HIGH' ? 'Alto Risco' : result.riskLevel === 'MEDIUM' ? 'AtenÃ§Ã£o' : 'Excelente'}
+                                        {result.riskLevel === 'HIGH' ? 'Alto Risco' : result.riskLevel === 'MEDIUM' ? 'Atenção' : 'Excelente'}
                                     </div>
                                     <h3 className="text-xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight">
-                                        {result.riskLevel === 'HIGH' ? 'Registro Altamente ObstruÃ­do' : result.riskLevel === 'MEDIUM' ? 'Requer EstratÃ©gia de Defesa' : 'Caminho Livre para Registro'}
+                                        {result.riskLevel === 'HIGH' ? 'Registro Altamente Obstruído' : result.riskLevel === 'MEDIUM' ? 'Requer Estratégia de Defesa' : 'Caminho Livre para Registro'}
                                     </h3>
                                     <p className="text-[13px] font-medium text-docka-500 dark:text-zinc-400 leading-relaxed max-w-sm">
                                         {result.summary}
@@ -209,7 +209,7 @@ const AsteryskoResearchView = () => {
                             </div>
 
                             <div className="bg-white dark:bg-zinc-900 p-8 rounded-xl border border-docka-100 dark:border-zinc-800 shadow-sm">
-                                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 mb-6 ml-1">PrÃ³ximos Passos Sugeridos</h4>
+                                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 mb-6 ml-1">Próximos Passos Sugeridos</h4>
                                 <div className="space-y-3">
                                     <button className="w-full p-4 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-between group hover:bg-docka-100 dark:hover:bg-zinc-700 transition-all border border-transparent hover:border-docka-200">
                                         <div className="flex items-center gap-3">

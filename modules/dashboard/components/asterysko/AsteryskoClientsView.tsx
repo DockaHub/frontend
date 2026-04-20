@@ -221,7 +221,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             title="Carteira de Clientes"
             subtitle={organization?.id === 'org_1' || organization?.slug === 'docka' 
                 ? 'Visualizando todos os clientes da Holding (Docka Group).' 
-                : `GestÃ£o de clientes e contratos da ${organization?.name}.`}
+                : `Gestão de clientes e contratos da ${organization?.name}.`}
             actions={
                 <div className="flex gap-2">
                     <button 
@@ -404,7 +404,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                 <div className="flex gap-8 border-b border-docka-100 dark:border-zinc-800">
                                     {[
                                         { id: 'overview', label: 'Dashboard', icon: Activity },
-                                        { id: 'processes', label: 'PortfÃ³lio', icon: Shield },
+                                        { id: 'processes', label: 'Portfólio', icon: Shield },
                                         { id: 'financial', label: 'Billing', icon: CreditCard },
                                         { id: 'docs', label: 'Arquivo', icon: FolderOpen },
                                     ].map(tab => (
@@ -425,7 +425,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                 </div>
                              </div>
 
-                             {/* CONTEÃšDO DINÃ‚MICO */}
+                             {/* CONTEÚDO DINÂMICO */}
                              <div className="p-8 h-[500px] overflow-y-auto custom-scrollbar bg-docka-50/20 dark:bg-zinc-900/20">
                                  {activeTab === 'overview' && (
                                      <div className="space-y-8">
@@ -436,10 +436,10 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                  </h4>
                                                  <div className="space-y-6">
                                                      <div>
-                                                         <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">EndereÃ§o Comercial</label>
+                                                         <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Endereço Comercial</label>
                                                          <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 flex items-start gap-2">
                                                              <MapPin size={14} className="mt-0.5 text-blue-500" />
-                                                             {selectedClient.address ? `${selectedClient.address}, ${selectedClient.city}/${selectedClient.state}` : 'NÃ£o cadastrado'}
+                                                             {selectedClient.address ? `${selectedClient.address}, ${selectedClient.city}/${selectedClient.state}` : 'Não cadastrado'}
                                                          </p>
                                                      </div>
                                                      <div className="grid grid-cols-2 gap-4">
@@ -464,7 +464,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                          <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{selectedClient.name}</p>
                                                      </div>
                                                      <div>
-                                                         <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Canais de ComunicaÃ§Ã£o</label>
+                                                         <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Canais de Comunicação</label>
                                                          <div className="flex flex-col gap-2">
                                                             <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                                                 <Mail size={14} className="text-blue-500" /> {selectedClient.email}
@@ -478,10 +478,10 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                              </div>
                                          </div>
                                          <div>
-                                            <h4 className="text-[10px] font-bold text-docka-400 uppercase tracking-widest mb-4">Notas EstratÃ©gicas</h4>
+                                            <h4 className="text-[10px] font-bold text-docka-400 uppercase tracking-widest mb-4">Notas Estratégicas</h4>
                                             <div className="p-4 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/30 dark:border-amber-800/20 rounded-xl shadow-inner">
                                                 <p className="text-xs text-amber-800 dark:text-amber-300 italic leading-relaxed">
-                                                    "Cliente focado em expansÃ£o internacional (EUA e Europa). Priorizar monitoramento de marcas similares nestas jurisdiÃ§Ãµes."
+                                                    "Cliente focado em expansão internacional (EUA e Europa). Priorizar monitoramento de marcas similares nestas jurisdições."
                                                 </p>
                                             </div>
                                          </div>
@@ -498,7 +498,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                      </div>
                                                      <div>
                                                          <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100 tracking-tight">{proc.brand}</h5>
-                                                         <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mt-0.5">Proc: {proc.id} â€¢ {proc.class}</p>
+                                                         <p className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mt-0.5">Proc: {proc.id} • {proc.class}</p>
                                                      </div>
                                                  </div>
                                                  <span className="px-3 py-1 bg-docka-50 dark:bg-zinc-800 text-[9px] font-bold uppercase tracking-widest text-docka-500 rounded-lg border border-docka-100 dark:border-zinc-700 group-hover:border-blue-200">
@@ -586,7 +586,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                     <div className="space-y-6 pt-2">
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">RazÃ£o Social / Nome</label>
+                                <label className="block text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Razão Social / Nome</label>
                                 <input
                                     value={newClient.company}
                                     onChange={e => setNewClient({ ...newClient, company: e.target.value })}
@@ -594,7 +594,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">ResponsÃ¡vel</label>
+                                <label className="block text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-2">Responsável</label>
                                 <input
                                     value={newClient.name}
                                     onChange={e => setNewClient({ ...newClient, name: e.target.value })}
@@ -613,7 +613,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                 />
                             </div>
                             <div>
-                                <label className="block text-[10px] font-black text-docka-300 uppercase tracking-[0.2em] mb-2">Identificador TributÃ¡rio</label>
+                                <label className="block text-[10px] font-black text-docka-300 uppercase tracking-[0.2em] mb-2">Identificador Tributário</label>
                                 <input
                                     value={newClient.cnpj}
                                     onChange={e => setNewClient({ ...newClient, cnpj: e.target.value })}
@@ -625,7 +625,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                     </div>
                 </Modal>
 
-                {/* MODAL EXCLUSÃƒO 3.0 */}
+                {/* MODAL EXCLUSÃO 3.0 */}
                 <Modal
                     isOpen={!!clientToDelete}
                     onClose={() => setClientToDelete(null)}
@@ -638,10 +638,10 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                         </div>
                         <h4 className="text-xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight mb-2">Encerrar Relacionamento?</h4>
                         <p className="text-xs font-bold text-docka-400 dark:text-zinc-400 uppercase tracking-widest leading-relaxed mb-8 px-4">
-                            Esta aÃ§Ã£o removerÃ¡ {clientToDelete?.company} permanentemente do ecossistema.
+                            Esta ação removerá {clientToDelete?.company} permanentemente do ecossistema.
                         </p>
                         <div className="flex flex-col gap-3">
-                            <button onClick={confirmDelete} className="w-full py-3.5 bg-rose-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm hover:bg-rose-600 transition-all">Confirmar ExclusÃ£o</button>
+                            <button onClick={confirmDelete} className="w-full py-3.5 bg-rose-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm hover:bg-rose-600 transition-all">Confirmar Exclusão</button>
                             <button onClick={() => setClientToDelete(null)} className="w-full py-2 text-[10px] font-bold uppercase tracking-widest text-docka-300 hover:text-docka-500">Manter Cliente</button>
                         </div>
                     </div>

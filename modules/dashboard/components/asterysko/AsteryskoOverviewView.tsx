@@ -2,25 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { Scale, FileText, AlertCircle, Clock, CheckCircle2, TrendingUp, ArrowRight } from 'lucide-react';
 import api from '../../../../services/api';
 import DashboardPage from '../../../../components/DashboardPage';
-import { getBackendUrl } from '../../../../services/api';
 
 const AsteryskoOverviewView: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
+    const [performance, setPerformance] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchStats = async () => {
+        const fetchData = async () => {
             try {
-                const response = await api.get('/asterysko/stats');
-                setStats(response.data);
+                const [statsRes, perfRes] = await Promise.all([
+                    api.get('/asterysko/stats'),
+                    api.get('/asterysko/performance')
+                ]);
+                setStats(statsRes.data);
+                setPerformance(perfRes.data);
             } catch (error) {
-                console.error('Failed to fetch stats', error);
+                console.error('Failed to fetch overview data', error);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchStats();
+        fetchData();
     }, []);
 
     const metrics = stats?.metrics || { activeProcesses: 0, urgentCount: 0, oppositions: 0, successRate: 0 };
@@ -40,7 +44,6 @@ const AsteryskoOverviewView: React.FC = () => {
 
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                        {/* Primary Card - Dark Pattern like Docka Global */}
                         <div className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg relative overflow-hidden group transition-all hover:shadow-xl">
                             <div className="relative z-10">
                                 <div className="flex items-center gap-2 mb-4 text-docka-300 dark:text-zinc-500">
@@ -100,6 +103,73 @@ const AsteryskoOverviewView: React.FC = () => {
                             </div>
                         </div>
                     </div>
+
+                    {/* Performance / Goals Section (DS 3.0) */}
+                    {performance && (
+                        <div className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-docka-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+                                <div className="p-8 flex flex-col md:flex-row items-center gap-10">
+                                    <div className="relative w-40 h-40 shrink-0">
+                                        <svg className="w-full h-full transform -rotate-90">
+                                            <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="10" fill="transparent" className="text-docka-50 dark:text-zinc-800" />
+                                            <circle
+                                                cx="80" cy="80" r="70"
+                                                stroke="currentColor" strokeWidth="10"
+                                                fill="transparent"
+                                                strokeDasharray={440}
+                                                strokeDashoffset={440 - (440 * performance.bonusProgress) / 100}
+                                                strokeLinecap="round"
+                                                className="text-blue-500 transition-all duration-1000 ease-out"
+                                            />
+                                        </svg>
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                                            <span className="text-2xl font-black text-docka-900 dark:text-zinc-100">{performance.bonusProgress}%</span>
+                                            <span className="text-[8px] font-bold uppercase tracking-tighter text-docka-400">Meta Bônus</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex-1 space-y-6">
+                                        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${performance.currentTier === 'Ouro' ? 'bg-amber-100 text-amber-700' : performance.currentTier === 'Prata' ? 'bg-slate-100 text-slate-700' : 'bg-orange-100 text-orange-700'}`}>
+                                                        Tier {performance.currentTier}
+                                                    </span>
+                                                    <h2 className="text-xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight">Minhas Metas & Comissões</h2>
+                                                </div>
+                                                <p className="text-xs text-docka-400 font-medium tracking-tight">Progresso atual do mês vigente baseado em conversões.</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest block mb-1">Acumulado Estimado</span>
+                                                <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                                    {Number(performance.accumulatedCommission).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                            <div className="bg-docka-50/50 dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-100 dark:border-zinc-800">
+                                                <span className="text-[9px] font-bold text-docka-400 uppercase tracking-widest block mb-1">Total Vendas</span>
+                                                <span className="text-xl font-bold text-docka-900 dark:text-zinc-100">{performance.salesCount}</span>
+                                            </div>
+                                            <div className="bg-docka-50/50 dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-100 dark:border-zinc-800">
+                                                <span className="text-[9px] font-bold text-docka-400 uppercase tracking-widest block mb-1">Essenciais</span>
+                                                <span className="text-xl font-bold text-docka-900 dark:text-zinc-100">{performance.essencialCount}</span>
+                                            </div>
+                                            <div className="bg-docka-50/50 dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-100 dark:border-zinc-800">
+                                                <span className="text-[9px] font-bold text-docka-400 uppercase tracking-widest block mb-1">Próximo Bônus</span>
+                                                <span className="text-xl font-bold text-docka-900 dark:text-zinc-100">{performance.nextBonusMilestone}</span>
+                                            </div>
+                                            <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-4 flex items-center justify-center gap-2 group transition-all">
+                                                <span className="text-[10px] font-bold uppercase tracking-widest">Detalhes</span>
+                                                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* RPI Updates List */}

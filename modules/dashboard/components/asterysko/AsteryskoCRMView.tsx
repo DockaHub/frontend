@@ -125,7 +125,8 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                 ...prev,
                 planId: fee.id,
                 value: Number(fee.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-                service: fee.name
+                service: fee.name,
+                planType: fee.type || 'ESSENCIAL'
             }));
         } else {
             setNewLead(prev => ({ ...prev, planId: '' }));
@@ -341,7 +342,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-docka-400 dark:text-zinc-500 p-20 border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-xl opacity-50">
                                 <Kanban size={48} className="mb-4" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest">O Pipeline estÃ¡ vazio no momento.</p>
+                                <p className="text-[10px] font-bold uppercase tracking-widest">O Pipeline está vazio no momento.</p>
                                 <button onClick={fetchDeals} className="mt-4 text-[10px] font-bold uppercase text-indigo-600 hover:underline">Recarregar dados</button>
                             </div>
                         )}
@@ -408,7 +409,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Marca / TÃ­tulo</label>
+                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Marca / Título</label>
                             <input
                                 value={newLead.title}
                                 onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
@@ -417,27 +418,42 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">ResponsÃ¡vel Vendas</label>
+                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Plano de Serviço</label>
                             <select
-                                value={newLead.assignedUserId}
-                                onChange={e => setNewLead({ ...newLead, assignedUserId: e.target.value })}
-                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-docka-200 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 shadow-sm"
+                                value={newLead.planId}
+                                onChange={e => handleFeeSelect(e.target.value)}
+                                className="w-full px-4 py-2.5 bg-blue-50/30 dark:bg-zinc-800/50 border border-blue-100/50 dark:border-zinc-700 rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-100 text-docka-900 dark:text-zinc-100 shadow-sm"
                             >
-                                <option value="">-- Atribuir a Mim --</option>
-                                {organizationMembers.map(m => (
-                                    <option key={m.id} value={m.userId || m.id}>{m.user?.name || m.name || "Membro"}</option>
+                                <option value="">-- Selecione um Plano --</option>
+                                {plans.map(p => (
+                                    <option key={p.id} value={p.id}>{p.name} - {Number(p.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>
                                 ))}
                             </select>
                         </div>
+                        {user?.globalRole === 'ADMIN' && (
+                            <div>
+                                <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Responsável Vendas</label>
+                                <select
+                                    value={newLead.assignedUserId}
+                                    onChange={e => setNewLead({ ...newLead, assignedUserId: e.target.value })}
+                                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-docka-200 dark:focus:ring-zinc-600 text-docka-900 dark:text-zinc-100 shadow-sm"
+                                >
+                                    <option value="">-- Atribuir a Mim --</option>
+                                    {organizationMembers.map(m => (
+                                        <option key={m.id} value={m.userId || m.id}>{m.user?.name || m.name || "Membro"}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                     </div>
 
                     <div className="p-5 bg-blue-50/20 dark:bg-zinc-800/50 rounded-xl border border-blue-100/50 dark:border-zinc-700/50 space-y-4 shadow-inner">
                         <label className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2">
-                             <Tag size={12} /> ConfiguraÃ§Ãµes do Lead
+                             <Tag size={12} /> Configurações do Lead
                         </label>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-docka-400 uppercase mb-1.5 ml-1">ServiÃ§o</label>
+                                <label className="block text-[10px] font-bold text-docka-400 uppercase mb-1.5 ml-1">Serviço</label>
                                 <select value={newLead.service} onChange={(e) => setNewLead({ ...newLead, service: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 rounded-lg border border-blue-100 dark:border-zinc-700 outline-none">
                                     <option>Registro de Marca (Mista)</option>
                                     <option>Registro de Marca (Nominativa)</option>
@@ -448,9 +464,10 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                             <div>
                                 <label className="block text-[10px] font-bold text-docka-400 uppercase mb-1.5 ml-1">Origem</label>
                                 <select value={newLead.source} onChange={(e) => setNewLead({ ...newLead, source: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-900 rounded-lg border border-blue-100 dark:border-zinc-700 outline-none">
-                                    <option>Site (Orgânico)</option>
-                                    <option>Instagram Ads</option>
-                                    <option>Google Ads</option>
+                                    <option value="Site (Orgânico)">Site (Orgânico)</option>
+                                    <option value="Instagram Ads">Instagram Ads</option>
+                                    <option value="Google Ads">Google Ads</option>
+                                    <option value="Indicação">Indicação</option>
                                 </select>
                             </div>
                         </div>

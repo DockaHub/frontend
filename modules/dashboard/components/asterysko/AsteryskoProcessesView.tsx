@@ -627,7 +627,7 @@ const AsteryskoProcessesView: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
                             {processes.map((proc) => {
-                                const isAlert = proc.nextStep === 'Pagar Taxas' || proc.nextStep === 'Cumprir ExigÃªncia';
+                                const isAlert = proc.nextStep === 'Pagar Taxas' || proc.nextStep === 'Cumprir Exigência';
                                 return (
                                     <tr 
                                         key={proc.id} 
@@ -699,10 +699,10 @@ const AsteryskoProcessesView: React.FC = () => {
                 <div className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-6">
-                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 ml-1 text-left">Dados BÃ¡sicos</h4>
+                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 ml-1 text-left">Dados Básicos</h4>
                             <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-6 rounded-xl border border-docka-50 dark:border-zinc-800 shadow-inner">
                                 <div>
-                                    <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">NÃºmero do Processo</label>
+                                    <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Número do Processo</label>
                                     <div className="relative">
                                         <Scale size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-docka-300" />
                                         <input
@@ -726,7 +726,7 @@ const AsteryskoProcessesView: React.FC = () => {
                         </div>
 
                         <div className="space-y-6">
-                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 ml-1 text-left">ClassificaÃ§Ã£o e Titular</h4>
+                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 ml-1 text-left">Classificação e Titular</h4>
                             <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-6 rounded-xl border border-docka-50 dark:border-zinc-800 shadow-inner">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
@@ -739,7 +739,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Data DepÃ³sito</label>
+                                        <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Data Depósito</label>
                                         <input
                                             type="date"
                                             className="w-full px-3 py-3 bg-white dark:bg-zinc-800 border-none rounded-xl text-[10px] font-bold text-docka-600 outline-none shadow-sm"

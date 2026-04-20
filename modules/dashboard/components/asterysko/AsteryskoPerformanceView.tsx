@@ -77,7 +77,7 @@ const AsteryskoPerformanceView: React.FC = () => {
             color: 'emerald',
             details: (
                 <div className="space-y-4">
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">O plano Premium oferece uma comissÃ£o fixa agressiva por cada fechamento, ideal para acelerar seus ganhos.</p>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">O plano Premium oferece uma comissão fixa agressiva por cada fechamento, ideal para acelerar seus ganhos.</p>
                     <div className="p-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex flex-col items-center text-emerald-600 dark:text-emerald-400">
                         <DollarSign size={40} className="mb-2" />
                         <span className="text-3xl font-bold">R$ 220,00</span>
@@ -97,7 +97,7 @@ const AsteryskoPerformanceView: React.FC = () => {
             color: 'purple',
             details: (
                 <div className="space-y-4">
-                    <p className="text-sm text-zinc-600 dark:text-zinc-400">O plano Blindado Ã© o nosso produto de maior valor e maior recompensa direta para o consultor.</p>
+                    <p className="text-sm text-zinc-600 dark:text-zinc-400">O plano Blindado é o nosso produto de maior valor e maior recompensa direta para o consultor.</p>
                     <div className="p-6 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex flex-col items-center text-purple-600 dark:text-purple-400">
                         <Trophy size={40} className="mb-2" />
                         <span className="text-3xl font-bold">R$ 370,00</span>
@@ -258,7 +258,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                                 }`}>
                                     <Trophy size={32} />
                                 </div>
-                                <h4 className="text-lg font-bold mb-1">Super BÃ´nus</h4>
+                                <h4 className="text-lg font-bold mb-1">Super Bônus</h4>
                                 <p className="text-3xl font-bold mb-4">R$ 1.000,00</p>
                                 
                                 {stats.hasBonus ? (

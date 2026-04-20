@@ -288,7 +288,7 @@ const AsteryskoFinancialView: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg ${inv.type === 'TAX' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-bold'}`}>
-                                                {inv.type === 'TAX' ? 'TAXA INPI' : 'SERVIÃ‡O'}
+                                                {inv.type === 'TAX' ? 'TAXA INPI' : 'SERVIÇO'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 font-medium text-docka-900 dark:text-zinc-100">{inv.clientName}</td>
