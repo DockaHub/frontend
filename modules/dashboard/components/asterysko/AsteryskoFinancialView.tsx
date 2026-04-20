@@ -191,12 +191,12 @@ const AsteryskoFinancialView: React.FC = () => {
                         <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gestão de honorários, taxas INPI e faturamento.</p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 text-docka-700 dark:text-zinc-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors shadow-sm flex items-center gap-2">
+                        <button className="bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 text-docka-700 dark:text-zinc-300 px-4 py-2 rounded-xl text-sm font-medium hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors shadow-sm flex items-center gap-2">
                             <Download size={16} /> Relatório
                         </button>
                         <button
                             onClick={() => setIsNewInvoiceOpen(true)}
-                            className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2"
+                            className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2"
                         >
                             <Plus size={16} /> Nova Fatura
                         </button>
@@ -207,8 +207,8 @@ const AsteryskoFinancialView: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg"><DollarSign size={20} /></div>
-                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-full">+0%</span>
+                            <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><DollarSign size={20} /></div>
+                            <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-xl">+0%</span>
                         </div>
                         <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">R$ {(Number(metrics?.monthlyRevenue) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</h3>
                         <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Receita Mensal</p>
@@ -216,8 +216,8 @@ const AsteryskoFinancialView: React.FC = () => {
 
                     <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg"><FileText size={20} /></div>
-                            <span className="text-xs font-bold text-docka-500 dark:text-zinc-400 bg-docka-100 dark:bg-zinc-800 px-2 py-1 rounded-full">{(invoices || []).filter(i => i?.status === 'PENDING').length} faturas</span>
+                            <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl"><FileText size={20} /></div>
+                            <span className="text-xs font-bold text-docka-500 dark:text-zinc-400 bg-docka-100 dark:bg-zinc-800 px-2 py-1 rounded-xl">{(invoices || []).filter(i => i?.status === 'PENDING').length} faturas</span>
                         </div>
                         <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">R$ {(Number(metrics?.receivables) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</h3>
                         <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">A Receber</p>
@@ -225,8 +225,8 @@ const AsteryskoFinancialView: React.FC = () => {
 
                     <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><TrendingDown size={20} /></div>
-                            <span className="text-xs font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/10 px-2 py-1 rounded-full">{Number(metrics?.pendingPaymentsCount) || 0} pendentes</span>
+                            <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl"><TrendingDown size={20} /></div>
+                            <span className="text-xs font-bold text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/10 px-2 py-1 rounded-xl">{Number(metrics?.pendingPaymentsCount) || 0} pendentes</span>
                         </div>
                         <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">R$ {((Number(metrics?.pendingPaymentsCount) || 0) * 300).toLocaleString('pt-BR')}</h3>
                         <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Taxas INPI (Provisão)</p>
@@ -280,7 +280,7 @@ const AsteryskoFinancialView: React.FC = () => {
                                         className="hover:bg-docka-50 dark:hover:bg-zinc-800/50 transition-colors group cursor-pointer"
                                     >
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${inv.status === 'PAID' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' :
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-xl text-[10px] font-bold uppercase tracking-wide border ${inv.status === 'PAID' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800' :
                                                 inv.status === 'PENDING' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-800' :
                                                     'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-100 dark:border-red-800'
                                                 }`}>
@@ -288,7 +288,7 @@ const AsteryskoFinancialView: React.FC = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${inv.type === 'TAX' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-bold'}`}>
+                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-lg ${inv.type === 'TAX' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 font-bold'}`}>
                                                 {inv.type === 'TAX' ? 'TAXA INPI' : 'SERVIÃ‡O'}
                                             </span>
                                         </td>
@@ -349,7 +349,7 @@ const AsteryskoFinancialView: React.FC = () => {
                                 <span className="text-2xl font-bold text-blue-900 dark:text-blue-300">R$ {((Number(metrics?.goals?.target) || 150000) / 1000).toFixed(0)}k</span>
                                 <span className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">{Number(metrics?.goals?.percentage) || 0}% atingido</span>
                             </div>
-                            <div className="w-full h-2 bg-white dark:bg-zinc-800 rounded-lg overflow-hidden border border-blue-100 dark:border-blue-900/30">
+                            <div className="w-full h-2 bg-white dark:bg-zinc-800 rounded-xl overflow-hidden border border-blue-100 dark:border-blue-900/30">
                                 <div className="h-full bg-blue-600 transition-all duration-1000" style={{ width: `${Number(metrics?.goals?.percentage) || 0}%` }} />
                             </div>
                             <p className="text-xs text-blue-700/80 dark:text-blue-400/80 mt-3">
@@ -392,12 +392,12 @@ const AsteryskoFinancialView: React.FC = () => {
                                 </button>
                                 <button onClick={() => setSelectedInvoice(null)} className="px-4 py-2 text-sm font-medium text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-lg">Fechar</button>
                                 {selectedInvoice && selectedInvoice.status !== 'PAID' && (
-                                    <button
-                                        onClick={() => handleUpdateStatus(selectedInvoice.id, 'PAID')}
-                                        className="px-6 py-2 text-sm font-bold text-white bg-emerald-600 dark:bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm"
-                                    >
-                                        Confirmar Pagamento
-                                    </button>
+                                <button
+                                    onClick={() => handleUpdateStatus(selectedInvoice.id, 'PAID')}
+                                    className="px-6 py-2 text-sm font-bold text-white bg-emerald-600 dark:bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm"
+                                >
+                                    Confirmar Pagamento
+                                </button>
                                 )}
                             </div>
                         </div>

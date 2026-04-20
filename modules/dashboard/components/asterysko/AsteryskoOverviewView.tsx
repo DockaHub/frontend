@@ -69,7 +69,7 @@ const AsteryskoOverviewView: React.FC = () => {
                             <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100 font-mono tracking-tight">{metrics.oppositions}</h3>
                         </div>
 
-                        <div className="bg-emerald-600 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-lg relative overflow-hidden group">
+                        <div className="bg-emerald-600 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-sm relative overflow-hidden group">
                             <div className="relative z-10">
                                 <div className="flex items-center gap-2 mb-4 text-emerald-100 dark:text-zinc-500">
                                     <CheckCircle2 size={18} />
@@ -88,10 +88,10 @@ const AsteryskoOverviewView: React.FC = () => {
                         {/* RPI Updates List */}
                         <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                             <div className="px-6 py-4 border-b border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/20 flex justify-between items-center">
-                                <h3 className="text-[10px] font-black text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+                                <h3 className="text-[10px] font-bold text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
                                     <FileText size={14} className="text-docka-400 dark:text-zinc-500" /> últimos Despachos (RPI)
                                 </h3>
-                                <button className="text-[9px] font-black uppercase text-docka-400 hover:text-docka-600 tracking-widest transition-colors">Ver Completo</button>
+                                <button className="text-[9px] font-bold uppercase text-docka-400 hover:text-docka-600 tracking-widest transition-colors">Ver Completo</button>
                             </div>
                             <div className="divide-y divide-docka-50 dark:divide-zinc-800">
                                 {recentDispatches.length === 0 ? (
@@ -114,10 +114,10 @@ const AsteryskoOverviewView: React.FC = () => {
                         {/* Customer Pendencies List */}
                         <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                             <div className="px-6 py-4 border-b border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/20 flex justify-between items-center">
-                                <h3 className="text-[10px] font-black text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
+                                <h3 className="text-[10px] font-bold text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
                                     <AlertCircle size={14} className="text-amber-500" /> Pendências de Clientes
                                 </h3>
-                                <button className="text-[9px] font-black uppercase text-amber-600 hover:text-amber-700 tracking-widest transition-colors">Alertar Todos</button>
+                                <button className="text-[9px] font-bold uppercase text-amber-600 hover:text-amber-700 tracking-widest transition-colors">Alertar Todos</button>
                             </div>
                             <div className="divide-y divide-docka-50 dark:divide-zinc-800">
                                 {pendingTasks.length === 0 ? (
@@ -128,7 +128,7 @@ const AsteryskoOverviewView: React.FC = () => {
                                             <div className="text-sm font-bold text-docka-900 dark:text-zinc-100 leading-tight truncate group-hover:text-black dark:group-hover:text-white transition-colors">{task.client}</div>
                                             <div className="text-[10px] text-docka-500 dark:text-zinc-500 mt-1 uppercase font-medium tracking-tight truncate">{task.task}</div>
                                         </div>
-                                        <span className="shrink-0 text-[10px] font-black text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm uppercase tracking-tighter">
+                                        <span className="shrink-0 text-[10px] font-bold text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-lg border border-red-100 dark:border-red-900/30 shadow-sm uppercase tracking-tighter">
                                             {task.days}
                                         </span>
                                     </div>

@@ -406,14 +406,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     {/* Header: Title */}
                     <div className="group">
                         <div className="flex items-center gap-2 mb-2 text-xs text-docka-500 dark:text-zinc-500 uppercase tracking-wider font-medium">
-                            <span className="bg-docka-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-docka-600 dark:text-zinc-400">
+                            <span className="bg-docka-100 dark:bg-zinc-800 px-2 py-0.5 rounded-lg text-docka-600 dark:text-zinc-400">
                                 {deal.id.split('-')[0]}
                             </span>
                             <span>/</span>
                             <span>{formData.status}</span>
                         </div>
                         <input
-                            className="text-3xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border border-transparent hover:border-docka-200 dark:hover:border-zinc-700 rounded px-2 -ml-2 w-full outline-none focus:border-docka-500 transition-all placeholder:text-docka-300"
+                            className="text-3xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border border-transparent hover:border-docka-200 dark:hover:border-zinc-700 rounded-xl px-2 -ml-2 w-full outline-none focus:border-docka-500 transition-all placeholder:text-docka-300"
                             value={formData.title || ''}
                             onChange={e => setFormData({ ...formData, title: e.target.value })}
                             onBlur={e => handleBlur('title', e.target.value)}
@@ -511,7 +511,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </label>
 
                         {/* Current Status Badge */}
-                        <div className={`w-full px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-bold mb-4 border ${formData.status === 'leads' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' :
+                        <div className={`w-full px-4 py-3 rounded-xl flex items-center justify-center gap-2 font-bold mb-4 border ${formData.status === 'leads' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' :
                             formData.status === 'viability' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800' :
                                 formData.status === 'contract' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' :
                                     formData.status === 'preparation' ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800' :
@@ -537,7 +537,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </label>
 
                         {formData.status === 'leads' && (
-                            <button onClick={() => moveStatus('viability')} className="w-full px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors">
+                            <button onClick={() => moveStatus('viability')} className="w-full px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
                                 Iniciar Viabilidade <ArrowRight size={16} />
                             </button>
                         )}
@@ -545,7 +545,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <button
                                 onClick={handleGenerateContract}
                                 disabled={loading}
-                                className={`w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 {loading ? 'Gerando...' : 'Gerar e Enviar Contrato'} <ArrowRight size={16} />
                             </button>
@@ -554,7 +554,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <div className="space-y-3">
                                 <button
                                     disabled
-                                    className="w-full px-4 py-2.5 text-sm font-bold text-docka-400 bg-docka-100 dark:text-zinc-500 dark:bg-zinc-800 rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                                    className="w-full px-4 py-2.5 text-sm font-bold text-docka-400 bg-docka-100 dark:text-zinc-500 dark:bg-zinc-800 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-not-allowed"
                                 >
                                     <Clock size={16} />
                                     Aguardando Assinatura...
@@ -574,14 +574,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 <button
                                     onClick={handleConvert}
                                     disabled={loading}
-                                    className={`w-full px-4 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full px-4 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                     <User size={16} />
                                     {loading ? 'Criando...' : 'Criar Conta do Cliente'}
                                 </button>
                                 <button
                                     onClick={() => moveStatus('payment')}
-                                    className="w-full px-4 py-2.5 text-sm font-bold text-docka-700 bg-rose-100 hover:bg-rose-200 dark:text-rose-300 dark:bg-rose-900/50 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors"
+                                    className="w-full px-4 py-2.5 text-sm font-bold text-docka-700 bg-rose-100 hover:bg-rose-200 dark:text-rose-300 dark:bg-rose-900/50 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
                                 >
                                     Enviar para Pagamento <ArrowRight size={16} />
                                 </button>
@@ -590,13 +590,13 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         {formData.status === 'payment' && (
                             <button
                                 onClick={() => moveStatus('protocol')}
-                                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors"
+                                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
                             >
                                 Pagamento Confirmado → Protocolar <ArrowRight size={16} />
                             </button>
                         )}
                         {formData.status === 'protocol' && (
-                            <button onClick={() => moveStatus('won')} className="w-full px-4 py-2.5 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm flex items-center justify-center gap-2 transition-colors">
+                            <button onClick={() => moveStatus('won')} className="w-full px-4 py-2.5 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
                                 <CheckCircle size={16} /> Marcar como Fechado
                             </button>
                         )}
@@ -608,7 +608,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     </div>
 
                     {/* COMMISSION AREA - NEW */}
-                    <div className="bg-docka-900 dark:bg-zinc-100 p-5 rounded-xl border border-docka-800 dark:border-zinc-200 shadow-xl space-y-4">
+                    <div className="bg-docka-900 dark:bg-zinc-100 p-5 rounded-xl border border-docka-800 dark:border-zinc-200 shadow-sm space-y-4">
                         <label className="text-xs font-bold text-docka-300 dark:text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
                             <DollarSign size={14} className="text-green-400" /> Configuração de Vendas
                         </label>
@@ -617,7 +617,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <div className="group">
                                 <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Responsável (Vendas)</label>
                                 <select
-                                    className={`w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-lg px-3 py-2 outline-none transition-all text-white dark:text-zinc-900 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'focus:ring-2 focus:ring-green-500'}`}
+                                    className={`w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-xl px-3 py-2 outline-none transition-all text-white dark:text-zinc-900 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'focus:ring-2 focus:ring-green-500'}`}
                                     value={formData.assignedUserId || ''}
                                     onChange={e => handleAutoSave('assignedUserId', e.target.value)}
                                     disabled={!isAdmin}
@@ -657,8 +657,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                                     updateDealPartial('planId', foundPlan.id);
                                                 }
                                             }}
-                                            className={`py-2 text-[10px] font-bold rounded-lg border transition-all ${formData.planType === plan
-                                                ? 'bg-green-500 border-green-400 text-white shadow-lg scale-105'
+                                            className={`py-2 text-[10px] font-bold rounded-xl border transition-all ${formData.planType === plan
+                                                ? 'bg-green-500 border-green-400 text-white shadow-sm scale-105'
                                                 : 'bg-docka-800 dark:bg-zinc-200 border-docka-700 dark:border-zinc-300 text-docka-400 dark:text-zinc-500'
                                                 }`}
                                         >

@@ -77,21 +77,21 @@ const AsteryskoDocumentsView: React.FC = () => {
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-sm">
-                        <div className="p-3 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg"><Clock size={24} /></div>
+                        <div className="p-3 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl"><Clock size={24} /></div>
                         <div>
                             <div className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{stats.pending}</div>
                             <div className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-bold">Aguardando Assinatura</div>
                         </div>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-sm">
-                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg"><CheckCircle2 size={24} /></div>
+                        <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><CheckCircle2 size={24} /></div>
                         <div>
                             <div className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{stats.signed}</div>
                             <div className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-bold">Documentos Validados</div>
                         </div>
                     </div>
                     <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-sm opacity-50">
-                        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg"><FileText size={24} /></div>
+                        <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl"><FileText size={24} /></div>
                         <div>
                             <div className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{stats.modelos}</div>
                             <div className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-bold">Modelos (Em Breve)</div>
@@ -151,11 +151,11 @@ const AsteryskoDocumentsView: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4">
                                             {doc.status === 'signed' ? (
-                                                <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded w-fit border border-emerald-100 dark:border-emerald-800">
+                                                <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-lg w-fit border border-emerald-100 dark:border-emerald-800">
                                                     <CheckCircle2 size={12} /> Assinado
                                                 </span>
                                             ) : (
-                                                <span className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded w-fit border border-amber-100 dark:border-amber-800">
+                                                <span className="flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-lg w-fit border border-amber-100 dark:border-amber-800">
                                                     <Clock size={12} /> Pendente
                                                 </span>
                                             )}

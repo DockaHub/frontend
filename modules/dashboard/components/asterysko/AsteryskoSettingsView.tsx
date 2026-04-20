@@ -301,10 +301,10 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                                 <CreditCard size={16} /> Tabela de Planos Asterysko
                             </h3>
-                            <button
-                                onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0 }); setIsModalOpen(true); }}
-                                className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded text-[10px] font-bold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
-                            >
+                                <button
+                                    onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0 }); setIsModalOpen(true); }}
+                                    className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-[10px] font-bold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
+                                >
                                 <Plus size={14} /> Novo Plano
                             </button>
                         </div>
@@ -388,16 +388,16 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                 <div className="flex-1">
                                     <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Link de Acesso Geral</label>
                                     <div className="flex gap-2">
-                                        <div className="flex-1 flex items-center bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-docka-600 dark:text-zinc-400">
+                                        <div className="flex-1 flex items-center bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-docka-600 dark:text-zinc-400">
                                             <Link size={14} className="mr-2 text-docka-400 dark:text-zinc-500" />
                                             portal.asterysko.com/login
                                         </div>
-                                        <button className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400">
+                                        <button className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400">
                                             <Copy size={16} />
                                         </button>
                                         <button
                                             onClick={onOpenClientPortal}
-                                            className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 flex items-center gap-2 shadow-sm transition-transform active:scale-95"
+                                            className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 flex items-center gap-2 shadow-sm transition-transform active:scale-95"
                                         >
                                             <Eye size={16} /> Visualizar como Cliente
                                         </button>
@@ -413,7 +413,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                     <div className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
                                             <input
-                                                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
+                                                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm text-docka-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
                                                 placeholder="Ex: cliente.asterysko.com"
                                                 value={clientPortalDomain}
                                                 onChange={(e) => setClientPortalDomain(e.target.value)}
@@ -427,13 +427,13 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                             />
                                             <button
                                                 onClick={handleUpdateDomain}
-                                                className="px-4 py-2 bg-docka-100 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 rounded-lg text-sm font-bold hover:bg-docka-200 dark:hover:bg-zinc-700 transition-colors"
+                                                className="px-4 py-2 bg-docka-100 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 rounded-xl text-sm font-bold hover:bg-docka-200 dark:hover:bg-zinc-700 transition-colors"
                                             >
                                                 Salvar
                                             </button>
                                         </div>
                                         {clientPortalDomain && (
-                                            <div className="mt-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-lg border border-slate-200 dark:border-zinc-700/50">
+                                            <div className="mt-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200 dark:border-zinc-700/50">
                                                 <h5 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2 flex items-center gap-2">
                                                     Configuração de Zona DNS
                                                     <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-bold">Pendente</span>
@@ -494,7 +494,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                             )}
                                             <button
                                                 onClick={handleLogoClick}
-                                                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-left text-docka-500 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors"
+                                                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm text-left text-docka-500 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors"
                                             >
                                                 {organization?.logo ? 'Alterar imagem...' : 'Carregar imagem...'}
                                             </button>
@@ -533,7 +533,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20 disabled:opacity-50"
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 shadow-sm disabled:opacity-50"
                         >
                             {saving ? 'Salvando...' : selectedPlan?.id ? 'Atualizar' : 'Salvar'}
                         </button>

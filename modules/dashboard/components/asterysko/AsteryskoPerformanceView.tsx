@@ -185,7 +185,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                             <p className="text-xs text-docka-500 dark:text-zinc-500 font-medium">
                                 {40 - stats.salesCount > 0 ? `Faltam ${40 - stats.salesCount} para o bônus` : 'Meta batida! Parabéns!'}
                             </p>
-                            <span className="text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded">
+                            <span className="text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-lg">
                                 {stats.bonusProgress}%
                             </span>
                         </div>
@@ -266,7 +266,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                                 <p className="text-3xl font-bold mb-4">R$ 1.000,00</p>
                                 
                                 {stats.hasBonus ? (
-                                    <div className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-full text-xs font-bold animate-bounce shadow-lg">
+                                    <div className="flex items-center gap-2 bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-bold animate-bounce shadow-sm">
                                         <CheckCircle2 size={14} /> BÔNUS CONQUISTADO!
                                     </div>
                                 ) : (
@@ -353,7 +353,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                         <div className="px-8 pb-8">
                             <button 
                                 onClick={() => setSelectedRule(null)}
-                                className="w-full py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg"
+                                className="w-full py-3 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-xl font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
                             >
                                 Entendido
                             </button>
