@@ -4,6 +4,7 @@ import { userService } from '../../services/userService';
 import { Organization } from '../../types';
 import { organizationService } from '../../services/organizationService';
 import { useToast } from '../../context/ToastContext';
+import UserAvatar from '../common/UserAvatar';
 
 interface UserManagerProps {
     organizations: Organization[];
@@ -316,10 +317,10 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                 <tr key={member.id} className="hover:bg-docka-50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <img
-                                                src={member.user.avatar || `https://ui-avatars.com/api/?name=${member.user.name}&background=random`}
-                                                alt={member.user.name}
-                                                className="w-8 h-8 rounded-full"
+                                            <UserAvatar 
+                                                src={member.user.avatar} 
+                                                name={member.user.name} 
+                                                size="sm" 
                                             />
                                             <span className="font-medium text-docka-900">{member.user.name}</span>
                                         </div>
@@ -511,10 +512,10 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                     <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-4">
-                                <img
-                                    src={selectedUser.avatar || `https://ui-avatars.com/api/?name=${selectedUser.name}&background=random`}
-                                    alt={selectedUser.name}
-                                    className="w-12 h-12 rounded-full border border-docka-200"
+                                <UserAvatar 
+                                    src={selectedUser.avatar} 
+                                    name={selectedUser.name} 
+                                    size="lg" 
                                 />
                                 <div>
                                     <h3 className="text-xl font-bold text-docka-900">{selectedUser.name}</h3>
