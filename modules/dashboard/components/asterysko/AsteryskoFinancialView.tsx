@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, TrendingUp, TrendingDown, FileText, Download, Plus, Filter, Search, ArrowUpRight, ArrowDownLeft, User, Calendar, Tag, Trash2, Upload, Link, AlertCircle, ChevronDown } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, FileText, Download, Plus, Filter, Search, ArrowUpRight, ArrowDownLeft, User, Calendar, Tag, Trash2, Upload, Link, AlertCircle, ChevronDown, Clock } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -20,7 +20,7 @@ interface Client {
 const AsteryskoFinancialView: React.FC = () => {
     const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
-    const [stats, setStats] = useState<any>(null);
+    const [metrics, setMetrics] = useState<any>(null);
     const [invoices, setInvoices] = useState<any[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ const AsteryskoFinancialView: React.FC = () => {
                 api.get('/asterysko/clients')
             ]);
 
-            setStats(statsRes.data);
+            setMetrics(statsRes.data);
             setInvoices(invoicesRes.data);
             setClients(clientsRes.data);
         } catch (error) {
