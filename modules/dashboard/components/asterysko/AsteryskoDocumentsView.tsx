@@ -6,6 +6,15 @@ import { useToast } from '../../../../context/ToastContext';
 import DashboardPage from '../../../../components/DashboardPage';
 
 interface DocumentItem {
+    id: string;
+    type: string;
+    title: string;
+    client: string;
+    status: 'signed' | 'pending';
+    date: string;
+    source: 'deal' | 'process';
+    downloadUrl: string;
+}
 
 const AsteryskoDocumentsView: React.FC = () => {
     const [documents, setDocuments] = useState<DocumentItem[]>([]);
