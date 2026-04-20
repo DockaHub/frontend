@@ -36,15 +36,17 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
         return null; // Or a spinner
     }
 
-    if (!user || !allowedRoles.map(r => r.toUpperCase()).includes(user.role.toUpperCase())) {
+    const userRole = (user.role || '').toUpperCase();
+
+    if (!allowedRoles.map(r => r.toUpperCase()).includes(userRole)) {
         console.warn(`Access denied for role: ${user?.role}. Allowed: ${allowedRoles.join(', ')}`);
         
         // Intelligent fallback based on role
-        if (user?.role === 'CLIENT') {
+        if (userRole === 'CLIENT') {
             return <Navigate to="/portal" replace />;
         }
 
-        if ((user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') && location.pathname.startsWith('/portal')) {
+        if ((userRole === 'ADMIN' || userRole === 'OWNER' || userRole === 'SUPER_ADMIN') && location.pathname.startsWith('/portal')) {
             // Admins shouldn't be locked out of the portal, but if they are, send to dashboard
             return <Navigate to="/dashboard" replace />;
         }

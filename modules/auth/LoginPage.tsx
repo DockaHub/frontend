@@ -23,16 +23,12 @@ export const LoginPage: React.FC = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const response: any = await login({ email: formData.email, password: formData.password });
+      const response: any = await login({ email: formData.email, password: formData.password });
 
-        // Smart Redirect: If client, go to portal
-        if (response?.user?.role?.toUpperCase() === 'CLIENT') {
-          navigate('/portal');
-          return;
-        }
-      } else {
-        await register({ name: formData.name, email: formData.email, password: formData.password });
+      // Smart Redirect: If client, go to portal
+      if (response?.user?.role?.toUpperCase() === 'CLIENT') {
+        navigate('/portal');
+        return;
       }
 
       // Navigate to root, App.tsx will redirect to /dashboard?view=home
@@ -51,7 +47,7 @@ export const LoginPage: React.FC = () => {
         <div className="login-card">
           <div className="login-header">
             <h1>Docka Hub</h1>
-            <p>{isLogin ? 'Entre na sua conta' : 'Crie sua conta'}</p>
+            <p>Entre na sua conta</p>
           </div>
 
           {error && (
@@ -61,23 +57,6 @@ export const LoginPage: React.FC = () => {
           )}
 
           <form onSubmit={handleSubmit} className="login-form">
-            {!isLogin && (
-              <div className="form-group">
-                <label htmlFor="name">
-                  <User size={20} />
-                  Nome
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Seu nome completo"
-                  required={!isLogin}
-                />
-              </div>
-            )}
-
             <div className="form-group">
               <label htmlFor="email">
                 <Mail size={20} />
@@ -121,26 +100,13 @@ export const LoginPage: React.FC = () => {
               {loading ? (
                 <>
                   <Loader2 size={20} className="spinner" />
-                  {isLogin ? 'Entrando...' : 'Criando conta...'}
+                  Entrando...
                 </>
               ) : (
-                <>{isLogin ? 'Entrar' : 'Criar conta'}</>
+                <>Entrar</>
               )}
             </button>
           </form>
-
-          <div className="login-footer">
-            <button
-              type="button"
-              className="toggle-mode"
-              onClick={() => {
-                setIsLogin(!isLogin);
-                setError('');
-              }}
-            >
-              {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
-            </button>
-          </div>
         </div>
       </div>
 
