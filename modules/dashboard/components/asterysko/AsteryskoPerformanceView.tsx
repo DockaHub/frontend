@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingUp, Trophy, Target, DollarSign, CheckCircle2, Star, Zap, ChevronRight, Medal, X, Info, Gauge } from 'lucide-react';
 import api from '../../../../services/api';
+import DashboardPage from '../../../../components/DashboardPage';
 
 const AsteryskoPerformanceView: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
