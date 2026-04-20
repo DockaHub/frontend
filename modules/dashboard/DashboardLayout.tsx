@@ -24,60 +24,36 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOrg, userOrgs = [], user, onLogout, onOpenProfile, onOpenPreferences, theme, onToggleTheme }) => {
-    // Local state for the Dashboard Module. 
-    // It starts with the app's global org, but allows switching independently in the sidebar.
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Initialize activeView from URL or default to 'overview'
-    const initialView = searchParams.get('view') || 'overview';
-    const [activeView, setActiveView] = useState(initialView);
-
-    // Initialize selectedOrgId from URL or fallback to initialOrg
-    const initialOrgId = searchParams.get('org') || initialOrg.id;
-    const [selectedOrgId, setSelectedOrgId] = useState<string>(initialOrgId);
-
-    // Sync activeView with URL changes
-    useEffect(() => {
-        const view = searchParams.get('view') || 'overview';
-        setActiveView(view);
-
-        // Also sync org from URL if it changes externally (e.g. back button)
-        const orgParam = searchParams.get('org');
-        if (orgParam && orgParam !== selectedOrgId) {
-            setSelectedOrgId(orgParam);
-        }
-    }, [searchParams]);
-
-    const [viewData, setViewData] = useState<any>(null); // Data passed between views
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    // Use passed userOrgs to find selected org, fallback to initialOrg if not found
+    // Derived state directly from URL - SINGLE SOURCE OF TRUTH
+    const activeView = searchParams.get('view') || 'overview';
+    const selectedOrgId = searchParams.get('org') || initialOrg.id;
+    
+    // Find selected org from userOrgs, fallback to initialOrg (prop from App.tsx)
     const selectedOrg = userOrgs.find(o => o.id === selectedOrgId) || initialOrg;
 
-    // Helper to change view with data
+    const [viewData, setViewData] = useState<any>(null); // Data passed between views (not in URL for security/size)
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    // Helper to change view
     const handleViewChange = (view: string, data: any = null) => {
-        setActiveView(view);
-        setViewData(data);
+        if (data) setViewData(data);
 
         // Update URL to reflect current view
         setSearchParams(prev => {
             prev.set('view', view);
             return prev;
-        });
+        }, { replace: true });
     };
 
     const handleOrgChange = (org: Organization) => {
-        setSelectedOrgId(org.id);
-
-        // Reset view to overview when switching orgs
-        handleViewChange('overview');
-
-        // Update URL
+        // Update URL - This will trigger a re-render of DashboardLayout because searchParams changes
         setSearchParams(prev => {
             prev.set('org', org.id);
             prev.set('view', 'overview');
             return prev;
-        });
+        }, { replace: true });
     };
 
 

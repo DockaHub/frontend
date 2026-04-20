@@ -196,13 +196,20 @@ const AppContent: React.FC = () => {
     const params = new URLSearchParams(location.search);
     const orgId = params.get('org');
     
+    // REDIRECT FROM PLACEHOLDER TO REAL ORG IF LOADED
+    if (orgId === 'org_1' && userOrgs.length > 0 && userOrgs[0].id !== 'org_1') {
+      console.log('Redirecting from placeholder to real organization...');
+      navigate(`/dashboard?org=${userOrgs[0].id}&view=overview`, { replace: true });
+      return;
+    }
+
     if (orgId && currentOrg?.id !== orgId && userOrgs.length > 0) {
       const targetOrg = userOrgs.find(o => o.id === orgId);
       if (targetOrg) {
         setCurrentOrg(targetOrg);
       }
     }
-  }, [location.search, userOrgs, currentOrg?.id]);
+  }, [location.search, userOrgs, currentOrg?.id, navigate]);
 
   // Apply Theme Effect & Base Favicon (Docka)
   useEffect(() => {
