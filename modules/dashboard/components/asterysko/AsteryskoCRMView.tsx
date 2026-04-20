@@ -253,6 +253,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
         <DashboardPage 
             title="Pipeline de Vendas (PI)" 
             icon={Kanban}
+            padding="p-0"
             actions={
                 <div className="flex items-center gap-3">
                     <div className="flex bg-docka-50 dark:bg-zinc-800 p-1 rounded-lg border border-docka-100 dark:border-zinc-700 mr-2">
@@ -290,8 +291,8 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                     <span className="text-[10px] font-bold uppercase text-docka-400 tracking-widest">Sincronizando pipeline...</span>
                 </div>
             ) : (
-                <div className="h-full flex flex-col animate-in fade-in duration-500 overflow-hidden -mx-8 -my-6">
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 custom-scrollbar">
+                <div className="h-full w-full flex flex-col animate-in fade-in duration-500 overflow-hidden">
+                    <div className="flex-1 min-h-0">
                         {columns.length > 0 ? (
                             viewMode === 'kanban' ? (
                                 <KanbanBoard

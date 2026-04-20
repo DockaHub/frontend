@@ -15,7 +15,7 @@ interface KanbanBoardProps {
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCard, onDragEnd, members = [] }) => {
   return (
     <DragDropContext onDragEnd={onDragEnd || (() => { })}>
-      <div className="flex h-full overflow-x-auto pb-4 gap-4 items-start custom-scrollbar">
+      <div className="flex h-full overflow-x-auto px-8 pt-6 pb-4 gap-4 items-start custom-scrollbar">
         {columns.map((col) => (
           <div key={col.id} className="min-w-[320px] w-[320px] shrink-0 flex flex-col h-full max-h-full bg-docka-100/50 dark:bg-zinc-900/50 rounded-xl p-2 border border-docka-200/50 dark:border-zinc-800">
             {/* Column Header */}
