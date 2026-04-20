@@ -76,8 +76,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const response = await authService.register(data);
             if (response.user && response.token) {
-                setUser(response.user);
-                localStorage.setItem('user', JSON.stringify(response.user));
+                const normalizedUser = { ...response.user, role: (response.user.role || 'user').toUpperCase() };
+                setUser(normalizedUser);
+                localStorage.setItem('user', JSON.stringify(normalizedUser));
             }
         } catch (error) {
             console.error('Registration failed:', error);

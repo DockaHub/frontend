@@ -427,7 +427,7 @@ const AppContent: React.FC = () => {
           {/* Default & Security Routes */}
           <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/" element={
-            user?.role === 'CLIENT' ? 
+            user?.role?.toUpperCase() === 'CLIENT' ? 
             <Navigate to="/portal" replace /> : 
             <Navigate to={`/dashboard?view=overview&org=${currentOrg.id}`} replace />
           } />

@@ -36,7 +36,7 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
         return null; // Or a spinner
     }
 
-    if (!user || !allowedRoles.includes(user.role)) {
+    if (!user || !allowedRoles.map(r => r.toUpperCase()).includes(user.role.toUpperCase())) {
         console.warn(`Access denied for role: ${user?.role}. Allowed: ${allowedRoles.join(', ')}`);
         
         // Intelligent fallback based on role
