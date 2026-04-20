@@ -155,7 +155,7 @@ const AppContent: React.FC = () => {
             const enhancedOrgs = filteredOrgs.map(org => ({
               ...org,
               logoColor: org.logoColor || 'bg-blue-600',
-              type: org.type || 'saas',
+              type: (org.type || 'SAAS').toUpperCase() as any,
               features: org.features || { calendar: true, drive: true, contacts: true, tasks: true, meet: true }
             }));
 
