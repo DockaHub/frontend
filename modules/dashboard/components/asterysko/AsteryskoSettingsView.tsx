@@ -608,7 +608,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                     </div>
                 </div>
             </Modal>
-        </div>
+        </DashboardPage>
     );
 };
 

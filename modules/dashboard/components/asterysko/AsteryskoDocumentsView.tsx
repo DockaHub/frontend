@@ -171,7 +171,7 @@ const AsteryskoDocumentsView: React.FC = () => {
                     )}
                 </div>
             </div>
-        </div>
+        </DashboardPage>
     );
 };
 

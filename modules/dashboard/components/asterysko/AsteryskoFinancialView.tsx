@@ -683,7 +683,7 @@ const AsteryskoFinancialView: React.FC = () => {
                     </div>
                 </Modal>
             </div>
-        </div>
+        </DashboardPage>
     );
 };
 

@@ -356,7 +356,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </DashboardPage>
     );
 };
 
