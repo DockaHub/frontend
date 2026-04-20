@@ -20,7 +20,7 @@ interface Client {
 const AsteryskoFinancialView: React.FC = () => {
     const [isNewInvoiceOpen, setIsNewInvoiceOpen] = useState(false);
     const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
-    const [metrics, setMetrics] = useState<any>(null);
+    const [stats, setStats] = useState<any>(null);
     const [invoices, setInvoices] = useState<any[]>([]);
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
@@ -57,7 +57,7 @@ const AsteryskoFinancialView: React.FC = () => {
                 api.get('/asterysko/clients')
             ]);
 
-            setMetrics(statsRes.data);
+            setStats(statsRes.data);
             setInvoices(invoicesRes.data);
             setClients(clientsRes.data);
         } catch (error) {
