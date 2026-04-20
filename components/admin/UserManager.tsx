@@ -508,7 +508,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
             {/* User Detail / Manage Org Modal */}
             {selectedUser && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full p-6 animate-in fade-in zoom-in duration-200">
                         <div className="flex justify-between items-center mb-6">
                             <div className="flex items-center gap-4">
                                 <img
@@ -693,7 +693,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                             <RefreshCw className="animate-spin mx-auto text-docka-400" />
                                         </div>
                                     ) : (
-                                        <div className="bg-docka-50 rounded-lg border border-docka-200 overflow-hidden">
+                                        <div className="bg-docka-50 rounded-lg border border-docka-200 overflow-x-auto">
                                             <table className="w-full text-sm text-left">
                                                 <thead className="bg-docka-100 text-docka-500 uppercase text-xs font-semibold">
                                                     <tr>
