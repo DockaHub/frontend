@@ -40,7 +40,7 @@ const AsteryskoOverviewView: React.FC = () => {
 
                     {/* Metrics Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm border-l-4 border-l-blue-500">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border-l-4 border-l-blue-500">
                             <div className="flex items-center gap-3 mb-4 text-blue-600 dark:text-blue-400">
                                 <Scale size={18} />
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Processos Ativos</span>
@@ -48,7 +48,7 @@ const AsteryskoOverviewView: React.FC = () => {
                             <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100 font-mono tracking-tight">{metrics.activeProcesses}</h3>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm border-l-4 border-l-amber-500 relative overflow-hidden group">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border-l-4 border-l-amber-500 relative overflow-hidden group">
                             <div className="flex items-center gap-3 mb-4 text-amber-600 dark:text-amber-400">
                                 <Clock size={18} />
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Prazos Próximos</span>
@@ -61,7 +61,7 @@ const AsteryskoOverviewView: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm border-l-4 border-l-purple-500">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] border-l-4 border-l-purple-500">
                             <div className="flex items-center gap-3 mb-4 text-purple-600 dark:text-purple-400">
                                 <FileText size={18} />
                                 <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Oposições</span>
@@ -69,7 +69,7 @@ const AsteryskoOverviewView: React.FC = () => {
                             <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100 font-mono tracking-tight">{metrics.oppositions}</h3>
                         </div>
 
-                        <div className="bg-emerald-600 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-sm relative overflow-hidden group">
+                        <div className="bg-emerald-600 dark:bg-zinc-100 text-white dark:text-zinc-900 p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(16,185,129,0.3)] relative overflow-hidden group">
                             <div className="relative z-10">
                                 <div className="flex items-center gap-2 mb-4 text-emerald-100 dark:text-zinc-500">
                                     <CheckCircle2 size={18} />
@@ -86,7 +86,7 @@ const AsteryskoOverviewView: React.FC = () => {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         {/* RPI Updates List */}
-                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                             <div className="px-6 py-4 border-b border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/20 flex justify-between items-center">
                                 <h3 className="text-[10px] font-bold text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
                                     <FileText size={14} className="text-docka-400 dark:text-zinc-500" /> últimos Despachos (RPI)
@@ -112,7 +112,7 @@ const AsteryskoOverviewView: React.FC = () => {
                         </div>
 
                         {/* Customer Pendencies List */}
-                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                             <div className="px-6 py-4 border-b border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/20 flex justify-between items-center">
                                 <h3 className="text-[10px] font-bold text-docka-900 dark:text-zinc-100 uppercase tracking-widest flex items-center gap-2">
                                     <AlertCircle size={14} className="text-amber-500" /> Pendências de Clientes

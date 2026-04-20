@@ -1,27 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload } from 'lucide-react';
-import Modal from '../../../../components/common/Modal';
-import api from '../../../../services/api';
-import { useToast } from '../../../../context/ToastContext';
-import { Organization } from '../../../../types';
-import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
-
-interface AsteryskoSettingsViewProps {
-    onOpenClientPortal?: () => void;
-    organization?: Organization;
-}
-
-interface Plan {
-    id: string;
-    name: string;
-    description: string | null;
-    value: number | string;
-    officialTax: number | string | null;
-    commissionSales: number | string;
-    commissionOps: number | string;
-    category: string;
-}
+import DashboardPage from '../../../../components/DashboardPage';
 
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenClientPortal, organization }) => {
     const [plans, setPlans] = useState<Plan[]>([]);
@@ -170,12 +148,9 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
     };
 
     return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 animate-in fade-in duration-300 overflow-y-auto custom-scrollbar p-8 transition-colors">
-            <div className="max-w-4xl mx-auto pb-20">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 uppercase tracking-tight">Configurações Asterysko</h1>
-                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Preferências do escritório, tabela de planos e portal do cliente.</p>
-                </div>
+        <DashboardPage title="Configurações Asterysko" icon={Shield}>
+            <div className="animate-in fade-in duration-500 max-w-4xl mx-auto pb-20">
+                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-10 -mt-2">Preferências do escritório, tabela de planos e portal do cliente.</p>
 
                 <div className="space-y-8">
 

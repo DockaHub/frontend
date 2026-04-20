@@ -181,47 +181,33 @@ const AsteryskoFinancialView: React.FC = () => {
     }
 
     return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 animate-in fade-in duration-300 overflow-y-auto custom-scrollbar p-8 transition-colors">
-            <div className="max-w-6xl mx-auto">
-
-                {/* Header */}
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Financeiro Asterysko</h1>
-                        <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gestão de honorários, taxas INPI e faturamento.</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button className="bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 text-docka-700 dark:text-zinc-300 px-4 py-2 rounded-xl text-sm font-medium hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors shadow-sm flex items-center gap-2">
-                            <Download size={16} /> Relatório
-                        </button>
-                        <button
-                            onClick={() => setIsNewInvoiceOpen(true)}
-                            className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm flex items-center gap-2"
-                        >
-                            <Plus size={16} /> Nova Fatura
-                        </button>
-                    </div>
+        <DashboardPage 
+            title="Financeiro Asterysko" 
+            icon={DollarSign}
+            actions={
+                <div className="flex gap-2">
+                    <button className="bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 text-docka-700 dark:text-zinc-300 px-4 py-2 rounded-xl text-sm font-medium hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex items-center gap-2">
+                        <Download size={16} /> Relatório
+                    </button>
+                    <button
+                        onClick={() => setIsNewInvoiceOpen(true)}
+                        className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] flex items-center gap-2"
+                    >
+                        <Plus size={16} /> Nova Fatura
+                    </button>
                 </div>
+            }
+        >
+            <div className="animate-in fade-in duration-500">
+                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-10 -mt-2">Gestão de honorários, taxas INPI e faturamento da unidade Asterysko.</p>
 
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                         <div className="flex items-center justify-between mb-4">
                             <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><DollarSign size={20} /></div>
                             <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-xl">+0%</span>
                         </div>
-                        <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">R$ {(Number(metrics?.monthlyRevenue) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</h3>
-                        <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Receita Mensal</p>
-                    </div>
-
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl"><FileText size={20} /></div>
-                            <span className="text-xs font-bold text-docka-500 dark:text-zinc-400 bg-docka-100 dark:bg-zinc-800 px-2 py-1 rounded-xl">{(invoices || []).filter(i => i?.status === 'PENDING').length} faturas</span>
-                        </div>
-                        <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">R$ {(Number(metrics?.receivables) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</h3>
-                        <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">A Receber</p>
-                    </div>
 
                     <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
@@ -251,7 +237,7 @@ const AsteryskoFinancialView: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     {/* Invoices List */}
-                    <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                    <div className="lg:col-span-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                         <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
                             <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Faturas de Clientes</h3>
                             <div className="flex gap-2">

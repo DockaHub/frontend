@@ -136,19 +136,14 @@ const AsteryskoPerformanceView: React.FC = () => {
     ];
 
     return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar transition-colors">
-            <div className="max-w-5xl mx-auto">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
-                        Minhas Metas e Performance <Zap size={24} className="text-amber-500 fill-amber-500" />
-                    </h1>
-                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Acompanhe seu progresso de vendas e comissionamento mensal.</p>
-                </div>
+        <DashboardPage title="Minhas Metas & Performance" icon={TrendingUp}>
+            <div className="animate-in fade-in duration-500">
+                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-10 -mt-2">Acompanhe seu progresso de vendas e comissionamento mensal.</p>
 
                 {/* Main Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     {/* Accumulated Commission Card */}
-                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 dark:from-emerald-900/40 dark:to-emerald-800/20 text-white p-6 rounded-xl shadow-sm relative overflow-hidden border border-emerald-500/20">
+                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 dark:from-emerald-900/40 dark:to-emerald-800/20 text-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(16,185,129,0.3)] relative overflow-hidden border border-emerald-500/20">
                         <div className="relative z-10">
                             <div className="flex items-center gap-2 mb-4 text-emerald-100">
                                 <DollarSign size={20} />
@@ -165,7 +160,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                     </div>
 
                     {/* Sales Target Card */}
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm transition-all hover:border-docka-300 cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'bonus'))}>
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:border-docka-300 cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'bonus'))}>
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2 text-docka-500 dark:text-zinc-400">
                                 <Target size={18} />
@@ -192,7 +187,7 @@ const AsteryskoPerformanceView: React.FC = () => {
                     </div>
 
                     {/* Tier Card */}
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm transition-all hover:border-docka-300 cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'essencial'))}>
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:border-docka-300 cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'essencial'))}>
                         <div className="flex items-center gap-2 text-docka-500 dark:text-zinc-400 mb-4">
                             <Trophy size={18} />
                             <span className="text-xs font-bold uppercase tracking-wider">Nível de Conversão</span>

@@ -15,6 +15,8 @@ interface DocumentItem {
     downloadUrl: string;
 }
 
+import DashboardPage from '../../../../components/DashboardPage';
+
 const AsteryskoDocumentsView: React.FC = () => {
     const [documents, setDocuments] = useState<DocumentItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -60,37 +62,27 @@ const AsteryskoDocumentsView: React.FC = () => {
     };
 
     return (
-        <div className="h-full bg-docka-50 dark:bg-zinc-950 animate-in fade-in duration-300 overflow-y-auto custom-scrollbar p-8 transition-colors">
-            <div className="max-w-6xl mx-auto">
-                <div className="flex justify-between items-center mb-8">
-                    <div>
-                        <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Documentos & Assinaturas</h1>
-                        <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gestão centralizada de contratos e procurações.</p>
-                    </div>
-                    {/* <div className="flex gap-2">
-                        <button className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 transition-colors shadow-sm flex items-center gap-2">
-                            <Upload size={16} /> Upload Manual
-                        </button>
-                    </div> */}
-                </div>
+        <DashboardPage title="Documentos & Assinaturas" icon={FileSignature}>
+            <div className="animate-in fade-in duration-500 max-w-6xl mx-auto">
+                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-10 -mt-2">Gestão centralizada de contratos e procurações jurídica da unidade Asterysko.</p>
 
                 {/* Stats */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-sm">
+                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                         <div className="p-3 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl"><Clock size={24} /></div>
                         <div>
                             <div className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{stats.pending}</div>
                             <div className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-bold">Aguardando Assinatura</div>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-sm">
+                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)]">
                         <div className="p-3 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl"><CheckCircle2 size={24} /></div>
                         <div>
                             <div className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{stats.signed}</div>
                             <div className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-bold">Documentos Validados</div>
                         </div>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-sm opacity-50">
+                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-4 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] opacity-50">
                         <div className="p-3 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl"><FileText size={24} /></div>
                         <div>
                             <div className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{stats.modelos}</div>
@@ -100,7 +92,7 @@ const AsteryskoDocumentsView: React.FC = () => {
                 </div>
 
                 {/* List */}
-                <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm min-h-[400px]">
+                <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] min-h-[400px]">
                     <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 flex justify-between items-center bg-docka-50/30 dark:bg-zinc-800/30">
                         <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Recentes</h3>
                         <div className="flex gap-2">
