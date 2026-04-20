@@ -39,17 +39,18 @@ export const RoleGuard: React.FC<RoleGuardProps> = ({
     if (!user || !allowedRoles.includes(user.role)) {
         console.warn(`Access denied for role: ${user?.role}. Allowed: ${allowedRoles.join(', ')}`);
         
-        // If it's a client trying to access admin, send to portal
-        if (user?.role === 'CLIENT' && !fallbackPath.includes('portal')) {
+        // Intelligent fallback based on role
+        if (user?.role === 'CLIENT') {
             return <Navigate to="/portal" replace />;
         }
 
-        // If it's an admin blocked from something, don't force them into the client portal
-        if (user?.role === 'ADMIN' && fallbackPath === '/portal') {
+        if ((user?.role === 'ADMIN' || user?.role === 'OWNER' || user?.role === 'SUPER_ADMIN') && location.pathname.startsWith('/portal')) {
+            // Admins shouldn't be locked out of the portal, but if they are, send to dashboard
             return <Navigate to="/dashboard" replace />;
         }
         
-        return <Navigate to={fallbackPath} replace />;
+        // If no specific role logic matches, go to root and let App.tsx decide
+        return <Navigate to="/" replace />;
     }
 
     return <>{children}</>;

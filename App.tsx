@@ -126,12 +126,18 @@ const AppContent: React.FC = () => {
     checkCustomDomain();
   }, []);
 
-  // Enforce Tenant Routing only for clients
+  // Enforce Routing by Role
   useEffect(() => {
-    if (isTenantDomain && !resolvingDomain && user?.role === 'CLIENT' && !location.pathname.startsWith('/portal') && !location.pathname.startsWith('/sign')) {
-      navigate('/portal', { replace: true });
+    if (!resolvingDomain && isAuthenticated && user) {
+      const isPublicPath = location.pathname.startsWith('/portal') || location.pathname.startsWith('/sign');
+      
+      // If client is in admin dashboard area, force to portal
+      if (user.role === 'CLIENT' && !isPublicPath) {
+        console.log('Client detected on admin path, redirecting to portal...');
+        navigate('/portal', { replace: true });
+      }
     }
-  }, [isTenantDomain, resolvingDomain, user?.role, location.pathname, navigate]);
+  }, [isAuthenticated, resolvingDomain, user?.role, location.pathname, navigate]);
 
   // Fetch real organizations for the user
   useEffect(() => {
@@ -411,8 +417,16 @@ const AppContent: React.FC = () => {
           <Route path="/asterysko" element={<AsteryskoLayout />} />
           <Route path="/portal/*" element={<AsteryskoClientPortal theme={theme} onToggleTheme={toggleTheme} onExit={() => navigate('/')} />} />
 
-          {/* Default Route */}
-          <Route path="/" element={<Navigate to={`/dashboard?view=overview&org=${currentOrg.id}`} replace />} />
+          {/* Default & Security Routes */}
+          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/" element={
+            user?.role === 'CLIENT' ? 
+            <Navigate to="/portal" replace /> : 
+            <Navigate to={`/dashboard?view=overview&org=${currentOrg.id}`} replace />
+          } />
+          
+          {/* Catch-all route to prevent black screen */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
 
