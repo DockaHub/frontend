@@ -813,13 +813,13 @@ const AsteryskoProcessesView: React.FC = () => {
                     title={selectedProcess.title}
                     size="xl"
                 >
-                    <div className="flex flex-col h-[75vh] -mx-1 px-1">
+                    <div className="flex flex-col h-[75vh]">
                         {isStatusEditOpen && (
                             <div className="absolute inset-x-0 top-0 z-50 p-6 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-docka-100 dark:border-zinc-800 animate-in fade-in slide-in-from-top-4 duration-300 rounded-t-xl">
                                 <div className="max-w-2xl mx-auto space-y-6">
                                     <div className="flex items-center justify-between">
                                         <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-600 flex items-center gap-2">
-                                            <Activity size={14} /> Evoluir Processo / LanÃ§ar Despacho
+                                            <Activity size={14} /> Evoluir Processo / Lançar Despacho
                                         </h3>
                                         <button onClick={() => setIsStatusEditOpen(false)} className="text-[10px] font-bold uppercase text-docka-300 hover:text-rose-500 transition-colors">Cancelar</button>
                                     </div>
@@ -838,14 +838,14 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 <option value="EXAMINATION">EM EXAME</option>
                                                 <option value="GRANTED">DEFERIDO / CONCEDIDO</option>
                                                 <option value="DENIED">INDEFERIDO</option>
-                                                <option value="OPPOSITION">OPOSIÃ‡ÃƒO</option>
+                                                <option value="OPPOSITION">OPOSIÇÃO</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">TÃ­tulo do Despacho (Ex: 3.1)</label>
+                                            <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">Título do Despacho (Ex: 3.1)</label>
                                             <input 
                                                 className="w-full px-4 py-3 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-xs font-bold text-docka-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-blue-100"
-                                                placeholder="PublicaÃ§Ã£o de Pedido"
+                                                placeholder="Publicação de Pedido"
                                                 value={newStatusData.description}
                                                 onChange={e => setNewStatusData({...newStatusData, description: e.target.value})}
                                             />
@@ -857,14 +857,14 @@ const AsteryskoProcessesView: React.FC = () => {
                                         value={newStatusData.details}
                                         onChange={e => setNewStatusData({...newStatusData, details: e.target.value})}
                                     />
-                                    <button onClick={handleUpdateStatus} className="w-full py-4 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-sm hover:bg-blue-700 transition-all">LanÃ§ar EvoluÃ§Ã£o</button>
+                                    <button onClick={handleUpdateStatus} className="w-full py-4 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-sm hover:bg-blue-700 transition-all">Lançar Evolução</button>
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex flex-col md:flex-row justify-between items-start gap-6 pb-8 border-b border-docka-50 dark:border-zinc-800 mb-6 shrink-0 pt-2 px-2">
+                        <div className="flex flex-col md:flex-row justify-between items-start gap-6 pb-8 border-b border-docka-50 dark:border-zinc-800 mb-6 shrink-0 pt-2">
                             <div className="flex gap-6">
-                                <div className="relative group">
+                                <div className="relative group shrink-0">
                                     <div className="w-24 h-24 bg-white dark:bg-zinc-800 rounded-xl border border-docka-100 dark:border-zinc-700 shadow-sm flex items-center justify-center overflow-hidden p-2">
                                         {selectedProcess.logoUrl && !logoError ? (
                                             <img src={`${getBackendUrl()}${selectedProcess.logoUrl}`} alt="" className="w-full h-full object-contain" onError={() => setLogoError(true)} />
@@ -880,14 +880,14 @@ const AsteryskoProcessesView: React.FC = () => {
                                         </label>
                                     </div>
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-2">
                                     <h2 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight">{selectedProcess.title}</h2>
-                                    <div className="flex items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-docka-400">
+                                    <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-docka-400">
                                         <span className="flex items-center gap-1.5"><Briefcase size={12} className="text-docka-200" /> {selectedProcess.client}</span>
                                         <span className="w-1 h-1 bg-docka-100 rounded-full" />
                                         <span className="flex items-center gap-1.5 px-2 py-0.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-docka-900 dark:text-zinc-100 border border-docka-100 dark:border-zinc-700"><Scale size={12} className="text-docka-300" /> {selectedProcess.displayId}</span>
                                     </div>
-                                    <div className="flex gap-2 mt-4">
+                                    <div className="flex flex-wrap gap-2 mt-4">
                                         {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
                                             <button 
                                                 key={plan}
@@ -899,9 +899,11 @@ const AsteryskoProcessesView: React.FC = () => {
                                         ))}
                                     </div>
                                 </div>
-                               <div className="flex flex-col items-end gap-3">
+                            </div>
+                            
+                            <div className="flex flex-col items-end gap-3 shrink-0">
                                 <div className="space-y-1 text-right">
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-docka-400">AÃ§Ã£o Recomendada</span>
+                                    <span className="text-[9px] font-bold uppercase tracking-wider text-docka-400">Ação Recomendada</span>
                                     <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/20 text-amber-600 dark:text-amber-400 rounded-lg shadow-sm text-[10px] font-bold uppercase tracking-widest">
                                         <Clock size={14} /> {selectedProcess.nextStep}
                                     </div>
@@ -915,14 +917,14 @@ const AsteryskoProcessesView: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="flex gap-8 mb-8 border-b border-docka-50 dark:border-zinc-800 shrink-0 px-2">
+                        <div className="flex gap-8 mb-6 border-b border-docka-50 dark:border-zinc-800 shrink-0">
                             {['timeline', 'docs', 'info'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
                                     className={`pb-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-400 dark:text-zinc-500 hover:text-docka-600'}`}
                                 >
-                                    {tab === 'timeline' ? 'Linha do Tempo' : tab === 'docs' ? 'Documentos' : 'DossiÃª TÃ©cnico'}
+                                    {tab === 'timeline' ? 'Linha do Tempo' : tab === 'docs' ? 'Documentos' : 'Dossiê Técnico'}
                                     {activeTab === tab && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-docka-900 dark:bg-zinc-100 rounded-full" />
                                     )}
@@ -930,7 +932,7 @@ const AsteryskoProcessesView: React.FC = () => {
                             ))}
                         </div>
 
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-8">
+                        <div className="flex-1 overflow-y-auto custom-scrollbar pb-8">
                             {activeTab === 'timeline' && (
                                 <div className="space-y-6 relative pl-10 before:absolute before:left-[19px] before:top-2 before:bottom-2 before:w-0.5 before:bg-docka-50 dark:before:bg-zinc-800">
                                     {getTimelineEvents(selectedProcess).map((event: any, idx: number) => (
@@ -988,8 +990,8 @@ const AsteryskoProcessesView: React.FC = () => {
                                             <div className="flex items-center gap-3 mb-6">
                                                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center text-blue-600"><FileSignature size={24} /></div>
                                                 <div>
-                                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-900 dark:text-blue-400">ProcuraÃ§Ã£o</h4>
-                                                    <span className="text-[9px] font-bold uppercase text-docka-400">RepresentaÃ§Ã£o INPI</span>
+                                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-900 dark:text-blue-400">Procuração</h4>
+                                                    <span className="text-[9px] font-bold uppercase text-docka-400">Representação INPI</span>
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
@@ -1002,7 +1004,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                         </div>
                                         {selectedProcess.proxyUrl && (
                                             <button onClick={() => handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title)} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-400 text-[10px] font-bold uppercase tracking-widest rounded-xl border border-blue-100 dark:border-zinc-700 hover:shadow-sm transition-all flex items-center justify-center gap-2">
-                                                <Download size={14} /> Baixar CÃ³pia
+                                                <Download size={14} /> Baixar Cópia
                                             </button>
                                         )}
                                     </div>
@@ -1013,11 +1015,11 @@ const AsteryskoProcessesView: React.FC = () => {
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-6">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 ml-1">InformaÃ§Ãµes do Ativo</h4>
+                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 ml-1">Informações do Ativo</h4>
                                             <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-8 rounded-xl border border-docka-100 dark:border-zinc-800 shadow-inner">
                                                 {['brandName', 'nature', 'presentation'].map(field => (
                                                     <div key={field}>
-                                                        <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'brandName' ? 'Nome da Marca' : field === 'nature' ? 'Natureza' : 'ApresentaÃ§Ã£o'}</label>
+                                                        <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'brandName' ? 'Nome da Marca' : field === 'nature' ? 'Natureza' : 'Apresentação'}</label>
                                                         <input 
                                                             className="w-full px-4 py-3 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-xs font-bold text-docka-900 dark:text-zinc-100 shadow-sm outline-none focus:ring-2 focus:ring-docka-100"
                                                             value={infoForm[field] || ''}
@@ -1029,12 +1031,12 @@ const AsteryskoProcessesView: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-6">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 ml-1">Prazos e VigÃªncia</h4>
+                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 ml-1">Prazos e Vigência</h4>
                                             <div className="space-y-4 bg-docka-50/30 dark:bg-zinc-900/50 p-8 rounded-xl border border-docka-100 dark:border-zinc-800 shadow-inner">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     {['filingDate', 'concessionDate'].map(field => (
                                                         <div key={field}>
-                                                            <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'filingDate' ? 'DepÃ³sito' : 'ConcessÃ£o'}</label>
+                                                            <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'filingDate' ? 'Depósito' : 'Concessão'}</label>
                                                             <input 
                                                                 type="date"
                                                                 className="w-full px-3 py-3 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-[10px] font-bold text-docka-600 outline-none"
@@ -1045,7 +1047,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                     ))}
                                                 </div>
                                                 <div className="p-4 bg-rose-50/50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/20 rounded-xl">
-                                                    <label className="block text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1 ml-1 flex items-center gap-1.5"><Clock size={10} /> ExpiraÃ§Ã£o do DecÃªnio</label>
+                                                    <label className="block text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1 ml-1 flex items-center gap-1.5"><Clock size={10} /> Expiração do Decênio</label>
                                                     <input 
                                                         type="date"
                                                         className="w-full bg-transparent border-none text-sm font-bold text-rose-600 dark:text-rose-400 outline-none"
@@ -1063,16 +1065,15 @@ const AsteryskoProcessesView: React.FC = () => {
                                             className="px-12 py-4 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold text-[10px] uppercase tracking-widest rounded-lg shadow-sm hover:bg-docka-800 transition-all flex items-center gap-3"
                                         >
                                             {isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                                            Atualizar DossiÃª TÃ©cnico
+                                            Atualizar Dossiê Técnico
                                         </button>
                                     </div>
                                 </div>
                             )}
                         </div>
                     </div>
-                </div>
-            </Modal>
-        )}
+                </Modal>
+            )}
         </DashboardPage>
     );
 };
