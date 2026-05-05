@@ -322,6 +322,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                 if (allProcesses.length > 0) {
                     setExpandedId(allProcesses[0].id);
                 }
+                setLoading(false);
             } catch (err: any) {
                 console.error('Error loading portal data:', err);
                 // If admin, we don't care if client record is missing, they just see a 'preview' (empty dashboard)
@@ -368,9 +369,10 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                   setLoading(false);
                 } else {
                     setError('Não foi possível carregar os dados do portal.');
+                    setLoading(false);
                 }
             } finally {
-                if (user?.role !== 'ADMIN') setLoading(false);
+                setLoading(false);
             }
         };
 
