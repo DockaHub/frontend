@@ -1112,7 +1112,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                     </div>
                                                                                 </div>
                                                                             </div>
-                                                                            <a href={proc.contractUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
+                                                                            <button onClick={() => window.open(`${getBackendUrl()}${proc.contractUrl}${proc.contractUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank')} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
                                                                                 <ExternalLink size={20} />
                                                                             </button>
                                                                         </div>
@@ -1262,7 +1262,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                     <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 rounded-full text-xs font-bold uppercase tracking-wide">
                                                         {contract.contractSignStatus}
                                                     </span>
-                                                    <a href={contract.contractUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
+                                                    <button onClick={() => window.open(`${getBackendUrl()}${contract.contractUrl}${contract.contractUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank')} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
                                                         <ExternalLink size={20} />
                                                     </button>
                                                 </div>
@@ -1354,7 +1354,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                         )}
                                                                         {invoice.officialBoletoUrl && (
                                                                             <a
-                                                                                href={invoice.officialBoletoUrl}
+                                                                                onClick={() => window.open(`${getBackendUrl()}${invoice.officialBoletoUrl}${invoice.officialBoletoUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank')}
                                                                                 target="_blank"
                                                                                 rel="noopener noreferrer"
                                                                                 className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold text-[10px] bg-white dark:bg-zinc-800 px-2 py-1 rounded border border-blue-200 dark:border-blue-900/50 hover:shadow-sm transition-all"
@@ -1430,7 +1430,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                 )}
                                                                 {invoice.officialBoletoUrl && (
                                                                     <a
-                                                                        href={invoice.officialBoletoUrl}
+                                                                        onClick={() => window.open(`${getBackendUrl()}${invoice.officialBoletoUrl}${invoice.officialBoletoUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank')}
                                                                         target="_blank"
                                                                         rel="noopener noreferrer"
                                                                         onClick={(e) => e.stopPropagation()}
@@ -1505,9 +1505,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         <div className="mt-12 text-center pb-8">
                             <p className="text-slate-400 dark:text-zinc-600 text-sm">© 2026 Asterysko Propriedade Intelectual. Todos os direitos reservados.</p>
                             <div className="flex justify-center gap-4 mt-2 text-xs font-medium text-slate-500 dark:text-zinc-500">
-                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Termos de Uso</button>
-                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Privacidade</button>
-                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Suporte</button>
+                                <button onClick={() => {}} className="hover:text-blue-600 dark:hover:text-blue-400">Termos de Uso</button>
+                                <button onClick={() => {}} className="hover:text-blue-600 dark:hover:text-blue-400">Privacidade</button>
+                                <button onClick={() => {}} className="hover:text-blue-600 dark:hover:text-blue-400">Suporte</button>
                             </div>
                         </div>
                     </div>

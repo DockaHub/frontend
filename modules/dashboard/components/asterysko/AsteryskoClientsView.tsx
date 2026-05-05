@@ -201,7 +201,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
             desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
             status: process.contractSignStatus,
-            url: process.contractSignStatus === 'SIGNED' ? `/sign/${process.dealId}` : undefined,
+            url: process.contractSignStatus === 'SIGNED' ? `${getBackendUrl()}/api/asterysko/public/deals/${process.dealId}/contract?token=${localStorage.getItem('token')}` : undefined,
             createdAt: process.contractSignDate || process.createdAt
         });
 
@@ -256,7 +256,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
                 desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal.'),
                 status: process.gruStatus,
-                url: rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`) : undefined,
+                url: process.gruUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/download?token=${token}` : (rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}?token=${token}`) : undefined),
                 createdAt: process.updatedAt || process.createdAt
             });
         }
