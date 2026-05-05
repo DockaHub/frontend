@@ -23,6 +23,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         const initAuth = async () => {
             const storedUser = authService.getStoredUser();
+            const token = localStorage.getItem('token');
+
             if (storedUser) {
                 // 1. Set initial state from storage (fast load)
                 const normalizedStored = { ...storedUser, role: (storedUser.role || 'user').toUpperCase() };
@@ -40,6 +42,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
                 // Connect socket if we have a user
                 socketService.connect();
+            } else if (token) {
+                // Handle case where we have a token but no user object (e.g. after impersonation redirect)
+                try {
+                    const data = await authService.getCurrentUser();
+                    const normalizedUser = { ...data, role: (data.role || 'user').toUpperCase() };
+                    setUser(normalizedUser);
+                    localStorage.setItem('user', JSON.stringify(normalizedUser));
+                    socketService.connect();
+                } catch (error) {
+                    console.error('Failed to fetch user from token on mount:', error);
+                    localStorage.removeItem('token'); // Clear invalid token
+                }
             }
             setLoading(false);
         };

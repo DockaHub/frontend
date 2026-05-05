@@ -22,7 +22,8 @@ import {
     Users,
     Briefcase,
     Shield,
-    Download
+    Download,
+    Clock
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
@@ -54,7 +55,7 @@ interface Client {
     status: 'active' | 'pending' | 'inactive';
     processesCount: number;
     lastAction: string;
-    processes: { id: string, brand: string, class: string, status: string }[];
+    processes: { id: string, brand: string, class: string, status: string, contractSignDate?: string, contractSignStatus?: string, paymentStatus?: string, proxySignStatus?: string, filingDate?: string, dispatches?: any[] }[];
     invoices: { id: string, dealId: string, desc: string, value: string, status: 'paid' | 'pending' | 'overdue', date: string }[];
     documents: Document[];
 }
@@ -69,7 +70,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
     const { addToast } = useToast();
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'processes' | 'financial' | 'docs'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'processes' | 'financial' | 'docs' | 'timeline'>('overview');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -187,6 +188,79 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
     );
 
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+    // Timeline logic helper
+    const getTimelineEvents = (process: any, invoices: any[] = []) => {
+        const events: any[] = [];
+        events.push({
+            id: 'contract',
+            type: 'contract',
+            title: 'Contrato Assinado',
+            date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
+            desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
+            status: process.contractSignStatus,
+            createdAt: process.contractSignDate || process.createdAt
+        });
+
+        const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || i.desc?.includes(process.brand)));
+        events.push({
+            id: 'service-payment',
+            type: 'invoice',
+            title: 'Honorários Profissionais',
+            date: serviceInvoice?.date || '',
+            desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
+            status: serviceInvoice?.status || process.paymentStatus,
+            createdAt: serviceInvoice?.date || process.createdAt
+        });
+
+        if (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') {
+            events.push({
+                id: 'payment-confirmation',
+                type: 'dispatch',
+                title: 'Pagamento Recebido',
+                date: serviceInvoice?.date || '',
+                desc: 'Identificamos o pagamento dos honorários iniciais com sucesso.',
+                status: 'PAID',
+                createdAt: serviceInvoice?.date || process.createdAt
+            });
+        }
+
+        events.push({
+            id: 'proxy',
+            type: 'proxy',
+            title: 'Procuração INPI',
+            date: '',
+            desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
+            status: process.proxySignStatus,
+            createdAt: process.createdAt
+        });
+
+        if (process.inpiProcessNumber || (process.status !== 'NEW' && process.status !== 'WAITING_PAYMENT')) {
+            events.push({
+                id: 'deposito',
+                type: 'dispatch',
+                title: 'Depósito do Pedido',
+                date: process.filingDate ? new Date(process.filingDate).toLocaleDateString('pt-BR') : '',
+                desc: `Protocolo gerado no INPI: ${process.id || 'Processando'}`,
+                createdAt: process.filingDate || process.createdAt
+            });
+        }
+
+        if (process.dispatches && process.dispatches.length > 0) {
+            process.dispatches.forEach((d: any) => {
+                events.push({
+                    id: d.id,
+                    type: 'dispatch',
+                    title: d.description,
+                    date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
+                    desc: d.details || `Publicado na RPI ${d.rpiNumber || '-'}`,
+                    createdAt: d.createdAt
+                });
+            });
+        }
+
+        return events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    };
 
     const handleDeleteDeal = async (dealId: string) => {
         if (!confirm('Tem certeza que deseja excluir? Esta ação é irreversível e removerá o contrato e a fatura associados.')) return;
@@ -405,6 +479,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                     {[
                                         { id: 'overview', label: 'Dashboard', icon: Activity },
                                         { id: 'processes', label: 'Portfólio', icon: Shield },
+                                        { id: 'timeline', label: 'Timeline', icon: Clock },
                                         { id: 'financial', label: 'Billing', icon: CreditCard },
                                         { id: 'docs', label: 'Arquivo', icon: FolderOpen },
                                     ].map(tab => (
@@ -491,7 +566,13 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                  {activeTab === 'processes' && (
                                      <div className="grid grid-cols-1 gap-3">
                                          {selectedClient.processes?.map((proc, idx) => (
-                                             <div key={idx} className="bg-white dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-100 dark:border-zinc-700/50 flex justify-between items-center group hover:border-blue-300 dark:hover:border-blue-900 transition-all cursor-pointer shadow-sm">
+                                             <div 
+                                                key={idx} 
+                                                onClick={() => {
+                                                    addToast({ type: 'info', title: 'Processo', message: `Visualizando detalhes de ${proc.brand}...` });
+                                                }}
+                                                className="bg-white dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-100 dark:border-zinc-700/50 flex justify-between items-center group hover:border-blue-300 dark:hover:border-blue-900 transition-all cursor-pointer shadow-sm"
+                                             >
                                                  <div className="flex items-center gap-3">
                                                      <div className="w-10 h-10 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-docka-400 group-hover:text-blue-500 transition-colors">
                                                          <Shield size={20} />
@@ -506,6 +587,42 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                  </span>
                                              </div>
                                          ))}
+                                     </div>
+                                 )}
+
+                                 {activeTab === 'timeline' && (
+                                     <div className="space-y-6">
+                                         {selectedClient.processes?.map((proc, pIdx) => (
+                                             <div key={pIdx} className="space-y-4">
+                                                 <h4 className="text-xs font-bold text-docka-900 dark:text-zinc-100 border-l-4 border-blue-500 pl-3 py-1 bg-blue-50/30 dark:bg-blue-900/10 rounded-r-lg">
+                                                     Timeline: {proc.brand}
+                                                 </h4>
+                                                 <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-docka-200 dark:before:bg-zinc-800">
+                                                     {getTimelineEvents(proc, selectedClient.invoices || []).map((event, eIdx) => (
+                                                         <div key={eIdx} className="relative">
+                                                             <div className={`absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 shadow-sm flex items-center justify-center z-10 ${
+                                                                 event.status === 'PAID' || event.status === 'SIGNED' || event.status === 'VALIDATED' ? 'bg-emerald-500 text-white' : 'bg-docka-100 dark:bg-zinc-800 text-docka-400'
+                                                             }`}>
+                                                                 <CheckCircle2 size={10} />
+                                                             </div>
+                                                             <div>
+                                                                 <div className="flex justify-between items-start">
+                                                                     <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{event.title}</h5>
+                                                                     <span className="text-[10px] font-bold text-docka-400 uppercase">{event.date}</span>
+                                                                 </div>
+                                                                 <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">{event.desc}</p>
+                                                             </div>
+                                                         </div>
+                                                     ))}
+                                                 </div>
+                                             </div>
+                                         ))}
+                                         {(!selectedClient.processes || selectedClient.processes.length === 0) && (
+                                             <div className="text-center py-12">
+                                                 <Clock size={32} className="mx-auto text-docka-200 mb-4 opacity-50" />
+                                                 <p className="text-sm font-bold text-docka-400 uppercase tracking-widest">Nenhuma timeline disponível</p>
+                                             </div>
+                                         )}
                                      </div>
                                  )}
 
@@ -556,7 +673,16 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                          <p className="text-[9px] font-black text-docka-300 uppercase">{doc.type}</p>
                                                      </div>
                                                  </div>
-                                                 <button className="text-docka-300 hover:text-blue-500 transition-colors">
+                                                 <button 
+                                                    onClick={() => {
+                                                        if (doc.url) {
+                                                            window.open(doc.url, '_blank');
+                                                        } else {
+                                                            addToast({ type: 'error', title: 'Erro', message: 'URL do documento não encontrada.' });
+                                                        }
+                                                    }}
+                                                    className="text-docka-300 hover:text-blue-500 transition-colors"
+                                                 >
                                                      <Download size={18} />
                                                  </button>
                                              </div>
