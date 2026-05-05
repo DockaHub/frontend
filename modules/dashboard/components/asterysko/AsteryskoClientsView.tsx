@@ -255,7 +255,8 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
                 desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal.'),
                 status: process.gruStatus,
-                url: process.gruUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/download` : (rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`) : undefined),
+                url: process.gruUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/download` : (process.gruReceiptUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/receipt/download` : undefined),
+                token: true,
                 createdAt: process.updatedAt || process.createdAt
             });
         }
@@ -642,7 +643,8 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                                      <button 
                                                                         onClick={() => {
                                                                             const token = localStorage.getItem('token');
-                                                                            const fullUrl = event.url.startsWith('http') ? event.url : `${event.url}${event.url.includes('?') ? '&' : '?'}token=${token}`;
+                                                                            const baseUrl = event.url;
+                                                                            const fullUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
                                                                             window.open(fullUrl, '_blank');
                                                                         }}
                                                                         className="mt-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-500 hover:text-blue-600 transition-colors"

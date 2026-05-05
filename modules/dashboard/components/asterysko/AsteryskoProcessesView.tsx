@@ -981,7 +981,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                     </div>
                                                 )}
                                             </div>
-                                            {selectedProcess.gruUrl && <button onClick={() => window.open(`${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/gru/download`, '_blank')} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-amber-100 dark:border-zinc-700 hover:shadow-lg transition-all">Ver Guia Atual</button>}
+                                            {selectedProcess.gruUrl && <button onClick={() => { const token = localStorage.getItem('token'); window.open(`${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/gru/download?token=${token}`, '_blank'); }} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase tracking-widest rounded-xl border border-amber-100 dark:border-zinc-700 hover:shadow-lg transition-all">Ver Guia Atual</button>}
                                         </div>
                                     )}
 
