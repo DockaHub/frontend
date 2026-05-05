@@ -201,7 +201,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
             desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
             status: process.contractSignStatus,
-            url: process.contractSignStatus === 'SIGNED' ? `${getBackendUrl()}/api/asterysko/public/deals/${process.dealId}/contract?token=${localStorage.getItem('token')}` : undefined,
+            url: process.contractSignStatus === 'SIGNED' ? `${getBackendUrl()}/api/asterysko/public/deals/${process.dealId}/contract` : undefined,
             createdAt: process.contractSignDate || process.createdAt
         });
 
@@ -232,7 +232,6 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
         }
 
         // 4. Procuração
-        const token = localStorage.getItem('token');
         events.push({
             id: 'proxy',
             type: 'proxy',
@@ -241,8 +240,8 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
             status: process.proxySignStatus,
             url: process.proxySignedUrl 
-                ? (process.proxySignedUrl.startsWith('http') ? process.proxySignedUrl : `${getBackendUrl()}${process.proxySignedUrl}`)
-                : (process.proxyUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/proxy/download-pdf?token=${token}` : undefined),
+                ? (process.proxySignedUrl.startsWith('http') ? process.proxySignedUrl : `${getBackendUrl()}${process.proxySignedUrl.startsWith('/') ? '' : '/'}${process.proxySignedUrl}`)
+                : (process.proxyUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/proxy/download-pdf` : undefined),
             createdAt: process.updatedAt || process.createdAt
         });
 
@@ -256,7 +255,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
                 desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal.'),
                 status: process.gruStatus,
-                url: process.gruUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/download?token=${token}` : (rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}?token=${token}`) : undefined),
+                url: process.gruUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/download` : (rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`) : undefined),
                 createdAt: process.updatedAt || process.createdAt
             });
         }
@@ -641,7 +640,11 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                                  <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">{event.desc}</p>
                                                                  {event.url && (
                                                                      <button 
-                                                                        onClick={() => window.open(event.url, '_blank')}
+                                                                        onClick={() => {
+                                                                            const token = localStorage.getItem('token');
+                                                                            const fullUrl = event.url.startsWith('http') ? event.url : `${event.url}${event.url.includes('?') ? '&' : '?'}token=${token}`;
+                                                                            window.open(fullUrl, '_blank');
+                                                                        }}
                                                                         className="mt-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-500 hover:text-blue-600 transition-colors"
                                                                      >
                                                                          <Download size={12} />
