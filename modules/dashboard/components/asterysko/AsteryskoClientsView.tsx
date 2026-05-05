@@ -26,7 +26,7 @@ import {
     Clock
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
-import api from '../../../../services/api';
+import api, { getBackendUrl } from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import DashboardPage from '../../../../components/DashboardPage';
 
@@ -232,6 +232,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
         }
 
         // 4. Procuração
+        const token = localStorage.getItem('token');
         events.push({
             id: 'proxy',
             type: 'proxy',
@@ -239,12 +240,15 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
             desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
             status: process.proxySignStatus,
-            url: process.proxySignedUrl || (process.proxyUrl ? `/api/asterysko/processes/${process.id}/proxy/download-pdf` : undefined),
+            url: process.proxySignedUrl 
+                ? (process.proxySignedUrl.startsWith('http') ? process.proxySignedUrl : `${getBackendUrl()}${process.proxySignedUrl}`)
+                : (process.proxyUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/proxy/download-pdf?token=${token}` : undefined),
             createdAt: process.updatedAt || process.createdAt
         });
 
         // 5. Taxa Federal (GRU)
         if (process.gruUrl || process.gruStatus) {
+            const rawUrl = process.gruReceiptUrl || process.gruUrl;
             events.push({
                 id: 'gru-stage',
                 type: 'gru',
@@ -252,7 +256,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
                 desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal.'),
                 status: process.gruStatus,
-                url: process.gruReceiptUrl || process.gruUrl,
+                url: rawUrl ? (rawUrl.startsWith('http') ? rawUrl : `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`) : undefined,
                 createdAt: process.updatedAt || process.createdAt
             });
         }
@@ -709,7 +713,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                  <button 
                                                     onClick={() => {
                                                         if (doc.url) {
-                                                            window.open(doc.url, '_blank');
+                                                            const token = localStorage.getItem('token'); const fullUrl = doc.url.startsWith('http') ? doc.url : `${getBackendUrl()}${doc.url.startsWith('/') ? '' : '/'}${doc.url}${doc.url.includes('?') ? '&' : '?'}token=${token}`; window.open(fullUrl, '_blank');
                                                         } else {
                                                             addToast({ type: 'error', title: 'Erro', message: 'URL do documento não encontrada.' });
                                                         }
@@ -812,3 +816,5 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
 };
 
 export default AsteryskoClientsView;
+
+
