@@ -192,6 +192,8 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
     // Timeline logic helper
     const getTimelineEvents = (process: any, invoices: any[] = []) => {
         const events: any[] = [];
+        
+        // 1. Contrato
         events.push({
             id: 'contract',
             type: 'contract',
@@ -199,9 +201,11 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
             desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
             status: process.contractSignStatus,
+            url: process.contractSignStatus === 'SIGNED' ? `/sign/${process.dealId}` : undefined,
             createdAt: process.contractSignDate || process.createdAt
         });
 
+        // 2. Honorários
         const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || i.desc?.includes(process.brand)));
         events.push({
             id: 'service-payment',
@@ -210,9 +214,11 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             date: serviceInvoice?.date || '',
             desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
             status: serviceInvoice?.status || process.paymentStatus,
+            url: serviceInvoice?.url || undefined,
             createdAt: serviceInvoice?.date || process.createdAt
         });
 
+        // 3. Confirmação de Pagamento
         if (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') {
             events.push({
                 id: 'payment-confirmation',
@@ -225,27 +231,45 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             });
         }
 
+        // 4. Procuração
         events.push({
             id: 'proxy',
             type: 'proxy',
             title: 'Procuração INPI',
-            date: '',
+            date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
             desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
             status: process.proxySignStatus,
-            createdAt: process.createdAt
+            url: process.proxySignedUrl || (process.proxyUrl ? `/api/asterysko/processes/${process.id}/proxy/download-pdf` : undefined),
+            createdAt: process.updatedAt || process.createdAt
         });
 
+        // 5. Taxa Federal (GRU)
+        if (process.gruUrl || process.gruStatus) {
+            events.push({
+                id: 'gru-stage',
+                type: 'gru',
+                title: 'Taxa Federal (GRU)',
+                date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
+                desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal.'),
+                status: process.gruStatus,
+                url: process.gruReceiptUrl || process.gruUrl,
+                createdAt: process.updatedAt || process.createdAt
+            });
+        }
+
+        // 6. Depósito
         if (process.inpiProcessNumber || (process.status !== 'NEW' && process.status !== 'WAITING_PAYMENT')) {
             events.push({
                 id: 'deposito',
                 type: 'dispatch',
                 title: 'Depósito do Pedido',
                 date: process.filingDate ? new Date(process.filingDate).toLocaleDateString('pt-BR') : '',
-                desc: `Protocolo gerado no INPI: ${process.id || 'Processando'}`,
+                desc: `Protocolo gerado no INPI: ${process.inpiProcessNumber || 'Processando'}`,
                 createdAt: process.filingDate || process.createdAt
             });
         }
 
+        // 7. Despachos
         if (process.dispatches && process.dispatches.length > 0) {
             process.dispatches.forEach((d: any) => {
                 events.push({
@@ -605,12 +629,21 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                              }`}>
                                                                  <CheckCircle2 size={10} />
                                                              </div>
-                                                             <div>
+                                                             <div className="flex-1">
                                                                  <div className="flex justify-between items-start">
                                                                      <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{event.title}</h5>
                                                                      <span className="text-[10px] font-bold text-docka-400 uppercase">{event.date}</span>
                                                                  </div>
                                                                  <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">{event.desc}</p>
+                                                                 {event.url && (
+                                                                     <button 
+                                                                        onClick={() => window.open(event.url, '_blank')}
+                                                                        className="mt-2 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-blue-500 hover:text-blue-600 transition-colors"
+                                                                     >
+                                                                         <Download size={12} />
+                                                                         Visualizar Documento
+                                                                     </button>
+                                                                 )}
                                                              </div>
                                                          </div>
                                                      ))}
