@@ -1737,7 +1737,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                     className="w-full flex items-center justify-center gap-2 py-4 mt-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98]"
                                 >
                                     Ir para o Pagamento <ExternalLink size={18} />
-                                </button>
+                                </a>
                                 <button
                                     onClick={() => { setIsPaymentModalOpen(false); setCheckoutUrl(null); }}
                                     className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
