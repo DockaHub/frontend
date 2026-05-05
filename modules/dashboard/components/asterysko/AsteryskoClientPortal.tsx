@@ -270,6 +270,15 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
 
     // Fetch Real Data
     useEffect(() => {
+        // Ingest token from URL if present (for impersonation)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlToken = urlParams.get('token');
+        if (urlToken) {
+            localStorage.setItem('token', urlToken);
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         const fetchData = async () => {
             try {
                 setLoading(true);
@@ -907,7 +916,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                                     <button 
                                                                                                         onClick={() => {
                                                                                                             const token = localStorage.getItem('token');
-                                                                                                            const url = step.receiptUrl.startsWith('http') ? step.receiptUrl : `${getBackendUrl()}${step.receiptUrl.startsWith('/') ? '' : '/'}${step.receiptUrl}${step.receiptUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                                            const url = `${getBackendUrl()}/api/asterysko/processes/${proc.id}/gru/receipt/download?token=${token}`;
                                                                                                             window.open(url, '_blank');
                                                                                                         }} 
                                                                                                         className="text-[10px] text-blue-600 hover:underline"
@@ -979,7 +988,8 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                         <button 
                                                                                             onClick={() => {
                                                                                                 const token = localStorage.getItem('token');
-                                                                                                const url = proc.contractUrl.startsWith('http') ? proc.contractUrl : `${getBackendUrl()}${proc.contractUrl.startsWith('/') ? '' : '/'}${proc.contractUrl}${proc.contractUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                                const baseUrl = proc.contractUrl.startsWith('http') ? proc.contractUrl : `${getBackendUrl()}${proc.contractUrl.startsWith('/') ? '' : '/'}${proc.contractUrl}`;
+                                                                                                const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
                                                                                                 window.open(url, '_blank');
                                                                                             }} 
                                                                                             className="text-xs flex items-center justify-center gap-1 font-bold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-amber-100 transition-colors shadow-sm"
@@ -995,7 +1005,8 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                         <button 
                                                                                             onClick={() => {
                                                                                                 const token = localStorage.getItem('token');
-                                                                                                const url = proc.contractUrl.startsWith('http') ? proc.contractUrl : `${getBackendUrl()}${proc.contractUrl.startsWith('/') ? '' : '/'}${proc.contractUrl}${proc.contractUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                                const baseUrl = proc.contractUrl.startsWith('http') ? proc.contractUrl : `${getBackendUrl()}${proc.contractUrl.startsWith('/') ? '' : '/'}${proc.contractUrl}`;
+                                                                                                const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
                                                                                                 window.open(url, '_blank');
                                                                                             }} 
                                                                                             className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors"
@@ -1010,7 +1021,8 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                             onClick={() => {
                                                                                                 const token = localStorage.getItem('token');
                                                                                                 if (proc.proxySignedUrl) {
-                                                                                                    const url = proc.proxySignedUrl.startsWith('http') ? proc.proxySignedUrl : `${getBackendUrl()}${proc.proxySignedUrl.startsWith('/') ? '' : '/'}${proc.proxySignedUrl}${proc.proxySignedUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                                    const baseUrl = proc.proxySignedUrl.startsWith('http') ? proc.proxySignedUrl : `${getBackendUrl()}${proc.proxySignedUrl.startsWith('/') ? '' : '/'}${proc.proxySignedUrl}`;
+                                                                                                    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
                                                                                                     window.open(url, '_blank');
                                                                                                 } else {
                                                                                                     handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca');
@@ -1411,7 +1423,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                             <button
                                                                                 onClick={() => {
                                                                                     const token = localStorage.getItem('token');
-                                                                                    const url = invoice.officialBoletoUrl.startsWith('http') ? invoice.officialBoletoUrl : `${getBackendUrl()}${invoice.officialBoletoUrl.startsWith('/') ? '' : '/'}${invoice.officialBoletoUrl}${invoice.officialBoletoUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                    const url = `${getBackendUrl()}/api/asterysko/portal/financials/${invoice.invoiceId}/download-file?token=${token}`;
                                                                                     window.open(url, '_blank');
                                                                                 }}
                                                                                 className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold text-[10px] bg-white dark:bg-zinc-800 px-2 py-1 rounded border border-blue-200 dark:border-blue-900/50 hover:shadow-sm transition-all"
@@ -1485,18 +1497,17 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                         Pagar Agora
                                                                     </button>
                                                                 )}
-                                                                {invoice.officialBoletoUrl && (
                                                                     <button
-                                                                        onClick={() => {
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
                                                                             const token = localStorage.getItem('token');
-                                                                            const url = invoice.officialBoletoUrl.startsWith('http') ? invoice.officialBoletoUrl : `${getBackendUrl()}${invoice.officialBoletoUrl.startsWith('/') ? '' : '/'}${invoice.officialBoletoUrl}${invoice.officialBoletoUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                            const url = `${getBackendUrl()}/api/asterysko/portal/financials/${invoice.invoiceId}/download-file?token=${token}`;
                                                                             window.open(url, '_blank');
                                                                         }}
                                                                         className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold text-[10px] bg-white dark:bg-zinc-800 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-900/50 shadow-sm transition-all"
                                                                     >
                                                                         <Download size={14} /> {invoice.type === 'TAX' ? 'BAIXAR GRU' : 'RECIBO'}
                                                                     </button>
-                                                                )}
                                                                 {invoice.status === 'paid' && !invoice.officialBoletoUrl && (
                                                                     <span className="text-slate-400 text-xs flex items-center gap-1.5 font-medium">
                                                                         <CheckCircle2 className="w-4 h-4" /> Pago
@@ -1631,7 +1642,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                         <button
                                             onClick={() => {
                                                 const token = localStorage.getItem('token');
-                                                const url = selectedInvoice.officialBoletoUrl.startsWith('http') ? selectedInvoice.officialBoletoUrl : `${getBackendUrl()}${selectedInvoice.officialBoletoUrl.startsWith('/') ? '' : '/'}${selectedInvoice.officialBoletoUrl}${selectedInvoice.officialBoletoUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                const url = `${getBackendUrl()}/api/asterysko/portal/financials/${selectedInvoice.invoiceId}/download-file?token=${token}`;
                                                 window.open(url, '_blank');
                                             }}
                                             className="w-full bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 py-3 rounded-xl font-bold text-sm border border-slate-200 dark:border-zinc-700 flex items-center justify-center gap-2 transition-all hover:bg-slate-200 dark:hover:bg-zinc-700"
@@ -1661,8 +1672,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                             <button
                                                 onClick={() => {
                                                     const token = localStorage.getItem('token');
-                                                    const fileName = selectedInvoice.receiptUrl.split('\\').pop()?.split('/').pop();
-                                                    const url = `${getBackendUrl()}/uploads/${fileName}${selectedInvoice.receiptUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                    const url = `${getBackendUrl()}/api/asterysko/portal/financials/${selectedInvoice.invoiceId}/receipt-download?token=${token}`;
                                                     window.open(url, '_blank');
                                                 }}
                                                 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
