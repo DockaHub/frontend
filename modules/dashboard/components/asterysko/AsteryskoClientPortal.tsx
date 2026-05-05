@@ -904,7 +904,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                                     <ShieldCheck size={18} /> Taxa Federal Validada
                                                                                                 </div>
                                                                                                 {step.receiptUrl && (
-                                                                                                    <button onClick={() => window.open(`${getBackendUrl()}${step.receiptUrl}`, '_blank')} className="text-[10px] text-blue-600 hover:underline">Ver Comprovante</button>
+                                                                                                    <button onClick={() => window.open(`${getBackendUrl()}${step.receiptUrl}${step.receiptUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank')} className="text-[10px] text-blue-600 hover:underline">Ver Comprovante</button>
                                                                                                 )}
                                                                                             </div>
                                                                                         ) : (
@@ -934,7 +934,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
 
                                                                                                         <div className="flex flex-col sm:flex-row gap-3 mt-4">
                                                                                                             <button 
-                                                                                                                onClick={() => window.open(`${getBackendUrl()}/api/asterysko/processes/${proc.id}/gru/download`, '_blank')}
+                                                                                                                onClick={() => window.open(`${getBackendUrl()}/api/asterysko/processes/${proc.id}/gru/download?token=${localStorage.getItem('token')}`, '_blank')}
                                                                                                                 className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-sm"
                                                                                                             >
                                                                                                                 <Download size={16} /> Baixar Boleto PDF
@@ -963,24 +963,24 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                 {/* CUSTOM RENDER FOR CONTRACT PENDING */}
                                                                                 {step.type === 'contract' && step.status === 'PENDING' && (
                                                                                     <div className="mt-3">
-                                                                                        <a href={proc.contractUrl || '#'} target="_blank" className="text-xs flex items-center justify-center gap-1 font-bold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-amber-100 transition-colors shadow-sm">
+                                                                                        <button onClick={() => window.open(`${getBackendUrl()}${proc.contractUrl}${proc.contractUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank')}` className="text-xs flex items-center justify-center gap-1 font-bold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-amber-100 transition-colors shadow-sm">
                                                                                             <FileSignature size={14} /> Assinar Contrato
-                                                                                        </a>
+                                                                                        </button>
                                                                                     </div>
                                                                                 )}
 
                                                                                 {/* CUSTOM RENDER FOR COMPLETE DOCUMENTS */}
                                                                                 {step.type === 'contract' && step.status === 'SIGNED' && (
                                                                                     <div className="mt-3">
-                                                                                        <a href={proc.contractUrl || '#'} target="_blank" className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors">
+                                                                                        <button onClick={() => window.open(`${getBackendUrl()}${proc.contractUrl}${proc.contractUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank')}` className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors">
                                                                                             <Download size={14} /> Baixar Cópia
-                                                                                        </a>
+                                                                                        </button>
                                                                                     </div>
                                                                                 )}
                                                                                 {step.type === 'proxy' && (step.status === 'VALIDATED' || step.status === 'SIGNED') && (
                                                                                     <div className="mt-3">
                                                                                         <button
-                                                                                            onClick={() => proc.proxySignedUrl ? window.open(`${getBackendUrl()}${proc.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca')}
+                                                                                            onClick={() => proc.proxySignedUrl ? window.open(`${getBackendUrl()}${proc.proxySignedUrl}${proc.proxySignedUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank') : handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca')}
                                                                                             disabled={isDownloadingPdf === proc.id}
                                                                                             className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors disabled:opacity-50"
                                                                                         >
@@ -1079,7 +1079,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                     className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                                                                 >
                                                                     Validar no Portal do INPI <ExternalLink size={12} />
-                                                                </a>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     )}
@@ -1114,7 +1114,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                             </div>
                                                                             <a href={proc.contractUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
                                                                                 <ExternalLink size={20} />
-                                                                            </a>
+                                                                            </button>
                                                                         </div>
                                                                     )}
 
@@ -1134,7 +1134,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                 </div>
                                                                             </div>
                                                                             <button
-                                                                                onClick={() => proc.proxySignedUrl ? window.open(`${getBackendUrl()}${proc.proxySignedUrl}`, '_blank') : handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca')}
+                                                                                onClick={() => proc.proxySignedUrl ? window.open(`${getBackendUrl()}${proc.proxySignedUrl}${proc.proxySignedUrl.includes('?') ? '&' : '?'}token=${localStorage.getItem('token')}`, '_blank') : handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca')}
                                                                                 className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border"
                                                                                 title="Baixar Procuração"
                                                                             >
@@ -1264,7 +1264,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                     </span>
                                                     <a href={contract.contractUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border">
                                                         <ExternalLink size={20} />
-                                                    </a>
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
@@ -1360,7 +1360,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                 className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold text-[10px] bg-white dark:bg-zinc-800 px-2 py-1 rounded border border-blue-200 dark:border-blue-900/50 hover:shadow-sm transition-all"
                                                                             >
                                                                                 <Download size={12} /> {invoice.type === 'TAX' ? 'BAIXAR GRU' : 'RECIBO'}
-                                                                            </a>
+                                                                            </button>
                                                                         )}
                                                                         {invoice.status === 'paid' && !invoice.officialBoletoUrl && (
                                                                             <span className="text-slate-400 text-xs flex items-center justify-end gap-1">
@@ -1437,7 +1437,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                         className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 dark:text-blue-400 font-bold text-[10px] bg-white dark:bg-zinc-800 px-3 py-2 rounded-lg border border-blue-200 dark:border-blue-900/50 shadow-sm transition-all"
                                                                     >
                                                                         <Download size={14} /> {invoice.type === 'TAX' ? 'BAIXAR GRU' : 'RECIBO'}
-                                                                    </a>
+                                                                    </button>
                                                                 )}
                                                                 {invoice.status === 'paid' && !invoice.officialBoletoUrl && (
                                                                     <span className="text-slate-400 text-xs flex items-center gap-1.5 font-medium">
@@ -1505,9 +1505,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         <div className="mt-12 text-center pb-8">
                             <p className="text-slate-400 dark:text-zinc-600 text-sm">© 2026 Asterysko Propriedade Intelectual. Todos os direitos reservados.</p>
                             <div className="flex justify-center gap-4 mt-2 text-xs font-medium text-slate-500 dark:text-zinc-500">
-                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Termos de Uso</a>
-                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Privacidade</a>
-                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Suporte</a>
+                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Termos de Uso</button>
+                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Privacidade</button>
+                                <a href="#" className="hover:text-blue-600 dark:hover:text-blue-400">Suporte</button>
                             </div>
                         </div>
                     </div>
@@ -1577,7 +1577,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                             className="w-full bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-100 py-3 rounded-xl font-bold text-sm border border-slate-200 dark:border-zinc-700 flex items-center justify-center gap-2 transition-all hover:bg-slate-200 dark:hover:bg-zinc-700"
                                         >
                                             <Download size={18} /> Baixar PDF da Guia
-                                        </a>
+                                        </button>
                                     </div>
                                 )}
 
@@ -1605,7 +1605,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline"
                                             >
                                                 Visualizar
-                                            </a>
+                                            </button>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
@@ -1664,7 +1664,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                     className="w-full flex items-center justify-center gap-2 py-4 mt-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 rounded-xl font-bold transition-all shadow-lg active:scale-[0.98]"
                                 >
                                     Ir para o Pagamento <ExternalLink size={18} />
-                                </a>
+                                </button>
                                 <button
                                     onClick={() => { setIsPaymentModalOpen(false); setCheckoutUrl(null); }}
                                     className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300 transition-colors"
