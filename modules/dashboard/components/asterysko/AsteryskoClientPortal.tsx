@@ -462,6 +462,29 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
         }
     };
 
+    const handleGruReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post(`/asterysko/processes/${processId}/gru/receipt`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            alert('Comprovante enviado com sucesso!');
+
+            // Update main processes list silently
+            setProcesses((prev: any[]) => prev.map((p: any) => p.id === processId ? { ...p, gruReceiptUrl: res.data.process?.gruReceiptUrl || res.data.gruReceiptUrl, gruStatus: 'PAID' } : p));
+        } catch (error) {
+            console.error('GRU receipt upload error', error);
+            alert('Erro no envio do Comprovante.');
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+
     const handleMarkAsRead = async (notifId: string) => {
         try {
             await api.patch(`/asterysko/portal/notifications/${notifId}/read`);
