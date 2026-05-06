@@ -269,16 +269,15 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
     };
 
     // Fetch Real Data
-    useEffect(() => {
-        // Ingest token from URL if present (for impersonation)
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlToken = urlParams.get('token');
-        if (urlToken) {
-            localStorage.setItem('token', urlToken);
-            // Clean up URL
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
+    // Ingest token from URL SYNCHRONOUSLY before any render or effect
+    // This must run before the useEffect to ensure API calls use the right token
+    const urlToken = new URLSearchParams(window.location.search).get('token');
+    if (urlToken) {
+        localStorage.setItem('token', urlToken);
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
 
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 setLoading(true);
@@ -334,10 +333,15 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                 setLoading(false);
             } catch (err: any) {
                 console.error('Error loading portal data:', err);
-                // If admin, we don't care if client record is missing, they just see a 'preview' (empty dashboard)
-                if (err.response?.status === 404 && user?.role !== 'ADMIN') {
+                if (err.response?.status === 401) {
+                    // Token inválido ou expirado — mostra erro sem redirecionar para /login
+                    setError('Sua sessão expirou. Peça ao administrador para gerar um novo link de acesso.');
+                    setLoading(false);
+                    return;
+                }
+                if (err.response?.status === 404) {
                     setError('CLIENT_NOT_FOUND');
-                } else if ((err.response?.status === 404 || true) && user?.role === 'ADMIN') {
+                } else if (false) { // bloco desativado
                   // MOCK DATA FOR ADMIN PREVIEW
                   const mockProc = {
                     id: 'preview-1',

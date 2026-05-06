@@ -36,10 +36,13 @@ api.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
         if (error.response?.status === 401) {
-            // Token expired or invalid - clear auth and redirect to login
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
+            // Não redirecionar para /login se estivermos no portal do cliente
+            const isPortal = window.location.pathname.startsWith('/portal');
+            if (!isPortal) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }
