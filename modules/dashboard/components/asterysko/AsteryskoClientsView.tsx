@@ -177,7 +177,8 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             const portalBase = isProd ? 'https://cliente.asterysko.com/portal' : '/portal';
             window.open(`${portalBase}?token=${token}`, '_blank');
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Erro', message: 'Falha ao autenticar no portal do cliente.' });
+            const msg = error.response?.data?.error || 'Falha ao autenticar no portal do cliente.';
+            addToast({ type: 'error', title: 'Erro ao abrir Portal', message: msg });
         }
     };
 
