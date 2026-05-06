@@ -43,38 +43,56 @@ const AsteryskoLogoSVG = () => (
 const getTimelineEvents = (process: any, invoices: any[] = []) => {
     const events: any[] = [];
 
-    // 1. Contrato Assinado (The very first logical step)
+    // Helper para formatar data com segurança
+    const safeDate = (val: any) => {
+        if (!val) return '';
+        try {
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? '' : d.toLocaleDateString('pt-BR');
+        } catch { return ''; }
+    };
+
+    // Helper para safeTime (sort)
+    const safeTime = (val: any) => {
+        if (!val) return 0;
+        try {
+            const t = new Date(val).getTime();
+            return isNaN(t) ? 0 : t;
+        } catch { return 0; }
+    };
+
+    // 1. Contrato Assinado
     events.push({
         id: 'contract',
         type: 'contract',
         title: 'Contrato Assinado',
-        date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
+        date: safeDate(process.contractSignDate || process.createdAt),
         desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
         status: process.contractSignStatus,
         createdAt: process.contractSignDate || process.createdAt
     });
 
-    // 2. Honorários Profissionais (The bill)
-    const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || i.description?.includes(process.brandName)));
+    // 2. Honorários Profissionais
+    const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || (process.brandName && i.description?.includes(process.brandName))));
     events.push({
         id: 'service-payment',
         type: 'invoice',
         title: 'Honorários Profissionais',
-        date: serviceInvoice?.dueDate ? new Date(serviceInvoice.dueDate).toLocaleDateString('pt-BR') : '',
+        date: safeDate(serviceInvoice?.dueDate),
         desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
         status: serviceInvoice?.status || process.paymentStatus,
         invoice: serviceInvoice,
         createdAt: serviceInvoice?.createdAt || process.createdAt
     });
 
-    // 3. Pagamento Recebido (Confirmation of #2)
+    // 3. Pagamento Recebido
     if (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') {
         const paidAt = serviceInvoice?.paidAt || process.updatedAt;
         events.push({
             id: 'payment-confirmation',
             type: 'dispatch',
             title: 'Pagamento Recebido',
-            date: paidAt ? new Date(paidAt).toLocaleDateString('pt-BR') : '',
+            date: safeDate(paidAt),
             desc: 'Identificamos o pagamento dos honorários iniciais com sucesso.',
             status: 'PAID',
             createdAt: paidAt
@@ -86,13 +104,13 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         id: 'proxy',
         type: 'proxy',
         title: 'Procuração INPI',
-        date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
+        date: safeDate(process.updatedAt),
         desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
         status: process.proxySignStatus,
-        createdAt: process.updatedAt
+        createdAt: process.updatedAt || process.createdAt
     });
 
-    // 5. Taxa Federal (GRU) - Important milestone
+    // 5. Taxa Federal (GRU)
     if (process.planType === 'ESSENCIAL' || process.planType === 'PREMIUM') {
         events.push({
             id: 'gru-stage',
@@ -103,52 +121,44 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
             barcode: process.gruBarcode,
             gruUrl: process.gruUrl,
             receiptUrl: process.gruReceiptUrl,
-            createdAt: process.updatedAt // Usually later than creation
+            createdAt: process.updatedAt || process.createdAt
         });
     }
 
-    // 6. Depósito do Pedido (Automatic if has process number)
+    // 6. Depósito do Pedido
     if (process.inpiProcessNumber || (process.status !== 'NEW' && process.status !== 'WAITING_PAYMENT')) {
         events.push({
             id: 'deposito',
             type: 'dispatch',
             title: 'Depósito do Pedido',
-            date: process.filingDate ? new Date(process.filingDate).toLocaleDateString('pt-BR') : new Date(process.createdAt).toLocaleDateString('pt-BR'),
+            date: safeDate(process.filingDate || process.createdAt),
             desc: `Protocolo gerado no INPI: ${process.inpiProcessNumber || 'Processando'}`,
             createdAt: process.filingDate || process.createdAt
         });
     }
 
-    // 7. Add Dispatches from DB (Actual RPI updates)
+    // 7. Despachos do DB
     if (process.dispatches && process.dispatches.length > 0) {
         process.dispatches.forEach((d: any) => {
             events.push({
-                id: d.id,
+                id: d.id || `dispatch-${Math.random()}`,
                 type: 'dispatch',
-                title: d.isVirtual ? d.description : `${d.code} - ${d.description}`,
-                date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
+                title: d.isVirtual ? (d.description || 'Despacho') : `${d.code || ''} - ${d.description || 'Despacho'}`.trim().replace(/^- /, ''),
+                date: safeDate(d.createdAt),
                 desc: d.details || `Publicado na RPI ${d.rpiNumber || '-'}`,
-                createdAt: d.createdAt
+                createdAt: d.createdAt || process.createdAt
             });
         });
     }
 
-    // Sort all events by createdAt DESC (newest on top)
-    // To show progress bottom-to-top in some UI perspectives, but here we keep logical descent if dates are SAME
+    // Sort com segurança (sem crash em datas nulas)
     return events.sort((a, b) => {
-        const timeA = new Date(a.createdAt).getTime();
-        const timeB = new Date(b.createdAt).getTime();
-        
+        const timeA = safeTime(a.createdAt);
+        const timeB = safeTime(b.createdAt);
         if (timeA !== timeB) return timeB - timeA;
-        
-        // Priority tie-breaker for same date
         const priorities: Record<string, number> = {
-            'gru': 1,
-            'dispatch': 2,
-            'proxy': 3,
-            'payment-confirmation': 4,
-            'invoice': 5,
-            'contract': 6
+            'gru': 1, 'dispatch': 2, 'proxy': 3,
+            'payment-confirmation': 4, 'invoice': 5, 'contract': 6
         };
         return (priorities[b.type] || 0) - (priorities[a.type] || 0);
     });
