@@ -90,7 +90,7 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         const paidAt = serviceInvoice?.paidAt || process.updatedAt;
         events.push({
             id: 'payment-confirmation',
-            type: 'dispatch',
+            type: 'payment-confirmation',
             title: 'Pagamento Recebido',
             date: safeDate(paidAt),
             desc: 'Identificamos o pagamento dos honorários iniciais com sucesso.',
@@ -157,8 +157,12 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         const timeB = safeTime(b.createdAt);
         if (timeA !== timeB) return timeB - timeA;
         const priorities: Record<string, number> = {
-            'gru': 1, 'dispatch': 2, 'proxy': 3,
-            'payment-confirmation': 4, 'invoice': 5, 'contract': 6
+            'dispatch': 6,
+            'gru': 5,
+            'proxy': 4,
+            'payment-confirmation': 3,
+            'invoice': 2,
+            'contract': 1
         };
         return (priorities[b.type] || 0) - (priorities[a.type] || 0);
     });

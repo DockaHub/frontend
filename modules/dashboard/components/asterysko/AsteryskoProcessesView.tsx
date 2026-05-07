@@ -37,16 +37,17 @@ interface Client {
 
 // Timeline Data for a specific process (Helper)
 const getTimelineEvents = (process: any) => {
-    const events = [];
+    const events: any[] = [];
 
-    // 1. Contrato Event (Pinned to top as requested)
+    // 1. Contrato Event
     events.push({
         type: 'contract',
         title: 'Contrato Assinado',
         date: process.contractSignDate ? new Date(process.contractSignDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
         desc: process.contractSignStatus === 'SIGNED' ? 'Contrato assinado.' : 'Aguardando assinatura.',
         status: process.contractSignStatus === 'SIGNED' ? 'completed' : 'pending',
-        internalState: process.contractSignStatus
+        internalState: process.contractSignStatus,
+        createdAt: process.contractSignDate || process.createdAt
     });
 
     // 2. Procuração Event
@@ -56,7 +57,8 @@ const getTimelineEvents = (process: any) => {
         date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
         desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada' : 'Aguardando envio da Procuração'),
         status: process.proxySignStatus === 'VALIDATED' || process.proxySignStatus === 'SIGNED' ? 'completed' : 'pending',
-        internalState: process.proxySignStatus
+        internalState: process.proxySignStatus,
+        createdAt: process.createdAt
     });
 
     // 3. GRU (Taxa Federal) - Only for ESSENCIAL and PREMIUM
@@ -67,7 +69,8 @@ const getTimelineEvents = (process: any) => {
             date: process.gruStatus === 'PAID' ? 'Pago' : (process.gruUrl ? 'Aguardando Pagto.' : ''),
             desc: process.gruStatus === 'PAID' ? 'Pagamento da GRU confirmado.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da GRU pelo escritório.'),
             status: process.gruStatus === 'PAID' ? 'completed' : (process.gruUrl ? 'current' : 'pending'),
-            internalState: process.gruStatus
+            internalState: process.gruStatus,
+            createdAt: process.updatedAt || process.createdAt
         });
     }
 
@@ -76,27 +79,65 @@ const getTimelineEvents = (process: any) => {
         events.push({
             type: 'dispatch',
             title: 'Depósito do Pedido',
-            date: process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : '',
+            date: process.filingDate ? new Date(process.filingDate).toLocaleDateString('pt-BR') : (process.createdAt ? new Date(process.createdAt).toLocaleDateString('pt-BR') : ''),
             status: 'completed',
-            desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Pendente'}`
+            desc: `Protocolo gerado: ${process.inpiProcessNumber || 'Pendente'}`,
+            createdAt: process.filingDate || process.createdAt
         });
     }
 
     // 5. Add Dispatches from DB (Sorted newest first)
     if (process.dispatches && process.dispatches.length > 0) {
-        const sorted = [...process.dispatches].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        sorted.forEach((d: any) => {
+        process.dispatches.forEach((d: any) => {
             events.push({
                 type: 'dispatch',
                 title: d.isVirtual ? d.description : `${d.code} - ${d.description}`,
                 date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
                 status: 'completed',
-                desc: d.details || `Publicado na RPI ${d.rpiNumber}`
+                desc: d.details || `Publicado na RPI ${d.rpiNumber}`,
+                createdAt: d.createdAt
             });
         });
     }
 
-    return events;
+    // Helper para formatar data com segurança e evitar NaNs na ordenação
+    const safeTime = (val: any) => {
+        if (!val) return 0;
+        if (val instanceof Date) return val.getTime();
+        if (typeof val === 'string') {
+            if (val.includes('/')) {
+                const parts = val.split('/');
+                if (parts.length === 3) {
+                    const day = parseInt(parts[0], 10);
+                    const month = parseInt(parts[1], 10) - 1;
+                    const year = parseInt(parts[2], 10);
+                    const d = new Date(year, month, day);
+                    return isNaN(d.getTime()) ? 0 : d.getTime();
+                }
+            }
+            const d = new Date(val);
+            return isNaN(d.getTime()) ? 0 : d.getTime();
+        }
+        if (typeof val === 'number') return val;
+        return 0;
+    };
+
+    return events.sort((a, b) => {
+        const timeA = safeTime(a.createdAt);
+        const timeB = safeTime(b.createdAt);
+        if (timeA !== timeB) return timeB - timeA;
+        
+        // Ordem cronológica lógica das etapas em caso de empate na data (Newest at the top)
+        const priorities: Record<string, number> = {
+            'dispatch': 6,
+            'gru': 5,
+            'proxy': 4,
+            'payment-confirmation': 3,
+            'invoice': 2,
+            'contract': 1
+        };
+        return (priorities[b.type] || 0) - (priorities[a.type] || 0);
+    });
 };
 
 

@@ -255,19 +255,19 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
             status: serviceInvoice?.status || process.paymentStatus,
             url: serviceInvoice?.url || undefined,
-            createdAt: serviceInvoice?.date || process.createdAt
+            createdAt: serviceInvoice?.createdAt || serviceInvoice?.date || process.createdAt
         });
 
         // 3. Confirmação de Pagamento
         if (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') {
             events.push({
                 id: 'payment-confirmation',
-                type: 'dispatch',
+                type: 'payment-confirmation',
                 title: 'Pagamento Recebido',
                 date: serviceInvoice?.date || '',
                 desc: 'Identificamos o pagamento dos honorários iniciais com sucesso.',
                 status: 'PAID',
-                createdAt: serviceInvoice?.date || process.createdAt
+                createdAt: serviceInvoice?.createdAt || serviceInvoice?.date || process.createdAt
             });
         }
 
@@ -287,7 +287,6 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
 
         // 5. Taxa Federal (GRU)
         if (process.gruUrl || process.gruStatus) {
-            const rawUrl = process.gruReceiptUrl || process.gruUrl;
             events.push({
                 id: 'gru-stage',
                 type: 'gru',
@@ -327,7 +326,44 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             });
         }
 
-        return events.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        // Helper para formatar data com segurança e evitar NaNs na ordenação
+        const safeTime = (val: any) => {
+            if (!val) return 0;
+            if (val instanceof Date) return val.getTime();
+            if (typeof val === 'string') {
+                if (val.includes('/')) {
+                    const parts = val.split('/');
+                    if (parts.length === 3) {
+                        const day = parseInt(parts[0], 10);
+                        const month = parseInt(parts[1], 10) - 1;
+                        const year = parseInt(parts[2], 10);
+                        const d = new Date(year, month, day);
+                        return isNaN(d.getTime()) ? 0 : d.getTime();
+                    }
+                }
+                const d = new Date(val);
+                return isNaN(d.getTime()) ? 0 : d.getTime();
+            }
+            if (typeof val === 'number') return val;
+            return 0;
+        };
+
+        return events.sort((a, b) => {
+            const timeA = safeTime(a.createdAt);
+            const timeB = safeTime(b.createdAt);
+            if (timeA !== timeB) return timeB - timeA;
+            
+            // Ordem cronológica lógica das etapas em caso de empate na data (Newest at the top)
+            const priorities: Record<string, number> = {
+                'dispatch': 6,
+                'gru': 5,
+                'proxy': 4,
+                'payment-confirmation': 3,
+                'invoice': 2,
+                'contract': 1
+            };
+            return (priorities[b.type] || 0) - (priorities[a.type] || 0);
+        });
     };
 
     const handleDeleteDeal = async (dealId: string) => {
