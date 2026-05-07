@@ -23,7 +23,10 @@ import {
     Briefcase,
     Shield,
     Download,
-    Clock
+    Clock,
+    Link as LinkIcon,
+    Copy,
+    Send
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
@@ -74,6 +77,8 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [clients, setClients] = useState<Client[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isSendingAccess, setIsSendingAccess] = useState(false);
+    const [isCopyingAccess, setIsCopyingAccess] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<Partial<Client>>({});
     const [activeMenuClientId, setActiveMenuClientId] = useState<string | null>(null);
@@ -181,6 +186,39 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             addToast({ type: 'error', title: 'Erro ao abrir Portal', message: msg });
         }
     };
+
+    const handleCopyAccessLink = async (clientId: string) => {
+        try {
+            setIsCopyingAccess(true);
+            const response = await api.post(`/asterysko/impersonate/${clientId}`);
+            const { token, user } = response.data;
+            const isProd = !window.location.hostname.includes('localhost');
+            const portalBase = isProd ? 'https://cliente.asterysko.com/portal' : `${window.location.protocol}//${window.location.host}/portal`;
+            const magicLink = `${portalBase}?token=${token}`;
+            
+            await navigator.clipboard.writeText(magicLink);
+            addToast({ type: 'success', title: 'Link Copiado', message: `Link de acesso para ${user.name} copiado para a área de transferência!` });
+        } catch (error: any) {
+            const msg = error.response?.data?.error || 'Falha ao gerar link de acesso.';
+            addToast({ type: 'error', title: 'Erro ao copiar link', message: msg });
+        } finally {
+            setIsCopyingAccess(false);
+        }
+    };
+
+    const handleResendAccessEmail = async (clientId: string) => {
+        try {
+            setIsSendingAccess(true);
+            const response = await api.post(`/asterysko/clients/${clientId}/resend-access`);
+            addToast({ type: 'success', title: 'E-mail Enviado', message: response.data.message || 'Link de acesso enviado com sucesso!' });
+        } catch (error: any) {
+            const msg = error.response?.data?.error || 'Falha ao enviar e-mail de acesso.';
+            addToast({ type: 'error', title: 'Erro no Envio', message: msg });
+        } finally {
+            setIsSendingAccess(false);
+        }
+    };
+
 
     const filteredClients = clients.filter(c =>
         c.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -490,9 +528,28 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                     <div className="flex gap-2">
                                         <button 
                                             onClick={() => handleImpersonate(selectedClient.id)} 
-                                            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 dark:border-blue-800/50"
+                                            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 dark:border-blue-800/50 flex items-center gap-1.5"
+                                            title="Acessar como Cliente"
                                         >
                                             Portal do Cliente
+                                        </button>
+                                        <button 
+                                            onClick={() => handleCopyAccessLink(selectedClient.id)} 
+                                            disabled={isCopyingAccess}
+                                            className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-1.5 disabled:opacity-50"
+                                            title="Copiar Link de Acesso Direto (WhatsApp)"
+                                        >
+                                            {isCopyingAccess ? <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div> : <Copy size={14} />}
+                                            Copiar Link
+                                        </button>
+                                        <button 
+                                            onClick={() => handleResendAccessEmail(selectedClient.id)} 
+                                            disabled={isSendingAccess}
+                                            className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 dark:border-indigo-800/50 flex items-center gap-1.5 disabled:opacity-50"
+                                            title="Enviar Link de Acesso por E-mail"
+                                        >
+                                            {isSendingAccess ? <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> : <Send size={14} />}
+                                            Enviar Acesso
                                         </button>
                                         <button 
                                             onClick={() => setClientToDelete(selectedClient)}
