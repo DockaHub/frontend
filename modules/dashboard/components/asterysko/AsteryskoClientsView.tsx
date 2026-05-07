@@ -27,7 +27,9 @@ import {
     Link as LinkIcon,
     Send,
     Copy,
-    Pencil
+    Pencil,
+    Loader2,
+    FileSignature
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
@@ -242,24 +244,29 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
             status: process.contractSignStatus,
             url: process.contractSignStatus === 'SIGNED' ? `${getBackendUrl()}/api/asterysko/public/deals/${process.dealId}/contract` : undefined,
-            createdAt: process.contractSignDate || process.createdAt
+            createdAt: process.contractSignDate || process.createdAt,
+            isCompleted: process.contractSignStatus === 'SIGNED',
+            isActiveAction: process.contractSignStatus !== 'SIGNED'
         });
 
         // 2. Honorários
         const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || i.desc?.includes(process.brand)));
+        const isServicePaid = serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID';
         events.push({
             id: 'service-payment',
             type: 'invoice',
             title: 'Honorários Profissionais',
             date: serviceInvoice?.date || '',
-            desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
+            desc: isServicePaid ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
             status: serviceInvoice?.status || process.paymentStatus,
             url: serviceInvoice?.url || undefined,
-            createdAt: serviceInvoice?.createdAt || serviceInvoice?.date || process.createdAt
+            createdAt: serviceInvoice?.createdAt || serviceInvoice?.date || process.createdAt,
+            isCompleted: isServicePaid,
+            isActiveAction: !isServicePaid && !!serviceInvoice
         });
 
         // 3. Confirmação de Pagamento
-        if (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') {
+        if (isServicePaid) {
             events.push({
                 id: 'payment-confirmation',
                 type: 'payment-confirmation',
@@ -267,11 +274,14 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 date: serviceInvoice?.date || '',
                 desc: 'Identificamos o pagamento dos honorários iniciais com sucesso.',
                 status: 'PAID',
-                createdAt: serviceInvoice?.createdAt || serviceInvoice?.date || process.createdAt
+                createdAt: serviceInvoice?.createdAt || serviceInvoice?.date || process.createdAt,
+                isCompleted: true,
+                isActiveAction: false
             });
         }
 
         // 4. Procuração
+        const isProxyCompleted = process.proxySignStatus === 'VALIDATED' || process.proxySignStatus === 'SIGNED';
         events.push({
             id: 'proxy',
             type: 'proxy',
@@ -282,21 +292,26 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             url: process.proxySignedUrl 
                 ? (process.proxySignedUrl.startsWith('http') ? process.proxySignedUrl : `${getBackendUrl()}${process.proxySignedUrl.startsWith('/') ? '' : '/'}${process.proxySignedUrl}`)
                 : (process.proxyUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/proxy/download-pdf` : undefined),
-            createdAt: process.updatedAt || process.createdAt
+            createdAt: process.updatedAt || process.createdAt,
+            isCompleted: isProxyCompleted,
+            isActiveAction: !isProxyCompleted
         });
 
         // 5. Taxa Federal (GRU)
         if (process.gruUrl || process.gruStatus) {
+            const isGruPaid = process.gruStatus === 'PAID';
             events.push({
                 id: 'gru-stage',
                 type: 'gru',
                 title: 'Taxa Federal (GRU)',
                 date: process.updatedAt ? new Date(process.updatedAt).toLocaleDateString('pt-BR') : '',
-                desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal.'),
+                desc: isGruPaid ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal.'),
                 status: process.gruStatus,
                 url: process.gruUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/download` : (process.gruReceiptUrl ? `${getBackendUrl()}/api/asterysko/processes/${process.id}/gru/receipt/download` : undefined),
                 token: true,
-                createdAt: process.updatedAt || process.createdAt
+                createdAt: process.updatedAt || process.createdAt,
+                isCompleted: isGruPaid,
+                isActiveAction: !isGruPaid && !!process.gruUrl
             });
         }
 
@@ -308,7 +323,9 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                 title: 'Depósito do Pedido',
                 date: process.filingDate ? new Date(process.filingDate).toLocaleDateString('pt-BR') : '',
                 desc: `Protocolo gerado no INPI: ${process.inpiProcessNumber || 'Processando'}`,
-                createdAt: process.filingDate || process.createdAt
+                createdAt: process.filingDate || process.createdAt,
+                isCompleted: !!process.inpiProcessNumber,
+                isActiveAction: false
             });
         }
 
@@ -321,7 +338,9 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                     title: d.description,
                     date: new Date(d.createdAt).toLocaleDateString('pt-BR'),
                     desc: d.details || `Publicado na RPI ${d.rpiNumber || '-'}`,
-                    createdAt: d.createdAt
+                    createdAt: d.createdAt,
+                    isCompleted: true,
+                    isActiveAction: false
                 });
             });
         }
@@ -766,11 +785,21 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                  <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-docka-200 dark:before:bg-zinc-800">
                                                      {getTimelineEvents(proc, selectedClient.invoices || []).map((event, eIdx) => (
                                                          <div key={eIdx} className="relative">
-                                                             <div className={`absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 shadow-sm flex items-center justify-center z-10 ${
-                                                                 event.status === 'PAID' || event.status === 'SIGNED' || event.status === 'VALIDATED' ? 'bg-emerald-500 text-white' : 'bg-docka-100 dark:bg-zinc-800 text-docka-400'
-                                                             }`}>
-                                                                 <CheckCircle2 size={10} />
-                                                             </div>
+                                                             {event.isCompleted ? (
+                                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-emerald-500 text-white shadow-sm flex items-center justify-center z-10">
+                                                                     {event.type === 'contract' ? <FileSignature size={9} /> : event.type === 'proxy' ? <Shield size={9} /> : event.type === 'gru' ? <CreditCard size={9} /> : <CheckCircle2 size={9} />}
+                                                                 </div>
+                                                             ) : event.isActiveAction ? (
+                                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-600 text-white shadow-sm flex items-center justify-center z-10">
+                                                                     <div className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping pointer-events-none" />
+                                                                     <Loader2 size={9} className="animate-spin absolute text-blue-200/40" />
+                                                                     {event.type === 'contract' ? <FileSignature size={9} className="relative z-10" /> : event.type === 'proxy' ? <Shield size={9} className="relative z-10" /> : event.type === 'gru' ? <CreditCard size={9} className="relative z-10" /> : <Loader2 size={9} className="animate-spin relative z-10 text-white" />}
+                                                                 </div>
+                                                             ) : (
+                                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-docka-100 dark:bg-zinc-800 text-docka-400 dark:text-zinc-500 shadow-sm flex items-center justify-center z-10">
+                                                                     {event.type === 'contract' ? <FileSignature size={9} /> : event.type === 'proxy' ? <Shield size={9} /> : event.type === 'gru' ? <CreditCard size={9} /> : <CheckCircle2 size={9} />}
+                                                                 </div>
+                                                             )}
                                                              <div className="flex-1">
                                                                  <div className="flex justify-between items-start">
                                                                      <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{event.title}</h5>

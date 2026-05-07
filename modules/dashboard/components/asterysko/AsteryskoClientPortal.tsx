@@ -69,24 +69,29 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         date: safeDate(process.contractSignDate || process.createdAt),
         desc: process.contractSignStatus === 'SIGNED' ? 'Contrato eletrônico assinado com sucesso.' : 'Aguardando assinatura do contrato.',
         status: process.contractSignStatus,
-        createdAt: process.contractSignDate || process.createdAt
+        createdAt: process.contractSignDate || process.createdAt,
+        isCompleted: process.contractSignStatus === 'SIGNED',
+        isActiveAction: process.contractSignStatus !== 'SIGNED'
     });
 
     // 2. Honorários Profissionais
     const serviceInvoice = invoices.find(i => i.type === 'SERVICE' && (i.id === process.invoiceId || (process.brandName && i.description?.includes(process.brandName))));
+    const isServicePaid = serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID';
     events.push({
         id: 'service-payment',
         type: 'invoice',
         title: 'Honorários Profissionais',
         date: safeDate(serviceInvoice?.dueDate),
-        desc: (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
+        desc: isServicePaid ? 'Pagamento dos honorários confirmado.' : 'Aguardando pagamento dos honorários iniciais.',
         status: serviceInvoice?.status || process.paymentStatus,
         invoice: serviceInvoice,
-        createdAt: serviceInvoice?.createdAt || process.createdAt
+        createdAt: serviceInvoice?.createdAt || process.createdAt,
+        isCompleted: isServicePaid,
+        isActiveAction: !isServicePaid && !!serviceInvoice
     });
 
     // 3. Pagamento Recebido
-    if (serviceInvoice?.status === 'paid' || process.paymentStatus === 'PAID') {
+    if (isServicePaid) {
         const paidAt = serviceInvoice?.paidAt || process.updatedAt;
         events.push({
             id: 'payment-confirmation',
@@ -95,11 +100,14 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
             date: safeDate(paidAt),
             desc: 'Identificamos o pagamento dos honorários iniciais com sucesso.',
             status: 'PAID',
-            createdAt: paidAt
+            createdAt: paidAt,
+            isCompleted: true,
+            isActiveAction: false
         });
     }
 
     // 4. Procuração INPI
+    const isProxyCompleted = process.proxySignStatus === 'VALIDATED' || process.proxySignStatus === 'SIGNED';
     events.push({
         id: 'proxy',
         type: 'proxy',
@@ -107,21 +115,26 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         date: safeDate(process.updatedAt),
         desc: process.proxySignStatus === 'VALIDATED' ? 'Procuração validada pela equipe' : (process.proxySignStatus === 'SIGNED' ? 'Procuração enviada e assinada' : 'Aguardando download e assinatura da Procuração'),
         status: process.proxySignStatus,
-        createdAt: process.updatedAt || process.createdAt
+        createdAt: process.updatedAt || process.createdAt,
+        isCompleted: isProxyCompleted,
+        isActiveAction: !isProxyCompleted
     });
 
     // 5. Taxa Federal (GRU)
     if (process.planType === 'ESSENCIAL' || process.planType === 'PREMIUM') {
+        const isGruPaid = process.gruStatus === 'PAID';
         events.push({
             id: 'gru-stage',
             type: 'gru',
             title: 'Taxa Federal (GRU)',
-            desc: process.gruStatus === 'PAID' ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal pela Asterysko.'),
+            desc: isGruPaid ? 'Taxa Federal paga e validada.' : (process.gruUrl ? 'Boleto GRU disponível para pagamento.' : 'Aguardando emissão da taxa federal pela Asterysko.'),
             status: process.gruStatus,
             barcode: process.gruBarcode,
             gruUrl: process.gruUrl,
             receiptUrl: process.gruReceiptUrl,
-            createdAt: process.updatedAt || process.createdAt
+            createdAt: process.updatedAt || process.createdAt,
+            isCompleted: isGruPaid,
+            isActiveAction: !isGruPaid && !!process.gruUrl
         });
     }
 
@@ -133,7 +146,9 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
             title: 'Depósito do Pedido',
             date: safeDate(process.filingDate || process.createdAt),
             desc: `Protocolo gerado no INPI: ${process.inpiProcessNumber || 'Processando'}`,
-            createdAt: process.filingDate || process.createdAt
+            createdAt: process.filingDate || process.createdAt,
+            isCompleted: !!process.inpiProcessNumber,
+            isActiveAction: false
         });
     }
 
@@ -146,7 +161,9 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
                 title: d.isVirtual ? (d.description || 'Despacho') : `${d.code || ''} - ${d.description || 'Despacho'}`.trim().replace(/^- /, ''),
                 date: safeDate(d.createdAt),
                 desc: d.details || `Publicado na RPI ${d.rpiNumber || '-'}`,
-                createdAt: d.createdAt || process.createdAt
+                createdAt: d.createdAt || process.createdAt,
+                isCompleted: true,
+                isActiveAction: false
             });
         });
     }
@@ -894,13 +911,27 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                 <div key={step.id || idx} className="relative flex gap-6 pb-8 last:pb-0">
                                                                     {/* Connector Line */}
                                                                     {idx !== arr.length - 1 && (
-                                                                        <div className={`absolute left-[11px] top-8 bottom-0 w-0.5 ${step.type === 'contract' || step.type === 'proxy' || step.type === 'gru' || step.status === 'SIGNED' || step.status === 'PAID' ? 'bg-emerald-500' : 'bg-blue-600 dark:bg-blue-500'}`} />
+                                                                        <div className={`absolute left-[11px] top-8 bottom-0 w-0.5 ${step.isCompleted ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-zinc-800'}`} />
                                                                     )}
 
                                                                     {/* Status Icon */}
-                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 text-white ${step.type === 'contract' || step.type === 'proxy' || step.type === 'gru' || step.status === 'SIGNED' || step.status === 'PAID' ? 'bg-emerald-500 border-emerald-500' : 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500'}`}>
-                                                                        {step.type === 'contract' ? <FileSignature size={12} /> : step.type === 'proxy' ? <Shield size={12} /> : step.type === 'gru' ? <CreditCard size={12} /> : <CheckCircle2 size={14} />}
-                                                                    </div>
+                                                                    {step.isCompleted ? (
+                                                                        <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-emerald-500 bg-emerald-500 text-white shadow-sm">
+                                                                            {step.type === 'contract' ? <FileSignature size={11} /> : step.type === 'proxy' ? <Shield size={11} /> : step.type === 'gru' ? <CreditCard size={11} /> : <CheckCircle2 size={13} />}
+                                                                        </div>
+                                                                    ) : step.isActiveAction ? (
+                                                                        <div className="relative w-6 h-6 z-10 shrink-0">
+                                                                            <div className="absolute inset-0 rounded-full bg-blue-500/25 dark:bg-blue-400/20 animate-ping" />
+                                                                            <div className="relative w-6 h-6 rounded-full flex items-center justify-center border-2 border-blue-500 bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-sm">
+                                                                                <Loader2 className="animate-spin absolute w-4.5 h-4.5 text-blue-500/30 dark:text-blue-400/30" />
+                                                                                {step.type === 'contract' ? <FileSignature size={11} className="relative z-10" /> : step.type === 'proxy' ? <Shield size={11} className="relative z-10" /> : step.type === 'gru' ? <CreditCard size={11} className="relative z-10" /> : <Loader2 size={11} className="animate-spin relative z-10" />}
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-zinc-600">
+                                                                            {step.type === 'contract' ? <FileSignature size={11} /> : step.type === 'proxy' ? <Shield size={11} /> : step.type === 'gru' ? <CreditCard size={11} /> : <CheckCircle2 size={11} />}
+                                                                        </div>
+                                                                    )}
 
                                                                     {/* Content */}
                                                                     <div className="flex-1 -mt-1">
