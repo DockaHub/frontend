@@ -25,8 +25,9 @@ import {
     Download,
     Clock,
     Link as LinkIcon,
+    Send,
     Copy,
-    Send
+    Pencil
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
@@ -570,7 +571,24 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                             </div>
                                         </div>
 
-                                        {/* 4. Excluir */}
+                                        {/* 4. Editar Dados */}
+                                        <div className="relative group">
+                                            <button 
+                                                onClick={() => {
+                                                    setEditForm(selectedClient);
+                                                    setIsEditing(true);
+                                                }}
+                                                className="p-2.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg hover:bg-amber-600 hover:text-white transition-all border border-amber-100 dark:border-amber-800/50 flex items-center justify-center shadow-sm"
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-900 dark:bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-50 shadow-md flex flex-col items-center">
+                                                Editar Dados
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-zinc-800"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* 5. Excluir */}
                                         <div className="relative group">
                                             <button 
                                                 onClick={() => setClientToDelete(selectedClient)}
@@ -626,7 +644,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                          <label className="text-[9px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-widest mb-1.5 block">Endereço Comercial</label>
                                                          <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 flex items-start gap-2">
                                                              <MapPin size={14} className="mt-0.5 text-blue-500" />
-                                                             {selectedClient.address ? `${selectedClient.address}, ${selectedClient.city}/${selectedClient.state}` : 'Não cadastrado'}
+                                                             {selectedClient.address ? `${selectedClient.address}${selectedClient.city && selectedClient.city !== 'PENDING' ? `, ${selectedClient.city}` : ''}${selectedClient.state && selectedClient.state !== 'PENDING' ? `/${selectedClient.state}` : ''}` : 'Não cadastrado'}
                                                          </p>
                                                      </div>
                                                      <div className="grid grid-cols-2 gap-4">
@@ -873,6 +891,125 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                     placeholder="CPF ou CNPJ"
                                 />
                             </div>
+                        </div>
+                    </div>
+                </Modal>
+
+                {/* MODAL EDITAR CLIENTE 3.0 */}
+                <Modal
+                    isOpen={isEditing}
+                    onClose={() => setIsEditing(false)}
+                    title="Editar Informações do Cliente"
+                    size="lg"
+                >
+                    <div className="p-2 space-y-6">
+                        <div className="grid grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Razão Social / Nome da Empresa</label>
+                                <input
+                                    value={editForm.company || ''}
+                                    onChange={e => setEditForm({ ...editForm, company: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Nome do Contato Principal</label>
+                                <input
+                                    value={editForm.name || ''}
+                                    onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-6">
+                            <div className="col-span-2">
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">E-mail Corporativo</label>
+                                <input
+                                    type="email"
+                                    value={editForm.email || ''}
+                                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Telefone</label>
+                                <input
+                                    value={editForm.phone || ''}
+                                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                    placeholder="(00) 00000-0000"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-6">
+                            <div className="col-span-2">
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">CNPJ ou CPF</label>
+                                <input
+                                    value={editForm.cnpj || ''}
+                                    onChange={e => setEditForm({ ...editForm, cnpj: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                    placeholder="Apenas números ou 'PENDING'"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">CEP</label>
+                                <input
+                                    value={editForm.postalCode || ''}
+                                    onChange={e => setEditForm({ ...editForm, postalCode: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                    placeholder="00000-000"
+                                />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Endereço Comercial</label>
+                            <input
+                                value={editForm.address || ''}
+                                onChange={e => setEditForm({ ...editForm, address: e.target.value })}
+                                className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                placeholder="Rua, Número, Bairro"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Cidade</label>
+                                <input
+                                    value={editForm.city || ''}
+                                    onChange={e => setEditForm({ ...editForm, city: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Estado (UF)</label>
+                                <input
+                                    value={editForm.state || ''}
+                                    onChange={e => setEditForm({ ...editForm, state: e.target.value })}
+                                    className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
+                                    maxLength={2}
+                                    placeholder="Ex: SP"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-docka-100 dark:border-zinc-700">
+                            <button
+                                onClick={() => setIsEditing(false)}
+                                className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest text-docka-400 hover:text-docka-600 transition-all"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveClient}
+                                disabled={isLoading}
+                                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-blue-700 shadow-sm transition-all flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : null}
+                                Salvar Alterações
+                            </button>
                         </div>
                     </div>
                 </Modal>
