@@ -916,20 +916,20 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
 
                                                                     {/* Status Icon */}
                                                                     {step.isCompleted ? (
-                                                                        <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-emerald-500 bg-emerald-500 text-white shadow-sm">
-                                                                            {step.type === 'contract' ? <FileSignature size={11} /> : step.type === 'proxy' ? <Shield size={11} /> : step.type === 'gru' ? <CreditCard size={11} /> : <CheckCircle2 size={13} />}
+                                                                        <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-emerald-600 bg-emerald-600 text-white shadow-md">
+                                                                            {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2.8} /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2.8} /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2.8} /> : <CheckCircle2 size={13} strokeWidth={2.8} />}
                                                                         </div>
                                                                     ) : step.isActiveAction ? (
                                                                         <div className="relative w-6 h-6 z-10 shrink-0">
                                                                             <div className="absolute inset-0 rounded-full bg-blue-500/25 dark:bg-blue-400/20 animate-ping" />
                                                                             <div className="relative w-6 h-6 rounded-full flex items-center justify-center border-2 border-blue-500 bg-white dark:bg-zinc-900 text-blue-600 dark:text-blue-400 shadow-sm">
                                                                                 <Loader2 className="animate-spin absolute w-4.5 h-4.5 text-blue-500/30 dark:text-blue-400/30" />
-                                                                                {step.type === 'contract' ? <FileSignature size={11} className="relative z-10" /> : step.type === 'proxy' ? <Shield size={11} className="relative z-10" /> : step.type === 'gru' ? <CreditCard size={11} className="relative z-10" /> : <Loader2 size={11} className="animate-spin relative z-10" />}
+                                                                                {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2.5} className="relative z-10" /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2.5} className="relative z-10" /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2.5} className="relative z-10" /> : <Loader2 size={11} strokeWidth={2.5} className="animate-spin relative z-10" />}
                                                                             </div>
                                                                         </div>
                                                                     ) : (
                                                                         <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-zinc-600">
-                                                                            {step.type === 'contract' ? <FileSignature size={11} /> : step.type === 'proxy' ? <Shield size={11} /> : step.type === 'gru' ? <CreditCard size={11} /> : <CheckCircle2 size={11} />}
+                                                                            {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2} /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2} /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2} /> : <CheckCircle2 size={11} strokeWidth={2} />}
                                                                         </div>
                                                                     )}
 

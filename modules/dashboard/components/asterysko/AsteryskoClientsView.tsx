@@ -786,18 +786,18 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                                      {getTimelineEvents(proc, selectedClient.invoices || []).map((event, eIdx) => (
                                                          <div key={eIdx} className="relative">
                                                              {event.isCompleted ? (
-                                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-emerald-500 text-white shadow-sm flex items-center justify-center z-10">
-                                                                     {event.type === 'contract' ? <FileSignature size={9} /> : event.type === 'proxy' ? <Shield size={9} /> : event.type === 'gru' ? <CreditCard size={9} /> : <CheckCircle2 size={9} />}
+                                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-emerald-600 text-white shadow-md flex items-center justify-center z-10">
+                                                                     {event.type === 'contract' ? <FileSignature size={9} strokeWidth={2.8} /> : event.type === 'proxy' ? <Shield size={9} strokeWidth={2.8} /> : event.type === 'gru' ? <CreditCard size={9} strokeWidth={2.8} /> : <CheckCircle2 size={9} strokeWidth={2.8} />}
                                                                  </div>
                                                              ) : event.isActiveAction ? (
-                                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-600 text-white shadow-sm flex items-center justify-center z-10">
+                                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-600 text-white shadow-md flex items-center justify-center z-10">
                                                                      <div className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping pointer-events-none" />
                                                                      <Loader2 size={9} className="animate-spin absolute text-blue-200/40" />
-                                                                     {event.type === 'contract' ? <FileSignature size={9} className="relative z-10" /> : event.type === 'proxy' ? <Shield size={9} className="relative z-10" /> : event.type === 'gru' ? <CreditCard size={9} className="relative z-10" /> : <Loader2 size={9} className="animate-spin relative z-10 text-white" />}
+                                                                     {event.type === 'contract' ? <FileSignature size={9} strokeWidth={2.5} className="relative z-10" /> : event.type === 'proxy' ? <Shield size={9} strokeWidth={2.5} className="relative z-10" /> : event.type === 'gru' ? <CreditCard size={9} strokeWidth={2.5} className="relative z-10" /> : <Loader2 size={9} strokeWidth={2.5} className="animate-spin relative z-10 text-white" />}
                                                                  </div>
                                                              ) : (
                                                                  <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-docka-100 dark:bg-zinc-800 text-docka-400 dark:text-zinc-500 shadow-sm flex items-center justify-center z-10">
-                                                                     {event.type === 'contract' ? <FileSignature size={9} /> : event.type === 'proxy' ? <Shield size={9} /> : event.type === 'gru' ? <CreditCard size={9} /> : <CheckCircle2 size={9} />}
+                                                                     {event.type === 'contract' ? <FileSignature size={9} strokeWidth={2} /> : event.type === 'proxy' ? <Shield size={9} strokeWidth={2} /> : event.type === 'gru' ? <CreditCard size={9} strokeWidth={2} /> : <CheckCircle2 size={9} strokeWidth={2} />}
                                                                  </div>
                                                              )}
                                                              <div className="flex-1">
