@@ -526,37 +526,63 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <button 
-                                            onClick={() => handleImpersonate(selectedClient.id)} 
-                                            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all border border-blue-100 dark:border-blue-800/50 flex items-center gap-1.5"
-                                            title="Acessar como Cliente"
-                                        >
-                                            Portal do Cliente
-                                        </button>
-                                        <button 
-                                            onClick={() => handleCopyAccessLink(selectedClient.id)} 
-                                            disabled={isCopyingAccess}
-                                            className="px-3 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 dark:border-emerald-800/50 flex items-center gap-1.5 disabled:opacity-50"
-                                            title="Copiar Link de Acesso Direto (WhatsApp)"
-                                        >
-                                            {isCopyingAccess ? <div className="w-3.5 h-3.5 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div> : <Copy size={14} />}
-                                            Copiar Link
-                                        </button>
-                                        <button 
-                                            onClick={() => handleResendAccessEmail(selectedClient.id)} 
-                                            disabled={isSendingAccess}
-                                            className="px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 dark:border-indigo-800/50 flex items-center gap-1.5 disabled:opacity-50"
-                                            title="Enviar Link de Acesso por E-mail"
-                                        >
-                                            {isSendingAccess ? <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> : <Send size={14} />}
-                                            Enviar Acesso
-                                        </button>
-                                        <button 
-                                            onClick={() => setClientToDelete(selectedClient)}
-                                            className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-100 dark:border-rose-800/50"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        {/* 1. Portal do Cliente */}
+                                        <div className="relative group">
+                                            <button 
+                                                onClick={() => handleImpersonate(selectedClient.id)} 
+                                                className="p-2.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-600 hover:text-white transition-all border border-blue-100 dark:border-blue-800/50 flex items-center justify-center shadow-sm"
+                                            >
+                                                <ExternalLink size={16} />
+                                            </button>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-900 dark:bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-50 shadow-md flex flex-col items-center">
+                                                Portal do Cliente
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-zinc-800"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* 2. Copiar Link (WhatsApp) */}
+                                        <div className="relative group">
+                                            <button 
+                                                onClick={() => handleCopyAccessLink(selectedClient.id)} 
+                                                disabled={isCopyingAccess}
+                                                className="p-2.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-lg hover:bg-emerald-600 hover:text-white transition-all border border-emerald-100 dark:border-emerald-800/50 flex items-center justify-center shadow-sm disabled:opacity-50"
+                                            >
+                                                {isCopyingAccess ? <div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin"></div> : <Copy size={16} />}
+                                            </button>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-900 dark:bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-50 shadow-md flex flex-col items-center">
+                                                Copiar Magic Link
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-zinc-800"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* 3. Enviar Acesso (E-mail) */}
+                                        <div className="relative group">
+                                            <button 
+                                                onClick={() => handleResendAccessEmail(selectedClient.id)} 
+                                                disabled={isSendingAccess}
+                                                className="p-2.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg hover:bg-indigo-600 hover:text-white transition-all border border-indigo-100 dark:border-indigo-800/50 flex items-center justify-center shadow-sm disabled:opacity-50"
+                                            >
+                                                {isSendingAccess ? <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin"></div> : <Send size={16} />}
+                                            </button>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-900 dark:bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-50 shadow-md flex flex-col items-center">
+                                                Enviar Acesso por E-mail
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-zinc-800"></div>
+                                            </div>
+                                        </div>
+
+                                        {/* 4. Excluir */}
+                                        <div className="relative group">
+                                            <button 
+                                                onClick={() => setClientToDelete(selectedClient)}
+                                                className="p-2.5 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg hover:bg-rose-500 hover:text-white transition-all border border-rose-100 dark:border-rose-800/50 flex items-center justify-center shadow-sm"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                            <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-slate-900 dark:bg-zinc-800 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-50 shadow-md flex flex-col items-center">
+                                                Excluir Cliente
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900 dark:border-t-zinc-800"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
