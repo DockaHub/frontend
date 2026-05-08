@@ -23,9 +23,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
         const initAuth = async () => {
             const storedUser = authService.getStoredUser();
-            const token = localStorage.getItem('token');
+            let token = localStorage.getItem('token');
 
-            if (storedUser) {
+            // 1. CHECK FOR AUTO-LOGIN / IMPERSONATION TOKEN IN URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            
+            if (urlToken) {
+                console.log('🔑 URL token detected. Storing session dynamically...');
+                token = urlToken;
+                localStorage.setItem('token', urlToken);
+                
+                // Clean URL parameters cleanly without doing a hard page reload
+                try {
+                    const cleanUrl = window.location.pathname;
+                    window.history.replaceState({}, '', cleanUrl);
+                } catch (e) {
+                    console.error('Failed to clean URL parameters:', e);
+                }
+            }
+
+            if (storedUser && !urlToken) {
                 // 1. Set initial state from storage (fast load)
                 const normalizedStored = { ...storedUser, role: (storedUser.role || 'user').toUpperCase() };
                 setUser(normalizedStored);
@@ -43,7 +61,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 // Connect socket if we have a user
                 socketService.connect();
             } else if (token) {
-                // Handle case where we have a token but no user object (e.g. after impersonation redirect)
+                // Handle case where we have a token (either from storage or URL) but no user object
                 try {
                     const data = await authService.getCurrentUser();
                     const normalizedUser = { ...data, role: (data.role || 'user').toUpperCase() };

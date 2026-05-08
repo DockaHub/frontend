@@ -72,19 +72,6 @@ const AppContent: React.FC = () => {
     const checkCustomDomain = async () => {
       const hostname = window.location.hostname;
 
-      // CHECK FOR AUTH TOKEN IN URL (FOR IMPERSONATION/AUTO-LOGIN)
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlToken = urlParams.get('token');
-      if (urlToken) {
-          console.log('Detected token in URL, applying session...');
-          localStorage.setItem('token', urlToken);
-          // Clean URL but keep session
-          const newUrl = window.location.pathname;
-          window.history.replaceState({}, '', newUrl);
-          window.location.reload(); // Refresh to bootstrap auth with new token
-          return;
-      }
-
       // Skip for default development and platform domains
       if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.includes('dockahub') || hostname.includes('vercel.app')) {
         setResolvingDomain(false);
