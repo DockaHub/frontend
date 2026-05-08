@@ -38,6 +38,7 @@ import { ContractSignaturePage } from './modules/asterysko/public/ContractSignat
 import AsteryskoClientPortal from './modules/dashboard/components/asterysko/AsteryskoClientPortal';
 import { AsteryskoLoginPage } from './modules/asterysko/public/AsteryskoLoginPage';
 import WelcomePage from './modules/asterysko/public/WelcomePage';
+import { getApiBaseUrl } from './services/api';
 
 // Main App Content component to use hooks inside Provider
 const AppContent: React.FC = () => {
@@ -91,7 +92,7 @@ const AppContent: React.FC = () => {
       }
 
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const apiUrl = getApiBaseUrl();
         const response = await fetch(`${apiUrl}/organizations/public/resolve-domain?domain=${hostname}`);
         if (response.ok) {
           setIsTenantDomain(true);

@@ -1,6 +1,15 @@
 import axios, { AxiosError } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+export const getApiBaseUrl = () => {
+    if (import.meta.env.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL;
+    }
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
+    return isLocal ? 'http://localhost:3001/api' : 'https://backend-production-0647.up.railway.app/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 /**
  * Strips /api from the base URL to get the backend root (useful for static file access like /uploads)

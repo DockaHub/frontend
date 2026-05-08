@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { socketService } from '../services/socketService';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import { getApiBaseUrl } from '../services/api';
 
 export interface Notification {
     id: string;
@@ -41,7 +42,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const fetchNotifications = useCallback(async () => {
         if (!user) return;
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/notifications`, {
+            const response = await fetch(`${getApiBaseUrl()}/notifications`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
                 }
@@ -88,7 +89,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const markAsRead = async (id: string) => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/notifications/${id}/read`, {
+            const response = await fetch(`${getApiBaseUrl()}/notifications/${id}/read`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -104,7 +105,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const markAllAsRead = async () => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/notifications/read-all`, {
+            const response = await fetch(`${getApiBaseUrl()}/notifications/read-all`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -120,7 +121,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const markAsReadByLink = async (link: string) => {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_URL}/notifications/link`, {
+            const response = await fetch(`${getApiBaseUrl()}/notifications/link`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',

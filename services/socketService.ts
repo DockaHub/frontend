@@ -11,9 +11,9 @@ class SocketService {
         const token = localStorage.getItem('token'); // Assuming token is stored here
         if (!token) return;
 
-        // Use VITE_API_URL or fallback to localhost:3002
-        // If VITE_API_URL includes '/api', remove it for the socket connection
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3002';
+        const hostname = window.location.hostname;
+        const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
+        const apiUrl = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3002' : 'https://backend-production-0647.up.railway.app');
         const socketUrl = apiUrl.replace(/\/api$/, '');
 
         this.socket = io(socketUrl, {
