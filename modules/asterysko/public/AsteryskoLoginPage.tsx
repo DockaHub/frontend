@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, ArrowRight, Sun, Moon } from 'lucide-react';
+import { api } from '../../../services/api';
+import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, ArrowRight, Sun, Moon, ShieldCheck, KeyRound } from 'lucide-react';
 
 const AsteryskoLogoSVG = () => (
     <svg width="180" height="30" viewBox="0 0 200 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -40,23 +40,26 @@ interface AsteryskoLoginPageProps {
 
 export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, onToggleTheme }) => {
     const navigate = useNavigate();
-    const { login } = useAuth();
+    const { login, refreshUser } = useAuth();
+    const [loginMode, setLoginMode] = useState<'otp' | 'password'>('otp');
+    const [otpStep, setOtpStep] = useState<'email' | 'code'>('email');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [infoMessage, setInfoMessage] = useState('');
 
-    const [formData, setFormData] = useState({
-        email: '',
-        password: '',
-    });
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [otpCode, setOtpCode] = useState('');
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setInfoMessage('');
         setLoading(true);
 
         try {
-            const response: any = await login({ email: formData.email, password: formData.password });
+            const response: any = await login({ email, password });
 
             // Ensure only CLIENT role can access the portal via this login
             if (response?.user?.role?.toUpperCase() !== 'CLIENT') {
@@ -68,6 +71,51 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
             navigate('/portal');
         } catch (err: any) {
             setError(err.response?.data?.error || 'Credenciais inválidas. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRequestOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setInfoMessage('');
+        setLoading(true);
+
+        try {
+            const response = await api.post('/auth/request-otp', { email });
+            setInfoMessage(response.data?.message || 'Código enviado com sucesso para o seu e-mail.');
+            setOtpStep('code');
+            setOtpCode(''); // Clear previous inputs
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao enviar código de acesso. Tente novamente.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            const response = await api.post('/auth/verify-otp', { email, code: otpCode });
+            
+            // Ensure only CLIENT role can access the portal
+            if (response.data?.user?.role?.toUpperCase() !== 'CLIENT') {
+                setError('Este portal é exclusivo para clientes. Acesse a plataforma principal.');
+                setLoading(false);
+                return;
+            }
+
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            
+            await refreshUser();
+            navigate('/portal');
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Código de acesso inválido ou expirado.');
         } finally {
             setLoading(false);
         }
@@ -96,95 +144,276 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
 
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-3">Bem-vindo(a)</h1>
                     <p className="text-slate-500 dark:text-zinc-400 mb-8">
-                        Acesse seus processos e marcas de forma segura.
+                        Acompanhe seus processos e marcas de forma rápida e segura.
                     </p>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-4">
-                            <div className="relative group">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
-                                <input
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
-                                    placeholder="seu@email.com"
-                                    required
-                                />
-                            </div>
-
-                            <div className="relative group">
-                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
-                                <input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    className="w-full pl-12 pr-12 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
-                                    placeholder="••••••••"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
-                                >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                            <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-zinc-400">
-                                <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                                Lembrar-me
-                            </label>
-                            <a href="#" className="font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
-                                Esqueceu a senha?
-                            </a>
-                        </div>
-
-                        {error && (
-                            <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                                <AlertCircle size={16} />
-                                {error}
-                            </div>
-                        )}
-
+                    {/* Navigation Tabs */}
+                    <div className="flex border border-slate-100 dark:border-zinc-800 mb-8 p-1 bg-slate-50 dark:bg-zinc-800/40 rounded-2xl">
                         <button
-                            type="submit"
-                            disabled={loading}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                            type="button"
+                            onClick={() => {
+                                setLoginMode('otp');
+                                setError('');
+                                setInfoMessage('');
+                                setOtpStep('email');
+                            }}
+                            className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                                loginMode === 'otp'
+                                    ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-md border border-slate-100/50 dark:border-zinc-700/30'
+                                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-zinc-200'
+                            }`}
                         >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="animate-spin" size={20} />
-                                    Entrando...
-                                </>
-                            ) : (
-                                <>
-                                    Acessar Portal
-                                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                                </>
-                            )}
+                            <KeyRound size={16} />
+                            Código por E-mail
                         </button>
-                    </form>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setLoginMode('password');
+                                setError('');
+                                setInfoMessage('');
+                            }}
+                            className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
+                                loginMode === 'password'
+                                    ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-md border border-slate-100/50 dark:border-zinc-700/30'
+                                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-zinc-200'
+                            }`}
+                        >
+                            <Lock size={16} />
+                            Senha Tradicional
+                        </button>
+                    </div>
+
+                    {/* Conditional Login Forms */}
+                    {loginMode === 'otp' ? (
+                        otpStep === 'email' ? (
+                            /* OTP Step 1: Email Request */
+                            <form onSubmit={handleRequestOtp} className="space-y-6">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
+                                        Endereço de E-mail
+                                    </label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
+                                            placeholder="seu@email.com"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                {error && (
+                                    <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                                        <AlertCircle size={16} className="shrink-0" />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={20} />
+                                            Enviando código...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Receber Código de Acesso
+                                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        ) : (
+                            /* OTP Step 2: Code Verification */
+                            <form onSubmit={handleVerifyOtp} className="space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-800 rounded-xl border border-slate-100 dark:border-zinc-700/50">
+                                        <div className="text-sm">
+                                            <span className="text-slate-500 dark:text-zinc-400">Enviado para: </span>
+                                            <strong className="text-slate-700 dark:text-zinc-200">{email}</strong>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setOtpStep('email');
+                                                setError('');
+                                                setInfoMessage('');
+                                            }}
+                                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold"
+                                        >
+                                            Alterar
+                                        </button>
+                                    </div>
+
+                                    {infoMessage && (
+                                        <div className="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm rounded-xl flex items-center gap-2">
+                                            <ShieldCheck size={18} className="shrink-0 text-blue-500" />
+                                            <span>{infoMessage}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-2">
+                                        <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
+                                            Código de Acesso (6 dígitos)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            maxLength={6}
+                                            pattern="[0-9]*"
+                                            inputMode="numeric"
+                                            value={otpCode}
+                                            onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                            className="w-full text-center tracking-[12px] font-mono text-2xl py-4 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-300 dark:placeholder:text-zinc-700"
+                                            placeholder="000000"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                {error && (
+                                    <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                                        <AlertCircle size={16} className="shrink-0" />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                                    >
+                                        {loading ? (
+                                            <>
+                                                <Loader2 className="animate-spin" size={20} />
+                                                Verificando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Acessar Portal
+                                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                            </>
+                                        )}
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={handleRequestOtp}
+                                        disabled={loading}
+                                        className="w-full py-2 text-sm font-bold text-slate-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
+                                    >
+                                        Reenviar Código de Acesso
+                                    </button>
+                                </div>
+                            </form>
+                        )
+                    ) : (
+                        /* Traditional Password Login */
+                        <form onSubmit={handlePasswordSubmit} className="space-y-6">
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
+                                        E-mail
+                                    </label>
+                                    <div className="relative group">
+                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
+                                            placeholder="seu@email.com"
+                                            required
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
+                                        Senha
+                                    </label>
+                                    <div className="relative group">
+                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
+                                        <input
+                                            type={showPassword ? 'text' : 'password'}
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full pl-12 pr-12 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
+                                            placeholder="••••••••"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-sm">
+                                <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-zinc-400 font-semibold">
+                                    <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4" />
+                                    Lembrar-me
+                                </label>
+                                <a href="#" className="font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
+                                    Esqueceu a senha?
+                                </a>
+                            </div>
+
+                            {error && (
+                                <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                                    <AlertCircle size={16} className="shrink-0" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={20} />
+                                        Entrando...
+                                    </>
+                                ) : (
+                                    <>
+                                        Acessar Portal
+                                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                    </>
+                                )}
+                            </button>
+                        </form>
+                    )}
                 </div>
 
                 {/* Right Side - Branding/Info */}
-                <div className="hidden md:flex w-1/2 bg-slate-50 dark:bg-zinc-800/50 p-14 flex-col justify-center relative overflow-hidden">
+                <div className="hidden md:flex w-1/2 bg-slate-50 dark:bg-zinc-800/30 p-14 flex-col justify-center relative overflow-hidden">
                     <div className="relative z-10">
-                        <div className="bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-xl border border-slate-100 dark:border-zinc-800 mb-8 max-w-sm mx-auto transform -rotate-1 hover:rotate-0 transition-transform duration-500">
+                        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-xl border border-slate-100 dark:border-zinc-800 mb-8 max-w-sm mx-auto transform -rotate-1 hover:rotate-0 transition-transform duration-500">
                             <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                    <Lock size={24} />
+                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                    <ShieldCheck size={24} />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-slate-900 dark:text-zinc-100">Área Exclusiva</h3>
+                                    <h3 className="font-bold text-slate-900 dark:text-zinc-100">Área do Cliente</h3>
                                     <p className="text-xs text-slate-500 dark:text-zinc-400">Ambiente Criptografado</p>
                                 </div>
                             </div>
-                            <p className="text-slate-600 dark:text-zinc-400 text-sm leading-relaxed">
-                                Acompanhe o status dos seus processos de propriedade intelectual em tempo real com total transparência e segurança.
+                            <p className="text-slate-600 dark:text-zinc-400 text-sm leading-relaxed font-medium">
+                                Acompanhe o status dos seus processos de marcas em tempo real com total transparência e segurança de ponta.
                             </p>
                         </div>
                     </div>
