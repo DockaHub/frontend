@@ -181,8 +181,11 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             const response = await api.post(`/asterysko/impersonate/${clientId}`);
             const { token, user } = response.data;
             addToast({ type: 'success', title: 'Acesso Autorizado', message: `Abrindo portal de ${user.name}...` });
-            const isProd = !window.location.hostname.includes('localhost');
-            const portalBase = isProd ? 'https://cliente.asterysko.com/portal' : '/portal';
+            
+            const hostname = window.location.hostname;
+            const isLocalOrDev = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.') || hostname.includes('vercel.app');
+            const portalBase = isLocalOrDev ? `${window.location.protocol}//${window.location.host}/portal` : 'https://cliente.asterysko.com/portal';
+            
             window.open(`${portalBase}?token=${token}`, '_blank');
         } catch (error: any) {
             const msg = error.response?.data?.error || 'Falha ao autenticar no portal do cliente.';
@@ -195,8 +198,10 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             setIsCopyingAccess(true);
             const response = await api.post(`/asterysko/impersonate/${clientId}`);
             const { token, user } = response.data;
-            const isProd = !window.location.hostname.includes('localhost');
-            const portalBase = isProd ? 'https://cliente.asterysko.com/portal' : `${window.location.protocol}//${window.location.host}/portal`;
+            
+            const hostname = window.location.hostname;
+            const isLocalOrDev = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.') || hostname.includes('vercel.app');
+            const portalBase = isLocalOrDev ? `${window.location.protocol}//${window.location.host}/portal` : 'https://cliente.asterysko.com/portal';
             const magicLink = `${portalBase}?token=${token}`;
             
             await navigator.clipboard.writeText(magicLink);
