@@ -100,13 +100,12 @@ const AsteryskoResearchView = () => {
 
                         <div className="h-8 w-px bg-docka-100 dark:bg-zinc-800 hidden lg:block" />
 
-                        <div className="relative w-full lg:w-[320px]" onClick={(e) => e.stopPropagation()}>
-                            <div 
+                        <div className="relative w-full lg:w-[320px]" onClick={(e) => e.stopPropagation()}>                            <div 
                                 onClick={() => setIsNclOpen(!isNclOpen)}
                                 className="w-full h-14 px-5 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg flex items-center justify-between cursor-pointer border border-transparent hover:border-docka-100 dark:hover:border-zinc-700 transition-all group/select"
                             >
                                 <div className="flex flex-col">
-                                    <span className="text-[9px] font-bold uppercase tracking-widest text-docka-400">Ramo de Atividade</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-docka-400">Ramo de Atividade</span>
                                     <span className="text-xs font-bold text-docka-700 dark:text-zinc-300 truncate max-w-[240px]">
                                         {selectedNcl ? `Classe ${selectedNcl.id} - ${selectedNcl.description.substring(0, 30)}...` : 'Selecione a Classe NCL'}
                                     </span>
@@ -137,10 +136,10 @@ const AsteryskoResearchView = () => {
                                                 className={`w-full text-left px-4 py-3 rounded-lg transition-all flex flex-col gap-1 border ${selectedNcl?.id === ncl.id ? 'bg-blue-600 dark:bg-blue-500 border-blue-600 text-white' : 'bg-transparent border-transparent hover:bg-docka-50 dark:hover:bg-zinc-800'}`}
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <span className={`text-[10px] font-bold uppercase tracking-widest ${selectedNcl?.id === ncl.id ? 'text-white' : 'text-docka-900 dark:text-zinc-100'}`}>Classe {ncl.id}</span>
+                                                    <span className={`text-xs font-semibold uppercase tracking-wider ${selectedNcl?.id === ncl.id ? 'text-white' : 'text-docka-900 dark:text-zinc-100'}`}>Classe {ncl.id}</span>
                                                     {selectedNcl?.id === ncl.id && <CheckCircle2 size={12} className="text-white" />}
                                                 </div>
-                                                <span className={`text-[11px] font-medium leading-relaxed ${selectedNcl?.id === ncl.id ? 'text-white/80' : 'text-docka-500 dark:text-zinc-400'}`}>
+                                                <span className={`text-xs font-medium leading-relaxed ${selectedNcl?.id === ncl.id ? 'text-white/80' : 'text-docka-500 dark:text-zinc-400'}`}>
                                                     {ncl.description}
                                                 </span>
                                             </button>
@@ -153,7 +152,7 @@ const AsteryskoResearchView = () => {
                         <button
                             onClick={() => handleSearch()}
                             disabled={isLoading || !selectedNcl || !searchName.trim()}
-                            className="w-full lg:w-auto px-10 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-bold text-[11px] uppercase tracking-[0.2em] shadow-sm hover:bg-blue-700 transition-all disabled:opacity-30 flex items-center justify-center gap-3 shrink-0"
+                            className="w-full lg:w-auto px-10 h-14 bg-blue-600 dark:bg-blue-500 text-white rounded-lg font-bold text-xs uppercase tracking-wider shadow-sm hover:bg-blue-700 transition-all disabled:opacity-30 flex items-center justify-center gap-3 shrink-0"
                         >
                             {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Zap size={18} fill="currentColor" />}
                             Analisar Ativo
@@ -188,7 +187,7 @@ const AsteryskoResearchView = () => {
                                         />
                                     </svg>
                                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-300 mb-1">Score de Viabilidade</span>
+                                        <span className="text-xs font-semibold uppercase tracking-wider text-docka-400 mb-1">Score de Viabilidade</span>
                                         <span className={`text-6xl font-bold ${result.riskLevel === 'HIGH' ? 'text-rose-600' : result.riskLevel === 'MEDIUM' ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                                             {result.score}%
                                         </span>
@@ -196,7 +195,7 @@ const AsteryskoResearchView = () => {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className={`inline-flex px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-[0.3em] ${getRiskColor(result.riskLevel)}`}>
+                                    <div className={`inline-flex px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider ${getRiskColor(result.riskLevel)}`}>
                                         {result.riskLevel === 'HIGH' ? 'Alto Risco' : result.riskLevel === 'MEDIUM' ? 'Atenção' : 'Excelente'}
                                     </div>
                                     <h3 className="text-xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight">
@@ -209,7 +208,7 @@ const AsteryskoResearchView = () => {
                             </div>
 
                             <div className="bg-white dark:bg-zinc-900 p-8 rounded-xl border border-docka-100 dark:border-zinc-800 shadow-sm">
-                                <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 mb-6 ml-1">Próximos Passos Sugeridos</h4>
+                                <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400 mb-6 ml-1">Próximos Passos Sugeridos</h4>
                                 <div className="space-y-3">
                                     <button className="w-full p-4 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-between group hover:bg-docka-100 dark:hover:bg-zinc-700 transition-all border border-transparent hover:border-docka-200">
                                         <div className="flex items-center gap-3">
@@ -235,8 +234,8 @@ const AsteryskoResearchView = () => {
                                     <div className="flex items-center gap-3">
                                         <div className="p-2 bg-rose-50 dark:bg-rose-900/20 text-rose-500 rounded-lg"><AlertCircle size={20} /></div>
                                         <div>
-                                            <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-docka-900 dark:text-zinc-100">Registros Colidentes</h3>
-                                            <p className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">{result.conflicts?.length || 0} marcas encontradas no INPI</p>
+                                            <h3 className="text-xs font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100">Registros Colidentes</h3>
+                                            <p className="text-xs font-semibold text-docka-400 uppercase tracking-wider">{result.conflicts?.length || 0} marcas encontradas no INPI</p>
                                         </div>
                                     </div>
                                 </div>
@@ -251,13 +250,13 @@ const AsteryskoResearchView = () => {
                                                 <div className="space-y-1">
                                                     <div className="text-sm font-bold uppercase tracking-widest text-docka-900 dark:text-zinc-100 group-hover:translate-x-1 transition-transform">{conflict.brandName}</div>
                                                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-wider flex items-center gap-1.5"><Scale size={12} /> {conflict.processNumber}</span>
-                                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-wider flex items-center gap-1.5"><Info size={12} /> {conflict.ownerName}</span>
+                                                        <span className="text-xs font-semibold text-docka-400 uppercase tracking-wider flex items-center gap-1.5"><Scale size={12} /> {conflict.processNumber}</span>
+                                                        <span className="text-xs font-semibold text-docka-400 uppercase tracking-wider flex items-center gap-1.5"><Info size={12} /> {conflict.ownerName}</span>
                                                     </div>
                                                 </div>
                                             </div>
                                             <div className="mt-4 md:mt-0 flex items-center gap-3 w-full md:w-auto justify-end">
-                                                <div className={`px-4 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-[0.2em] border shadow-sm ${
+                                                <div className={`px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border shadow-sm ${
                                                     conflict.status?.toLowerCase().includes('arquivado') || conflict.status?.toLowerCase().includes('extinto')
                                                     ? 'bg-white dark:bg-zinc-800 text-docka-200 border-docka-100 dark:border-zinc-700'
                                                     : 'bg-rose-600 text-white border-rose-600 shadow-rose-900/10'

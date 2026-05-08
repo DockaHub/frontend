@@ -259,13 +259,13 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                     <div className="flex bg-docka-50 dark:bg-zinc-800 p-1 rounded-lg border border-docka-100 dark:border-zinc-700 mr-2">
                         <button 
                             onClick={() => setViewMode('kanban')}
-                            className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-wider transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
                         >
                             Kanban
                         </button>
                         <button 
                             onClick={() => setViewMode('list')}
-                            className={`px-3 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-wider transition-all ${viewMode === 'list' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
                         >
                             Lista
                         </button>
@@ -278,7 +278,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
 
                     <button
                         onClick={() => setIsNewLeadModalOpen(true)}
-                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-docka-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2"
+                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-5 py-2.5 rounded-lg text-xs font-semibold tracking-wider hover:bg-docka-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2"
                     >
                         <Plus size={14} /> Novo Lead
                     </button>
@@ -288,7 +288,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
             {loading ? (
                 <div className="flex flex-col items-center justify-center h-64 gap-3 animate-in fade-in duration-500">
                     <div className="w-8 h-8 border-2 border-docka-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-[10px] font-bold uppercase text-docka-400 tracking-widest">Sincronizando pipeline...</span>
+                    <span className="text-xs font-semibold text-docka-400 tracking-wider">Sincronizando pipeline...</span>
                 </div>
             ) : (
                 <div className="h-full w-full flex flex-col animate-in fade-in duration-500 overflow-hidden">
@@ -301,11 +301,11 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                     onAddCard={handleAddCard}
                                     onDragEnd={handleDragEnd}
                                     members={organizationMembers}
-                                />
+                                 />
                             ) : (
                                 <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 overflow-x-auto shadow-sm custom-scrollbar">
                                     <table className="w-full text-left min-w-[800px]">
-                                        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-widest text-docka-500 dark:text-zinc-500 border-b border-docka-100 dark:border-zinc-800">
+                                        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-xs font-semibold uppercase tracking-wider text-docka-500 dark:text-zinc-500 border-b border-docka-100 dark:border-zinc-800">
                                             <tr>
                                                 <th className="px-6 py-4">Título / Marca</th>
                                                 <th className="px-6 py-4">Contato</th>
@@ -327,12 +327,12 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                                         <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{card.value || 'R$ 0,00'}</span>
                                                     </td>
                                                     <td className="px-6 py-4 text-center">
-                                                        <span className="px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest bg-docka-50 dark:bg-zinc-800 text-docka-500 dark:text-zinc-400 border border-docka-100 dark:border-zinc-700">
+                                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-docka-50 dark:bg-zinc-800 text-docka-500 dark:text-zinc-400 border border-docka-100 dark:border-zinc-700">
                                                             {columns.find(c => c.cards.some(cd => cd.id === card.id))?.title}
                                                         </span>
                                                     </td>
                                                     <td className="px-6 py-4">
-                                                        <span className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase">{card.date}</span>
+                                                        <span className="text-xs font-semibold text-docka-400 dark:text-zinc-500">{card.date}</span>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -343,8 +343,8 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                         ) : (
                             <div className="flex flex-col items-center justify-center h-full text-docka-400 dark:text-zinc-500 p-20 border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-xl opacity-50">
                                 <Kanban size={48} className="mb-4" />
-                                <p className="text-[10px] font-bold uppercase tracking-widest">O Pipeline está vazio no momento.</p>
-                                <button onClick={fetchDeals} className="mt-4 text-[10px] font-bold uppercase text-indigo-600 hover:underline">Recarregar dados</button>
+                                <p className="text-xs font-semibold tracking-wider">O Pipeline está vazio no momento.</p>
+                                <button onClick={fetchDeals} className="mt-4 text-xs font-semibold text-indigo-600 hover:underline">Recarregar dados</button>
                             </div>
                         )}
                     </div>
@@ -358,15 +358,15 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                 title="Novo Lead de Registro"
                 footer={
                     <>
-                        <button onClick={() => setIsNewLeadModalOpen(false)} className="px-4 py-2 text-xs font-bold uppercase tracking-widest text-docka-400 hover:bg-docka-50 rounded-lg transition-all">Cancelar</button>
-                        <button onClick={handleCreateLead} className="px-6 py-2 text-[10px] font-bold uppercase tracking-widest text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm transition-all border border-transparent">Criar Lead no Funil</button>
+                        <button onClick={() => setIsNewLeadModalOpen(false)} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-docka-400 hover:bg-docka-50 rounded-lg transition-all">Cancelar</button>
+                        <button onClick={handleCreateLead} className="px-6 py-2.5 text-xs font-semibold tracking-wider text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm transition-all border border-transparent">Criar Lead no Funil</button>
                     </>
                 }
             >
                 <div className="space-y-6 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
                     {/* Campos de formulário (mantendo lógica original com visual DS 3.0) */}
                     <div>
-                        <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Cliente Existente</label>
+                        <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Cliente Existente</label>
                         <div className="relative">
                             <div
                                 onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
@@ -399,7 +399,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                         {clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.company && c.company.toLowerCase().includes(clientSearch.toLowerCase()))).map(c => (
                                             <div key={c.id} onClick={() => { handleClientSelect(c.id); setIsClientDropdownOpen(false); }} className="px-4 py-2.5 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer flex flex-col">
                                                 <span className="font-bold">{c.name}</span>
-                                                <span className="text-[9px] font-black uppercase tracking-tighter opacity-50">{c.company || 'Sem Empresa'}</span>
+                                                <span className="text-xs font-semibold uppercase tracking-wider opacity-50">{c.company || 'Sem Empresa'}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -410,7 +410,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Marca / Título</label>
+                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Marca / Título</label>
                             <input
                                 value={newLead.title}
                                 onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
@@ -419,7 +419,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Plano de Serviço</label>
+                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Plano de Serviço</label>
                             <select
                                 value={newLead.planId}
                                 onChange={e => handleFeeSelect(e.target.value)}
@@ -433,7 +433,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                         </div>
                         {user?.globalRole === 'ADMIN' && (
                             <div>
-                                <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Responsável Vendas</label>
+                                <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Responsável Vendas</label>
                                 <select
                                     value={newLead.assignedUserId}
                                     onChange={e => setNewLead({ ...newLead, assignedUserId: e.target.value })}
@@ -449,12 +449,12 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                     </div>
 
                     <div className="p-5 bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 space-y-4 shadow-sm">
-                        <label className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest flex items-center gap-2">
+                        <label className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-2">
                              <Tag size={12} /> Configurações do Lead
                         </label>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-docka-400 uppercase mb-1.5 ml-1">Serviço</label>
+                                <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">Serviço</label>
                                 <select value={newLead.service} onChange={(e) => setNewLead({ ...newLead, service: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20">
                                     <option>Registro de Marca (Mista)</option>
                                     <option>Registro de Marca (Nominativa)</option>
@@ -463,7 +463,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-docka-400 uppercase mb-1.5 ml-1">Origem</label>
+                                <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">Origem</label>
                                 <select value={newLead.source} onChange={(e) => setNewLead({ ...newLead, source: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20">
                                     <option value="Site (Orgânico)">Site (Orgânico)</option>
                                     <option value="Instagram Ads">Instagram Ads</option>
@@ -476,11 +476,11 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                          <div>
-                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Telefone / WhatsApp</label>
+                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Telefone / WhatsApp</label>
                             <input value={newLead.contactPhone} onChange={(e) => setNewLead({ ...newLead, contactPhone: maskPhone(e.target.value) })} className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-docka-900 dark:text-zinc-100 shadow-sm" placeholder="(00) 00000-0000" />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-widest mb-2">Valor Estimado</label>
+                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Valor Estimado</label>
                             <div className="relative">
                                 <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
                                 <input value={newLead.value} onChange={(e) => setNewLead({ ...newLead, value: maskCurrency(e.target.value) })} className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-bold text-emerald-600 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 shadow-sm" placeholder="R$ 0,00" />

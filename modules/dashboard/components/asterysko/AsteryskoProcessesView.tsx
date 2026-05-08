@@ -646,7 +646,7 @@ const AsteryskoProcessesView: React.FC = () => {
                     </div>
                     <button
                         onClick={() => setIsNewProcessOpen(true)}
-                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-docka-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2"
+                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold tracking-wider hover:bg-docka-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2"
                     >
                         <Plus size={14} /> Novo Processo
                     </button>
@@ -656,7 +656,7 @@ const AsteryskoProcessesView: React.FC = () => {
             <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm flex flex-col h-full animate-in fade-in duration-500">
                 <div className="overflow-auto custom-scrollbar">
                     <table className="w-full text-left">
-                        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-wider text-docka-500 dark:text-zinc-500 border-b border-docka-100 dark:border-zinc-800 sticky top-0 z-10 shadow-sm">
+                        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-xs font-semibold uppercase tracking-wider text-docka-500 dark:text-zinc-500 border-b border-docka-100 dark:border-zinc-800 sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th className="px-6 py-4">Ativo / Marca</th>
                                 <th className="px-6 py-4">Número INPI</th>
@@ -677,7 +677,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 bg-docka-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-docka-900 dark:text-zinc-100 font-bold text-[10px] shrink-0 overflow-hidden border border-docka-50 dark:border-zinc-700 shadow-inner">
+                                                <div className="w-9 h-9 bg-docka-100 dark:bg-zinc-800 rounded-lg flex items-center justify-center text-docka-900 dark:text-zinc-100 font-bold text-xs shrink-0 overflow-hidden border border-docka-50 dark:border-zinc-700 shadow-inner">
                                                     {proc.logoUrl ? (
                                                         <img 
                                                             src={`${getBackendUrl()}${proc.logoUrl}`} 
@@ -692,7 +692,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-bold text-docka-900 dark:text-zinc-100 group-hover:text-black transition-colors">{proc.title}</span>
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400/60">{proc.client}</span>
+                                                    <span className="text-xs font-semibold uppercase tracking-wider text-docka-400/60">{proc.client}</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -740,10 +740,10 @@ const AsteryskoProcessesView: React.FC = () => {
                 <div className="flex flex-col gap-8 py-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-6">
-                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 ml-1 text-left">Dados Básicos</h4>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-500 ml-1 text-left">Dados Básicos</h4>
                             <div className="space-y-4 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm">
                                 <div>
-                                    <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Número do Processo</label>
+                                    <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1 text-left">Número do Processo</label>
                                     <div className="relative">
                                         <Scale size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-docka-400" />
                                         <input
@@ -755,7 +755,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Nome da Ativo (Marca)</label>
+                                    <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1 text-left">Nome da Ativo (Marca)</label>
                                     <input
                                         className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                         placeholder="EX: NOME DA MARCA"
@@ -767,11 +767,11 @@ const AsteryskoProcessesView: React.FC = () => {
                         </div>
 
                         <div className="space-y-6">
-                            <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-docka-400 ml-1 text-left">Classificação e Titular</h4>
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-500 ml-1 text-left">Classificação e Titular</h4>
                             <div className="space-y-4 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm">
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
-                                        <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Classe NCL</label>
+                                        <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1 text-left">Classe NCL</label>
                                         <input
                                             className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-center text-docka-900 dark:text-zinc-100 shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                             placeholder="35"
@@ -780,17 +780,17 @@ const AsteryskoProcessesView: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Data Depósito</label>
+                                        <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1 text-left">Data Depósito</label>
                                         <input
                                             type="date"
-                                            className="w-full px-3 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-[10px] font-semibold text-docka-600 dark:text-zinc-100 outline-none shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+                                            className="w-full px-3 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-docka-600 dark:text-zinc-100 outline-none shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                             value={newProcessData.date}
                                             onChange={(e) => setNewProcessData({ ...newProcessData, date: e.target.value })}
                                         />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1 text-left">Titular (Cliente)</label>
+                                    <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1 text-left">Titular (Cliente)</label>
                                     <div className="relative">
                                         <div
                                             onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
@@ -828,7 +828,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                             className="px-4 py-2.5 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer transition-all group text-left flex flex-col"
                                                         >
                                                             <div className="text-sm font-bold text-docka-700 dark:text-zinc-300 group-hover:text-black dark:group-hover:text-white">{c.name}</div>
-                                                            <div className="text-[9px] font-black uppercase tracking-wider opacity-50">{c.company || 'Sem Empresa'}</div>
+                                                            <div className="text-xs font-semibold uppercase tracking-wider opacity-50">{c.company || 'Sem Empresa'}</div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -841,8 +841,8 @@ const AsteryskoProcessesView: React.FC = () => {
                     </div>
 
                     <div className="flex justify-end gap-3 items-center pt-4 border-t border-docka-100 dark:border-zinc-800 text-left">
-                        <button onClick={() => setIsNewProcessOpen(false)} className="px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-docka-400 hover:text-docka-900 transition-colors">Cancelar</button>
-                        <button onClick={handleCreateProcess} className="px-10 py-3 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold text-[10px] uppercase tracking-widest rounded-lg shadow-sm hover:bg-docka-800 transition-all">Sincronizar Ativo</button>
+                        <button onClick={() => setIsNewProcessOpen(false)} className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-docka-400 hover:text-docka-900 transition-colors">Cancelar</button>
+                        <button onClick={handleCreateProcess} className="px-10 py-3 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-semibold text-xs uppercase tracking-wider rounded-lg shadow-sm hover:bg-docka-800 transition-all">Sincronizar Ativo</button>
                     </div>
                 </div>
             </Modal>
@@ -859,14 +859,14 @@ const AsteryskoProcessesView: React.FC = () => {
                             <div className="absolute inset-x-0 top-0 z-50 p-6 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-b border-docka-100 dark:border-zinc-800 animate-in fade-in slide-in-from-top-4 duration-300 rounded-t-xl">
                                 <div className="max-w-2xl mx-auto space-y-6">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="text-[10px] font-bold uppercase tracking-widest text-blue-600 flex items-center gap-2">
+                                        <h3 className="text-xs font-semibold uppercase tracking-wider text-blue-600 flex items-center gap-2">
                                             <Activity size={14} /> Evoluir Processo / Lançar Despacho
                                         </h3>
-                                        <button onClick={() => setIsStatusEditOpen(false)} className="text-[10px] font-bold uppercase text-docka-300 hover:text-rose-500 transition-colors">Cancelar</button>
+                                        <button onClick={() => setIsStatusEditOpen(false)} className="text-xs font-semibold uppercase text-docka-300 hover:text-rose-500 transition-colors">Cancelar</button>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">Novo Status Geral</label>
+                                            <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">Novo Status Geral</label>
                                             <select 
                                                 value={newStatusData.status}
                                                 onChange={e => setNewStatusData({...newStatusData, status: e.target.value})}
@@ -883,7 +883,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">Título do Despacho (Ex: 3.1)</label>
+                                            <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">Título do Despacho (Ex: 3.1)</label>
                                             <input 
                                                 className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-docka-900 dark:text-zinc-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                                 placeholder="Publicação de Pedido"
@@ -898,7 +898,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                         value={newStatusData.details}
                                         onChange={e => setNewStatusData({...newStatusData, details: e.target.value})}
                                     />
-                                    <button onClick={handleUpdateStatus} className="w-full py-3.5 bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-sm hover:bg-blue-700 transition-all">Lançar Evolução</button>
+                                    <button onClick={handleUpdateStatus} className="w-full py-3.5 bg-blue-600 text-white text-xs font-semibold tracking-wider uppercase rounded-lg shadow-sm hover:bg-blue-700 transition-all">Lançar Evolução</button>
                                 </div>
                             </div>
                         )}
@@ -906,7 +906,7 @@ const AsteryskoProcessesView: React.FC = () => {
                         <div className="flex flex-col md:flex-row justify-between items-start gap-6 pb-8 border-b border-docka-50 dark:border-zinc-800 mb-6 shrink-0 pt-2">
                             <div className="flex gap-6">
                                 <div className="relative group shrink-0">
-                                    <div className="w-24 h-24 bg-white dark:bg-zinc-800 rounded-xl border border-docka-100 dark:border-zinc-700 shadow-sm flex items-center justify-center overflow-hidden p-2">
+                                    <div className="w-24 h-24 bg-white dark:bg-zinc-850 rounded-xl border border-docka-100 dark:border-zinc-750 shadow-sm flex items-center justify-center overflow-hidden p-2">
                                         {selectedProcess.logoUrl && !logoError ? (
                                             <img src={`${getBackendUrl()}${selectedProcess.logoUrl}`} alt="" className="w-full h-full object-contain" onError={() => setLogoError(true)} />
                                         ) : (
@@ -923,7 +923,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                 </div>
                                 <div className="space-y-2">
                                     <h2 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight">{selectedProcess.title}</h2>
-                                    <div className="flex flex-wrap items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-docka-400">
+                                    <div className="flex flex-wrap items-center gap-4 text-xs font-semibold uppercase tracking-wider text-docka-400">
                                         <span className="flex items-center gap-1.5"><Briefcase size={12} className="text-docka-200" /> {selectedProcess.client}</span>
                                         <span className="w-1 h-1 bg-docka-100 rounded-full" />
                                         <span className="flex items-center gap-1.5 px-2 py-0.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-docka-900 dark:text-zinc-100 border border-docka-100 dark:border-zinc-700"><Scale size={12} className="text-docka-300" /> {selectedProcess.displayId}</span>
@@ -933,7 +933,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                             <button 
                                                 key={plan}
                                                 onClick={() => handleUpdatePlan(plan)}
-                                                className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all border ${selectedProcess.planType === plan ? 'bg-docka-900 text-white border-docka-900 shadow-sm' : 'bg-white dark:bg-zinc-800 text-docka-400 border-docka-100 dark:border-zinc-700 hover:border-docka-300'}`}
+                                                className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all border ${selectedProcess.planType === plan ? 'bg-docka-900 text-white border-docka-900 shadow-sm' : 'bg-white dark:bg-zinc-800 text-docka-400 border-docka-100 dark:border-zinc-700 hover:border-docka-300'}`}
                                             >
                                                 {plan}
                                             </button>
@@ -944,14 +944,14 @@ const AsteryskoProcessesView: React.FC = () => {
                             
                             <div className="flex flex-col items-end gap-3 shrink-0">
                                 <div className="space-y-1 text-right">
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-docka-400">Ação Recomendada</span>
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/20 text-amber-600 dark:text-amber-400 rounded-lg shadow-sm text-[10px] font-bold uppercase tracking-widest">
+                                    <span className="text-xs font-semibold uppercase tracking-wider text-docka-400">Ação Recomendada</span>
+                                    <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/20 text-amber-600 dark:text-amber-400 rounded-lg shadow-sm text-xs font-semibold uppercase tracking-wider">
                                         <Clock size={14} /> {selectedProcess.nextStep}
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setIsStatusEditOpen(true)}
-                                    className="px-6 py-2 bg-white dark:bg-zinc-800 border border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
+                                    className="px-6 py-2 bg-white dark:bg-zinc-800 border border-blue-100 dark:border-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider rounded-lg hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm"
                                 >
                                     Evoluir Status
                                 </button>
@@ -963,7 +963,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
-                                    className={`pb-4 text-[10px] font-bold uppercase tracking-widest transition-all relative ${activeTab === tab ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-400 dark:text-zinc-500 hover:text-docka-600'}`}
+                                    className={`pb-4 text-xs font-semibold uppercase tracking-wider transition-all relative ${activeTab === tab ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-400 dark:text-zinc-500 hover:text-docka-600'}`}
                                 >
                                     {tab === 'timeline' ? 'Linha do Tempo' : tab === 'docs' ? 'Documentos' : 'Dossiê Técnico'}
                                     {activeTab === tab && (
@@ -977,30 +977,30 @@ const AsteryskoProcessesView: React.FC = () => {
                             {activeTab === 'timeline' && (
                                 <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-docka-200 dark:before:bg-zinc-800">
                                     {getTimelineEvents(selectedProcess).map((event: any, idx: number) => (
-                                        <div key={idx} className="relative animate-in fade-in slide-in-from-left-4" style={{ animationDelay: `${idx * 50}ms` }}>
-                                            {event.status === 'completed' ? (
-                                                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-emerald-600 text-white shadow-md flex items-center justify-center z-10">
-                                                    <CheckCircle2 size={9} strokeWidth={2.8} />
-                                                </div>
-                                            ) : event.status === 'current' ? (
-                                                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-600 text-white shadow-md flex items-center justify-center z-10">
-                                                    <div className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping pointer-events-none" />
-                                                    <Loader2 size={9} className="animate-spin absolute text-blue-200/40" />
-                                                    <Activity size={9} className="relative z-10 animate-pulse" />
-                                                </div>
-                                            ) : (
-                                                <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-docka-100 dark:bg-zinc-800 text-docka-400 dark:text-zinc-500 shadow-sm flex items-center justify-center z-10">
-                                                    <Clock size={9} strokeWidth={2} />
-                                                </div>
-                                            )}
-                                            <div className="flex-1 pl-2">
-                                                <div className="flex justify-between items-start">
-                                                    <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{event.title}</h5>
-                                                    <span className="text-[10px] font-bold text-docka-400 uppercase tracking-wider">{event.date}</span>
-                                                </div>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1.5 leading-relaxed">{event.desc}</p>
-                                            </div>
-                                        </div>
+                                         <div key={idx} className="relative animate-in fade-in slide-in-from-left-4" style={{ animationDelay: `${idx * 50}ms` }}>
+                                             {event.status === 'completed' ? (
+                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-emerald-600 text-white shadow-md flex items-center justify-center z-10">
+                                                     <CheckCircle2 size={9} strokeWidth={2.8} />
+                                                 </div>
+                                             ) : event.status === 'current' ? (
+                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-blue-600 text-white shadow-md flex items-center justify-center z-10">
+                                                     <div className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping pointer-events-none" />
+                                                     <Loader2 size={9} className="animate-spin absolute text-blue-200/40" />
+                                                     <Activity size={9} className="relative z-10 animate-pulse" />
+                                                 </div>
+                                             ) : (
+                                                 <div className="absolute -left-8 top-0 w-6 h-6 rounded-full border-4 border-white dark:border-zinc-900 bg-docka-100 dark:bg-zinc-800 text-docka-400 dark:text-zinc-500 shadow-sm flex items-center justify-center z-10">
+                                                     <Clock size={9} strokeWidth={2} />
+                                                 </div>
+                                             )}
+                                             <div className="flex-1 pl-2">
+                                                 <div className="flex justify-between items-start">
+                                                     <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{event.title}</h5>
+                                                     <span className="text-xs font-semibold text-docka-400 uppercase tracking-wider">{event.date}</span>
+                                                 </div>
+                                                 <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1.5 leading-relaxed">{event.desc}</p>
+                                             </div>
+                                         </div>
                                     ))}
                                 </div>
                             )}
@@ -1013,8 +1013,8 @@ const AsteryskoProcessesView: React.FC = () => {
                                                 <div className="flex items-center gap-3 mb-6">
                                                     <div className="w-12 h-12 bg-amber-500/10 text-amber-600 rounded-xl flex items-center justify-center border border-amber-500/20 shadow-sm"><CreditCard size={20} /></div>
                                                     <div>
-                                                        <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Guia INPI (GRU)</h4>
-                                                        <span className={`inline-flex items-center gap-1.5 mt-1 text-[9px] font-bold uppercase px-2.5 py-1 rounded-full border ${selectedProcess.gruStatus === 'PAID' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}`}>
+                                                        <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400 dark:text-zinc-500">Guia INPI (GRU)</h4>
+                                                        <span className={`inline-flex items-center gap-1.5 mt-1 text-xs font-semibold uppercase px-2.5 py-1 rounded-full border ${selectedProcess.gruStatus === 'PAID' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-amber-500/10 text-amber-600 border-amber-500/20'}`}>
                                                             {selectedProcess.gruStatus === 'PAID' ? 'Liquidada' : 'Aguardando'}
                                                         </span>
                                                     </div>
@@ -1028,7 +1028,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                             onChange={e => setGruBarcode(e.target.value)}
                                                             className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-mono font-semibold text-docka-800 dark:text-zinc-100 shadow-sm outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/20"
                                                         />
-                                                        <label className="flex items-center justify-center gap-2 w-full py-4 bg-amber-50/10 dark:bg-zinc-800/10 border-2 border-dashed border-amber-500/30 dark:border-zinc-700 rounded-xl text-[10px] font-bold uppercase tracking-wider text-amber-600 cursor-pointer hover:bg-amber-500/5 transition-all">
+                                                        <label className="flex items-center justify-center gap-2 w-full py-4 bg-amber-50/10 dark:bg-zinc-800/10 border-2 border-dashed border-amber-500/30 dark:border-zinc-700 rounded-xl text-xs font-semibold uppercase tracking-wider text-amber-600 cursor-pointer hover:bg-amber-500/5 transition-all">
                                                             <Upload size={14} /> Selecionar PDF
                                                             <input type="file" hidden accept=".pdf" onChange={(e) => handleGruUpload(e, selectedProcess.id)} />
                                                         </label>
@@ -1038,7 +1038,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                             {selectedProcess.gruUrl && (
                                                 <button 
                                                     onClick={() => { const token = localStorage.getItem('token'); window.open(`${getBackendUrl()}/api/asterysko/processes/${selectedProcess.id}/gru/download?token=${token}`, '_blank'); }} 
-                                                    className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-all shadow-sm"
+                                                    className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider rounded-lg border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-all shadow-sm"
                                                 >
                                                     Ver Guia Atual
                                                 </button>
@@ -1051,20 +1051,20 @@ const AsteryskoProcessesView: React.FC = () => {
                                             <div className="flex items-center gap-3 mb-6">
                                                 <div className="w-12 h-12 bg-blue-500/10 text-blue-600 rounded-xl flex items-center justify-center border border-blue-500/20 shadow-sm"><FileSignature size={20} /></div>
                                                 <div>
-                                                    <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 dark:text-zinc-500">Procuração</h4>
-                                                    <span className="text-[9px] font-bold uppercase text-docka-400">Representação INPI</span>
+                                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400 dark:text-zinc-500">Procuração</h4>
+                                                    <span className="text-xs font-semibold uppercase text-docka-400">Representação INPI</span>
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-2 gap-3">
-                                                <button onClick={() => handleGenerateProxy(selectedProcess)} className="py-3 bg-white dark:bg-zinc-800 rounded-lg border border-blue-200 dark:border-zinc-700 text-[9px] font-bold uppercase text-blue-600 hover:bg-blue-50/50 transition-all">Gerar Modelo</button>
-                                                <label className="py-3 bg-blue-600 rounded-lg text-[9px] font-bold uppercase text-white shadow-sm cursor-pointer flex items-center justify-center gap-2 hover:bg-blue-700 transition-all">
+                                                <button onClick={() => handleGenerateProxy(selectedProcess)} className="py-3 bg-white dark:bg-zinc-800 rounded-lg border border-blue-200 dark:border-zinc-700 text-xs font-semibold uppercase text-blue-600 hover:bg-blue-50/50 transition-all">Gerar Modelo</button>
+                                                <label className="py-3 bg-blue-600 rounded-lg text-xs font-semibold uppercase text-white shadow-sm cursor-pointer flex items-center justify-center gap-2 hover:bg-blue-700 transition-all">
                                                     <Upload size={12} /> Upload Final
                                                     <input type="file" hidden accept=".pdf" onChange={(e) => handleProxyFileUpload(e, selectedProcess.id)} />
                                                 </label>
                                             </div>
                                         </div>
                                         {selectedProcess.proxyUrl && (
-                                            <button onClick={() => handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title)} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider rounded-lg border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2 shadow-sm">
+                                            <button onClick={() => handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title)} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider rounded-lg border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2 shadow-sm">
                                                 <Download size={14} /> Baixar Cópia
                                             </button>
                                         )}
@@ -1076,11 +1076,11 @@ const AsteryskoProcessesView: React.FC = () => {
                                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-6">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 ml-1">Informações do Ativo</h4>
+                                            <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400 ml-1">Informações do Ativo</h4>
                                             <div className="space-y-4 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm">
                                                 {['brandName', 'nature', 'presentation'].map(field => (
                                                     <div key={field}>
-                                                        <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'brandName' ? 'Nome da Marca' : field === 'nature' ? 'Natureza' : 'Apresentação'}</label>
+                                                        <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">{field === 'brandName' ? 'Nome da Marca' : field === 'nature' ? 'Natureza' : 'Apresentação'}</label>
                                                         <input 
                                                             className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-docka-800 dark:text-zinc-100 shadow-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                                             value={infoForm[field] || ''}
@@ -1092,15 +1092,15 @@ const AsteryskoProcessesView: React.FC = () => {
                                         </div>
 
                                         <div className="space-y-6">
-                                            <h4 className="text-[10px] font-bold uppercase tracking-widest text-docka-400 ml-1">Prazos e Vigência</h4>
+                                            <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400 ml-1">Prazos e Vigência</h4>
                                             <div className="space-y-4 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 p-6 rounded-xl shadow-sm">
                                                 <div className="grid grid-cols-2 gap-4">
                                                     {['filingDate', 'concessionDate'].map(field => (
                                                         <div key={field}>
-                                                            <label className="block text-[9px] font-bold text-docka-400 uppercase tracking-widest mb-1.5 ml-1">{field === 'filingDate' ? 'Depósito' : 'Concessão'}</label>
+                                                            <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">{field === 'filingDate' ? 'Depósito' : 'Concessão'}</label>
                                                             <input 
                                                                 type="date"
-                                                                className="w-full px-3 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-[10px] font-semibold text-docka-600 dark:text-zinc-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+                                                                className="w-full px-3 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-semibold text-docka-600 dark:text-zinc-100 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                                                                 value={infoForm[field] || ''}
                                                                 onChange={e => field === 'concessionDate' ? handleConcessionDateChange(e.target.value) : setInfoForm({...infoForm, [field]: e.target.value})}
                                                             />
@@ -1108,7 +1108,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                                     ))}
                                                 </div>
                                                 <div className="p-4 bg-rose-500/5 dark:bg-rose-950/10 border border-rose-500/20 dark:border-rose-900/30 rounded-lg">
-                                                    <label className="block text-[9px] font-bold text-rose-500 uppercase tracking-widest mb-1.5 ml-1 flex items-center gap-1.5"><Clock size={10} /> Expiração do Decênio</label>
+                                                    <label className="block text-xs font-semibold text-rose-500 uppercase mb-1.5 ml-1 flex items-center gap-1.5"><Clock size={10} /> Expiração do Decênio</label>
                                                     <input 
                                                         type="date"
                                                         className="w-full bg-transparent border-none text-sm font-bold text-rose-600 dark:text-rose-400 outline-none"
@@ -1123,7 +1123,7 @@ const AsteryskoProcessesView: React.FC = () => {
                                         <button 
                                             onClick={handleSaveInfo}
                                             disabled={isSavingInfo}
-                                            className="px-12 py-3.5 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold text-[10px] uppercase tracking-widest rounded-lg shadow-sm hover:bg-docka-800 transition-all flex items-center gap-3"
+                                            className="px-12 py-3.5 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-semibold text-xs uppercase tracking-wider rounded-lg shadow-sm hover:bg-docka-800 transition-all flex items-center gap-3"
                                         >
                                             {isSavingInfo ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
                                             Atualizar Dossiê Técnico

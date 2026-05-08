@@ -358,7 +358,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     return (
                         <div className="bg-docka-50 dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-200 dark:border-zinc-700 mt-2 shadow-sm">
                             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-docka-200 dark:border-zinc-700">
-                                <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Dados do Formulário</span>
+                                <span className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 text-xs font-bold px-2 py-0.5 rounded uppercase">Dados do Formulário</span>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                 {Object.entries(parsed).map(([key, value]) => {
@@ -368,7 +368,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
                                     return (
                                         <div key={key} className="flex flex-col border-b border-docka-100 dark:border-zinc-700/50 pb-2 last:border-0 md:last:border-b md:last:pb-2">
-                                            <span className="text-[10px] font-bold text-docka-400 uppercase tracking-wider mb-1">{label}</span>
+                                            <span className="text-xs font-semibold text-docka-400 uppercase tracking-wider mb-1">{label}</span>
                                             <span className="text-sm font-medium text-docka-900 dark:text-zinc-100 whitespace-pre-wrap">{displayVal}</span>
                                         </div>
                                     );
@@ -532,31 +532,31 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
                         <div className="h-px bg-docka-200 dark:bg-zinc-700 w-full mb-4" />
 
-                        <label className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase tracking-wider mb-2 block">
+                        <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase tracking-wider mb-2 block">
                             Próximos Passos
                         </label>
 
                         {formData.status === 'leads' && (
-                            <button onClick={() => moveStatus('viability')} className="w-full px-4 py-2.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
-                                Iniciar Viabilidade <ArrowRight size={16} />
+                            <button onClick={() => moveStatus('viability')} className="w-full px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
+                                Iniciar Viabilidade <ArrowRight size={14} />
                             </button>
                         )}
                         {formData.status === 'viability' && (
                             <button
                                 onClick={handleGenerateContract}
                                 disabled={loading}
-                                className={`w-full px-4 py-2.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full px-4 py-2.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
-                                {loading ? 'Gerando...' : 'Gerar e Enviar Contrato'} <ArrowRight size={16} />
+                                {loading ? 'Gerando...' : 'Gerar e Enviar Contrato'} <ArrowRight size={14} />
                             </button>
                         )}
                         {formData.status === 'contract' && (
                             <div className="space-y-3">
                                 <button
                                     disabled
-                                    className="w-full px-4 py-2.5 text-sm font-bold text-docka-400 bg-docka-100 dark:text-zinc-500 dark:bg-zinc-800 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-not-allowed"
-                                >
-                                    <Clock size={16} />
+                                    className="w-full px-4 py-2.5 text-xs font-bold text-docka-400 bg-docka-100 dark:text-zinc-500 dark:bg-zinc-800 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                                Clone>
+                                    <Clock size={14} />
                                     Aguardando Assinatura...
                                 </button>
 
@@ -574,30 +574,30 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 <button
                                     onClick={handleConvert}
                                     disabled={loading}
-                                    className={`w-full px-4 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`w-full px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                    <User size={16} />
+                                    <User size={14} />
                                     {loading ? 'Criando...' : 'Criar Conta do Cliente'}
                                 </button>
                                 <button
                                     onClick={() => moveStatus('payment')}
-                                    className="w-full px-4 py-2.5 text-sm font-bold text-docka-700 bg-rose-100 hover:bg-rose-200 dark:text-rose-300 dark:bg-rose-900/50 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
+                                    className="w-full px-4 py-2.5 text-xs font-bold text-docka-700 bg-rose-100 hover:bg-rose-200 dark:text-rose-300 dark:bg-rose-900/50 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
                                 >
-                                    Enviar para Pagamento <ArrowRight size={16} />
+                                    Enviar para Pagamento <ArrowRight size={14} />
                                 </button>
                             </div>
                         )}
                         {formData.status === 'payment' && (
                             <button
                                 onClick={() => moveStatus('protocol')}
-                                className="w-full px-4 py-2.5 text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
+                                className="w-full px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
                             >
-                                Pagamento Confirmado → Protocolar <ArrowRight size={16} />
+                                Pagamento Confirmado → Protocolar <ArrowRight size={14} />
                             </button>
                         )}
                         {formData.status === 'protocol' && (
-                            <button onClick={() => moveStatus('won')} className="w-full px-4 py-2.5 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
-                                <CheckCircle size={16} /> Marcar como Fechado
+                            <button onClick={() => moveStatus('won')} className="w-full px-4 py-2.5 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
+                                <CheckCircle size={14} /> Marcar como Fechado
                             </button>
                         )}
                         {formData.status === 'won' && (
@@ -608,16 +608,16 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     </div>
 
                     {/* COMMISSION AREA - NEW */}
-                    <div className="bg-docka-900 dark:bg-zinc-100 p-5 rounded-xl border border-docka-800 dark:border-zinc-200 shadow-sm space-y-4">
-                        <label className="text-xs font-bold text-docka-300 dark:text-zinc-500 uppercase tracking-wider flex items-center gap-1.5">
-                            <DollarSign size={14} className="text-green-400" /> Configuração de Vendas
+                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-4">
+                        <label className="text-xs font-semibold text-docka-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
+                            <DollarSign size={14} className="text-emerald-500" /> Configuração de Vendas
                         </label>
 
                         <div className="space-y-3">
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Responsável (Vendas)</label>
+                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Responsável (Vendas)</label>
                                 <select
-                                    className={`w-full text-sm bg-docka-800 dark:bg-zinc-200 border border-docka-700 dark:border-zinc-300 rounded-xl px-3 py-2 outline-none transition-all text-white dark:text-zinc-900 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'focus:ring-2 focus:ring-green-500'}`}
+                                    className={`w-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl px-3 py-2 outline-none transition-all text-docka-900 dark:text-zinc-100 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'focus:ring-2 focus:ring-blue-500'}`}
                                     value={formData.assignedUserId || ''}
                                     onChange={e => handleAutoSave('assignedUserId', e.target.value)}
                                     disabled={!isAdmin}
@@ -632,7 +632,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
 
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-bold mb-1 block">Tipo de Plano</label>
+                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Tipo de Plano</label>
                                 <div className="grid grid-cols-3 gap-2">
                                     {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
                                         <button
@@ -657,9 +657,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                                     updateDealPartial('planId', foundPlan.id);
                                                 }
                                             }}
-                                            className={`py-2 text-[10px] font-bold rounded-xl border transition-all ${formData.planType === plan
-                                                ? 'bg-green-500 border-green-400 text-white shadow-sm scale-105'
-                                                : 'bg-docka-800 dark:bg-zinc-200 border-docka-700 dark:border-zinc-300 text-docka-400 dark:text-zinc-500'
+                                            className={`py-2 text-xs font-semibold rounded-xl border transition-all ${formData.planType === plan
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-sm scale-105'
+                                                : 'bg-white dark:bg-zinc-800 border-docka-200 dark:border-zinc-700 text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-700'
                                                 }`}
                                         >
                                             {plan}
@@ -670,16 +670,16 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
                             {/* COMMISSIONS DISPLAY */}
                             {formData.planType && (
-                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-docka-800 dark:border-zinc-300">
+                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-docka-100 dark:border-zinc-800">
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] text-docka-400 dark:text-zinc-500 uppercase font-bold">Comissão Vendas</span>
-                                        <span className="text-xs font-bold text-green-400 dark:text-green-600">
+                                        <span className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase">Comissão Vendas</span>
+                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                                             R$ {plans.find(p => p.name.toUpperCase().includes(formData.planType))?.commissionSales?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                                         </span>
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-[9px] text-docka-400 dark:text-zinc-500 uppercase font-bold">Comissão Ops</span>
-                                        <span className="text-xs font-bold text-blue-400 dark:text-blue-600">
+                                        <span className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase">Comissão Ops</span>
+                                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                                             R$ {plans.find(p => p.name.toUpperCase().includes(formData.planType))?.commissionOps?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
                                         </span>
                                     </div>
@@ -689,15 +689,15 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     </div>
 
                     {/* CONTACT INFO */}
-                    <div className="space-y-4 bg-white dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-200 dark:border-zinc-700">
-                        <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <div className="space-y-4 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                        <label className="text-xs font-semibold text-docka-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
                             <User size={14} className="text-blue-500" /> Dados do Contrato (Principal)
                         </label>
                         <div className="space-y-4">
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Nome do Contato / Decisor</label>
+                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Nome do Contato / Decisor</label>
                                 <input
-                                    className="w-full text-sm bg-indigo-50/30 dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-all placeholder:text-docka-300"
+                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
                                     placeholder="Nome completo"
                                     value={formData.subtitle || ''}
                                     onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
@@ -706,9 +706,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                             <div className="grid grid-cols-1 gap-4">
                                 <div className="group">
-                                    <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">E-mail</label>
+                                    <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">E-mail</label>
                                     <input
-                                        className="w-full text-sm bg-indigo-50/30 dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-all placeholder:text-docka-300"
+                                        className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
                                         placeholder="email@empresa.com"
                                         value={formData.contactEmail || ''}
                                         onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
@@ -716,9 +716,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     />
                                 </div>
                                 <div className="group">
-                                    <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Telefone / WhatsApp</label>
+                                    <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Telefone / WhatsApp</label>
                                     <input
-                                        className="w-full text-sm bg-indigo-50/30 dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 transition-all placeholder:text-docka-300"
+                                        className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
                                         placeholder="(00) 00000-0000"
                                         value={formData.contactPhone || ''}
                                         onChange={e => setFormData({ ...formData, contactPhone: maskPhone(e.target.value) })}
@@ -733,13 +733,13 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     {/* VALUE SECTION */}
                     <div className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <label className="text-xs font-semibold text-docka-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
                                 <DollarSign size={14} /> Valor Estimado
                             </label>
                             <div className="relative group">
                                 <span className="absolute left-0 top-1.5 text-sm text-docka-400">R$</span>
                                 <input
-                                    className={`w-full text-lg font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-b border-docka-200 dark:border-zinc-700 py-1 outline-none transition-colors placeholder:text-docka-300 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'hover:border-green-500 focus:border-green-600'}`}
+                                    className={`w-full text-lg font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-b border-docka-200 dark:border-zinc-700 py-1 outline-none transition-colors placeholder:text-docka-300 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'hover:border-blue-500 focus:border-blue-600'}`}
                                     value={formData.value || ''}
                                     onChange={e => setFormData({ ...formData, value: maskCurrency(e.target.value) })}
                                     onBlur={e => handleBlur('value', e.target.value)}
@@ -751,15 +751,15 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     </div>
 
                     {/* COMPANY INFO (FOR PROCURACAO) */}
-                    <div className="space-y-4 bg-indigo-50/20 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-900/30">
-                        <label className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <div className="space-y-4 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
+                        <label className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
                             <Tag size={14} /> Dados para Procuração (Empresa)
                         </label>
                         <div className="space-y-4">
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Razão Social</label>
+                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Razão Social</label>
                                 <input
-                                    className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-all placeholder:text-docka-300"
+                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
                                     placeholder="Razão Social completa"
                                     value={formData.razaoSocial || ''}
                                     onChange={e => setFormData({ ...formData, razaoSocial: e.target.value })}
@@ -767,9 +767,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 />
                             </div>
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">CNPJ / CPF</label>
+                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">CNPJ / CPF</label>
                                 <input
-                                    className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-all placeholder:text-docka-300"
+                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
                                     placeholder="00.000.000/0001-00"
                                     value={formData.cnpj || ''}
                                     onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
@@ -777,9 +777,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 />
                             </div>
                             <div className="group">
-                                <label className="text-[10px] text-docka-400 uppercase font-bold mb-1 block">Endereço Completo</label>
+                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Endereço Completo</label>
                                 <textarea
-                                    className="w-full text-sm bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-indigo-500 transition-all placeholder:text-docka-300 min-h-[60px] resize-none"
+                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300 min-h-[60px] resize-none"
                                     placeholder="Rua, Número, Bairro, Cidade/UF - CEP"
                                     value={formData.address || ''}
                                     onChange={e => setFormData({ ...formData, address: e.target.value })}

@@ -198,7 +198,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                     >
                                         <Upload size={24} className="text-docka-400 dark:text-zinc-500 mb-2" />
                                         <p className="text-sm font-bold text-docka-700 dark:text-zinc-300">Clique para selecionar o XML</p>
-                                        <p className="text-[10px] text-docka-500 dark:text-zinc-500 mt-1 text-center">Tamanho máx recomendado: 100MB<br />O processamento rodará em segundo plano.</p>
+                                        <p className="text-xs text-docka-500 dark:text-zinc-500 mt-1 text-center">Tamanho máx recomendado: 100MB<br />O processamento rodará em segundo plano.</p>
                                     </div>
                                     <input
                                         id="rpi-upload"
@@ -239,11 +239,11 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                     <p className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Acesso API Automática (Futuro)</p>
                                     <div className="space-y-4 opacity-50 pointer-events-none">
                                         <div>
-                                            <label className="block text-[10px] uppercase font-bold text-docka-500 mb-1">Login e-INPI</label>
+                                            <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Login e-INPI</label>
                                             <input className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="asterysko_pi" disabled />
                                         </div>
                                         <div>
-                                            <label className="block text-[10px] uppercase font-bold text-docka-500 mb-1">Senha</label>
+                                            <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Senha</label>
                                             <input type="password" className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="********" disabled />
                                         </div>
                                     </div>
@@ -270,18 +270,18 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                                 <div className="flex flex-col">
                                                     <span className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                                         RPI {log.rpiNumber}
-                                                        {log.status === 'PROCESSING' && <span className="text-[10px] px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
-                                                        {log.status === 'COMPLETED' && <span className="text-[10px] px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
-                                                        {log.status === 'FAILED' && <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold">Falhou</span>}
+                                                        {log.status === 'PROCESSING' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
+                                                        {log.status === 'COMPLETED' && <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
+                                                        {log.status === 'FAILED' && <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold">Falhou</span>}
                                                     </span>
-                                                    <span className="text-[10px] text-docka-500 uppercase mt-1">Data da Edição: {new Date(log.rpiDate).toLocaleDateString('pt-BR')} • {log.fileName}</span>
+                                                    <span className="text-xs text-docka-500 uppercase mt-1">Data da Edição: {new Date(log.rpiDate).toLocaleDateString('pt-BR')} • {log.fileName}</span>
                                                     {log.status === 'FAILED' && log.errorMessage && (
-                                                        <span className="text-[10px] text-red-600 dark:text-red-400 mt-1 font-bold">{log.errorMessage}</span>
+                                                        <span className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold">{log.errorMessage}</span>
                                                     )}
                                                 </div>
                                                 <div className="text-right flex flex-col items-end">
                                                     <span className="font-mono font-bold text-docka-700 dark:text-zinc-300">{log.totalExtracted.toLocaleString('pt-BR')}</span>
-                                                    <span className="text-[10px] text-docka-400 uppercase">Marcas extraídas</span>
+                                                    <span className="text-xs text-docka-400 uppercase">Marcas extraídas</span>
                                                 </div>
                                             </div>
                                         ))
@@ -300,7 +300,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             </h3>
                                 <button
                                     onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0 }); setIsModalOpen(true); }}
-                                    className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-[10px] font-bold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
+                                    className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
                                 >
                                 <Plus size={14} /> Novo Plano
                             </button>
@@ -311,7 +311,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             ) : (
                                 <>
                                     <table className="w-full text-sm text-left">
-                                        <thead className="text-[10px] text-docka-500 dark:text-zinc-500 uppercase font-bold border-b border-docka-100 dark:border-zinc-800 tracking-widest">
+                                        <thead className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-semibold border-b border-docka-100 dark:border-zinc-800 tracking-wider">
                                             <tr>
                                                 <th className="pb-3 text-left">Plano / Serviço</th>
                                                 <th className="pb-3 text-right">Valor</th>
@@ -325,7 +325,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                                 <tr key={plan.id} className="group hover:bg-docka-50/50 dark:hover:bg-zinc-800/30">
                                                     <td className="py-3">
                                                         <p className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{plan.name}</p>
-                                                        {plan.description && <p className="text-[10px] text-docka-500 dark:text-zinc-500">{plan.description}</p>}
+                                                        {plan.description && <p className="text-xs text-docka-500 dark:text-zinc-500">{plan.description}</p>}
                                                     </td>
                                                     <td className="py-3 text-right font-mono font-bold text-docka-900 dark:text-zinc-100">
                                                         R$ {Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -365,7 +365,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             )}
                             <div className="mt-6 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 flex gap-3">
                                 <Info size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                                <p className="text-[10px] text-blue-800/80 dark:text-blue-300/60 leading-relaxed italic">
+                                <p className="text-xs text-blue-800/80 dark:text-blue-300/60 leading-relaxed italic">
                                     Estes valores servem de base para o CRM. Você ainda poderá ajustar o valor individual de cada lead durante o fechamento.
                                 </p>
                             </div>
@@ -378,7 +378,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                                 <Users size={16} /> Portal do Cliente
                             </h3>
-                            <span className="text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">ATIVO</span>
+                            <span className="text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">ATIVO</span>
                         </div>
                         <div className="p-6 space-y-6">
                             <div className="flex items-center gap-4">
@@ -433,17 +433,17 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                             <div className="mt-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200 dark:border-zinc-700/50">
                                                 <h5 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2 flex items-center gap-2">
                                                     Configuração de Zona DNS
-                                                    <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[9px] px-1.5 py-0.5 rounded font-bold">Pendente</span>
+                                                    <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-semibold">Pendente</span>
                                                 </h5>
-                                                <p className="text-[10px] text-slate-500 dark:text-zinc-500 mb-4">Adicione o registro abaixo no seu provedor de domínio (Cloudflare, Hostinger, Registro.br, etc) para ativar o redirecionamento. A propagação pode levar alguns minutos.</p>
+                                                <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">Adicione o registro abaixo no seu provedor de domínio (Cloudflare, Hostinger, Registro.br, etc) para ativar o redirecionamento. A propagação pode levar alguns minutos.</p>
 
                                                 <div className="grid grid-cols-3 gap-2">
                                                     <div>
-                                                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 mb-1">Tipo</span>
+                                                        <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1">Tipo</span>
                                                         <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100">CNAME</div>
                                                     </div>
                                                     <div>
-                                                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
+                                                        <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
                                                             Nome / Host
                                                         </span>
                                                         <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate" title={clientPortalDomain}>
@@ -451,7 +451,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                                         </div>
                                                     </div>
                                                     <div>
-                                                        <span className="block text-[10px] uppercase font-bold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
+                                                        <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
                                                             Valor / Destino
                                                         </span>
                                                         <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate">
@@ -540,7 +540,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 <div className="space-y-5">
                     <div className="grid grid-cols-1 gap-4 text-left">
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Nome do Plano / Serviço</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Nome do Plano / Serviço</label>
                             <input
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
                                 placeholder="Ex: Essencial - Registro de Marca"
@@ -549,7 +549,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             />
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Descrição (Opcional)</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Descrição (Opcional)</label>
                             <textarea
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
                                 placeholder="Breve descrição do que está incluso..."
@@ -560,7 +560,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Valor do Plano (R$)</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Valor do Plano (R$)</label>
                                 <div className="relative">
                                     <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
@@ -573,7 +573,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Taxa Oficial (R$)</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Taxa Oficial (R$)</label>
                                 <div className="relative">
                                     <AlertCircle size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                     <input
@@ -589,7 +589,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5 font-mono">Comissão Comercial (R$)</label>
+                                <label className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5 font-mono">Comissão Comercial (R$)</label>
                                 <div className="relative">
                                     <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-300" />
                                     <input
@@ -602,7 +602,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5 font-mono">Comissão Operação (R$)</label>
+                                <label className="block text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest mb-1.5 font-mono">Comissão Operação (R$)</label>
                                 <div className="relative">
                                     <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300" />
                                     <input
@@ -616,7 +616,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                             </div>
                         </div>
                         <div>
-                            <label className="block text-[10px] font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Categoria</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Categoria</label>
                             <select
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
                                 value={selectedPlan?.category || 'registration'}
