@@ -229,6 +229,12 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 description: 'Enviado quando o pagamento de uma fatura é confirmado.'
             },
             {
+                slug: 'contract-pending',
+                name: 'Contrato Pendente (Assinatura)',
+                variables: ['cliente', 'marca', 'link'],
+                description: 'Enviado quando o contrato é gerado e aguarda assinatura.'
+            },
+            {
                 slug: 'contract-signed',
                 name: 'Contrato Assinado',
                 variables: ['cliente', 'marca'],
