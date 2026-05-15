@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Save, Check, X } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -169,10 +169,159 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         }
     };
 
+    const WhatsAppTemplatesSection = () => {
+        const [templates, setTemplates] = useState<any[]>([]);
+        const [loading, setLoading] = useState(true);
+        const [editingSlug, setEditingSlug] = useState<string | null>(null);
+        const [editContent, setEditContent] = useState('');
+        const [saving, setSaving] = useState(false);
+
+        const fetchTemplates = async () => {
+            try {
+                setLoading(true);
+                const res = await api.get('/whatsapp/templates');
+                setTemplates(res.data);
+            } catch (err) {
+                console.error('Erro ao buscar templates:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        useEffect(() => {
+            fetchTemplates();
+        }, []);
+
+        const handleSaveTemplate = async (slug: string) => {
+            setSaving(true);
+            try {
+                await api.put(`/whatsapp/templates/${slug}`, { 
+                    content: editContent,
+                    name: DEFAULT_TEMPLATES.find(t => t.slug === slug)?.name
+                });
+                addToast({ type: 'success', title: 'Salvo', message: 'Template atualizado com sucesso.' });
+                setEditingSlug(null);
+                fetchTemplates();
+            } catch (err) {
+                addToast({ type: 'error', title: 'Erro', message: 'Falha ao salvar template.' });
+            } finally {
+                setSaving(false);
+            }
+        };
+
+        const DEFAULT_TEMPLATES = [
+            {
+                slug: 'new-dispatch',
+                name: 'Novo Despacho (INPI)',
+                variables: ['cliente', 'marca', 'processo', 'despacho', 'detalhes'],
+                description: 'Enviado quando uma nova movimentação é detectada no INPI.'
+            },
+            {
+                slug: 'invoice-pending',
+                name: 'Fatura Pendente',
+                variables: ['cliente', 'valor', 'vencimento', 'link'],
+                description: 'Enviado quando uma nova fatura de serviço é gerada.'
+            },
+            {
+                slug: 'contract-signed',
+                name: 'Contrato Assinado',
+                variables: ['cliente', 'marca'],
+                description: 'Enviado como confirmação após a assinatura do contrato.'
+            }
+        ];
+
+        return (
+            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-8">
+                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30">
+                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                        <MessageSquare size={16} className="text-emerald-500" /> Configuração de Mensagens Automáticas (WhatsApp)
+                    </h3>
+                </div>
+                <div className="p-6">
+                    <div className="space-y-6">
+                        {DEFAULT_TEMPLATES.map((tpl) => {
+                            const dbTpl = templates.find(t => t.slug === tpl.slug);
+                            const isEditing = editingSlug === tpl.slug;
+
+                            return (
+                                <div key={tpl.slug} className="p-4 border border-docka-100 dark:border-zinc-800 rounded-xl hover:border-docka-200 dark:hover:border-zinc-700 transition-colors">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{tpl.name}</h4>
+                                            <p className="text-xs text-docka-500 mt-1">{tpl.description}</p>
+                                        </div>
+                                        {!isEditing ? (
+                                            <button 
+                                                onClick={() => {
+                                                    setEditingSlug(tpl.slug);
+                                                    setEditContent(dbTpl?.content || '');
+                                                }}
+                                                className="p-2 text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 transition-colors"
+                                            >
+                                                <Edit2 size={14} />
+                                            </button>
+                                        ) : (
+                                            <div className="flex gap-2">
+                                                <button 
+                                                    onClick={() => setEditingSlug(null)}
+                                                    className="p-2 text-docka-400 hover:text-red-500 transition-colors"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleSaveTemplate(tpl.slug)}
+                                                    disabled={saving}
+                                                    className="p-2 text-emerald-600 hover:text-emerald-700 transition-colors disabled:opacity-50"
+                                                >
+                                                    {saving ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isEditing ? (
+                                        <div className="space-y-3">
+                                            <textarea
+                                                value={editContent}
+                                                onChange={(e) => setEditContent(e.target.value)}
+                                                rows={4}
+                                                className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                                placeholder="Escreva sua mensagem aqui..."
+                                            />
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {tpl.variables.map(v => (
+                                                    <button 
+                                                        key={v}
+                                                        onClick={() => setEditContent(prev => prev + `{{${v}}}`)}
+                                                        className="px-2 py-1 bg-docka-50 dark:bg-zinc-800 text-[10px] font-bold text-docka-600 dark:text-zinc-400 rounded hover:bg-docka-100 transition-colors"
+                                                    >
+                                                        + {`{{${v}}}`}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-docka-100 dark:border-zinc-800/50">
+                                            <p className="text-xs text-docka-700 dark:text-zinc-300 whitespace-pre-wrap italic">
+                                                {dbTpl?.content || 'Template ainda não configurado.'}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const WhatsAppCard = () => {
         const [status, setStatus] = useState<'connected' | 'disconnected' | 'loading'>('loading');
         const [qrCode, setQrCode] = useState<string | null>(null);
         const [checking, setChecking] = useState(false);
+        const [testNumber, setTestNumber] = useState('');
+        const [sendingTest, setSendingTest] = useState(false);
 
         const checkStatus = async () => {
             setChecking(true);
@@ -235,6 +384,23 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             }
         };
 
+        const handleSendTest = async () => {
+            if (!testNumber) {
+                addToast({ type: 'error', title: 'Número vazio', message: 'Digite um número de telefone com DDD (ex: 5511999999999).' });
+                return;
+            }
+            setSendingTest(true);
+            try {
+                await api.post('/whatsapp/send-test', { number: testNumber });
+                addToast({ type: 'success', title: 'Mensagem Enviada', message: 'Verifique seu WhatsApp!' });
+            } catch (err: any) {
+                console.error('Erro ao enviar teste WhatsApp:', err);
+                addToast({ type: 'error', title: 'Erro ao Enviar', message: err.response?.data?.error || 'Falha ao enviar mensagem de teste.' });
+            } finally {
+                setSendingTest(false);
+            }
+        };
+
         useEffect(() => {
             checkStatus();
         }, []);
@@ -267,23 +433,47 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 </div>
                 <div className="p-6">
                     {status === 'connected' ? (
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
-                                    <Smartphone size={24} />
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
+                                        <Smartphone size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">WhatsApp Vinculado</p>
+                                        <p className="text-xs text-docka-500">Seu número está pronto para enviar notificações automáticas.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">WhatsApp Vinculado</p>
-                                    <p className="text-xs text-docka-500">Seu número está pronto para enviar notificações automáticas.</p>
-                                </div>
+                                <button
+                                    onClick={handleDisconnect}
+                                    disabled={checking}
+                                    className="px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900/30 transition-colors flex items-center gap-2"
+                                >
+                                    <Power size={14} /> Desconectar
+                                </button>
                             </div>
-                            <button
-                                onClick={handleDisconnect}
-                                disabled={checking}
-                                className="px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900/30 transition-colors flex items-center gap-2"
-                            >
-                                <Power size={14} /> Desconectar
-                            </button>
+
+                            <div className="pt-6 border-t border-docka-100 dark:border-zinc-800">
+                                <h4 className="text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-3">Teste de Envio</h4>
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Número (Ex: 5511999999999)"
+                                        value={testNumber}
+                                        onChange={(e) => setTestNumber(e.target.value)}
+                                        className="flex-1 px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                                    />
+                                    <button
+                                        onClick={handleSendTest}
+                                        disabled={sendingTest || !testNumber}
+                                        className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {sendingTest ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
+                                        Enviar Teste
+                                    </button>
+                                </div>
+                                <p className="text-[10px] text-docka-400 mt-2 italic">Dica: Use o código do país (55) + DDD + Número.</p>
+                            </div>
                         </div>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-4">
@@ -343,6 +533,9 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                     
                     {/* WhatsApp Connection Section */}
                     <WhatsAppCard />
+
+                    {/* WhatsApp Templates Section */}
+                    <WhatsAppTemplatesSection />
 
                     {/* INPI Integration & RPI Upload */}
                     <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
