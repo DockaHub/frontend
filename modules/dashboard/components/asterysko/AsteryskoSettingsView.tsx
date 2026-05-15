@@ -202,8 +202,10 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 } else if (res.data.instance?.state === 'open') {
                     setStatus('connected');
                 }
-            } catch (err) {
-                addToast({ type: 'error', title: 'Erro', message: 'Falha ao gerar QR Code. Verifique se a API está online.' });
+            } catch (err: any) {
+                console.error('Erro ao conectar WhatsApp:', err);
+                const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Falha ao gerar QR Code. Verifique se a API está online.';
+                addToast({ type: 'error', title: 'Erro de Conexão', message: errorMsg });
             } finally {
                 setChecking(false);
             }
@@ -217,8 +219,10 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 setStatus('disconnected');
                 setQrCode(null);
                 addToast({ type: 'success', title: 'Desconectado', message: 'WhatsApp desconectado com sucesso.' });
-            } catch (err) {
-                addToast({ type: 'error', title: 'Erro', message: 'Falha ao desconectar.' });
+            } catch (err: any) {
+                console.error('Erro ao desconectar WhatsApp:', err);
+                const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Falha ao desconectar.';
+                addToast({ type: 'error', title: 'Erro', message: errorMsg });
             } finally {
                 setChecking(false);
             }
