@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -169,12 +169,169 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         }
     };
 
+    const WhatsAppCard = () => {
+        const [status, setStatus] = useState<'connected' | 'disconnected' | 'loading'>('loading');
+        const [qrCode, setQrCode] = useState<string | null>(null);
+        const [checking, setChecking] = useState(false);
+
+        const checkStatus = async () => {
+            setChecking(true);
+            try {
+                const res = await api.get('/whatsapp/status');
+                if (res.data.instance?.state === 'open' || res.data.state === 'open') {
+                    setStatus('connected');
+                    setQrCode(null);
+                } else {
+                    setStatus('disconnected');
+                }
+            } catch (err) {
+                setStatus('disconnected');
+            } finally {
+                setChecking(false);
+            }
+        };
+
+        const handleConnect = async () => {
+            setChecking(true);
+            try {
+                const res = await api.get('/whatsapp/connect');
+                if (res.data.code) {
+                    // Evolution API v2 returns the base64 or code
+                    setQrCode(res.data.code);
+                    setStatus('disconnected');
+                } else if (res.data.instance?.state === 'open') {
+                    setStatus('connected');
+                }
+            } catch (err) {
+                addToast({ type: 'error', title: 'Erro', message: 'Falha ao gerar QR Code. Verifique se a API está online.' });
+            } finally {
+                setChecking(false);
+            }
+        };
+
+        const handleDisconnect = async () => {
+            if (!window.confirm('Tem certeza que deseja desconectar o WhatsApp?')) return;
+            setChecking(true);
+            try {
+                await api.delete('/whatsapp/disconnect');
+                setStatus('disconnected');
+                setQrCode(null);
+                addToast({ type: 'success', title: 'Desconectado', message: 'WhatsApp desconectado com sucesso.' });
+            } catch (err) {
+                addToast({ type: 'error', title: 'Erro', message: 'Falha ao desconectar.' });
+            } finally {
+                setChecking(false);
+            }
+        };
+
+        useEffect(() => {
+            checkStatus();
+        }, []);
+
+        return (
+            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
+                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                        <MessageSquare size={16} className="text-emerald-500" /> Conexão WhatsApp (Evolution API)
+                    </h3>
+                    <div className="flex items-center gap-2">
+                        {status === 'connected' ? (
+                            <span className="text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" /> CONECTADO
+                            </span>
+                        ) : (
+                            <span className="text-[10px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 px-2 py-0.5 rounded border border-zinc-200 dark:border-zinc-700">
+                                DESCONECTADO
+                            </span>
+                        )}
+                        <button 
+                            onClick={checkStatus} 
+                            disabled={checking}
+                            className="p-1.5 text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 transition-colors disabled:opacity-50"
+                            title="Atualizar Status"
+                        >
+                            <RefreshCw size={14} className={checking ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+                </div>
+                <div className="p-6">
+                    {status === 'connected' ? (
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
+                                    <Smartphone size={24} />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">WhatsApp Vinculado</p>
+                                    <p className="text-xs text-docka-500">Seu número está pronto para enviar notificações automáticas.</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={handleDisconnect}
+                                disabled={checking}
+                                className="px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900/30 transition-colors flex items-center gap-2"
+                            >
+                                <Power size={14} /> Desconectar
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-4">
+                            {!qrCode ? (
+                                <div className="text-center max-w-sm">
+                                    <div className="w-16 h-16 rounded-2xl bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center text-zinc-400 mx-auto mb-4">
+                                        <QrCode size={32} />
+                                    </div>
+                                    <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-1">WhatsApp Desconectado</h4>
+                                    <p className="text-xs text-docka-500 mb-6">Conecte seu número para que o Asterysko possa enviar atualizações de processos aos seus clientes via WhatsApp.</p>
+                                    <button
+                                        onClick={handleConnect}
+                                        disabled={checking}
+                                        className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                    >
+                                        {checking ? <RefreshCw size={16} className="animate-spin" /> : <QrCode size={16} />}
+                                        Gerar QR Code para Conectar
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center animate-in zoom-in-95 duration-300">
+                                    <div className="p-4 bg-white rounded-2xl shadow-xl border border-zinc-100 mb-6">
+                                        {/* QR Code image from Evolution API */}
+                                        <img src={qrCode} alt="WhatsApp QR Code" className="w-48 h-48" />
+                                    </div>
+                                    <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-1">Escaneie o código acima</p>
+                                    <p className="text-xs text-docka-500 mb-6 text-center">Abra o WhatsApp {'>'} Aparelhos Conectados {'>'} Conectar um Aparelho.</p>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setQrCode(null)}
+                                            className="px-4 py-2 text-xs font-bold text-docka-500 hover:text-docka-900 transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={checkStatus}
+                                            className="px-6 py-2 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl text-xs font-bold hover:bg-zinc-800 transition-colors"
+                                        >
+                                            Já escaneei
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
     return (
         <DashboardPage title="Configurações Asterysko" icon={Shield}>
             <div className="animate-in fade-in duration-500 max-w-4xl mx-auto pb-20">
                 <p className="text-docka-500 dark:text-zinc-400 text-sm mb-10 -mt-2">Preferências do escritório, tabela de planos e portal do cliente.</p>
 
                 <div className="space-y-8">
+                    
+                    {/* WhatsApp Connection Section */}
+                    <WhatsAppCard />
 
                     {/* INPI Integration & RPI Upload */}
                     <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
