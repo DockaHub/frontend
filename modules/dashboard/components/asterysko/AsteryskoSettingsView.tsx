@@ -195,8 +195,15 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             setChecking(true);
             try {
                 const res = await api.get('/whatsapp/connect');
-                if (res.data.code) {
-                    // Evolution API v2 returns the base64 or code
+                // Evolution API v2 usually returns base64 image and the raw code
+                if (res.data.base64) {
+                    setQrCode(res.data.base64.startsWith('data:image') ? res.data.base64 : `data:image/png;base64,${res.data.base64}`);
+                    setStatus('disconnected');
+                } else if (res.data.qrcode?.base64) {
+                    setQrCode(res.data.qrcode.base64.startsWith('data:image') ? res.data.qrcode.base64 : `data:image/png;base64,${res.data.qrcode.base64}`);
+                    setStatus('disconnected');
+                } else if (res.data.code) {
+                    // Fallback to QR code generator if base64 is not present (not common in v2)
                     setQrCode(res.data.code);
                     setStatus('disconnected');
                 } else if (res.data.instance?.state === 'open') {
