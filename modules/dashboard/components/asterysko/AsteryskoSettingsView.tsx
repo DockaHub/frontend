@@ -223,10 +223,22 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 description: 'Enviado quando uma nova fatura de serviço é gerada.'
             },
             {
+                slug: 'payment-success',
+                name: 'Confirmação de Pagamento',
+                variables: ['cliente', 'valor'],
+                description: 'Enviado quando o pagamento de uma fatura é confirmado.'
+            },
+            {
                 slug: 'contract-signed',
                 name: 'Contrato Assinado',
                 variables: ['cliente', 'marca'],
                 description: 'Enviado como confirmação após a assinatura do contrato.'
+            },
+            {
+                slug: 'welcome-client',
+                name: 'Boas-vindas ao Cliente',
+                variables: ['cliente'],
+                description: 'Enviado manualmente ou via trigger ao cadastrar novo cliente.'
             }
         ];
 
