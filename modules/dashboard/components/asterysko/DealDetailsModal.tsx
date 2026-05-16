@@ -427,110 +427,117 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         >
             <div className="flex flex-col gap-6 -mt-4 min-h-[70vh] relative">
                 
-                {/* 🚀 QUICK ACTIONS BAR */}
-                <div className="flex flex-wrap items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 rounded-xl">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-xl border border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-400">
-                        Ações Rápidas
-                    </div>
-                    
-                    {/* Magic Link */}
-                    {clientData ? (
-                        <button 
-                            onClick={() => copyToClipboard(`https://cliente.asterysko.com/portal/login?magic_token=${clientData.resetPasswordToken || ''}`, 'Link Mágico')}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
-                            title="Copiar Link Mágico de acesso direto"
-                        >
-                            <LinkIcon size={14} className="text-indigo-500" />
-                            Link Mágico
-                        </button>
-                    ) : (
-                        <button 
-                            disabled
-                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-gray-400 cursor-not-allowed opacity-60"
-                        >
-                            <LinkIcon size={14} />
-                            Link Mágico (Criar conta primeiro)
-                        </button>
-                    )}
-
-                    {/* WhatsApp Action */}
-                    <button 
-                        onClick={() => addToast({ type: 'info', title: 'WhatsApp', message: 'Reenviando notificação via WhatsApp...' })}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-emerald-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
-                    >
-                        <Send size={14} className="text-emerald-500" />
-                        Reenviar WhatsApp
-                    </button>
-
-                    {/* Resend Contract */}
-                    {(formData.status === 'contract' || formData.status === 'viability') && (
-                        <button 
-                            onClick={handleGenerateContract}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-amber-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
-                        >
-                            <FileText size={14} className="text-amber-500" />
-                            Reenviar Contrato
-                        </button>
-                    )}
-
-                    {/* Portal View */}
-                    {clientData && (
-                        <button 
-                            onClick={() => window.open(`https://cliente.asterysko.com/portal/login?magic_token=${clientData.resetPasswordToken || ''}`, '_blank')}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
-                        >
-                            <ExternalLink size={14} className="text-blue-500" />
-                            Ver como Cliente
-                        </button>
-                    )}
-
-                    <div className="flex-1" />
-
-                    {/* Delete Lead */}
-                    <button 
-                        onClick={handleDelete}
-                        className="p-2 text-docka-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
-                    >
-                        <Trash2 size={16} />
-                    </button>
-                </div>
-
-                <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8">
-                    {/* 📋 LEFT COLUMN: OPERATIONAL (7 Cols) */}
-                    <div className="lg:col-span-7 space-y-8">
-                        
-                        {/* Header: Title & Status */}
-                        <div className="space-y-3">
+                {/* 🚀 COMMAND HEADER (Fixed style) */}
+                <div className="flex flex-col gap-4 p-5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div className="flex flex-col gap-1 flex-1">
                             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-docka-400">
                                 <Layout size={12} /> Lead #{deal.id.split('-')[0]}
                             </div>
                             <input
-                                className="text-3xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
+                                className="text-2xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
                                 value={formData.title || ''}
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 onBlur={e => handleBlur('title', e.target.value)}
                                 placeholder="Sem título"
                             />
-                            
-                            {/* Visual Status Progress */}
-                             <div className="flex items-center gap-1.5 pt-2">
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                             {/* Visual Status Progress */}
+                             <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
                                  {['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].map((s, idx) => {
                                      const isActive = formData.status === s;
                                      const isPast = ['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].indexOf(formData.status) > idx;
                                      return (
                                          <div key={s} className="flex items-center">
                                              <div 
-                                                 className={`h-1.5 w-10 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-16' : isPast ? 'bg-emerald-500' : 'bg-docka-100 dark:bg-zinc-800'}`}
+                                                 className={`h-1.5 w-6 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-10' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
                                                  title={statusMap[s] || s}
                                              />
                                              {idx < 6 && <div className="mx-0.5 text-[8px] text-docka-300">/</div>}
                                          </div>
                                      );
                                  })}
-                                 <span className="ml-3 text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                 <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
                                      {statusMap[formData.status] || formData.status}
                                  </span>
                              </div>
+
+                             {/* Quick Actions Dropdown or Row */}
+                             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-docka-100 dark:border-zinc-800">
+                                {clientData && (
+                                    <button 
+                                        onClick={() => copyToClipboard(`https://cliente.asterysko.com/portal/login?magic_token=${clientData.resetPasswordToken || ''}`, 'Link Mágico')}
+                                        className="p-2 text-docka-600 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800 rounded-lg transition-all"
+                                        title="Copiar Link Mágico"
+                                    >
+                                        <LinkIcon size={18} />
+                                    </button>
+                                )}
+                                <button 
+                                    onClick={() => addToast({ type: 'info', title: 'WhatsApp', message: 'Reenviando WhatsApp...' })}
+                                    className="p-2 text-docka-600 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-zinc-800 rounded-lg transition-all"
+                                    title="Reenviar WhatsApp"
+                                >
+                                    <Send size={18} />
+                                </button>
+                                <button 
+                                    onClick={handleDelete}
+                                    className="p-2 text-docka-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                    title="Excluir Lead"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8">
+                    {/* 📋 LEFT COLUMN: OPERATIONAL (7 Cols) */}
+                    <div className="lg:col-span-7 space-y-8">
+                        
+                        {/* 🖼️ MARCA / LOGO SECTION */}
+                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm flex items-start gap-6">
+                            <div className="w-32 h-32 bg-docka-50 dark:bg-zinc-800 rounded-xl border-2 border-dashed border-docka-100 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-docka-100/50 transition-all relative overflow-hidden group">
+                                {formData.brandLogo ? (
+                                    <img src={formData.brandLogo} className="w-full h-full object-contain p-2" alt="Logo da Marca" />
+                                ) : (
+                                    <>
+                                        <Upload size={24} className="text-docka-300" />
+                                        <span className="text-[10px] font-bold text-docka-300 uppercase">Logo da Marca</span>
+                                    </>
+                                )}
+                                <div className="absolute inset-0 bg-indigo-600/10 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span className="text-[10px] font-bold text-indigo-600 uppercase">Alterar</span>
+                                </div>
+                            </div>
+
+                            <div className="flex-1 space-y-4">
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100">Visual da Marca</h4>
+                                    <p className="text-xs text-docka-400">Insira o logo oficial para controle visual e geração de materiais.</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-docka-600 dark:text-zinc-400 hover:bg-docka-100">
+                                        Substituir
+                                    </button>
+                                    <button className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-docka-600 dark:text-zinc-400 hover:bg-docka-100">
+                                        Remover
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 📋 DESCRIPTION SECTION */}
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-docka-400 flex items-center gap-2">
+                                    <FileText size={14} /> Detalhes do Lead
+                                </h4>
+                            </div>
+                            {renderDescription()}
                         </div>
 
                         {/* 🏢 SECTION: PROCESSO INPI */}
