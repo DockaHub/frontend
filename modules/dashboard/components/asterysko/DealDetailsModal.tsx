@@ -987,13 +987,27 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 </button>
                             )}
                             {formData.status === 'ready_to_file' && (
-                                <button
-                                    onClick={() => setShowProtocolModal(true)}
-                                    className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
-                                >
-                                    <ShieldCheck size={14} />
-                                    Confirmar Protocolo INPI
-                                </button>
+                                processData ? (
+                                    <button
+                                        onClick={() => setShowProtocolModal(true)}
+                                        className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                                    >
+                                        <ShieldCheck size={14} />
+                                        Confirmar Protocolo INPI
+                                    </button>
+                                ) : (
+                                    <div className="p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl space-y-2">
+                                        <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase text-center">
+                                            Atenção: Este lead precisa ser convertido antes do protocolo.
+                                        </p>
+                                        <button
+                                            onClick={handleConvert}
+                                            className="w-full py-2 bg-amber-500 text-white rounded-lg font-bold text-[10px] uppercase hover:bg-amber-600 transition-all"
+                                        >
+                                            Converter agora
+                                        </button>
+                                    </div>
+                                )
                             )}
                          </div>
 
