@@ -59,6 +59,17 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     // Permissions logic
     const isAdmin = user?.role === 'admin' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
 
+    // Status Translation Map
+    const statusMap: Record<string, string> = {
+        leads: 'Novo Lead',
+        viability: 'Viabilidade',
+        contract: 'Contrato',
+        preparation: 'Preparação',
+        payment: 'Pagamento',
+        protocol: 'Protocolo',
+        won: 'Finalizado'
+    };
+
     // Tag creation state
     const [isAddingTag, setIsAddingTag] = useState(false);
     const [customTagName, setCustomTagName] = useState('');
@@ -417,7 +428,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             <div className="flex flex-col gap-6 -mt-4 min-h-[70vh] relative">
                 
                 {/* 🚀 QUICK ACTIONS BAR */}
-                <div className="flex flex-wrap items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 rounded-2xl">
+                <div className="flex flex-wrap items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 rounded-xl">
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-xl border border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-400">
                         Ações Rápidas
                     </div>
@@ -490,11 +501,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         
                         {/* Header: Title & Status */}
                         <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-docka-400">
+                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-docka-400">
                                 <Layout size={12} /> Lead #{deal.id.split('-')[0]}
                             </div>
                             <input
-                                className="text-4xl font-black text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
+                                className="text-3xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
                                 value={formData.title || ''}
                                 onChange={e => setFormData({ ...formData, title: e.target.value })}
                                 onBlur={e => handleBlur('title', e.target.value)}
@@ -502,34 +513,34 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             />
                             
                             {/* Visual Status Progress */}
-                            <div className="flex items-center gap-1.5 pt-2">
-                                {['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].map((s, idx) => {
-                                    const isActive = formData.status === s;
-                                    const isPast = ['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].indexOf(formData.status) > idx;
-                                    return (
-                                        <div key={s} className="flex items-center">
-                                            <div 
-                                                className={`h-1.5 w-10 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-16' : isPast ? 'bg-emerald-500' : 'bg-docka-100 dark:bg-zinc-800'}`}
-                                                title={s}
-                                            />
-                                            {idx < 6 && <div className="mx-0.5 text-[8px] text-docka-300">/</div>}
-                                        </div>
-                                    );
-                                })}
-                                <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
-                                    {formData.status}
-                                </span>
-                            </div>
+                             <div className="flex items-center gap-1.5 pt-2">
+                                 {['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].map((s, idx) => {
+                                     const isActive = formData.status === s;
+                                     const isPast = ['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].indexOf(formData.status) > idx;
+                                     return (
+                                         <div key={s} className="flex items-center">
+                                             <div 
+                                                 className={`h-1.5 w-10 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-16' : isPast ? 'bg-emerald-500' : 'bg-docka-100 dark:bg-zinc-800'}`}
+                                                 title={statusMap[s] || s}
+                                             />
+                                             {idx < 6 && <div className="mx-0.5 text-[8px] text-docka-300">/</div>}
+                                         </div>
+                                     );
+                                 })}
+                                 <span className="ml-3 text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                     {statusMap[formData.status] || formData.status}
+                                 </span>
+                             </div>
                         </div>
 
                         {/* 🏢 SECTION: PROCESSO INPI */}
-                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-black uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                <h4 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                     <ShieldCheck size={18} className="text-indigo-500" /> Processo INPI
                                 </h4>
                                 {processData && (
-                                    <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-black rounded-lg border border-indigo-100 dark:border-indigo-900/20">
+                                    <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-100 dark:border-indigo-900/20">
                                         ID: {processData.inpiProcessNumber || 'A Protocolar'}
                                     </span>
                                 )}
@@ -538,37 +549,37 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             {processData ? (
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Marca</span>
-                                        <p className="text-sm font-black text-docka-900 dark:text-zinc-100">{processData.brand?.name || 'Não definida'}</p>
+                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Marca</span>
+                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{processData.brand?.name || 'Não definida'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Classes (NCL)</span>
-                                        <p className="text-sm font-black text-docka-900 dark:text-zinc-100">{processData.brand?.nclClasses?.join(', ') || '-'}</p>
+                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Classes (NCL)</span>
+                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{processData.brand?.nclClasses?.join(', ') || '-'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Status Protocolo</span>
-                                        <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{processData.status || 'PENDENTE'}</p>
+                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Status Protocolo</span>
+                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{processData.status || 'PENDENTE'}</p>
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Vencimento Proxy</span>
-                                        <p className="text-sm font-black text-docka-900 dark:text-zinc-100">-</p>
+                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Vencimento Proxy</span>
+                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">-</p>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="py-8 text-center border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-2xl">
+                                <div className="py-8 text-center border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-xl">
                                     <p className="text-xs font-semibold text-docka-400 italic">O processo será criado automaticamente ao converter o lead.</p>
                                 </div>
                             )}
                         </div>
 
                         {/* 💰 SECTION: FINANCEIRO */}
-                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-black uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                <h4 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                     <DollarSign size={18} className="text-emerald-500" /> Financeiro / Honorários
                                 </h4>
                                 {invoiceData && (
-                                    <span className={`px-2.5 py-1 text-[10px] font-black rounded-lg border ${
+                                    <span className={`px-2.5 py-1 text-xs font-bold rounded-lg border ${
                                         invoiceData.status === 'PAID' 
                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
                                         : 'bg-rose-50 text-rose-700 border-rose-100'
@@ -579,46 +590,46 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800">
-                                    <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest mb-1 block">Valor do Plano</span>
-                                    <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">R$ {formData.value || '0,00'}</p>
+                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-800">
+                                    <span className="text-xs font-bold text-docka-400 uppercase tracking-widest mb-1 block">Valor do Plano</span>
+                                    <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">R$ {formData.value || '0,00'}</p>
                                 </div>
                                 
-                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800">
-                                    <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest mb-1 block">Vencimento</span>
-                                    <p className="text-sm font-black text-docka-900 dark:text-zinc-100">{invoiceData?.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString() : '-'}</p>
+                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-800">
+                                    <span className="text-xs font-bold text-docka-400 uppercase tracking-widest mb-1 block">Vencimento</span>
+                                    <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{invoiceData?.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString() : '-'}</p>
                                 </div>
 
-                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800 flex items-center justify-center">
+                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-800 flex items-center justify-center">
                                     {invoiceData ? (
                                         <button 
                                             onClick={() => window.open(invoiceData.officialBoletoUrl || '', '_blank')}
-                                            className="w-full flex items-center justify-center gap-2 text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 hover:underline"
+                                            className="w-full flex items-center justify-center gap-2 text-xs font-bold uppercase text-indigo-600 dark:text-indigo-400 hover:underline"
                                         >
                                             <FileText size={14} /> Abrir Fatura
                                         </button>
                                     ) : (
-                                        <span className="text-[10px] font-bold text-docka-300 italic">Fatura não gerada</span>
+                                        <span className="text-xs font-bold text-docka-300 italic">Fatura não gerada</span>
                                     )}
                                 </div>
                             </div>
                         </div>
 
                         {/* 📝 SECTION: CONTRATO */}
-                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
-                            <h4 className="text-sm font-black uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                 <FileText size={18} className="text-amber-500" /> Contrato & Assinatura
                             </h4>
                             
-                            <div className="flex items-center gap-4 p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${formData.signedAt ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                            <div className="flex items-center gap-4 p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-xl border border-docka-100 dark:border-zinc-800">
+                                <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${formData.signedAt ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
                                     {formData.signedAt ? <CheckCircle size={24} /> : <Clock size={24} />}
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm font-black text-docka-900 dark:text-zinc-100">
+                                    <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">
                                         {formData.signedAt ? 'Contrato Assinado Digitalmente' : 'Aguardando Assinatura do Cliente'}
                                     </p>
-                                    <p className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">
+                                    <p className="text-xs font-bold text-docka-400 uppercase tracking-widest">
                                         {formData.signedAt ? `Em ${new Date(formData.signedAt).toLocaleString()}` : 'Enviado por e-mail'}
                                     </p>
                                 </div>
@@ -656,12 +667,12 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <div className="space-y-4 mt-6">
                                 {comments.slice(0, 5).map((comment) => (
                                     <div key={comment.id} className="flex gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-docka-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-black">
+                                        <div className="w-8 h-8 rounded-full bg-docka-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold">
                                             {getInitials(comment.user.name)}
                                         </div>
-                                        <div className="flex-1 bg-docka-50/50 dark:bg-zinc-800/30 p-3 rounded-2xl text-xs">
+                                        <div className="flex-1 bg-docka-50/50 dark:bg-zinc-800/30 p-3 rounded-xl text-xs">
                                             <div className="flex justify-between mb-1">
-                                                <span className="font-black text-docka-900 dark:text-zinc-100">{comment.user.name}</span>
+                                                <span className="font-bold text-docka-900 dark:text-zinc-100">{comment.user.name}</span>
                                                 <span className="text-[10px] text-docka-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
                                             </div>
                                             <p className="text-docka-600 dark:text-zinc-400">{comment.content}</p>
@@ -672,51 +683,58 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
                     </div>
 
-                {/* 👤 RIGHT COLUMN: DATA (5 Cols) */}
-                <div className="lg:col-span-5 space-y-8">
-                    
-                    {/* CURRENT STEP ACTION */}
-                    <div className="bg-indigo-600 dark:bg-indigo-500 p-6 rounded-3xl shadow-xl shadow-indigo-500/20 text-white space-y-4">
-                        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Gatilho de Fluxo</span>
-                        <h3 className="text-xl font-black">Mover para próxima etapa?</h3>
+                    {/* 👤 RIGHT COLUMN: DATA (5 Cols) */}
+                    <div className="lg:col-span-5 space-y-8">
                         
-                        {formData.status === 'preparation' ? (
-                            <button 
-                                onClick={() => moveStatus('payment')}
-                                className="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-sm hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                            >
-                                Faturar Agora <ArrowRight size={18} />
-                            </button>
-                        ) : formData.status === 'contract' ? (
-                            <button 
-                                onClick={handleConvert}
-                                className="w-full py-4 bg-white text-amber-600 rounded-2xl font-black text-sm hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
-                            >
-                                Converter para Cliente <User size={18} />
-                            </button>
-                        ) : (
-                            <div className="py-4 text-center border border-white/20 rounded-2xl text-xs font-bold">
-                                Próximo passo disponível no topo
-                            </div>
-                        )}
-                    </div>
+                        {/* CURRENT STEP ACTION */}
+                        <div className="bg-indigo-600 dark:bg-indigo-500 p-6 rounded-xl shadow-lg shadow-indigo-500/10 text-white space-y-4">
+                            <span className="text-xs font-bold uppercase tracking-widest opacity-80">Gatilho de Fluxo</span>
+                            <h3 className="text-lg font-bold">Mover para próxima etapa?</h3>
+                            
+                            {formData.status === 'preparation' ? (
+                                <button 
+                                    onClick={() => moveStatus('payment')}
+                                    className="w-full py-3 bg-white text-indigo-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Faturar Agora <ArrowRight size={18} />
+                                </button>
+                            ) : formData.status === 'contract' ? (
+                                <button 
+                                    onClick={handleConvert}
+                                    className="w-full py-3 bg-white text-amber-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Converter para Cliente <User size={18} />
+                                </button>
+                            ) : formData.status === 'payment' ? (
+                                <button 
+                                    onClick={() => moveStatus('protocol')}
+                                    className="w-full py-3 bg-white text-emerald-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Confirmar Pagamento <CheckCircle size={18} />
+                                </button>
+                            ) : (
+                                <div className="py-3 text-center border border-white/20 rounded-lg text-xs font-bold">
+                                    Próximo passo disponível no topo
+                                </div>
+                            )}
+                        </div>
 
                         {/* 💰 VENDAS SECTION */}
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-docka-400 flex items-center gap-2">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-docka-400 flex items-center gap-2">
                                 <DollarSign size={14} /> Configuração de Vendas
                             </h4>
                             
                             <div className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Plano Selecionado</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Plano Selecionado</label>
                                     <div className="grid grid-cols-3 gap-2">
                                         {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
                                             <button
                                                 key={plan}
                                                 onClick={() => handleAutoSave('planType', plan)}
-                                                className={`py-2 text-[10px] font-black rounded-xl border transition-all ${formData.planType === plan
-                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg'
+                                                className={`py-2 text-xs font-bold rounded-lg border transition-all ${formData.planType === plan
+                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
                                                     : 'bg-white dark:bg-zinc-800 border-docka-100 dark:border-zinc-700 text-docka-600 dark:text-zinc-400 hover:bg-docka-50'
                                                 }`}
                                             >
@@ -727,9 +745,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Responsável</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Responsável</label>
                                     <select
-                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         value={formData.assignedUserId || ''}
                                         onChange={e => handleAutoSave('assignedUserId', e.target.value)}
                                     >
@@ -745,16 +763,16 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
 
                         {/* 🏢 EMPRESA SECTION */}
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-docka-400 flex items-center gap-2">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-docka-400 flex items-center gap-2">
                                 <Briefcase size={14} /> Dados da Empresa
                             </h4>
 
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Razão Social</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Razão Social</label>
                                     <input
-                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         placeholder="Razão Social"
                                         value={formData.razaoSocial || ''}
                                         onChange={e => setFormData({ ...formData, razaoSocial: e.target.value })}
@@ -762,9 +780,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">CNPJ / CPF</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">CNPJ / CPF</label>
                                     <input
-                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         placeholder="00.000.000/0000-00"
                                         value={formData.cnpj || ''}
                                         onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
@@ -772,9 +790,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Endereço Fiscal</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Endereço Fiscal</label>
                                     <textarea
-                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[80px] resize-none"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[80px] resize-none"
                                         placeholder="Rua, Número, Bairro, Cidade/UF"
                                         value={formData.address || ''}
                                         onChange={e => setFormData({ ...formData, address: e.target.value })}
@@ -785,34 +803,34 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
 
                         {/* 👤 CONTATO SECTION */}
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
-                            <h4 className="text-xs font-black uppercase tracking-wider text-docka-400 flex items-center gap-2">
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-docka-400 flex items-center gap-2">
                                 <User size={14} /> Dados de Contato
                             </h4>
 
                             <div className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Nome Completo</label>
                                     <input
-                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         value={formData.subtitle || ''}
                                         onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
                                         onBlur={e => handleBlur('contactName', e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">E-mail de Acesso</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">E-mail de Acesso</label>
                                     <input
-                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         value={formData.contactEmail || ''}
                                         onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
                                         onBlur={e => handleBlur('contactEmail', e.target.value)}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">WhatsApp</label>
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">WhatsApp</label>
                                     <input
-                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         value={formData.contactPhone || ''}
                                         onChange={e => setFormData({ ...formData, contactPhone: maskPhone(e.target.value) })}
                                         onBlur={e => handleBlur('contactPhone', e.target.value)}
@@ -823,12 +841,12 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
                         {/* 🏷️ TAGS & ACTIONS */}
                         <div className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-docka-400 ml-1">Organização</h4>
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-docka-400 ml-1">Organização</h4>
                             <div className="flex flex-wrap gap-2">
                                 {formData.tags?.map((tag: any, idx: number) => {
                                     if (tag.label?.startsWith('CNPJ:') || tag.label?.startsWith('Razão Social:') || tag.label?.startsWith('Endereço:')) return null;
                                     return (
-                                        <span key={idx} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${tag.color} flex items-center gap-2 border border-black/5 shadow-sm`}>
+                                        <span key={idx} className={`px-3 py-1.5 rounded-xl text-xs font-bold uppercase ${tag.color} flex items-center gap-2 border border-black/5 shadow-sm`}>
                                             {tag.label}
                                             <button className="hover:scale-110 transition-transform" onClick={() => {
                                                 const newTags = formData.tags.filter((_: any, i: number) => i !== idx);
@@ -844,7 +862,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     <input
                                         ref={tagInputRef}
                                         autoFocus
-                                        className="px-3 py-1.5 text-[10px] font-black uppercase bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        className="px-3 py-1.5 text-xs font-bold uppercase bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         placeholder="Nova Tag..."
                                         value={customTagName}
                                         onChange={e => setCustomTagName(e.target.value)}
@@ -859,7 +877,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 ) : (
                                     <button
                                         onClick={() => setIsAddingTag(true)}
-                                        className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase border border-dashed border-docka-300 text-docka-400 hover:bg-docka-50 transition-all"
+                                        className="px-3 py-1.5 rounded-xl text-xs font-bold uppercase border border-dashed border-docka-300 text-docka-400 hover:bg-docka-50 transition-all"
                                     >
                                         + Adicionar Tag
                                     </button>
@@ -872,7 +890,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <button
                                 onClick={handleDelete}
                                 disabled={isDeleting}
-                                className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-500 hover:bg-red-50/50 dark:hover:bg-red-900/10 rounded-2xl transition-all flex items-center justify-center gap-2"
+                                className="w-full py-4 text-xs font-bold uppercase tracking-widest text-red-400 hover:text-red-500 hover:bg-red-50/50 dark:hover:bg-red-900/10 rounded-xl transition-all flex items-center justify-center gap-2"
                             >
                                 <Trash2 size={14} />
                                 {isDeleting ? 'Excluindo...' : 'Remover do Pipeline'}
@@ -883,32 +901,32 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
                 {/* ✨ CONVERSION OVERLAY */}
                 {showConfirmConvert && (
-                    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-300">
-                        <div className="max-w-md w-full bg-zinc-900 border border-white/10 p-10 rounded-[2.5rem] shadow-2xl text-center space-y-8">
-                            <div className="w-24 h-24 bg-gradient-to-tr from-amber-500 to-amber-300 text-zinc-900 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-amber-500/20">
-                                <User size={48} strokeWidth={2.5} />
+                    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm rounded-xl p-8 animate-in zoom-in-95 duration-200">
+                        <div className="max-w-md w-full bg-zinc-900 border border-white/10 p-8 rounded-2xl shadow-2xl text-center space-y-6">
+                            <div className="w-16 h-16 bg-amber-500 text-zinc-900 rounded-full flex items-center justify-center mx-auto shadow-lg shadow-amber-500/10">
+                                <User size={32} strokeWidth={2.5} />
                             </div>
                             
-                            <div className="space-y-2">
-                                <h3 className="text-3xl font-black text-white">Converter Lead?</h3>
+                            <div className="space-y-1">
+                                <h3 className="text-2xl font-bold text-white">Converter Lead?</h3>
                                 <p className="text-zinc-400 text-sm font-medium px-4">
-                                    O cliente receberá acesso imediato ao portal e um novo processo será inicializado.
+                                    O cliente receberá acesso ao portal e um novo processo será inicializado.
                                 </p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     onClick={() => setShowConfirmConvert(false)}
-                                    className="py-4 text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
+                                    className="py-3 text-xs font-bold uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={executeConvert}
                                     disabled={loading}
-                                    className="py-4 bg-white text-zinc-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-white/10"
+                                    className="py-3 bg-white text-zinc-900 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-zinc-100 transition-all"
                                 >
-                                    {loading ? 'Criando...' : 'Sim, Converter'}
+                                    {loading ? 'Criando...' : 'Confirmar'}
                                 </button>
                             </div>
                         </div>
