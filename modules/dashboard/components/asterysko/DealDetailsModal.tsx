@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2 } from 'lucide-react';
+import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase } from 'lucide-react';
 import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
@@ -68,6 +68,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [formData, setFormData] = useState<any>({});
     const [plans, setPlans] = useState<any[]>([]);
     const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
+    
+    // Linked Data State
+    const [processData, setProcessData] = useState<any>(null);
+    const [invoiceData, setInvoiceData] = useState<any>(null);
+    const [clientData, setClientData] = useState<any>(null);
 
     useEffect(() => {
         api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
@@ -133,6 +138,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             const response = await api.get(`/asterysko/crm/deals/${deal.id}`);
             if (response.data) {
                 setComments(response.data.comments || []);
+                setProcessData(response.data.process);
+                setInvoiceData(response.data.invoice);
+                setClientData(response.data.client);
+
                 const tags = response.data.tags || [];
                 const info = extractInfoFromTags(tags);
                 setFormData((prev: any) => ({
@@ -148,9 +157,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     assignedUserId: response.data.assignedUserId,
                     planType: response.data.planType,
                     tags,
-                    cnpj: info.cnpj || '',
-                    razaoSocial: info.razaoSocial || '',
-                    address: info.address || ''
+                    cnpj: info.cnpj || response.data.client?.cnpj || '',
+                    razaoSocial: info.razaoSocial || response.data.client?.company || '',
+                    address: info.address || response.data.client?.address || ''
                 }));
             }
         } catch (error) {
@@ -329,6 +338,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
     const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
 
+    const copyToClipboard = (text: string, label: string) => {
+        navigator.clipboard.writeText(text);
+        addToast({ type: 'success', title: 'Copiado', message: `${label} copiado para a área de transferência.` });
+    };
+
     const renderDescription = () => {
         try {
             if (formData.description && formData.description.trim().startsWith('{')) {
@@ -400,500 +414,499 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             title=""
             size="2xl"
         >
-            <div className="flex flex-col md:flex-row gap-8 -mt-2 min-h-[60vh] relative">
-                {/* LEFT COLUMN: MAIN CONTENT */}
-                <div className="flex-1 space-y-8">
-                    {/* Header: Title */}
-                    <div className="group">
-                        <div className="flex items-center gap-2 mb-2 text-xs text-docka-500 dark:text-zinc-500 uppercase tracking-wider font-medium">
-                            <span className="bg-docka-100 dark:bg-zinc-800 px-2 py-0.5 rounded-lg text-docka-600 dark:text-zinc-400">
-                                {deal.id.split('-')[0]}
-                            </span>
-                            <span>/</span>
-                            <span>{formData.status}</span>
-                        </div>
-                        <input
-                            className="text-3xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border border-transparent hover:border-docka-200 dark:hover:border-zinc-700 rounded-xl px-2 -ml-2 w-full outline-none focus:border-docka-500 transition-all placeholder:text-docka-300"
-                            value={formData.title || ''}
-                            onChange={e => setFormData({ ...formData, title: e.target.value })}
-                            onBlur={e => handleBlur('title', e.target.value)}
-                            placeholder="Sem título"
-                        />
+            <div className="flex flex-col gap-6 -mt-4 min-h-[70vh] relative">
+                
+                {/* 🚀 QUICK ACTIONS BAR */}
+                <div className="flex flex-wrap items-center gap-3 p-3 bg-indigo-50/50 dark:bg-indigo-900/10 border border-indigo-100/50 dark:border-indigo-900/20 rounded-2xl">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 rounded-xl border border-indigo-100 dark:border-indigo-900/30 text-xs font-bold text-indigo-700 dark:text-indigo-400">
+                        Ações Rápidas
                     </div>
+                    
+                    {/* Magic Link */}
+                    {clientData ? (
+                        <button 
+                            onClick={() => copyToClipboard(`https://cliente.asterysko.com/portal/login?magic_token=${clientData.resetPasswordToken || ''}`, 'Link Mágico')}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-indigo-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
+                            title="Copiar Link Mágico de acesso direto"
+                        >
+                            <LinkIcon size={14} className="text-indigo-500" />
+                            Link Mágico
+                        </button>
+                    ) : (
+                        <button 
+                            disabled
+                            className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-gray-400 cursor-not-allowed opacity-60"
+                        >
+                            <LinkIcon size={14} />
+                            Link Mágico (Criar conta primeiro)
+                        </button>
+                    )}
 
-                    {/* Description Area */}
-                    <div className="space-y-3 group">
-                        <div className="flex items-center gap-2 text-sm font-bold text-docka-700 dark:text-zinc-300">
-                            <AlignLeft size={16} /> Descrição
-                        </div>
-                        {renderDescription()}
-                    </div>
+                    {/* WhatsApp Action */}
+                    <button 
+                        onClick={() => addToast({ type: 'info', title: 'WhatsApp', message: 'Reenviando notificação via WhatsApp...' })}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-emerald-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
+                    >
+                        <Send size={14} className="text-emerald-500" />
+                        Reenviar WhatsApp
+                    </button>
 
-                    {/* Activity Feed / Comments */}
-                    <div className="pt-8 border-t border-docka-100 dark:border-zinc-800">
-                        <div className="flex items-center gap-2 text-sm font-bold text-docka-700 dark:text-zinc-300 mb-6">
-                            <Clock size={16} /> Atividade
-                        </div>
+                    {/* Resend Contract */}
+                    {(formData.status === 'contract' || formData.status === 'viability') && (
+                        <button 
+                            onClick={handleGenerateContract}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-amber-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
+                        >
+                            <FileText size={14} className="text-amber-500" />
+                            Reenviar Contrato
+                        </button>
+                    )}
 
-                        {/* New Comment Input */}
-                        <div className="flex gap-4 mb-8">
-                            <div className="w-10 h-10 rounded-full bg-docka-200 dark:bg-zinc-700 flex items-center justify-center text-sm font-bold text-docka-600 dark:text-zinc-300 shrink-0">
-                                {user ? getInitials(user.name) : '?'}
-                            </div>
-                            <div className="flex-1 relative">
-                                <div className="relative">
-                                    <textarea
-                                        className="w-full px-4 py-3 text-sm text-docka-900 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl outline-none focus:border-docka-400 dark:focus:border-zinc-500 focus:ring-4 focus:ring-docka-100 dark:focus:ring-zinc-800/50 placeholder:text-docka-400 dark:placeholder:text-zinc-600 min-h-[80px] resize-none transition-all"
-                                        placeholder="Escreva um comentário..."
-                                        value={newComment}
-                                        onChange={(e) => setNewComment(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleAddComment();
-                                            }
-                                        }}
-                                    />
-                                    <button
-                                        onClick={handleAddComment}
-                                        disabled={!newComment.trim()}
-                                        className="absolute bottom-3 right-3 p-2 bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                    >
-                                        <Send size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                    {/* Portal View */}
+                    {clientData && (
+                        <button 
+                            onClick={() => window.open(`https://cliente.asterysko.com/portal/login?magic_token=${clientData.resetPasswordToken || ''}`, '_blank')}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-zinc-800 hover:bg-blue-50 dark:hover:bg-zinc-700 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs font-semibold text-docka-700 dark:text-zinc-300 transition-all"
+                        >
+                            <ExternalLink size={14} className="text-blue-500" />
+                            Ver como Cliente
+                        </button>
+                    )}
 
-                        {/* Comments List */}
-                        <div className="space-y-6 pl-4 relative">
-                            {/* Vertical Line */}
-                            <div className="absolute left-9 top-0 bottom-0 w-px bg-docka-100 dark:bg-zinc-800" />
+                    <div className="flex-1" />
 
-                            {loadingComments ? (
-                                <div className="text-center py-4 text-docka-400">Carregando atividade...</div>
-                            ) : comments.length === 0 ? (
-                                <div className="ml-14 text-sm text-docka-400 italic">
-                                    Nenhuma atividade registrada ainda.
-                                </div>
-                            ) : (
-                                comments.map((comment) => (
-                                    <div key={comment.id} className="flex gap-4 relative group">
-                                        <div className="w-10 h-10 rounded-full bg-white dark:bg-zinc-900 border-4 border-white dark:border-zinc-900 z-10 shrink-0 flex items-center justify-center">
-                                            <UserAvatar src={comment.user.avatar} name={comment.user.name} size="sm" />
-                                        </div>
-
-                                        <div className="flex-1 pt-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-sm font-bold text-docka-900 dark:text-zinc-100">{comment.user.name}</span>
-                                                <span className="text-xs text-docka-400 dark:text-zinc-500">
-                                                    {new Date(comment.createdAt).toLocaleString()}
-                                                </span>
-                                            </div>
-                                            <div className="text-sm text-docka-700 dark:text-zinc-300">
-                                                {comment.content}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
+                    {/* Delete Lead */}
+                    <button 
+                        onClick={handleDelete}
+                        className="p-2 text-docka-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-all"
+                    >
+                        <Trash2 size={16} />
+                    </button>
                 </div>
 
-                {/* RIGHT COLUMN: SIDEBAR */}
-                <div className="w-full md:w-80 space-y-8 md:pl-2 shrink-0">
-
-                    {/* Status & Actions */}
-                    <div className="bg-docka-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-docka-100 dark:border-zinc-800 space-y-4">
-                        <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider">
-                            Fase Atual
-                        </label>
-
-                        {/* Current Status Badge */}
-                        <div className={`w-full px-4 py-3 rounded-xl flex items-center justify-center gap-2 font-bold mb-4 border ${formData.status === 'leads' ? 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800' :
-                            formData.status === 'viability' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800' :
-                                formData.status === 'contract' ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800' :
-                                    formData.status === 'preparation' ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800' :
-                                        formData.status === 'payment' ? 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800' :
-                                            formData.status === 'protocol' ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' :
-                                                formData.status === 'won' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800' :
-                                                    'bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'
-                            }`}>
-                            {formData.status === 'leads' && 'Novo Lead'}
-                            {formData.status === 'viability' && 'Viabilidade'}
-                            {formData.status === 'contract' && 'Contrato Enviado'}
-                            {formData.status === 'preparation' && 'Em Preparação'}
-                            {formData.status === 'payment' && 'Aguardando Pagamento'}
-                            {formData.status === 'protocol' && 'A Protocolar'}
-                            {formData.status === 'won' && 'Fechado/Ganho'}
-                            {!['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].includes(formData.status) && (formData.status || 'Sem Status')}
+                <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8">
+                    {/* 📋 LEFT COLUMN: OPERATIONAL (7 Cols) */}
+                    <div className="lg:col-span-7 space-y-8">
+                        
+                        {/* Header: Title & Status */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-docka-400">
+                                <Layout size={12} /> Lead #{deal.id.split('-')[0]}
+                            </div>
+                            <input
+                                className="text-4xl font-black text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
+                                value={formData.title || ''}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                onBlur={e => handleBlur('title', e.target.value)}
+                                placeholder="Sem título"
+                            />
+                            
+                            {/* Visual Status Progress */}
+                            <div className="flex items-center gap-1.5 pt-2">
+                                {['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].map((s, idx) => {
+                                    const isActive = formData.status === s;
+                                    const isPast = ['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].indexOf(formData.status) > idx;
+                                    return (
+                                        <div key={s} className="flex items-center">
+                                            <div 
+                                                className={`h-1.5 w-10 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-16' : isPast ? 'bg-emerald-500' : 'bg-docka-100 dark:bg-zinc-800'}`}
+                                                title={s}
+                                            />
+                                            {idx < 6 && <div className="mx-0.5 text-[8px] text-docka-300">/</div>}
+                                        </div>
+                                    );
+                                })}
+                                <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider">
+                                    {formData.status}
+                                </span>
+                            </div>
                         </div>
 
-                        <div className="h-px bg-docka-200 dark:bg-zinc-700 w-full mb-4" />
-
-                        <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase tracking-wider mb-2 block">
-                            Próximos Passos
-                        </label>
-
-                        {formData.status === 'leads' && (
-                            <button onClick={() => moveStatus('viability')} className="w-full px-4 py-2.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
-                                Iniciar Viabilidade <ArrowRight size={14} />
-                            </button>
-                        )}
-                        {formData.status === 'viability' && (
-                            <button
-                                onClick={handleGenerateContract}
-                                disabled={loading}
-                                className={`w-full px-4 py-2.5 text-xs font-bold text-white bg-amber-500 hover:bg-amber-600 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                {loading ? 'Gerando...' : 'Gerar e Enviar Contrato'} <ArrowRight size={14} />
-                            </button>
-                        )}
-                        {formData.status === 'contract' && (
-                            <div className="space-y-3">
-                                <button
-                                    disabled
-                                    className="w-full px-4 py-2.5 text-xs font-bold text-docka-400 bg-docka-100 dark:text-zinc-500 dark:bg-zinc-800 rounded-xl shadow-sm flex items-center justify-center gap-2 cursor-not-allowed"
-                                Clone>
-                                    <Clock size={14} />
-                                    Aguardando Assinatura...
-                                </button>
-
-                                {/* Manual Override */}
-                                <button
-                                    onClick={handleConvert}
-                                    className="w-full text-xs text-docka-400 hover:text-docka-600 dark:text-zinc-500 dark:hover:text-zinc-300 underline transition-colors"
-                                >
-                                    Forçar conversão manualmente
-                                </button>
-                            </div>
-                        )}
-                        {formData.status === 'preparation' && (
-                            <div className="space-y-2">
-                                <button
-                                    onClick={handleConvert}
-                                    disabled={loading}
-                                    className={`w-full px-4 py-2.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                >
-                                    <User size={14} />
-                                    {loading ? 'Criando...' : 'Criar Conta do Cliente'}
-                                </button>
-                                <button
-                                    onClick={() => moveStatus('payment')}
-                                    className="w-full px-4 py-2.5 text-xs font-bold text-docka-700 bg-rose-100 hover:bg-rose-200 dark:text-rose-300 dark:bg-rose-900/50 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
-                                >
-                                    Enviar para Pagamento <ArrowRight size={14} />
-                                </button>
-                            </div>
-                        )}
-                        {formData.status === 'payment' && (
-                            <button
-                                onClick={() => moveStatus('protocol')}
-                                className="w-full px-4 py-2.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors"
-                            >
-                                Pagamento Confirmado → Protocolar <ArrowRight size={14} />
-                            </button>
-                        )}
-                        {formData.status === 'protocol' && (
-                            <button onClick={() => moveStatus('won')} className="w-full px-4 py-2.5 text-xs font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors">
-                                <CheckCircle size={14} /> Marcar como Fechado
-                            </button>
-                        )}
-                        {formData.status === 'won' && (
-                            <div className="text-center text-xs text-docka-500 italic">
-                                Processo concluído em {formData.closedAt ? new Date(formData.closedAt).toLocaleDateString() : 'N/A'}.
-                            </div>
-                        )}
-                    </div>
-
-                    {/* COMMISSION AREA - NEW */}
-                    <div className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-4">
-                        <label className="text-xs font-semibold text-docka-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <DollarSign size={14} className="text-emerald-500" /> Configuração de Vendas
-                        </label>
-
-                        <div className="space-y-3">
-                            <div className="group">
-                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Responsável (Vendas)</label>
-                                <select
-                                    className={`w-full text-xs font-semibold bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl px-3 py-2 outline-none transition-all text-docka-900 dark:text-zinc-100 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'focus:ring-2 focus:ring-blue-500'}`}
-                                    value={formData.assignedUserId || ''}
-                                    onChange={e => handleAutoSave('assignedUserId', e.target.value)}
-                                    disabled={!isAdmin}
-                                >
-                                    <option value="">-- Não Atribuído --</option>
-                                    {organizationMembers.map(m => (
-                                        <option key={m.id} value={m.userId || m.id}>
-                                            {m.user?.name || m.name || m.user?.email || m.email || "Usuário"}
-                                        </option>
-                                    ))}
-                                </select>
+                        {/* 🏢 SECTION: PROCESSO INPI */}
+                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-black uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                    <ShieldCheck size={18} className="text-indigo-500" /> Processo INPI
+                                </h4>
+                                {processData && (
+                                    <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[10px] font-black rounded-lg border border-indigo-100 dark:border-indigo-900/20">
+                                        ID: {processData.inpiProcessNumber || 'A Protocolar'}
+                                    </span>
+                                )}
                             </div>
 
-                            <div className="group">
-                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Tipo de Plano</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
-                                        <button
-                                            key={plan}
-                                            onClick={() => {
-                                                handleAutoSave('planType', plan);
-                                                // Auto-update price based on plan
-                                                let newValue = '';
-                                                let numericValue = 0;
-                                                const foundPlan = plans.find(p => p.name.toUpperCase().includes(plan));
-
-                                                if (plan === 'ESSENCIAL') { newValue = '997,00'; numericValue = 997; }
-                                                else if (plan === 'PREMIUM') { newValue = '2.197,00'; numericValue = 2197; }
-                                                else if (plan === 'BLINDADO') { newValue = '3.697,00'; numericValue = 3697; }
-                                                
-                                                if (newValue) {
-                                                    setFormData((prev: any) => ({ ...prev, value: newValue }));
-                                                    updateDealPartial('value', numericValue);
-                                                }
-                                                
-                                                if (foundPlan) {
-                                                    updateDealPartial('planId', foundPlan.id);
-                                                }
-                                            }}
-                                            className={`py-2 text-xs font-semibold rounded-xl border transition-all ${formData.planType === plan
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-sm scale-105'
-                                                : 'bg-white dark:bg-zinc-800 border-docka-200 dark:border-zinc-700 text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-700'
-                                                }`}
-                                        >
-                                            {plan}
-                                        </button>
-                                    ))}
+                            {processData ? (
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Marca</span>
+                                        <p className="text-sm font-black text-docka-900 dark:text-zinc-100">{processData.brand?.name || 'Não definida'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Classes (NCL)</span>
+                                        <p className="text-sm font-black text-docka-900 dark:text-zinc-100">{processData.brand?.nclClasses?.join(', ') || '-'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Status Protocolo</span>
+                                        <p className="text-sm font-black text-emerald-600 dark:text-emerald-400">{processData.status || 'PENDENTE'}</p>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">Vencimento Proxy</span>
+                                        <p className="text-sm font-black text-docka-900 dark:text-zinc-100">-</p>
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* COMMISSIONS DISPLAY */}
-                            {formData.planType && (
-                                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-docka-100 dark:border-zinc-800">
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase">Comissão Vendas</span>
-                                        <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                                            R$ {plans.find(p => p.name.toUpperCase().includes(formData.planType))?.commissionSales?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                                        </span>
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <span className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase">Comissão Ops</span>
-                                        <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
-                                            R$ {plans.find(p => p.name.toUpperCase().includes(formData.planType))?.commissionOps?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
-                                        </span>
-                                    </div>
+                            ) : (
+                                <div className="py-8 text-center border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-2xl">
+                                    <p className="text-xs font-semibold text-docka-400 italic">O processo será criado automaticamente ao converter o lead.</p>
                                 </div>
                             )}
                         </div>
+
+                        {/* 💰 SECTION: FINANCEIRO */}
+                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-sm font-black uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                    <DollarSign size={18} className="text-emerald-500" /> Financeiro / Honorários
+                                </h4>
+                                {invoiceData && (
+                                    <span className={`px-2.5 py-1 text-[10px] font-black rounded-lg border ${
+                                        invoiceData.status === 'PAID' 
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-100' 
+                                        : 'bg-rose-50 text-rose-700 border-rose-100'
+                                    }`}>
+                                        {invoiceData.status === 'PAID' ? 'PAGO' : 'PENDENTE'}
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800">
+                                    <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest mb-1 block">Valor do Plano</span>
+                                    <p className="text-lg font-black text-emerald-600 dark:text-emerald-400">R$ {formData.value || '0,00'}</p>
+                                </div>
+                                
+                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800">
+                                    <span className="text-[10px] font-bold text-docka-400 uppercase tracking-widest mb-1 block">Vencimento</span>
+                                    <p className="text-sm font-black text-docka-900 dark:text-zinc-100">{invoiceData?.dueDate ? new Date(invoiceData.dueDate).toLocaleDateString() : '-'}</p>
+                                </div>
+
+                                <div className="p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800 flex items-center justify-center">
+                                    {invoiceData ? (
+                                        <button 
+                                            onClick={() => window.open(invoiceData.officialBoletoUrl || '', '_blank')}
+                                            className="w-full flex items-center justify-center gap-2 text-[10px] font-black uppercase text-indigo-600 dark:text-indigo-400 hover:underline"
+                                        >
+                                            <FileText size={14} /> Abrir Fatura
+                                        </button>
+                                    ) : (
+                                        <span className="text-[10px] font-bold text-docka-300 italic">Fatura não gerada</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 📝 SECTION: CONTRATO */}
+                        <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-sm font-black uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                <FileText size={18} className="text-amber-500" /> Contrato & Assinatura
+                            </h4>
+                            
+                            <div className="flex items-center gap-4 p-4 bg-docka-50/50 dark:bg-zinc-800/50 rounded-2xl border border-docka-100 dark:border-zinc-800">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${formData.signedAt ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
+                                    {formData.signedAt ? <CheckCircle size={24} /> : <Clock size={24} />}
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-black text-docka-900 dark:text-zinc-100">
+                                        {formData.signedAt ? 'Contrato Assinado Digitalmente' : 'Aguardando Assinatura do Cliente'}
+                                    </p>
+                                    <p className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">
+                                        {formData.signedAt ? `Em ${new Date(formData.signedAt).toLocaleString()}` : 'Enviado por e-mail'}
+                                    </p>
+                                </div>
+                                {formData.signedAt && (
+                                    <button className="p-2 bg-white dark:bg-zinc-700 rounded-lg border border-docka-100 dark:border-zinc-600 text-indigo-600 dark:text-indigo-400 hover:shadow-md transition-all">
+                                        <QrCode size={18} />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Comments / Activity Feed (Simplified) */}
+                        <div className="space-y-4 pt-4">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-black uppercase tracking-[0.2em] text-docka-400 flex items-center gap-2">
+                                    <Clock size={14} /> Histórico de Ações
+                                </h4>
+                            </div>
+                            
+                            <div className="flex gap-3">
+                                <textarea
+                                    className="flex-1 px-4 py-3 text-sm text-docka-900 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 placeholder:text-docka-300 min-h-[60px] resize-none"
+                                    placeholder="Adicionar nota interna..."
+                                    value={newComment}
+                                    onChange={(e) => setNewComment(e.target.value)}
+                                />
+                                <button
+                                    onClick={handleAddComment}
+                                    className="px-4 bg-indigo-600 text-white rounded-2xl font-bold text-xs hover:bg-indigo-700 transition-all"
+                                >
+                                    Enviar
+                                </button>
+                            </div>
+
+                            <div className="space-y-4 mt-6">
+                                {comments.slice(0, 5).map((comment) => (
+                                    <div key={comment.id} className="flex gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-docka-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-black">
+                                            {getInitials(comment.user.name)}
+                                        </div>
+                                        <div className="flex-1 bg-docka-50/50 dark:bg-zinc-800/30 p-3 rounded-2xl text-xs">
+                                            <div className="flex justify-between mb-1">
+                                                <span className="font-black text-docka-900 dark:text-zinc-100">{comment.user.name}</span>
+                                                <span className="text-[10px] text-docka-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                            <p className="text-docka-600 dark:text-zinc-400">{comment.content}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* CONTACT INFO */}
-                    <div className="space-y-4 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                        <label className="text-xs font-semibold text-docka-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                            <User size={14} className="text-blue-500" /> Dados do Contrato (Principal)
-                        </label>
-                        <div className="space-y-4">
-                            <div className="group">
-                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Nome do Contato / Decisor</label>
-                                <input
-                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
-                                    placeholder="Nome completo"
-                                    value={formData.subtitle || ''}
-                                    onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
-                                    onBlur={e => handleBlur('contactName', e.target.value)}
-                                />
+                {/* 👤 RIGHT COLUMN: DATA (5 Cols) */}
+                <div className="lg:col-span-5 space-y-8">
+                    
+                    {/* CURRENT STEP ACTION */}
+                    <div className="bg-indigo-600 dark:bg-indigo-500 p-6 rounded-3xl shadow-xl shadow-indigo-500/20 text-white space-y-4">
+                        <span className="text-[10px] font-black uppercase tracking-widest opacity-80">Gatilho de Fluxo</span>
+                        <h3 className="text-xl font-black">Mover para próxima etapa?</h3>
+                        
+                        {formData.status === 'preparation' ? (
+                            <button 
+                                onClick={() => moveStatus('payment')}
+                                className="w-full py-4 bg-white text-indigo-600 rounded-2xl font-black text-sm hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                            >
+                                Faturar Agora <ArrowRight size={18} />
+                            </button>
+                        ) : formData.status === 'contract' ? (
+                            <button 
+                                onClick={handleConvert}
+                                className="w-full py-4 bg-white text-amber-600 rounded-2xl font-black text-sm hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+                            >
+                                Converter para Cliente <User size={18} />
+                            </button>
+                        ) : (
+                            <div className="py-4 text-center border border-white/20 rounded-2xl text-xs font-bold">
+                                Próximo passo disponível no topo
                             </div>
-                            <div className="grid grid-cols-1 gap-4">
-                                <div className="group">
-                                    <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">E-mail</label>
+                        )}
+                    </div>
+
+                        {/* 💰 VENDAS SECTION */}
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-docka-400 flex items-center gap-2">
+                                <DollarSign size={14} /> Configuração de Vendas
+                            </h4>
+                            
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Plano Selecionado</label>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
+                                            <button
+                                                key={plan}
+                                                onClick={() => handleAutoSave('planType', plan)}
+                                                className={`py-2 text-[10px] font-black rounded-xl border transition-all ${formData.planType === plan
+                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg'
+                                                    : 'bg-white dark:bg-zinc-800 border-docka-100 dark:border-zinc-700 text-docka-600 dark:text-zinc-400 hover:bg-docka-50'
+                                                }`}
+                                            >
+                                                {plan}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Responsável</label>
+                                    <select
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        value={formData.assignedUserId || ''}
+                                        onChange={e => handleAutoSave('assignedUserId', e.target.value)}
+                                    >
+                                        <option value="">-- Não Atribuído --</option>
+                                        {organizationMembers.map(m => (
+                                            <option key={m.id} value={m.userId || m.id}>
+                                                {m.user?.name || m.name || "Usuário"}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 🏢 EMPRESA SECTION */}
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-docka-400 flex items-center gap-2">
+                                <Briefcase size={14} /> Dados da Empresa
+                            </h4>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Razão Social</label>
                                     <input
-                                        className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
-                                        placeholder="email@empresa.com"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder="Razão Social"
+                                        value={formData.razaoSocial || ''}
+                                        onChange={e => setFormData({ ...formData, razaoSocial: e.target.value })}
+                                        onBlur={e => updateTagValue('razaoSocial', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">CNPJ / CPF</label>
+                                    <input
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder="00.000.000/0000-00"
+                                        value={formData.cnpj || ''}
+                                        onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
+                                        onBlur={e => updateTagValue('cnpj', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Endereço Fiscal</label>
+                                    <textarea
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[80px] resize-none"
+                                        placeholder="Rua, Número, Bairro, Cidade/UF"
+                                        value={formData.address || ''}
+                                        onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                        onBlur={e => updateTagValue('address', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 👤 CONTATO SECTION */}
+                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
+                            <h4 className="text-xs font-black uppercase tracking-wider text-docka-400 flex items-center gap-2">
+                                <User size={14} /> Dados de Contato
+                            </h4>
+
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">Nome Completo</label>
+                                    <input
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        value={formData.subtitle || ''}
+                                        onChange={e => setFormData({ ...formData, subtitle: e.target.value })}
+                                        onBlur={e => handleBlur('contactName', e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">E-mail de Acesso</label>
+                                    <input
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         value={formData.contactEmail || ''}
                                         onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
                                         onBlur={e => handleBlur('contactEmail', e.target.value)}
                                     />
                                 </div>
-                                <div className="group">
-                                    <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Telefone / WhatsApp</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-docka-400 uppercase tracking-widest ml-1">WhatsApp</label>
                                     <input
-                                        className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
-                                        placeholder="(00) 00000-0000"
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
                                         value={formData.contactPhone || ''}
                                         onChange={e => setFormData({ ...formData, contactPhone: maskPhone(e.target.value) })}
                                         onBlur={e => handleBlur('contactPhone', e.target.value)}
-                                        maxLength={15}
                                     />
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* VALUE SECTION */}
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <label className="text-xs font-semibold text-docka-700 dark:text-zinc-300 uppercase tracking-wider flex items-center gap-1.5">
-                                <DollarSign size={14} /> Valor Estimado
-                            </label>
-                            <div className="relative group">
-                                <span className="absolute left-0 top-1.5 text-sm text-docka-400">R$</span>
-                                <input
-                                    className={`w-full text-lg font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-b border-docka-200 dark:border-zinc-700 py-1 outline-none transition-colors placeholder:text-docka-300 ${!isAdmin ? 'opacity-70 cursor-not-allowed select-none pointer-events-none' : 'hover:border-blue-500 focus:border-blue-600'}`}
-                                    value={formData.value || ''}
-                                    onChange={e => setFormData({ ...formData, value: maskCurrency(e.target.value) })}
-                                    onBlur={e => handleBlur('value', e.target.value)}
-                                    placeholder="0,00"
-                                    disabled={!isAdmin}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* COMPANY INFO (FOR PROCURACAO) */}
-                    <div className="space-y-4 bg-white dark:bg-zinc-900 p-5 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                        <label className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Tag size={14} /> Dados para Procuração (Empresa)
-                        </label>
+                        {/* 🏷️ TAGS & ACTIONS */}
                         <div className="space-y-4">
-                            <div className="group">
-                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Razão Social</label>
-                                <input
-                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
-                                    placeholder="Razão Social completa"
-                                    value={formData.razaoSocial || ''}
-                                    onChange={e => setFormData({ ...formData, razaoSocial: e.target.value })}
-                                    onBlur={e => updateTagValue('razaoSocial', e.target.value)}
-                                />
-                            </div>
-                            <div className="group">
-                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">CNPJ / CPF</label>
-                                <input
-                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300"
-                                    placeholder="00.000.000/0001-00"
-                                    value={formData.cnpj || ''}
-                                    onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
-                                    onBlur={e => updateTagValue('cnpj', e.target.value)}
-                                />
-                            </div>
-                            <div className="group">
-                                <label className="text-xs font-semibold text-docka-400 dark:text-zinc-500 uppercase mb-1 block">Endereço Completo</label>
-                                <textarea
-                                    className="w-full text-xs font-semibold bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg px-3 py-2 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all text-docka-900 dark:text-zinc-100 shadow-sm placeholder:text-docka-300 min-h-[60px] resize-none"
-                                    placeholder="Rua, Número, Bairro, Cidade/UF - CEP"
-                                    value={formData.address || ''}
-                                    onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                    onBlur={e => updateTagValue('address', e.target.value)}
-                                />
-                            </div>
-                        </div>
-                    </div>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-docka-400 ml-1">Organização</h4>
+                            <div className="flex flex-wrap gap-2">
+                                {formData.tags?.map((tag: any, idx: number) => {
+                                    if (tag.label?.startsWith('CNPJ:') || tag.label?.startsWith('Razão Social:') || tag.label?.startsWith('Endereço:')) return null;
+                                    return (
+                                        <span key={idx} className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${tag.color} flex items-center gap-2 border border-black/5 shadow-sm`}>
+                                            {tag.label}
+                                            <button className="hover:scale-110 transition-transform" onClick={() => {
+                                                const newTags = formData.tags.filter((_: any, i: number) => i !== idx);
+                                                handleAutoSave('tags', newTags);
+                                            }}>
+                                                ×
+                                            </button>
+                                        </span>
+                                    );
+                                })}
 
-                    {/* TAGS */}
-                    <div className="space-y-3">
-                        <label className="text-xs font-bold text-docka-500 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                            <Tag size={14} /> Tags
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                            {formData.tags?.map((tag: any, idx: number) => {
-                                if (tag.label?.startsWith('CNPJ:') || tag.label?.startsWith('Razão Social:') || tag.label?.startsWith('Endereço:')) return null;
-                                return (
-                                    <span key={idx} className={`px-2 py-1 rounded text-xs font-bold uppercase ${tag.color} flex items-center gap-1`}>
-                                        {tag.label}
-                                        <button className="hover:opacity-75" onClick={() => {
-                                            const newTags = formData.tags.filter((_: any, i: number) => i !== idx);
-                                            handleAutoSave('tags', newTags);
-                                        }}>
-                                            ×
-                                        </button>
-                                    </span>
-                                );
-                            })}
-
-                            {isAddingTag ? (
-                                <div className="flex items-center gap-2 animate-in slide-in-from-left-2 duration-200">
+                                {isAddingTag ? (
                                     <input
                                         ref={tagInputRef}
                                         autoFocus
-                                        className="px-2 py-1 text-xs border border-docka-400 rounded-md outline-none focus:ring-2 focus:ring-docka-200 min-w-[80px]"
-                                        placeholder="Nome da tag..."
+                                        className="px-3 py-1.5 text-[10px] font-black uppercase bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder="Nova Tag..."
                                         value={customTagName}
                                         onChange={e => setCustomTagName(e.target.value)}
                                         onKeyDown={e => {
-                                            if (e.key === 'Enter') {
-                                                if (customTagName.trim()) {
-                                                    const newTag = { label: customTagName.trim(), color: 'bg-indigo-100 text-indigo-700' };
-                                                    handleAutoSave('tags', [...(formData.tags || []), newTag]);
-                                                }
+                                            if (e.key === 'Enter' && customTagName.trim()) {
+                                                handleAutoSave('tags', [...(formData.tags || []), { label: customTagName.trim(), color: 'bg-zinc-100 text-zinc-600' }]);
                                                 setIsAddingTag(false);
                                                 setCustomTagName('');
-                                            } else if (e.key === 'Escape') {
-                                                setIsAddingTag(false);
-                                                setCustomTagName('');
-                                            }
-                                        }}
-                                        onBlur={() => {
-                                            if (customTagName.trim()) {
-                                                const newTag = { label: customTagName.trim(), color: 'bg-indigo-100 text-indigo-700' };
-                                                handleAutoSave('tags', [...(formData.tags || []), newTag]);
-                                            }
-                                            setIsAddingTag(false);
-                                            setCustomTagName('');
+                                            } else if (e.key === 'Escape') setIsAddingTag(false);
                                         }}
                                     />
-                                </div>
-                            ) : (
-                                <button
-                                    className="px-2 py-1 rounded text-xs border border-dashed border-docka-300 text-docka-500 hover:bg-docka-50 transition-colors"
-                                    onClick={() => setIsAddingTag(true)}
-                                >
-                                    + Tag
-                                </button>
-                            )}
+                                ) : (
+                                    <button
+                                        onClick={() => setIsAddingTag(true)}
+                                        className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase border border-dashed border-docka-300 text-docka-400 hover:bg-docka-50 transition-all"
+                                    >
+                                        + Adicionar Tag
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    {/* DELETE ZONE */}
-                    <div className="pt-4 border-t border-docka-100 dark:border-zinc-800">
-                        <button
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className="w-full px-4 py-2 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center justify-center gap-2"
-                        >
-                            <Trash2 size={14} />
-                            {isDeleting ? 'Excluindo...' : 'Excluir Lead'}
-                        </button>
+                        {/* 🗑️ DANGER ZONE */}
+                        <div className="pt-8 mt-8 border-t border-docka-100 dark:border-zinc-800/50">
+                            <button
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                                className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-red-400 hover:text-red-500 hover:bg-red-50/50 dark:hover:bg-red-900/10 rounded-2xl transition-all flex items-center justify-center gap-2"
+                            >
+                                <Trash2 size={14} />
+                                {isDeleting ? 'Excluindo...' : 'Remover do Pipeline'}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
-                {/* CONFIRMATION OVERLAY */}
+                {/* ✨ CONVERSION OVERLAY */}
                 {showConfirmConvert && (
-                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm rounded-xl p-8 animate-in fade-in duration-200">
-                        <div className="max-w-sm text-center">
-                            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                                <User size={32} />
+                    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-zinc-950/90 backdrop-blur-md rounded-[2.5rem] p-8 animate-in zoom-in-95 duration-300">
+                        <div className="max-w-md w-full bg-zinc-900 border border-white/10 p-10 rounded-[2.5rem] shadow-2xl text-center space-y-8">
+                            <div className="w-24 h-24 bg-gradient-to-tr from-amber-500 to-amber-300 text-zinc-900 rounded-full flex items-center justify-center mx-auto shadow-2xl shadow-amber-500/20">
+                                <User size={48} strokeWidth={2.5} />
                             </div>
-                            <h3 className="text-xl font-bold text-docka-900 dark:text-zinc-100 mb-3">Confirmar Conversão?</h3>
-                            <p className="text-sm text-docka-500 dark:text-zinc-400 mb-8 leading-relaxed">
-                                Você está prestes a transformar este lead em um cliente.
-                                <br /><br />
-                                Isso criará automaticamente:
-                                <ul className="mt-2 space-y-1 text-left bg-docka-50 dark:bg-zinc-800 p-3 rounded-lg border border-docka-100 dark:border-zinc-700">
-                                    <li className="flex items-center gap-2"><CheckCircle size={14} className="text-green-500" /> Acesso ao Portal do Cliente</li>
-                                    <li className="flex items-center gap-2"><CheckCircle size={14} className="text-green-500" /> Processo Jurídico Inicial</li>
-                                </ul>
-                            </p>
-                            <div className="flex gap-3 justify-center">
+                            
+                            <div className="space-y-2">
+                                <h3 className="text-3xl font-black text-white">Converter Lead?</h3>
+                                <p className="text-zinc-400 text-sm font-medium px-4">
+                                    O cliente receberá acesso imediato ao portal e um novo processo será inicializado.
+                                </p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
                                 <button
                                     onClick={() => setShowConfirmConvert(false)}
-                                    className="px-5 py-2.5 text-sm font-bold text-docka-500 hover:text-docka-700 hover:bg-docka-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                                    className="py-4 text-xs font-black uppercase tracking-widest text-zinc-500 hover:text-white transition-colors"
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     onClick={executeConvert}
                                     disabled={loading}
-                                    className="px-6 py-2.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg shadow-blue-600/20 flex items-center gap-2 transform active:scale-95 transition-all"
+                                    className="py-4 bg-white text-zinc-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:scale-[1.05] active:scale-95 transition-all shadow-xl shadow-white/10"
                                 >
                                     {loading ? 'Criando...' : 'Sim, Converter'}
                                 </button>
