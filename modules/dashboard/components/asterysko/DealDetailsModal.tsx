@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell } from 'lucide-react';
+import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff } from 'lucide-react';
 import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
@@ -942,8 +942,28 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                         <div className="space-y-3">
-                            {['contract', 'service_payment', 'documentation', 'federal_fee'].includes(formData.status) && (
+                          <div className="space-y-3">
+                            {/* 🔕 NOTIFICATION TOGGLE */}
+                            <div className="flex items-center justify-between p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-100 dark:border-zinc-800 mb-2">
+                                <div className="flex items-center gap-2">
+                                    {formData.notificationsEnabled ? <Bell size={14} className="text-indigo-500" /> : <BellOff size={14} className="text-zinc-400" />}
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Notificações</span>
+                                </div>
+                                <button
+                                    onClick={() => handleAutoSave('notificationsEnabled', !formData.notificationsEnabled)}
+                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
+                                        formData.notificationsEnabled ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'
+                                    }`}
+                                >
+                                    <span
+                                        className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                            formData.notificationsEnabled ? 'translate-x-5' : 'translate-x-1'
+                                        }`}
+                                    />
+                                </button>
+                            </div>
+
+                            {formData.notificationsEnabled && ['contract', 'service_payment', 'documentation', 'federal_fee'].includes(formData.status) && (
                                 <button
                                     onClick={handleSendReminder}
                                     disabled={sendingReminder}
