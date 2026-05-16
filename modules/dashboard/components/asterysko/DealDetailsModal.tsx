@@ -725,32 +725,41 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <span className="text-xs font-bold uppercase tracking-widest opacity-80">Gatilho de Fluxo</span>
                             <h3 className="text-lg font-bold">Mover para próxima etapa?</h3>
                             
-                            {formData.status === 'preparation' ? (
-                                <button 
-                                    onClick={() => moveStatus('payment')}
-                                    className="w-full py-3 bg-white text-indigo-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
-                                >
-                                    Faturar Agora <ArrowRight size={18} />
-                                </button>
-                            ) : formData.status === 'contract' ? (
-                                <button 
-                                    onClick={handleConvert}
-                                    className="w-full py-3 bg-white text-amber-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
-                                >
-                                    Converter para Cliente <User size={18} />
-                                </button>
-                            ) : formData.status === 'payment' ? (
-                                <button 
-                                    onClick={() => moveStatus('protocol')}
-                                    className="w-full py-3 bg-white text-emerald-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
-                                >
-                                    Confirmar Pagamento <CheckCircle size={18} />
-                                </button>
-                            ) : (
-                                <div className="py-3 text-center border border-white/20 rounded-lg text-xs font-bold">
-                                    Próximo passo disponível no topo
-                                </div>
-                            )}
+                            {/* GATILHOS DE FLUXO E CONVERSÃO */}
+                            <div className="space-y-3">
+                                {!deal.clientId ? (
+                                    <button 
+                                        onClick={handleConvert}
+                                        className="w-full py-3 bg-amber-500 text-white rounded-lg font-bold text-sm hover:bg-amber-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10"
+                                    >
+                                        Converter para Cliente <User size={18} />
+                                    </button>
+                                ) : (
+                                    <div className="py-2 px-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
+                                        <CheckCircle size={14} /> Cliente Vinculado
+                                    </div>
+                                )}
+
+                                {formData.status === 'preparation' ? (
+                                    <button 
+                                        onClick={() => moveStatus('payment')}
+                                        className="w-full py-3 bg-white text-indigo-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        Faturar Agora <ArrowRight size={18} />
+                                    </button>
+                                ) : formData.status === 'payment' ? (
+                                    <button 
+                                        onClick={() => moveStatus('protocol')}
+                                        className="w-full py-3 bg-white text-emerald-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        Confirmar Pagamento <CheckCircle size={18} />
+                                    </button>
+                                ) : (
+                                    <div className="py-3 text-center border border-white/20 rounded-lg text-xs font-bold">
+                                        Próximo passo disponível no topo
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* 💰 VENDAS SECTION */}
