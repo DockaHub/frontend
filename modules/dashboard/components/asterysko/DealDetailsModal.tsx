@@ -62,6 +62,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [isConfirmingProtocol, setIsConfirmingProtocol] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [sendingReminder, setSendingReminder] = useState(false);
+    const [isEditingProcess, setIsEditingProcess] = useState(false);
+    const [tempProcessData, setTempProcessData] = useState<any>({});
 
     const handleSendReminder = async () => {
         setSendingReminder(true);
@@ -118,6 +120,27 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             addToast({ type: 'error', title: 'Erro', message: 'Falha ao confirmar protocolo.' });
         } finally {
             setIsConfirmingProtocol(false);
+        }
+    };
+
+    const handleUpdateProcess = async () => {
+        if (!processData?.id) return;
+        setLoading(true);
+        try {
+            await api.put(`/asterysko/processes/${processData.id}`, {
+                inpiProcessNumber: tempProcessData.inpiProcessNumber,
+                brandName: tempProcessData.brandName,
+                nclClass: tempProcessData.nclClass,
+                filingDate: tempProcessData.filingDate
+            });
+            addToast({ type: 'success', title: 'Sucesso', message: 'Processo atualizado com sucesso!' });
+            setIsEditingProcess(false);
+            fetchDealDetails();
+        } catch (error) {
+            console.error('Failed to update process', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao atualizar processo.' });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -595,40 +618,107 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 <h4 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                     <ShieldCheck size={18} className="text-indigo-500" /> Processo INPI
                                 </h4>
-                                {processData && (
-                                    <div className="flex items-center gap-2">
-                                        <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-100 dark:border-indigo-900/20">
-                                            ID: {processData.inpiProcessNumber || 'A Protocolar'}
-                                        </span>
-                                        {formData.status === 'ready_to_file' && (
-                                            <button 
-                                                onClick={() => setShowProtocolModal(true)}
-                                                className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-emerald-600 shadow-sm transition-all flex items-center gap-1"
-                                            >
-                                                <Upload size={12} /> Confirmar Protocolo
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-
-                            {processData ? (
+                                <div className="flex items-center gap-2">
+                                    {processData && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-100 dark:border-indigo-900/20">
+                                                ID: {processData.inpiProcessNumber || 'A Protocolar'}
+                                            </span>
+                                            {isEditingProcess ? (
+                                                <div className="flex gap-1">
+                                                    <button 
+                                                        onClick={() => setIsEditingProcess(false)}
+                                                        className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 text-[10px] font-bold uppercase rounded-lg hover:bg-zinc-200 transition-all"
+                                                    >
+                                                        Cancelar
+                                                    </button>
+                                                    <button 
+                                                        onClick={handleUpdateProcess}
+                                                        className="px-2 py-1 bg-indigo-600 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-indigo-700 transition-all"
+                                                    >
+                                                        Salvar
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => {
+                                                        setTempProcessData({
+                                                            inpiProcessNumber: processData.inpiProcessNumber || '',
+                                                            brandName: processData.brand?.name || '',
+                                                            nclClass: processData.brand?.nclClasses?.join(', ') || '',
+                                                            filingDate: processData.filingDate ? new Date(processData.filingDate).toISOString().split('T')[0] : ''
+                                                        });
+                                                        setIsEditingProcess(true);
+                                                    }}
+                                                    className="p-1.5 text-docka-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
+                                                    title="Editar dados do processo"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+                                            )}
+                                            {formData.status === 'ready_to_file' && (
+                                                <button 
+                                                    onClick={() => setShowProtocolModal(true)}
+                                                    className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-emerald-600 shadow-sm transition-all flex items-center gap-1"
+                                                >
+                                                    <Upload size={12} /> Confirmar Protocolo
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                                           {processData ? (
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-1">
                                         <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Marca</span>
-                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{processData.brand?.name || 'Não definida'}</p>
+                                        {isEditingProcess ? (
+                                            <input 
+                                                className="w-full text-sm font-bold bg-zinc-50 dark:bg-zinc-800 border-none rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                value={tempProcessData.brandName}
+                                                onChange={e => setTempProcessData({...tempProcessData, brandName: e.target.value})}
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{processData.brand?.name || 'Não definida'}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-1">
                                         <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Classes (NCL)</span>
-                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{processData.brand?.nclClasses?.join(', ') || '-'}</p>
+                                        {isEditingProcess ? (
+                                            <input 
+                                                className="w-full text-sm font-bold bg-zinc-50 dark:bg-zinc-800 border-none rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                value={tempProcessData.nclClass}
+                                                onChange={e => setTempProcessData({...tempProcessData, nclClass: e.target.value})}
+                                                placeholder="Ex: 35, 41"
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{processData.brand?.nclClasses?.join(', ') || '-'}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Status Protocolo</span>
-                                        <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{processData.status || 'PENDENTE'}</p>
+                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Número do Processo</span>
+                                        {isEditingProcess ? (
+                                            <input 
+                                                className="w-full text-sm font-bold bg-zinc-50 dark:bg-zinc-800 border-none rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                value={tempProcessData.inpiProcessNumber}
+                                                onChange={e => setTempProcessData({...tempProcessData, inpiProcessNumber: e.target.value})}
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">{processData.inpiProcessNumber || '-'}</p>
+                                        )}
                                     </div>
                                     <div className="space-y-1">
-                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Vencimento Proxy</span>
-                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">-</p>
+                                        <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Data de Depósito</span>
+                                        {isEditingProcess ? (
+                                            <input 
+                                                type="date"
+                                                className="w-full text-sm font-bold bg-zinc-50 dark:bg-zinc-800 border-none rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                                value={tempProcessData.filingDate}
+                                                onChange={e => setTempProcessData({...tempProcessData, filingDate: e.target.value})}
+                                            />
+                                        ) : (
+                                            <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">
+                                                {processData.filingDate ? new Date(processData.filingDate).toLocaleDateString() : '-'}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             ) : (
