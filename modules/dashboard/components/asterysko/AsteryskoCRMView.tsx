@@ -291,7 +291,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                     <span className="text-xs font-semibold text-docka-400 tracking-wider">Sincronizando pipeline...</span>
                 </div>
             ) : (
-                <div className="h-full w-full flex flex-col animate-in fade-in duration-500 overflow-x-auto custom-scrollbar">
+                <div className="h-full w-full flex flex-col animate-in fade-in duration-500 overflow-hidden">
                     <div className="flex-1 min-h-0">
                         {columns.length > 0 ? (
                             viewMode === 'kanban' ? (

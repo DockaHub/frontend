@@ -51,7 +51,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             </header>
 
             {/* Content Area (Scrollable) */}
-            <main className={`flex-1 overflow-auto custom-scrollbar ${padding}`}>
+            <main className={`flex-1 overflow-y-auto custom-scrollbar ${padding}`}>
                 {children}
             </main>
         </div>
