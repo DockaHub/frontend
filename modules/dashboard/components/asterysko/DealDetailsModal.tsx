@@ -84,8 +84,17 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     };
 
     const handleProtocolConfirm = async () => {
-        if (!protocolFile || !processData) {
-            addToast({ type: 'error', title: 'Erro', message: 'Selecione o arquivo do protocolo.' });
+        console.log('Iniciando confirmação de protocolo...', { protocolFile, processId: processData?.id });
+
+        if (!protocolFile) {
+            addToast({ type: 'error', title: 'Erro', message: 'Por favor, selecione o arquivo PDF do protocolo.' });
+            return;
+        }
+
+        if (!processData?.id) {
+            addToast({ type: 'error', title: 'Erro', message: 'Dados do processo não encontrados. Tente fechar e abrir o modal.' });
+            // Refresh details just in case
+            fetchDealDetails();
             return;
         }
 
