@@ -50,6 +50,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const { user } = useAuth();
     const { addToast } = useToast();
     const [loading, setLoading] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
     const [comments, setComments] = useState<DealComment[]>([]);
     const [newComment, setNewComment] = useState('');
     const [loadingComments, setLoadingComments] = useState(false);
@@ -260,14 +261,19 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         return floatValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
     };
 
-    const updateDealPartial = async (field: string, value: any) => {
-        if (!deal) return;
-        try {
-            await api.put(`/asterysko/crm/deals/${deal.id}`, { [field]: value });
-        } catch (error) {
-            console.error('Failed to auto-save', error);
-        }
-    };
+     const updateDealPartial = async (field: string, value: any) => {
+         if (!deal) return;
+         setSaveStatus('saving');
+         try {
+             await api.put(`/asterysko/crm/deals/${deal.id}`, { [field]: value });
+             setSaveStatus('saved');
+             // Reset to idle after 2 seconds
+             setTimeout(() => setSaveStatus('idle'), 2000);
+         } catch (error) {
+             console.error('Failed to auto-save', error);
+             setSaveStatus('idle');
+         }
+     };
 
 
 
@@ -431,8 +437,28 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 <div className="flex flex-col gap-4 p-5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-col gap-1 flex-1">
-                            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-docka-400">
-                                <Layout size={12} /> Lead #{deal.id.split('-')[0]}
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-docka-400">
+                                    <Layout size={12} /> Lead #{deal.id.split('-')[0]}
+                                </div>
+                                {/* Saving Indicator */}
+                                {saveStatus !== 'idle' && (
+                                    <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all duration-300 ${
+                                        saveStatus === 'saving' ? 'bg-amber-50 text-amber-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'
+                                    }`}>
+                                        {saveStatus === 'saving' ? (
+                                            <>
+                                                <div className="w-1 h-1 bg-amber-600 rounded-full animate-bounce" />
+                                                Salvando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Check size={10} strokeWidth={3} />
+                                                Salvo
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <input
                                 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
