@@ -474,27 +474,26 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
 
                         <div className="flex items-center gap-2">
-                                                    <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
-                                  {['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'].map((s, idx) => {
-                                      const isActive = formData.status === s;
-                                      const stagesOrder = ['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'];
-                                      const isPast = stagesOrder.indexOf(formData.status) > idx;
-                                      return (
-                                          <div key={s} className="flex items-center">
-                                              <div 
-                                                  className={`h-1.5 w-4 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-8' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
-                                                  title={statusMap[s] || s}
-                                              />
-                                              {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
-                                          </div>
-                                      );
-                                  })}
-                                  <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
-                                      {statusMap[formData.status] || formData.status}
-                                  </span>
-                              </div>
-
-                             </div>
+                            {/* Visual Status Progress */}
+                            <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
+                                {['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'].map((s, idx) => {
+                                    const isActive = formData.status === s;
+                                    const stagesOrder = ['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'];
+                                    const isPast = stagesOrder.indexOf(formData.status) > idx;
+                                    return (
+                                        <div key={s} className="flex items-center">
+                                            <div 
+                                                className={`h-1.5 w-4 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-8' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
+                                                title={statusMap[s] || s}
+                                            />
+                                            {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
+                                        </div>
+                                    );
+                                })}
+                                <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
+                                    {statusMap[formData.status] || formData.status}
+                                </span>
+                            </div>
 
                              {/* Quick Actions Dropdown or Row */}
                              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-docka-100 dark:border-zinc-800">
