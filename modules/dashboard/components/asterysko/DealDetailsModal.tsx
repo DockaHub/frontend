@@ -65,6 +65,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         leads: 'Novo Lead',
         viability: 'Viabilidade',
         contract: 'Contrato',
+        service_payment: 'Pagamento Serviço',
         documentation: 'Procuração/Docs',
         federal_fee: 'Taxa Federal',
         ready_to_file: 'A Protocolar',
@@ -477,14 +478,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         <div className="flex items-center gap-2">
                             {/* Visual Status Progress */}
                             <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
-                                {['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'].map((s, idx) => {
+                                {['leads', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'].map((s, idx) => {
                                     const isActive = formData.status === s;
-                                    const stagesOrder = ['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
+                                    const stagesOrder = ['leads', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
                                     const isPast = stagesOrder.indexOf(formData.status) > idx;
                                     return (
                                         <div key={s} className="flex items-center">
                                             <div 
-                                                className={`h-1.5 w-3.5 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-8' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
+                                                className={`h-1.5 w-3 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-6' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
                                                 title={statusMap[s] || s}
                                             />
                                             {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
@@ -749,7 +750,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     const nextSteps: Record<string, { label: string, next: string, color: string, icon: any }> = {
                                         leads: { label: 'Iniciar Viabilidade', next: 'viability', color: 'text-indigo-600', icon: ArrowRight },
                                         viability: { label: 'Avançar para Contrato', next: 'contract', color: 'text-amber-600', icon: FileText },
-                                        contract: { label: 'Solicitar Documentos', next: 'documentation', color: 'text-purple-600', icon: ShieldCheck },
+                                        contract: { label: 'Faturar Honorários', next: 'service_payment', color: 'text-emerald-600', icon: DollarSign },
+                                        service_payment: { label: 'Solicitar Documentos', next: 'documentation', color: 'text-purple-600', icon: ShieldCheck },
                                         documentation: { label: 'Gerar Taxa (GRU)', next: 'federal_fee', color: 'text-rose-600', icon: DollarSign },
                                         federal_fee: { label: 'Liberar p/ Protocolo', next: 'ready_to_file', color: 'text-orange-600', icon: CheckCircle },
                                         ready_to_file: { label: 'Confirmar Protocolo', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
