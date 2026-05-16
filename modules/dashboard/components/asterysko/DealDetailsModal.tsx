@@ -55,6 +55,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [newComment, setNewComment] = useState('');
     const [loadingComments, setLoadingComments] = useState(false);
     const [showConfirmConvert, setShowConfirmConvert] = useState(false);
+    const [showProtocolModal, setShowProtocolModal] = useState(false);
+    const [protocolFile, setProtocolFile] = useState<File | null>(null);
+    const [protocolProcessNumber, setProtocolProcessNumber] = useState('');
+    const [protocolFilingDate, setProtocolFilingDate] = useState(new Date().toISOString().split('T')[0]);
+    const [isConfirmingProtocol, setIsConfirmingProtocol] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [sendingReminder, setSendingReminder] = useState(false);
 
@@ -75,6 +80,34 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             });
         } finally {
             setSendingReminder(false);
+        }
+    };
+
+    const handleProtocolConfirm = async () => {
+        if (!protocolFile || !processData) {
+            addToast({ type: 'error', title: 'Erro', message: 'Selecione o arquivo do protocolo.' });
+            return;
+        }
+
+        setIsConfirmingProtocol(true);
+        const formDataPayload = new FormData();
+        formDataPayload.append('protocol', protocolFile);
+        formDataPayload.append('inpiProcessNumber', protocolProcessNumber);
+        formDataPayload.append('filingDate', protocolFilingDate);
+
+        try {
+            await api.post(`/asterysko/processes/${processData.id}/protocol/confirm`, formDataPayload, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            addToast({ type: 'success', title: 'Sucesso', message: 'Protocolo confirmado com sucesso!' });
+            setShowProtocolModal(false);
+            setProtocolFile(null);
+            setFormData(prev => ({ ...prev, status: 'filed' }));
+        } catch (error) {
+            console.error('Failed to confirm protocol', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao confirmar protocolo.' });
+        } finally {
+            setIsConfirmingProtocol(false);
         }
     };
 
@@ -115,11 +148,9 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     useEffect(() => {
         api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
         
-        // Fetch org members to assign to deals - Now restricted by Organization Context
         if (organization?.id) {
             api.get(`/organizations/${organization.id}/members`)
                 .then(res => {
-                    // Filter to exclude clients and keep only staff/admins
                     const staff = res.data.filter((m: any) => m.globalRole !== 'CLIENT');
                     setOrganizationMembers(staff);
                 })
@@ -133,7 +164,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             const formattedValue = Number(fee.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
             setFormData({ ...formData, value: formattedValue });
             handleAutoSave('value', fee.value);
-            // Optionally add a tag for the service
             const currentTags = formData.tags || [];
             if (!currentTags.some((t: any) => t.label === fee.name)) {
                 handleAutoSave('tags', [...currentTags, { label: fee.name, color: 'bg-blue-100 text-blue-700' }]);
@@ -141,12 +171,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         }
     };
 
-    // Auto-save refs to avoid dependency loops in useEffect
     const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         if (deal && isOpen) {
-            setShowConfirmConvert(false); // Reset confirmation state on open
+            setShowConfirmConvert(false);
             const tags = (deal as any).tags || [];
             const info = extractInfoFromTags(tags);
             setFormData({
@@ -217,7 +246,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             await api.delete(`/asterysko/crm/deals/${deal.id}`);
             addToast({ type: 'success', title: 'Sucesso', message: 'Lead excluído com sucesso' });
             onClose();
-            onConvertSuccess(); // Refresh Kanban
+            onConvertSuccess();
         } catch (error) {
             console.error('Failed to delete deal', error);
             addToast({ type: 'error', title: 'Erro', message: 'Erro ao excluir lead' });
@@ -226,21 +255,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         }
     };
 
-    // --- GENERIC AUTO-SAVE FUNCTION ---
     const handleAutoSave = async (field: string, value: any) => {
-        // Update local state first
         setFormData((prev: any) => ({ ...prev, [field]: value }));
-
-        // Clear existing timeout
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-        // Debounce save (wait 500ms after last change) OR save immediately on blur
-        // For inputs, we usually want onBlur to trigger immediate save, 
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
         timeoutRef.current = setTimeout(() => {
-            // Logic to save to backend (if we had a specific endpoint for partial updates)
-            // For now, we rely on the implementation in specific handlers or just local state
             console.log(`Auto-saving ${field}: ${value}`);
             updateDealPartial(field, value);
         }, 500);
@@ -280,20 +298,12 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             .replace(/(-\d{4})\d+?$/, '$1');
     };
 
-    const maskCurrency = (value: string) => {
-        const numericValue = value.replace(/\D/g, '');
-        if (!numericValue) return '';
-        const floatValue = parseFloat(numericValue) / 100;
-        return floatValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-    };
-
      const updateDealPartial = async (field: string, value: any) => {
          if (!deal) return;
          setSaveStatus('saving');
          try {
              await api.put(`/asterysko/crm/deals/${deal.id}`, { [field]: value });
              setSaveStatus('saved');
-             // Reset to idle after 2 seconds
              setTimeout(() => setSaveStatus('idle'), 2000);
          } catch (error) {
              console.error('Failed to auto-save', error);
@@ -301,10 +311,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
          }
      };
 
-
-
-
-    // 1. Initial trigger: Validates and shows custom modal
     const handleConvert = async () => {
         if (!formData.contactEmail || !formData.contactName && !formData.subtitle) {
             addToast({ type: 'warning', title: 'Atenção', message: 'Preencha o Nome e Email do contato para converter.' });
@@ -313,7 +319,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         setShowConfirmConvert(true);
     };
 
-    // 2. Actual execution after confirmation
     const executeConvert = async () => {
         setLoading(true);
         try {
@@ -353,27 +358,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         } catch (error: any) {
             console.error('Error moving status', error);
             const errorMsg = error.response?.data?.error || 'Falha ao atualizar status.';
-            addToast({ type: 'error', title: 'Erro', message: errorMsg });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleGenerateContract = async () => {
-        if (!formData.contactEmail || !formData.subtitle) {
-            addToast({ type: 'warning', title: 'Atenção', message: 'Nome e Email são necessários para o contrato.' });
-            return;
-        }
-
-        setLoading(true);
-        try {
-            await api.post(`/asterysko/crm/deals/${deal.id}/contract`);
-            setFormData({ ...formData, status: 'contract' });
-            onConvertSuccess();
-            addToast({ type: 'success', title: 'Contrato Enviado', message: 'Contrato gerado e enviado por email! 📄' });
-        } catch (error: any) {
-            console.error('Error serving contract', error);
-            const errorMsg = error.response?.data?.error || 'Falha ao gerar contrato.';
             addToast({ type: 'error', title: 'Erro', message: errorMsg });
         } finally {
             setLoading(false);
@@ -437,7 +421,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 }
             }
         } catch (e) {
-            // Not a valid JSON, fallback to textarea
         }
 
         return (
@@ -460,7 +443,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         >
             <div className="flex flex-col gap-6 -mt-4 min-h-[70vh] relative">
                 
-                {/* 🚀 COMMAND HEADER (Fixed style) */}
                 <div className="flex flex-col gap-4 p-5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-col gap-1 flex-1">
@@ -468,7 +450,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-docka-400">
                                     <Layout size={12} /> Lead #{deal.id.split('-')[0]}
                                 </div>
-                                {/* Saving Indicator */}
                                 {saveStatus !== 'idle' && (
                                     <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase transition-all duration-300 ${
                                         saveStatus === 'saving' ? 'bg-amber-50 text-amber-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'
@@ -497,7 +478,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
 
                         <div className="flex items-center gap-2">
-                            {/* Visual Status Progress */}
                             <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
                                 {['leads', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'].map((s, idx) => {
                                     const isActive = formData.status === s;
@@ -518,7 +498,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 </span>
                             </div>
 
-                             {/* Quick Actions Dropdown or Row */}
                              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-docka-100 dark:border-zinc-800">
                                 {clientData && (
                                     <button 
@@ -549,10 +528,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 </div>
 
                 <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8">
-                    {/* 📋 LEFT COLUMN: OPERATIONAL (7 Cols) */}
                     <div className="lg:col-span-7 space-y-8">
                         
-                        {/* 🖼️ MARCA / LOGO SECTION */}
                         <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm flex items-start gap-6">
                             <div className="w-32 h-32 bg-docka-50 dark:bg-zinc-800 rounded-xl border-2 border-dashed border-docka-100 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-docka-100/50 transition-all relative overflow-hidden group">
                                 {formData.brandLogo ? (
@@ -584,7 +561,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        {/* 📋 DESCRIPTION SECTION */}
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-docka-400 flex items-center gap-2">
@@ -594,16 +570,25 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             {renderDescription()}
                         </div>
 
-                        {/* 🏢 SECTION: PROCESSO INPI */}
                         <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                     <ShieldCheck size={18} className="text-indigo-500" /> Processo INPI
                                 </h4>
                                 {processData && (
-                                    <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-100 dark:border-indigo-900/20">
-                                        ID: {processData.inpiProcessNumber || 'A Protocolar'}
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-xs font-bold rounded-lg border border-indigo-100 dark:border-indigo-900/20">
+                                            ID: {processData.inpiProcessNumber || 'A Protocolar'}
+                                        </span>
+                                        {formData.status === 'ready_to_file' && (
+                                            <button 
+                                                onClick={() => setShowProtocolModal(true)}
+                                                className="px-3 py-1 bg-emerald-500 text-white text-[10px] font-bold uppercase rounded-lg hover:bg-emerald-600 shadow-sm transition-all flex items-center gap-1"
+                                            >
+                                                <Upload size={12} /> Confirmar Protocolo
+                                            </button>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -633,7 +618,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             )}
                         </div>
 
-                        {/* 💰 SECTION: FINANCEIRO */}
                         <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
@@ -676,7 +660,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        {/* 📝 SECTION: CONTRATO */}
                         <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <h4 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                 <FileText size={18} className="text-amber-500" /> Contrato & Assinatura
@@ -702,7 +685,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        {/* Comments / Activity Feed (Simplified) */}
                         <div className="space-y-4 pt-4">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-black uppercase tracking-[0.2em] text-docka-400 flex items-center gap-2">
@@ -744,15 +726,12 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
                     </div>
 
-                    {/* 👤 RIGHT COLUMN: DATA (5 Cols) */}
                     <div className="lg:col-span-5 space-y-8">
                         
-                        {/* CURRENT STEP ACTION */}
                         <div className="bg-indigo-600 dark:bg-indigo-500 p-6 rounded-xl shadow-lg shadow-indigo-500/10 text-white space-y-4">
                             <span className="text-xs font-bold uppercase tracking-widest opacity-80">Gatilho de Fluxo</span>
                             <h3 className="text-lg font-bold">Mover para próxima etapa?</h3>
                             
-                            {/* GATILHOS DE FLUXO E CONVERSÃO */}
                             <div className="space-y-3">
                                 {!deal.clientId ? (
                                     <button 
@@ -801,7 +780,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        {/* 💰 VENDAS SECTION */}
                         <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-docka-400 flex items-center gap-2">
                                 <DollarSign size={14} /> Configuração de Vendas
@@ -844,7 +822,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        {/* 🏢 EMPRESA SECTION */}
                         <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-docka-400 flex items-center gap-2">
                                 <Briefcase size={14} /> Dados da Empresa
@@ -884,7 +861,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        {/* 👤 CONTATO SECTION */}
                         <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm space-y-6">
                             <h4 className="text-xs font-bold uppercase tracking-wider text-docka-400 flex items-center gap-2">
                                 <User size={14} /> Dados de Contato
@@ -921,7 +897,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        {/* 🏷️ TAGS & ACTIONS */}
                         <div className="space-y-4">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-docka-400 ml-1">Organização</h4>
                             <div className="flex flex-wrap gap-2">
@@ -967,7 +942,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                         {/* 🔔 REMINDERS SECTION */}
                          <div className="space-y-3">
                             {['contract', 'service_payment', 'documentation', 'federal_fee'].includes(formData.status) && (
                                 <button
@@ -983,9 +957,17 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                      'Reenviar Boleto GRU'}
                                 </button>
                             )}
+                            {formData.status === 'ready_to_file' && (
+                                <button
+                                    onClick={() => setShowProtocolModal(true)}
+                                    className="w-full py-4 bg-emerald-500 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
+                                >
+                                    <ShieldCheck size={14} />
+                                    Confirmar Protocolo INPI
+                                </button>
+                            )}
                          </div>
 
-                        {/* 🗑️ DANGER ZONE */}
                         <div className="pt-8 mt-8 border-t border-docka-100 dark:border-zinc-800/50">
                             <button
                                 onClick={handleDelete}
@@ -1027,6 +1009,82 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     className="py-3 bg-white text-zinc-900 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-zinc-100 transition-all"
                                 >
                                     {loading ? 'Criando...' : 'Confirmar'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* 📝 PROTOCOL MODAL */}
+                {showProtocolModal && (
+                    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm rounded-xl p-8 animate-in zoom-in-95 duration-200">
+                        <div className="max-w-lg w-full bg-white dark:bg-zinc-900 p-8 rounded-2xl shadow-2xl space-y-6 border border-docka-100 dark:border-zinc-800">
+                            <div className="text-center space-y-2">
+                                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                    <ShieldCheck size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-docka-900 dark:text-zinc-100">Confirmar Protocolo INPI</h3>
+                                <p className="text-xs font-bold text-docka-400 uppercase tracking-widest leading-relaxed">
+                                    Anexe o recibo de protocolo para oficializar o pedido de registro.
+                                </p>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-docka-400 uppercase tracking-widest ml-1">Número do Processo</label>
+                                        <input
+                                            className="w-full text-sm font-bold bg-docka-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                            placeholder="Ex: 934857210"
+                                            value={protocolProcessNumber}
+                                            onChange={e => setProtocolProcessNumber(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black text-docka-400 uppercase tracking-widest ml-1">Data de Depósito</label>
+                                        <input
+                                            type="date"
+                                            className="w-full text-sm font-bold bg-docka-50 dark:bg-zinc-800 border-none rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                            value={protocolFilingDate}
+                                            onChange={e => setProtocolFilingDate(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black text-docka-400 uppercase tracking-widest ml-1">Recibo de Protocolo (PDF)</label>
+                                    <div className="relative group">
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                            onChange={e => setProtocolFile(e.target.files?.[0] || null)}
+                                        />
+                                        <div className={`w-full py-8 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-2 transition-all ${
+                                            protocolFile ? 'border-emerald-500 bg-emerald-50/10' : 'border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/20 group-hover:border-indigo-500'
+                                        }`}>
+                                            <Upload size={24} className={protocolFile ? 'text-emerald-500' : 'text-docka-300'} />
+                                            <span className="text-xs font-bold text-docka-400">
+                                                {protocolFile ? protocolFile.name : 'Clique ou arraste o PDF aqui'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowProtocolModal(false)}
+                                    className="flex-1 py-3 text-xs font-bold uppercase tracking-widest text-docka-400 hover:text-docka-600 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleProtocolConfirm}
+                                    disabled={isConfirmingProtocol || !protocolFile}
+                                    className="flex-[2] py-4 bg-indigo-600 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:shadow-none transition-all"
+                                >
+                                    {isConfirmingProtocol ? 'Processando...' : 'Finalizar Protocolo'}
                                 </button>
                             </div>
                         </div>
