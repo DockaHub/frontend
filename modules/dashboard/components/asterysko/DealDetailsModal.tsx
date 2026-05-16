@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle } from 'lucide-react';
+import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell } from 'lucide-react';
 import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
@@ -56,6 +56,27 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [loadingComments, setLoadingComments] = useState(false);
     const [showConfirmConvert, setShowConfirmConvert] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [sendingReminder, setSendingReminder] = useState(false);
+
+    const handleSendReminder = async () => {
+        setSendingReminder(true);
+        try {
+            await api.post(`/asterysko/crm/deals/${deal.id}/reminder`);
+            addToast({
+                type: 'success',
+                title: 'Lembrete Enviado',
+                message: 'O cliente recebeu uma notificação por e-mail.'
+            });
+        } catch (error) {
+            addToast({
+                type: 'error',
+                title: 'Erro ao Enviar',
+                message: 'Não foi possível enviar o lembrete nesta etapa.'
+            });
+        } finally {
+            setSendingReminder(false);
+        }
+    };
 
     // Permissions logic
     const isAdmin = user?.role === 'admin' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
@@ -945,6 +966,24 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 )}
                             </div>
                         </div>
+
+                         {/* 🔔 REMINDERS SECTION */}
+                         <div className="space-y-3">
+                            {['contract', 'service_payment', 'documentation', 'federal_fee'].includes(formData.status) && (
+                                <button
+                                    onClick={handleSendReminder}
+                                    disabled={sendingReminder}
+                                    className="w-full py-4 bg-indigo-50 dark:bg-indigo-900/10 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-100 transition-all flex items-center justify-center gap-2 border border-indigo-100 dark:border-indigo-900/20 shadow-sm"
+                                >
+                                    <Bell size={14} className={sendingReminder ? 'animate-bounce' : ''} />
+                                    {sendingReminder ? 'Enviando...' : 
+                                     formData.status === 'contract' ? 'Cobrar Assinatura' :
+                                     formData.status === 'service_payment' ? 'Lembrar de Pagar' :
+                                     formData.status === 'documentation' ? 'Cobrar Documentos' :
+                                     'Reenviar Boleto GRU'}
+                                </button>
+                            )}
+                         </div>
 
                         {/* 🗑️ DANGER ZONE */}
                         <div className="pt-8 mt-8 border-t border-docka-100 dark:border-zinc-800/50">
