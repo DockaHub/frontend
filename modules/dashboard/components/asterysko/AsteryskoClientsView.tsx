@@ -34,7 +34,7 @@ import {
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { getBackendUrl } from '../../../../config/urls';
-import { useToast } from '../../../../hooks/useToast';
+import { useToast } from '../../../../context/ToastContext';
 import DashboardPage from '../../../../components/DashboardPage';
 
 const maskCpfCnpj = (value: string) => {
