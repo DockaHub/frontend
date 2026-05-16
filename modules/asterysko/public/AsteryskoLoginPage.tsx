@@ -52,6 +52,39 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
     const [password, setPassword] = useState('');
     const [otpCode, setOtpCode] = useState('');
 
+    // Magic Link Auto-login
+    React.useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const token = params.get('token');
+
+        if (token) {
+            handleMagicLogin(token);
+        }
+    }, []);
+
+    const handleMagicLogin = async (token: string) => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await api.post('/auth/login-by-token', { token });
+            
+            if (response.data?.user?.role?.toUpperCase() !== 'CLIENT') {
+                setError('Este portal é exclusivo para clientes.');
+                setLoading(false);
+                return;
+            }
+
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+            
+            await refreshUser();
+            navigate('/portal');
+        } catch (err: any) {
+            setError('Seu link de acesso expirou ou é inválido.');
+            setLoading(false);
+        }
+    };
+
     const handlePasswordSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
