@@ -390,6 +390,7 @@ const AppContent: React.FC = () => {
         <Routes>
           {/* Public Routes */}
           <Route path="/portal/welcome" element={<WelcomePage theme={theme} onToggleTheme={toggleTheme} />} />
+          <Route path="/portal/login" element={<AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />} />
           <Route path="/sign/:dealId" element={<ContractSignaturePage dealId={location.pathname.split('/')[2]} />} />
 
           {/* Protected Routes */}
