@@ -324,9 +324,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             setFormData({ ...formData, status: newStatus });
             onConvertSuccess();
             addToast({ type: 'success', title: 'Movido', message: 'Status atualizado com sucesso.' });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error moving status', error);
-            addToast({ type: 'error', title: 'Erro', message: 'Falha ao atualizar status.' });
+            const errorMsg = error.response?.data?.error || 'Falha ao atualizar status.';
+            addToast({ type: 'error', title: 'Erro', message: errorMsg });
         } finally {
             setLoading(false);
         }
