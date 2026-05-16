@@ -111,7 +111,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             addToast({ type: 'success', title: 'Sucesso', message: 'Protocolo confirmado com sucesso!' });
             setShowProtocolModal(false);
             setProtocolFile(null);
-            setFormData(prev => ({ ...prev, status: 'filed' }));
+            fetchDealDetails();
+            onConvertSuccess();
         } catch (error) {
             console.error('Failed to confirm protocol', error);
             addToast({ type: 'error', title: 'Erro', message: 'Falha ao confirmar protocolo.' });
