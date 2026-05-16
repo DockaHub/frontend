@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import KanbanBoard from '../kanban/KanbanBoard';
 import { KanbanColumnData, KanbanCardData } from '../../../../types';
-import { Plus, Users, Search, Filter, Kanban, List, ChevronDown, Tag, DollarSign } from 'lucide-react';
+import { Plus, Users, Search as SearchIcon, Filter, Kanban, List, ChevronDown, Tag, DollarSign } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import DealDetailsModal from './DealDetailsModal';
 import api from '../../../../services/api';
@@ -272,7 +272,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                     </div>
 
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={14} />
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={14} />
                         <input className="pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-docka-100 w-48" placeholder="Filtrar leads..." />
                     </div>
 
@@ -384,7 +384,7 @@ const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ or
                                 <div className="absolute z-[100] w-full mt-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-xl shadow-lg animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
                                     <div className="p-3 border-b border-docka-50 dark:border-zinc-800">
                                         <div className="relative">
-                                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" />
+                                            <SearchIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" />
                                             <input
                                                 autoFocus
                                                 className="w-full pl-9 pr-3 py-2 text-xs bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg outline-none focus:border-docka-400"
