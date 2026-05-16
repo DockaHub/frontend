@@ -55,7 +55,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
     // Magic Link Auto-login
     React.useEffect(() => {
         const params = new URLSearchParams(window.location.search);
-        const token = params.get('token');
+        const token = params.get('magic_token');
 
         if (token) {
             handleMagicLogin(token);
