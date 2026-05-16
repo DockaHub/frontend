@@ -45,9 +45,9 @@ api.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
         if (error.response?.status === 401) {
-            // Não redirecionar para /login se estivermos no portal do cliente
-            const isPortal = window.location.pathname.startsWith('/portal');
-            if (!isPortal) {
+            // Não redirecionar para /login se estivermos no portal do cliente ou página de assinatura
+            const isPublicPath = window.location.pathname.startsWith('/portal') || window.location.pathname.startsWith('/sign');
+            if (!isPublicPath) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/login';
