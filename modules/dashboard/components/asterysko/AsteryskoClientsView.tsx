@@ -32,9 +32,45 @@ import {
     FileSignature
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
-import api, { getBackendUrl } from '../../../../services/api';
-import { useToast } from '../../../../context/ToastContext';
+import api from '../../../../services/api';
+import { getBackendUrl } from '../../../../config/urls';
+import { useToast } from '../../../../hooks/useToast';
 import DashboardPage from '../../../../components/DashboardPage';
+
+const maskCpfCnpj = (value: string) => {
+    const clean = value.replace(/\D/g, '');
+    if (clean.length <= 11) {
+        return clean
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+            .replace(/(-\d{2})\d+?$/, '$1');
+    }
+    return clean
+        .replace(/(\d{2})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1.$2')
+        .replace(/(\d{3})(\d)/, '$1/$2')
+        .replace(/(\d{4})(\d{1,2})/, '$1-$2')
+        .replace(/(-\d{2})\d+?$/, '$1');
+};
+
+const maskPhone = (value: string) => {
+    const clean = value.replace(/\D/g, '');
+    if (clean.length <= 10) {
+        return clean
+            .replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{4})(\d{1,4})/, '$1-$2')
+            .replace(/(-\d{4})\d+?$/, '$1');
+    }
+    return clean
+        .replace(/(\d{2})(\d)/, '($1) $2')
+        .replace(/(\d{5})(\d{1,4})/, '$1-$2')
+        .replace(/(-\d{4})\d+?$/, '$1');
+};
+
+const maskCEP = (value: string) => {
+    return value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{3})\d+?$/, '$1');
+};
 
 // Types
 interface Document {
@@ -136,14 +172,15 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
 
     const handleCreateClient = async () => {
         if (!newClient.name || !newClient.email) {
-            addToast({ type: 'error', title: 'Erro', message: 'Nome e email sÃ£o obrigatÃ³rios.' });
+            addToast({ type: 'error', title: 'Erro', message: 'Nome e email são obrigatórios.' });
             return;
         }
         setIsLoading(true);
+        const cleanCnpj = newClient.cnpj.replace(/\D/g, '');
         try {
             await api.post('/asterysko/clients', {
-                type: newClient.cnpj.length > 14 ? 'PJ' : 'PF',
-                cpfCnpj: newClient.cnpj,
+                type: cleanCnpj.length > 11 ? 'PJ' : 'PF',
+                cpfCnpj: cleanCnpj,
                 name: newClient.name,
                 email: newClient.email,
                 phone: newClient.phone,
@@ -168,9 +205,9 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
             setClients(prev => prev.filter(c => c.id !== clientToDelete.id));
             if (selectedClient?.id === clientToDelete.id) setSelectedClient(null);
             setClientToDelete(null);
-            addToast({ type: 'success', title: 'Sucesso', message: 'Cliente excluÃ­do permanentemente.' });
+            addToast({ type: 'success', title: 'Sucesso', message: 'Cliente excluído permanentemente.' });
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Erro', message: 'NÃ£o foi possÃ­vel excluir o cliente.' });
+            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível excluir o cliente.' });
         } finally {
             setIsLoading(false);
         }
@@ -956,7 +993,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                 <label className="block text-[10px] font-black text-docka-300 uppercase tracking-[0.2em] mb-2">Identificador Tributário</label>
                                 <input
                                     value={newClient.cnpj}
-                                    onChange={e => setNewClient({ ...newClient, cnpj: e.target.value })}
+                                    onChange={e => setNewClient({ ...newClient, cnpj: maskCpfCnpj(e.target.value) })}
                                     className="w-full h-12 px-4 bg-docka-50 dark:bg-zinc-800 border-none rounded-xl text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
                                     placeholder="CPF ou CNPJ"
                                 />
@@ -1006,7 +1043,7 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                 <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">Telefone</label>
                                 <input
                                     value={editForm.phone || ''}
-                                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                                    onChange={e => setEditForm({ ...editForm, phone: maskPhone(e.target.value) })}
                                     className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
                                     placeholder="(00) 00000-0000"
                                 />
@@ -1018,16 +1055,16 @@ const AsteryskoClientsView: React.FC<AsteryskoClientsViewProps> = ({ organizatio
                                 <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">CNPJ ou CPF</label>
                                 <input
                                     value={editForm.cnpj || ''}
-                                    onChange={e => setEditForm({ ...editForm, cnpj: e.target.value })}
+                                    onChange={e => setEditForm({ ...editForm, cnpj: maskCpfCnpj(e.target.value) })}
                                     className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
-                                    placeholder="Apenas números ou 'PENDING'"
+                                    placeholder="CPF ou CNPJ"
                                 />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-black text-docka-400 dark:text-zinc-500 uppercase tracking-[0.2em] mb-2">CEP</label>
                                 <input
                                     value={editForm.postalCode || ''}
-                                    onChange={e => setEditForm({ ...editForm, postalCode: e.target.value })}
+                                    onChange={e => setEditForm({ ...editForm, postalCode: maskCEP(e.target.value) })}
                                     className="w-full h-11 px-4 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-sm font-bold text-docka-900 dark:text-zinc-100 focus:ring-2 focus:ring-docka-100 transition-all outline-none"
                                     placeholder="00000-000"
                                 />
