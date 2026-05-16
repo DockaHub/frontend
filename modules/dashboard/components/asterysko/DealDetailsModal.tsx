@@ -70,6 +70,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         ready_to_file: 'A Protocolar',
         filed: 'Protocolado (RPI)',
         examination: 'Exame de Mérito',
+        opposition: 'Oposição / Exigência',
         granted: 'Marca Deferida',
         won: 'Concluído'
     };
@@ -476,14 +477,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         <div className="flex items-center gap-2">
                             {/* Visual Status Progress */}
                             <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
-                                {['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'].map((s, idx) => {
+                                {['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'].map((s, idx) => {
                                     const isActive = formData.status === s;
-                                    const stagesOrder = ['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'];
+                                    const stagesOrder = ['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
                                     const isPast = stagesOrder.indexOf(formData.status) > idx;
                                     return (
                                         <div key={s} className="flex items-center">
                                             <div 
-                                                className={`h-1.5 w-4 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-8' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
+                                                className={`h-1.5 w-3.5 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-8' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
                                                 title={statusMap[s] || s}
                                             />
                                             {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
@@ -753,7 +754,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                         federal_fee: { label: 'Liberar p/ Protocolo', next: 'ready_to_file', color: 'text-orange-600', icon: CheckCircle },
                                         ready_to_file: { label: 'Confirmar Protocolo', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
                                         filed: { label: 'Mover para Exame', next: 'examination', color: 'text-violet-600', icon: Clock },
-                                        examination: { label: 'Marca Deferida! 🎉', next: 'granted', color: 'text-emerald-600', icon: CheckCircle },
+                                        examination: { label: 'Teve Oposição?', next: 'opposition', color: 'text-amber-700', icon: AlertTriangle },
+                                        opposition: { label: 'Marca Deferida! 🎉', next: 'granted', color: 'text-emerald-600', icon: CheckCircle },
                                         granted: { label: 'Concluir e Arquivar', next: 'won', color: 'text-green-600', icon: CheckCircle },
                                     };
 
