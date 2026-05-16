@@ -68,7 +68,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         try {
             const response = await api.post('/auth/login-by-token', { token });
             
-            if (response.data?.user?.role?.toUpperCase() !== 'CLIENT') {
+            const userRole = response.data?.user?.role?.toUpperCase();
+            if (userRole !== 'CLIENT' && userRole !== 'ADMIN' && userRole !== 'SUPER_ADMIN') {
                 setError('Este portal é exclusivo para clientes.');
                 setLoading(false);
                 return;
