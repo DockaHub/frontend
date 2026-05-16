@@ -32,8 +32,7 @@ import {
     FileSignature
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
-import api from '../../../../services/api';
-import { getBackendUrl } from '../../../../config/urls';
+import api, { getBackendUrl } from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import DashboardPage from '../../../../components/DashboardPage';
 
