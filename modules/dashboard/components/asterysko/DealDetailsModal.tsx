@@ -65,10 +65,13 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         leads: 'Novo Lead',
         viability: 'Viabilidade',
         contract: 'Contrato',
-        preparation: 'Preparação',
-        payment: 'Pagamento',
-        protocol: 'Protocolo',
-        won: 'Finalizado'
+        documentation: 'Procuração/Docs',
+        federal_fee: 'Taxa Federal',
+        ready_to_file: 'A Protocolar',
+        filed: 'Protocolado (RPI)',
+        examination: 'Exame de Mérito',
+        granted: 'Marca Deferida',
+        won: 'Concluído'
     };
 
     // Tag creation state
@@ -471,24 +474,26 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                         </div>
 
                         <div className="flex items-center gap-2">
-                             {/* Visual Status Progress */}
-                             <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
-                                 {['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].map((s, idx) => {
-                                     const isActive = formData.status === s;
-                                     const isPast = ['leads', 'viability', 'contract', 'preparation', 'payment', 'protocol', 'won'].indexOf(formData.status) > idx;
-                                     return (
-                                         <div key={s} className="flex items-center">
-                                             <div 
-                                                 className={`h-1.5 w-6 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-10' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
-                                                 title={statusMap[s] || s}
-                                             />
-                                             {idx < 6 && <div className="mx-0.5 text-[8px] text-docka-300">/</div>}
-                                         </div>
-                                     );
-                                 })}
-                                 <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
-                                     {statusMap[formData.status] || formData.status}
-                                 </span>
+                                                    <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
+                                  {['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'].map((s, idx) => {
+                                      const isActive = formData.status === s;
+                                      const stagesOrder = ['leads', 'viability', 'contract', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'granted', 'won'];
+                                      const isPast = stagesOrder.indexOf(formData.status) > idx;
+                                      return (
+                                          <div key={s} className="flex items-center">
+                                              <div 
+                                                  className={`h-1.5 w-4 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-8' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
+                                                  title={statusMap[s] || s}
+                                              />
+                                              {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
+                                          </div>
+                                      );
+                                  })}
+                                  <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
+                                      {statusMap[formData.status] || formData.status}
+                                  </span>
+                              </div>
+
                              </div>
 
                              {/* Quick Actions Dropdown or Row */}
@@ -740,25 +745,35 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     </div>
                                 )}
 
-                                {formData.status === 'preparation' ? (
-                                    <button 
-                                        onClick={() => moveStatus('payment')}
-                                        className="w-full py-3 bg-white text-indigo-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        Faturar Agora <ArrowRight size={18} />
-                                    </button>
-                                ) : formData.status === 'payment' ? (
-                                    <button 
-                                        onClick={() => moveStatus('protocol')}
-                                        className="w-full py-3 bg-white text-emerald-600 rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        Confirmar Pagamento <CheckCircle size={18} />
-                                    </button>
-                                ) : (
-                                    <div className="py-3 text-center border border-white/20 rounded-lg text-xs font-bold">
-                                        Próximo passo disponível no topo
-                                    </div>
-                                )}
+                                {(() => {
+                                    const nextSteps: Record<string, { label: string, next: string, color: string, icon: any }> = {
+                                        leads: { label: 'Iniciar Viabilidade', next: 'viability', color: 'text-indigo-600', icon: ArrowRight },
+                                        viability: { label: 'Avançar para Contrato', next: 'contract', color: 'text-amber-600', icon: FileText },
+                                        contract: { label: 'Solicitar Documentos', next: 'documentation', color: 'text-purple-600', icon: ShieldCheck },
+                                        documentation: { label: 'Gerar Taxa (GRU)', next: 'federal_fee', color: 'text-rose-600', icon: DollarSign },
+                                        federal_fee: { label: 'Liberar p/ Protocolo', next: 'ready_to_file', color: 'text-orange-600', icon: CheckCircle },
+                                        ready_to_file: { label: 'Confirmar Protocolo', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
+                                        filed: { label: 'Mover para Exame', next: 'examination', color: 'text-violet-600', icon: Clock },
+                                        examination: { label: 'Marca Deferida! 🎉', next: 'granted', color: 'text-emerald-600', icon: CheckCircle },
+                                        granted: { label: 'Concluir e Arquivar', next: 'won', color: 'text-green-600', icon: CheckCircle },
+                                    };
+
+                                    const currentStep = nextSteps[formData.status];
+                                    if (!currentStep) return (
+                                        <div className="py-3 text-center border border-white/20 rounded-lg text-xs font-bold opacity-50 italic">
+                                            Processo finalizado
+                                        </div>
+                                    );
+
+                                    return (
+                                        <button 
+                                            onClick={() => moveStatus(currentStep.next)}
+                                            className={`w-full py-3 bg-white ${currentStep.color} rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2 shadow-sm border border-docka-100 dark:border-zinc-800`}
+                                        >
+                                            {currentStep.label} <currentStep.icon size={18} />
+                                        </button>
+                                    );
+                                })()}
                             </div>
                         </div>
 
