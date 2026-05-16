@@ -798,39 +798,47 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 ) : (
                                     <div className="py-2 px-3 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-lg flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs font-bold">
                                         <CheckCircle size={14} /> Cliente Vinculado
-                                    </div>
-                                )}
-
-                                {(() => {
+                                                          {(() => {
                                     const nextSteps: Record<string, { label: string, next: string, color: string, icon: any }> = {
-                                        leads: { label: 'Iniciar Preparação', next: 'preparation', color: 'text-indigo-600', icon: ArrowRight },
-                                        preparation: { label: 'Iniciar Viabilidade', next: 'viability', color: 'text-cyan-600', icon: SearchIcon },
-                                        viability: { label: 'Avançar para Contrato', next: 'contract', color: 'text-amber-600', icon: FileText },
-                                        contract: { label: 'Faturar Honorários', next: 'service_payment', color: 'text-emerald-600', icon: DollarSign },
-                                        service_payment: { label: 'Solicitar Documentos', next: 'documentation', color: 'text-purple-600', icon: ShieldCheck },
-                                        documentation: { label: 'Gerar Taxa (GRU)', next: 'federal_fee', color: 'text-rose-600', icon: DollarSign },
-                                        federal_fee: { label: 'Liberar p/ Protocolo', next: 'ready_to_file', color: 'text-orange-600', icon: CheckCircle },
-                                        ready_to_file: { label: 'Confirmar Protocolo', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
-                                        filed: { label: 'Mover para Exame', next: 'examination', color: 'text-violet-600', icon: Clock },
-                                        examination: { label: 'Teve Oposição?', next: 'opposition', color: 'text-amber-700', icon: AlertTriangle },
-                                        opposition: { label: 'Marca Deferida! 🎉', next: 'granted', color: 'text-emerald-600', icon: CheckCircle },
-                                        granted: { label: 'Concluir e Arquivar', next: 'won', color: 'text-green-600', icon: CheckCircle },
+                                        leads: { label: 'Novos Leads', next: 'leads', color: 'text-blue-600', icon: ArrowRight },
+                                        preparation: { label: 'Preparação', next: 'preparation', color: 'text-indigo-600', icon: ArrowRight },
+                                        viability: { label: 'Viabilidade', next: 'viability', color: 'text-cyan-600', icon: SearchIcon },
+                                        contract: { label: 'Contrato', next: 'contract', color: 'text-amber-600', icon: FileText },
+                                        service_payment: { label: 'Pagamento Serviço', next: 'service_payment', color: 'text-emerald-600', icon: DollarSign },
+                                        documentation: { label: 'Procuração/Docs', next: 'documentation', color: 'text-purple-600', icon: ShieldCheck },
+                                        federal_fee: { label: 'Taxa Federal (GRU)', next: 'federal_fee', color: 'text-rose-600', icon: DollarSign },
+                                        ready_to_file: { label: 'A Protocolar', next: 'ready_to_file', color: 'text-orange-600', icon: CheckCircle },
+                                        filed: { label: 'Protocolado (RPI)', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
+                                        filed: { label: 'Protocolado (RPI)', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
+                                        examination: { label: 'Exame de Mérito', next: 'examination', color: 'text-violet-600', icon: Clock },
+                                        opposition: { label: 'Oposição / Exigência', next: 'opposition', color: 'text-amber-700', icon: AlertTriangle },
+                                        granted: { label: 'Marca Deferida! 🎉', next: 'granted', color: 'text-emerald-600', icon: CheckCircle },
+                                        won: { label: 'Concluído', next: 'won', color: 'text-green-600', icon: CheckCircle },
                                     };
 
-                                    const currentStep = nextSteps[formData.status];
-                                    if (!currentStep) return (
-                                        <div className="py-3 text-center border border-white/20 rounded-lg text-xs font-bold opacity-50 italic">
-                                            Processo finalizado
-                                        </div>
-                                    );
-
                                     return (
-                                        <button 
-                                            onClick={() => moveStatus(currentStep.next)}
-                                            className={`w-full py-3 bg-white ${currentStep.color} rounded-lg font-bold text-sm hover:bg-zinc-50 transition-all flex items-center justify-center gap-2 shadow-sm border border-docka-100 dark:border-zinc-800`}
-                                        >
-                                            {currentStep.label} <currentStep.icon size={18} />
-                                        </button>
+                                        <div className="space-y-4">
+                                            <div className="text-[10px] font-bold text-docka-400 uppercase tracking-widest px-1">Mover para etapa:</div>
+                                            <div className="grid grid-cols-1 gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
+                                                {Object.entries(nextSteps).map(([status, step]) => (
+                                                    formData.status !== status && (
+                                                        <button 
+                                                            key={status}
+                                                            onClick={() => moveStatus(status)}
+                                                            className="flex items-center justify-between p-3 bg-white dark:bg-zinc-900 border border-docka-100 dark:border-zinc-800 rounded-xl hover:border-docka-300 dark:hover:border-zinc-700 hover:shadow-sm transition-all group"
+                                                        >
+                                                            <div className="flex items-center gap-3">
+                                                                <div className={`p-1.5 rounded-lg bg-docka-50 dark:bg-zinc-800 ${step.color}`}>
+                                                                    <step.icon size={14} />
+                                                                </div>
+                                                                <span className="text-xs font-bold text-docka-700 dark:text-zinc-300">{step.label}</span>
+                                                            </div>
+                                                            <ArrowRight size={14} className="text-docka-200 group-hover:text-docka-900 dark:group-hover:text-zinc-100 transition-all -rotate-45 group-hover:rotate-0" />
+                                                        </button>
+                                                    )
+                                                ))}
+                                            </div>
+                                        </div>
                                     );
                                 })()}
                             </div>
