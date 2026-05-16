@@ -144,69 +144,87 @@ const AsteryskoPerformanceView: React.FC = () => {
                 {/* Main Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     {/* Accumulated Commission Card */}
-                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 dark:from-emerald-900/40 dark:to-emerald-800/20 text-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(16,185,129,0.3)] relative overflow-hidden border border-emerald-500/20">
+                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 dark:from-emerald-900/40 dark:to-emerald-800/20 text-white p-6 rounded-xl shadow-[0_4px_20px_-4px_rgba(16,185,129,0.3)] relative overflow-hidden border border-emerald-500/20 group">
                         <div className="relative z-10">
-                            <div className="flex items-center gap-2 mb-4 text-emerald-100">
-                                <DollarSign size={20} />
-                                <span className="text-xs font-bold uppercase tracking-wider">Comissão Acumulada</span>
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2 text-emerald-100">
+                                    <DollarSign size={20} />
+                                    <span className="text-xs font-bold uppercase tracking-wider">Comissão Acumulada</span>
+                                </div>
+                                <div className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded backdrop-blur-sm uppercase">Realizado</div>
                             </div>
-                            <h3 className="text-4xl font-bold mb-1">{commissionBRL}</h3>
-                            <p className="text-sm text-emerald-100 flex items-center gap-1">
-                                {stats.salesCount} vendas fechadas este mês
-                            </p>
+                            <h3 className="text-4xl font-black mb-1 tabular-nums">{commissionBRL}</h3>
+                            <div className="flex items-center gap-2 pt-2 border-t border-white/10 mt-4">
+                                <div className="p-1 bg-white/10 rounded">
+                                    <TrendingUp size={12} className="text-emerald-300" />
+                                </div>
+                                <p className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest">
+                                    {stats.salesCount} fechamentos no mês
+                                </p>
+                            </div>
                         </div>
-                        <div className="absolute -right-4 -bottom-4 opacity-10">
-                            <TrendingUp size={120} />
+                        <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 group-hover:-rotate-12 transition-transform duration-700">
+                            <DollarSign size={140} />
                         </div>
                     </div>
 
-                    {/* Sales Target Card */}
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:border-docka-300 cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'bonus'))}>
+                    {/* Forecast Card (New Analytics) */}
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] relative overflow-hidden group">
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-2 text-docka-500 dark:text-zinc-400">
-                                <Target size={18} />
-                                <span className="text-xs font-bold uppercase tracking-wider">Meta de Bônus (40 Vendas)</span>
+                                <Zap size={18} className="text-blue-500" />
+                                <span className="text-xs font-bold uppercase tracking-wider">Previsão (Forecast)</span>
                             </div>
-                            <span className="text-sm font-bold text-docka-900 dark:text-zinc-100">{stats.salesCount}/40</span>
+                            <Info size={14} className="text-docka-300 cursor-help" />
                         </div>
                         
-                        <div className="h-3 bg-docka-100 dark:bg-zinc-800 rounded-full mb-4 overflow-hidden">
-                            <div 
-                                className="h-full bg-blue-500 rounded-full transition-all duration-1000 ease-out"
-                                style={{ width: `${stats.bonusProgress}%` }}
-                            />
+                        <div className="space-y-1 mb-4">
+                            <h3 className="text-3xl font-black text-docka-900 dark:text-zinc-100 tabular-nums">
+                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.accumulatedCommission * 1.45)}
+                            </h3>
+                            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest">Projeção p/ Final do Mês</p>
                         </div>
 
-                        <div className="flex justify-between items-center">
-                            <p className="text-xs text-docka-500 dark:text-zinc-500 font-medium">
-                                {40 - stats.salesCount > 0 ? `Faltam ${40 - stats.salesCount} para o bônus` : 'Meta batida! Parabéns!'}
-                            </p>
-                            <span className="text-[10px] font-bold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-lg">
-                                {stats.bonusProgress}%
-                            </span>
+                        <div className="flex items-center gap-3 mt-6">
+                            <div className="flex-1 h-1.5 bg-docka-50 dark:bg-zinc-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-blue-500 rounded-full w-[68%]" />
+                            </div>
+                            <span className="text-[10px] font-black text-docka-400 uppercase">Tendência: Alta</span>
                         </div>
                     </div>
 
-                    {/* Tier Card */}
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:border-docka-300 cursor-pointer" onClick={() => setSelectedRule(rules.find(r => r.id === 'essencial'))}>
-                        <div className="flex items-center gap-2 text-docka-500 dark:text-zinc-400 mb-4">
-                            <Trophy size={18} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Nível de Conversão</span>
+                    {/* Tier Card Enhanced */}
+                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] transition-all hover:border-blue-400 dark:hover:border-blue-500 cursor-pointer group" onClick={() => setSelectedRule(rules.find(r => r.id === 'essencial'))}>
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2 text-docka-500 dark:text-zinc-400">
+                                <Trophy size={18} className="group-hover:text-amber-500 transition-colors" />
+                                <span className="text-xs font-bold uppercase tracking-wider">Nível Atual</span>
+                            </div>
+                            <div className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${
+                                stats.currentTier === 'Ouro' ? 'bg-amber-100 text-amber-700' :
+                                stats.currentTier === 'Prata' ? 'bg-slate-100 text-slate-700' :
+                                'bg-orange-100 text-orange-700'
+                            }`}>
+                                {stats.currentTier}
+                            </div>
                         </div>
                         
                         <div className="flex items-center gap-4">
-                            <div className={`p-4 rounded-xl ${
-                                stats.currentTier === 'Ouro' ? 'bg-amber-100 text-amber-600' :
-                                stats.currentTier === 'Prata' ? 'bg-zinc-100 text-zinc-500' :
-                                'bg-orange-100 text-orange-600'
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${
+                                stats.currentTier === 'Ouro' ? 'bg-amber-50 text-amber-500 border border-amber-200/50 shadow-sm' :
+                                stats.currentTier === 'Prata' ? 'bg-zinc-50 text-zinc-400 border border-zinc-200/50 shadow-sm' :
+                                'bg-orange-50 text-orange-500 border border-orange-200/50 shadow-sm'
                             }`}>
-                                <Medal size={32} />
+                                <Medal size={28} />
                             </div>
-                            <div>
-                                <h4 className="text-xl font-bold text-docka-900 dark:text-zinc-100">{stats.currentTier}</h4>
-                                <p className="text-xs text-docka-500 dark:text-zinc-500 font-medium">
-                                    {stats.essencialCount} vendas Essencial
-                                </p>
+                            <div className="space-y-1">
+                                <h4 className="text-xl font-black text-docka-900 dark:text-zinc-100 uppercase tracking-tight">{stats.currentTier}</h4>
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                    <p className="text-[10px] font-bold text-docka-400 uppercase tracking-widest">
+                                        {stats.essencialCount} vendas Essencial
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

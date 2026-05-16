@@ -3,6 +3,7 @@ import React from 'react';
 import { MoreHorizontal, Plus, Calendar } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { KanbanColumnData, KanbanCardData } from '../../../../types';
+import UserAvatar from '../../../../components/common/UserAvatar';
 
 interface KanbanBoardProps {
   columns: KanbanColumnData[];
@@ -14,9 +15,9 @@ interface KanbanBoardProps {
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCard, onDragEnd, members = [] }) => {
   return (
+    <DragDropContext onDragEnd={onDragEnd || (() => { })}>
       <div className="h-full overflow-x-auto custom-scrollbar">
-        <DragDropContext onDragEnd={onDragEnd || (() => { })}>
-          <div className="flex px-8 pt-6 pb-4 gap-4 items-start min-h-full">
+        <div className="flex px-8 pt-6 pb-4 gap-4 items-start min-h-full">
             {columns.map((col) => (
           <div key={col.id} className="min-w-[320px] w-[320px] shrink-0 flex flex-col h-full max-h-full bg-docka-100/50 dark:bg-zinc-900/50 rounded-xl p-2 border border-docka-200/50 dark:border-zinc-800">
             {/* Column Header */}
@@ -199,8 +200,8 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCa
           <Plus size={20} />
         </button>
           </div>
-        </DragDropContext>
       </div>
+    </DragDropContext>
   );
 };
 

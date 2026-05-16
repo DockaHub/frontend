@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff, Search as SearchIcon } from 'lucide-react';
+import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff, Search as SearchIcon, Edit2, Pencil } from 'lucide-react';
 import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
@@ -127,18 +127,33 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         if (!processData?.id) return;
         setLoading(true);
         try {
-            await api.put(`/asterysko/processes/${processData.id}`, {
-                inpiProcessNumber: tempProcessData.inpiProcessNumber,
-                brandName: tempProcessData.brandName,
-                nclClass: tempProcessData.nclClass,
-                filingDate: tempProcessData.filingDate
-            });
-            addToast({ type: 'success', title: 'Sucesso', message: 'Processo atualizado com sucesso!' });
+            if (processData.id === 'new') {
+                // Criando e vinculando um novo processo ao lead/cliente
+                await api.post('/asterysko/processes', {
+                    dealId: deal.id,
+                    clientId: formData.clientId || clientData?.id,
+                    inpiProcessNumber: tempProcessData.inpiProcessNumber,
+                    brandName: tempProcessData.brandName,
+                    nclClass: tempProcessData.nclClass,
+                    filingDate: tempProcessData.filingDate,
+                    status: 'filed' // Se está vinculando número, geralmente já está protocolado
+                });
+                addToast({ type: 'success', title: 'Sucesso', message: 'Processo criado e vinculado com sucesso!' });
+            } else {
+                // Atualizando processo existente
+                await api.put(`/asterysko/processes/${processData.id}`, {
+                    inpiProcessNumber: tempProcessData.inpiProcessNumber,
+                    brandName: tempProcessData.brandName,
+                    nclClass: tempProcessData.nclClass,
+                    filingDate: tempProcessData.filingDate
+                });
+                addToast({ type: 'success', title: 'Sucesso', message: 'Processo atualizado com sucesso!' });
+            }
             setIsEditingProcess(false);
             fetchDealDetails();
         } catch (error) {
             console.error('Failed to update process', error);
-            addToast({ type: 'error', title: 'Erro', message: 'Falha ao atualizar processo.' });
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao processar dados do processo.' });
         } finally {
             setLoading(false);
         }
@@ -511,64 +526,65 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     </div>
                                 )}
                             </div>
-                            <input
-                                className="text-2xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
-                                value={formData.title || ''}
-                                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                onBlur={e => handleBlur('title', e.target.value)}
-                                placeholder="Sem título"
-                            />
+                        </div>
+                        <input
+                            className="text-2xl font-bold text-docka-900 dark:text-zinc-100 bg-transparent border-none w-full outline-none placeholder:text-docka-200"
+                            value={formData.title || ''}
+                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                            onBlur={e => handleBlur('title', e.target.value)}
+                            placeholder="Sem título"
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
+                            {['leads', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'].map((s, idx) => {
+                                const isActive = formData.status === s;
+                                const stagesOrder = ['leads', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
+                                const isPast = stagesOrder.indexOf(formData.status) > idx;
+                                return (
+                                    <div key={s} className="flex items-center">
+                                        <div 
+                                            className={`h-1.5 w-3 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-6' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
+                                            title={statusMap[s] || s}
+                                        />
+                                        {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
+                                    </div>
+                                );
+                            })}
+                            <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
+                                {statusMap[formData.status] || formData.status}
+                            </span>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 p-2 bg-docka-50/50 dark:bg-zinc-800/50 rounded-lg border border-docka-100 dark:border-zinc-800">
-                                {['leads', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'].map((s, idx) => {
-                                    const isActive = formData.status === s;
-                                    const stagesOrder = ['leads', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
-                                    const isPast = stagesOrder.indexOf(formData.status) > idx;
-                                    return (
-                                        <div key={s} className="flex items-center">
-                                            <div 
-                                                className={`h-1.5 w-3 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-6' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
-                                                title={statusMap[s] || s}
-                                            />
-                                            {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
-                                        </div>
-                                    );
-                                })}
-                                <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
-                                    {statusMap[formData.status] || formData.status}
-                                </span>
-                            </div>
-
-                             <div className="flex items-center gap-2 ml-4 pl-4 border-l border-docka-100 dark:border-zinc-800">
-                                {clientData && (
-                                    <button 
-                                        onClick={() => copyToClipboard(`https://cliente.asterysko.com/portal/login?magic_token=${clientData.resetPasswordToken || ''}`, 'Link Mágico')}
-                                        className="p-2 text-docka-600 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800 rounded-lg transition-all"
-                                        title="Copiar Link Mágico"
-                                    >
-                                        <LinkIcon size={18} />
-                                    </button>
-                                )}
+                         <div className="flex items-center gap-2 ml-4 pl-4 border-l border-docka-100 dark:border-zinc-800">
+                            {clientData && (
                                 <button 
-                                    onClick={() => addToast({ type: 'info', title: 'WhatsApp', message: 'Reenviando WhatsApp...' })}
-                                    className="p-2 text-docka-600 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-zinc-800 rounded-lg transition-all"
-                                    title="Reenviar WhatsApp"
+                                    onClick={() => copyToClipboard(`https://cliente.asterysko.com/portal/login?magic_token=${clientData.resetPasswordToken || ''}`, 'Link Mágico')}
+                                    className="p-2 text-docka-600 dark:text-zinc-400 hover:bg-indigo-50 dark:hover:bg-zinc-800 rounded-lg transition-all"
+                                    title="Copiar Link Mágico"
                                 >
-                                    <Send size={18} />
+                                    <LinkIcon size={18} />
                                 </button>
-                                <button 
-                                    onClick={handleDelete}
-                                    className="p-2 text-docka-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
-                                    title="Excluir Lead"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                             </div>
-                        </div>
+                            )}
+                            <button 
+                                onClick={() => addToast({ type: 'info', title: 'WhatsApp', message: 'Reenviando WhatsApp...' })}
+                                className="p-2 text-docka-600 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-zinc-800 rounded-lg transition-all"
+                                title="Reenviar WhatsApp"
+                            >
+                                <Send size={18} />
+                            </button>
+                            <button 
+                                onClick={handleDelete}
+                                className="p-2 text-docka-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                title="Excluir Lead"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                         </div>
                     </div>
                 </div>
+
 
                 <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8">
                     <div className="lg:col-span-7 space-y-8">
@@ -666,7 +682,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                             )}
                                         </div>
                                     )}
-                                                           {processData ? (
+                                </div>
+                            </div>
+
+                            {processData ? (
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-1">
                                         <span className="text-xs font-bold text-docka-400 uppercase tracking-widest">Marca</span>
@@ -722,8 +741,30 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     </div>
                                 </div>
                             ) : (
-                                <div className="py-8 text-center border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-xl">
-                                    <p className="text-xs font-semibold text-docka-400 italic">O processo será criado automaticamente ao converter o lead.</p>
+                                <div className="py-8 text-center border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-xl space-y-4">
+                                    <p className="text-xs font-semibold text-docka-400 italic px-6">
+                                        {formData.clientId 
+                                            ? 'Este cliente ainda não possui um processo vinculado.' 
+                                            : 'O processo será criado automaticamente ao converter o lead.'}
+                                    </p>
+                                    
+                                    {formData.clientId && (
+                                        <button
+                                            onClick={() => {
+                                                setTempProcessData({
+                                                    inpiProcessNumber: '',
+                                                    brandName: formData.title || '',
+                                                    nclClass: '',
+                                                    filingDate: new Date().toISOString().split('T')[0]
+                                                });
+                                                setProcessData({ id: 'new', brand: { name: formData.title } }); // Temp mock to show fields
+                                                setIsEditingProcess(true);
+                                            }}
+                                            className="px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase rounded-lg border border-indigo-100 dark:border-indigo-900/30 hover:bg-indigo-100 transition-all"
+                                        >
+                                            Vincular Número de Processo
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>
@@ -902,7 +943,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                         documentation: { label: 'Procuração/Docs', next: 'documentation', color: 'text-purple-600', icon: ShieldCheck },
                                         federal_fee: { label: 'Taxa Federal (GRU)', next: 'federal_fee', color: 'text-rose-600', icon: DollarSign },
                                         ready_to_file: { label: 'A Protocolar', next: 'ready_to_file', color: 'text-orange-600', icon: CheckCircle },
-                                        filed: { label: 'Protocolado (RPI)', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
                                         filed: { label: 'Protocolado (RPI)', next: 'filed', color: 'text-sky-600', icon: ExternalLink },
                                         examination: { label: 'Exame de Mérito', next: 'examination', color: 'text-violet-600', icon: Clock },
                                         opposition: { label: 'Oposição / Exigência', next: 'opposition', color: 'text-amber-700', icon: AlertTriangle },
