@@ -14,10 +14,10 @@ interface KanbanBoardProps {
 
 const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCard, onDragEnd, members = [] }) => {
   return (
-    <DragDropContext onDragEnd={onDragEnd || (() => { })}>
       <div className="h-full overflow-x-auto custom-scrollbar">
-        <div className="flex px-8 pt-6 pb-4 gap-4 items-start min-h-full">
-          {columns.map((col) => (
+        <DragDropContext onDragEnd={onDragEnd || (() => { })}>
+          <div className="flex px-8 pt-6 pb-4 gap-4 items-start min-h-full">
+            {columns.map((col) => (
           <div key={col.id} className="min-w-[320px] w-[320px] shrink-0 flex flex-col h-full max-h-full bg-docka-100/50 dark:bg-zinc-900/50 rounded-xl p-2 border border-docka-200/50 dark:border-zinc-800">
             {/* Column Header */}
             <div className="flex justify-between items-center mb-3 px-2 pt-2">
@@ -198,9 +198,9 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ columns, onCardClick, onAddCa
         <button className="min-w-[50px] h-full bg-docka-50/50 dark:bg-zinc-900/30 hover:bg-docka-100 dark:hover:bg-zinc-800/50 border border-dashed border-docka-300 dark:border-zinc-700 rounded-xl flex items-center justify-center text-docka-400 dark:text-zinc-600 hover:text-docka-600 dark:hover:text-zinc-400 transition-colors">
           <Plus size={20} />
         </button>
-        </div>
+          </div>
+        </DragDropContext>
       </div>
-    </DragDropContext>
   );
 };
 
