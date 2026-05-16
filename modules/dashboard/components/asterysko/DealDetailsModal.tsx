@@ -127,6 +127,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     // Status Translation Map
     const statusMap: Record<string, string> = {
         leads: 'Novo Lead',
+        preparation: 'Preparação',
         viability: 'Viabilidade',
         contract: 'Contrato',
         service_payment: 'Pagamento Serviço',
@@ -802,7 +803,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
                                 {(() => {
                                     const nextSteps: Record<string, { label: string, next: string, color: string, icon: any }> = {
-                                        leads: { label: 'Iniciar Viabilidade', next: 'viability', color: 'text-indigo-600', icon: ArrowRight },
+                                        leads: { label: 'Iniciar Preparação', next: 'preparation', color: 'text-indigo-600', icon: ArrowRight },
+                                        preparation: { label: 'Iniciar Viabilidade', next: 'viability', color: 'text-cyan-600', icon: Search },
                                         viability: { label: 'Avançar para Contrato', next: 'contract', color: 'text-amber-600', icon: FileText },
                                         contract: { label: 'Faturar Honorários', next: 'service_payment', color: 'text-emerald-600', icon: DollarSign },
                                         service_payment: { label: 'Solicitar Documentos', next: 'documentation', color: 'text-purple-600', icon: ShieldCheck },
