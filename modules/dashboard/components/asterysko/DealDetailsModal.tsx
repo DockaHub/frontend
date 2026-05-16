@@ -749,7 +749,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                             {activity.type === 'status_change' ? <ArrowRight size={12} /> :
                                              activity.type === 'notification_sent' ? <Bell size={12} /> :
                                              activity.type === 'notification_skipped' ? <BellOff size={12} /> :
-                                             activity.type === 'file_upload' ? <Upload size={12} /> :
+                                             activity.type === 'file_upload' ? <FileText size={12} /> :
+                                             activity.type === 'status_change' ? <ArrowRight size={12} /> :
                                              activity.type === 'lead_conversion' ? <User size={12} /> :
                                              activity.type === 'comment' ? <AlignLeft size={12} /> :
                                              <Clock size={12} />}
