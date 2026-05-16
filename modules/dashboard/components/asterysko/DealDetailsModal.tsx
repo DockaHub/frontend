@@ -153,6 +153,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [processData, setProcessData] = useState<any>(null);
     const [invoiceData, setInvoiceData] = useState<any>(null);
     const [clientData, setClientData] = useState<any>(null);
+    const [activities, setActivities] = useState<any[]>([]);
 
     useEffect(() => {
         api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
@@ -217,6 +218,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 setProcessData(response.data.process);
                 setInvoiceData(response.data.invoice);
                 setClientData(response.data.client);
+                setActivities(response.data.activities || []);
 
                 const tags = response.data.tags || [];
                 const info = extractInfoFromTags(tags);
@@ -350,6 +352,13 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         try {
             const response = await api.post(`/asterysko/crm/deals/${deal.id}/comments`, { content: newComment });
             setComments([response.data, ...comments]);
+            setActivities([{
+                id: Math.random().toString(),
+                type: 'comment',
+                content: newComment,
+                createdAt: new Date().toISOString(),
+                user: { name: user?.name, avatar: user?.avatar }
+            }, ...activities]);
             setNewComment('');
         } catch (error) {
             console.error('Failed to add comment', error);
@@ -694,13 +703,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             </div>
                         </div>
 
-                        <div className="space-y-4 pt-4">
+                        <div className="space-y-6 pt-6 border-t border-zinc-100 dark:border-zinc-800/50">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-black uppercase tracking-[0.2em] text-docka-400 flex items-center gap-2">
-                                    <Clock size={14} /> Histórico de Ações
+                                    <Clock size={14} /> Histórico & Atividades
                                 </h4>
                             </div>
                             
+                            {/* Comment Input */}
                             <div className="flex gap-3">
                                 <textarea
                                     className="flex-1 px-4 py-3 text-sm text-docka-900 dark:text-zinc-100 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 placeholder:text-docka-300 min-h-[60px] resize-none"
@@ -716,18 +726,52 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                 </button>
                             </div>
 
-                            <div className="space-y-4 mt-6">
-                                {comments.slice(0, 5).map((comment) => (
-                                    <div key={comment.id} className="flex gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-docka-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold">
-                                            {getInitials(comment.user.name)}
+                            {/* Timeline Feed */}
+                            <div className="space-y-4 relative before:absolute before:left-[15px] before:top-2 before:bottom-2 before:w-0.5 before:bg-zinc-100 dark:before:bg-zinc-800">
+                                {activities.length === 0 && (
+                                    <p className="text-xs text-zinc-500 text-center py-4 italic">Nenhuma atividade registrada ainda.</p>
+                                )}
+
+                                {activities.map((activity, index) => (
+                                    <div key={activity.id || index} className="relative flex gap-4 group pl-1">
+                                        {/* Icon Node */}
+                                        <div className={`z-10 w-8 h-8 rounded-full flex items-center justify-center border-4 border-white dark:border-zinc-950 shadow-sm transition-transform group-hover:scale-110 shrink-0 ${
+                                            activity.type === 'status_change' ? 'bg-amber-500 text-white' :
+                                            activity.type === 'notification_sent' ? 'bg-indigo-500 text-white' :
+                                            activity.type === 'notification_skipped' ? 'bg-zinc-400 text-white' :
+                                            activity.type === 'file_upload' ? 'bg-emerald-500 text-white' :
+                                            activity.type === 'lead_conversion' ? 'bg-purple-500 text-white' :
+                                            activity.type === 'comment' ? 'bg-sky-500 text-white' :
+                                            'bg-zinc-100 dark:bg-zinc-800 text-zinc-500'
+                                        }`}>
+                                            {activity.type === 'status_change' ? <ArrowRight size={12} /> :
+                                             activity.type === 'notification_sent' ? <Bell size={12} /> :
+                                             activity.type === 'notification_skipped' ? <BellOff size={12} /> :
+                                             activity.type === 'file_upload' ? <Upload size={12} /> :
+                                             activity.type === 'lead_conversion' ? <User size={12} /> :
+                                             activity.type === 'comment' ? <AlignLeft size={12} /> :
+                                             <Clock size={12} />}
                                         </div>
-                                        <div className="flex-1 bg-docka-50/50 dark:bg-zinc-800/30 p-3 rounded-xl text-xs">
-                                            <div className="flex justify-between mb-1">
-                                                <span className="font-bold text-docka-900 dark:text-zinc-100">{comment.user.name}</span>
-                                                <span className="text-[10px] text-docka-400">{new Date(comment.createdAt).toLocaleDateString()}</span>
+
+                                        {/* Content Card */}
+                                        <div className="flex-1 bg-white dark:bg-zinc-900/40 p-3 rounded-xl border border-zinc-100 dark:border-zinc-800/50 shadow-sm group-hover:border-zinc-200 dark:group-hover:border-zinc-700 transition-all">
+                                            <div className="flex justify-between items-start mb-1">
+                                                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-400">
+                                                    {activity.type?.replace('_', ' ')}
+                                                </span>
+                                                <span className="text-[9px] font-medium text-zinc-400 flex items-center gap-1">
+                                                    {new Date(activity.createdAt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                                </span>
                                             </div>
-                                            <p className="text-docka-600 dark:text-zinc-400">{comment.content}</p>
+                                            <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300 leading-relaxed">
+                                                {activity.content}
+                                            </p>
+                                            
+                                            {activity.user && (
+                                                <div className="mt-2 flex items-center gap-1.5 opacity-60">
+                                                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">— {activity.user.name}</span>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
