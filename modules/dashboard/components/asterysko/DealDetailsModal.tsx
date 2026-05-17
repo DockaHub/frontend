@@ -7,7 +7,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import { useToast } from '../../../../context/ToastContext';
 
 const extractInfoFromTags = (tags: any[]) => {
-    const info: { cnpj?: string, address?: string, razaoSocial?: string } = {};
+    const info: { cnpj?: string, address?: string, razaoSocial?: string, city?: string, state?: string, postalCode?: string } = {};
     if (!tags || !Array.isArray(tags)) return info;
 
     tags.forEach(tag => {
@@ -20,10 +20,20 @@ const extractInfoFromTags = (tags: any[]) => {
             info.address = tagName.split(':')[1]?.trim();
         } else if (lowerTag.includes('razão social:') || lowerTag.includes('razao social:')) {
             info.razaoSocial = tagName.split(':')[1]?.trim();
+        } else if (lowerTag.includes('cidade:')) {
+            info.city = tagName.split(':')[1]?.trim();
+        } else if (lowerTag.includes('estado:')) {
+            info.state = tagName.split(':')[1]?.trim();
+        } else if (lowerTag.includes('cep:')) {
+            info.postalCode = tagName.split(':')[1]?.trim();
         }
     });
 
     return info;
+};
+
+const maskCEP = (value: string) => {
+    return value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{3})\d+?$/, '$1');
 };
 
 interface DealComment {
@@ -242,7 +252,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 tags,
                 cnpj: info.cnpj || '',
                 razaoSocial: info.razaoSocial || '',
-                address: info.address || ''
+                address: info.address || '',
+                city: info.city || '',
+                state: info.state || '',
+                postalCode: info.postalCode || ''
             });
             fetchDealDetails();
         }
@@ -277,7 +290,10 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     tags,
                     cnpj: info.cnpj || response.data.client?.cnpj || '',
                     razaoSocial: info.razaoSocial || response.data.client?.company || '',
-                    address: info.address || response.data.client?.address || ''
+                    address: info.address || response.data.client?.address || '',
+                    city: info.city || response.data.client?.city || '',
+                    state: info.state || response.data.client?.state || '',
+                    postalCode: info.postalCode || response.data.client?.postalCode || ''
                 }));
             }
         } catch (error) {
@@ -320,8 +336,28 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     };
 
     const updateTagValue = (field: string, newValue: string) => {
-        const prefix = field === 'cnpj' ? 'CNPJ:' : field === 'razaoSocial' ? 'Razão Social:' : 'Endereço:';
-        const color = field === 'cnpj' ? 'bg-indigo-100 text-indigo-700' : field === 'razaoSocial' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700';
+        let prefix = '';
+        let color = 'bg-zinc-100 text-zinc-700';
+
+        if (field === 'cnpj') {
+            prefix = 'CNPJ:';
+            color = 'bg-indigo-100 text-indigo-700';
+        } else if (field === 'razaoSocial') {
+            prefix = 'Razão Social:';
+            color = 'bg-purple-100 text-purple-700';
+        } else if (field === 'address') {
+            prefix = 'Endereço:';
+            color = 'bg-amber-100 text-amber-700';
+        } else if (field === 'city') {
+            prefix = 'Cidade:';
+            color = 'bg-teal-100 text-teal-700';
+        } else if (field === 'state') {
+            prefix = 'Estado:';
+            color = 'bg-blue-100 text-blue-700';
+        } else if (field === 'postalCode') {
+            prefix = 'CEP:';
+            color = 'bg-pink-100 text-pink-700';
+        }
 
         const currentTags = [...(formData.tags || [])];
         const existingIdx = currentTags.findIndex((t: any) => t.label?.startsWith(prefix));
@@ -1050,10 +1086,43 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Endereço Fiscal</label>
                                     <textarea
                                         className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20 min-h-[80px] resize-none"
-                                        placeholder="Rua, Número, Bairro, Cidade/UF"
+                                        placeholder="Rua, Número, Bairro"
                                         value={formData.address || ''}
                                         onChange={e => setFormData({ ...formData, address: e.target.value })}
                                         onBlur={e => updateTagValue('address', e.target.value)}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">CEP</label>
+                                        <input
+                                            className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                            placeholder="00000-000"
+                                            value={formData.postalCode || ''}
+                                            onChange={e => setFormData({ ...formData, postalCode: maskCEP(e.target.value) })}
+                                            onBlur={e => updateTagValue('postalCode', e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Estado (UF)</label>
+                                        <input
+                                            className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                            placeholder="Ex: SP"
+                                            maxLength={2}
+                                            value={formData.state || ''}
+                                            onChange={e => setFormData({ ...formData, state: e.target.value.toUpperCase() })}
+                                            onBlur={e => updateTagValue('state', e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Cidade</label>
+                                    <input
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border-none rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder="Cidade"
+                                        value={formData.city || ''}
+                                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                                        onBlur={e => updateTagValue('city', e.target.value)}
                                     />
                                 </div>
                             </div>
