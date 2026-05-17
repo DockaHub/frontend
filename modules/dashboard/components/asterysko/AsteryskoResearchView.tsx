@@ -13,7 +13,8 @@ import {
     ChevronDown,
     Scale,
     AlertCircle,
-    Loader2
+    Loader2,
+    ExternalLink
 } from 'lucide-react';
 import { api } from '../../../../services/api';
 import { nclClasses, NclClass } from './data/nclClasses';
@@ -879,10 +880,19 @@ const AsteryskoResearchView = () => {
                             )}
                         </div>
 
-                        <div className="p-6 border-t border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-900/50 flex justify-end">
+                        <div className="p-6 border-t border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-900/50 flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <a
+                                href={selectedConflict.processNumber ? `https://busca.inpi.gov.br/pePI/servlet/MarcasServletController?Action=detail&Id=${selectedConflict.processNumber}` : 'https://busca.inpi.gov.br/'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full sm:w-auto px-5 h-12 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 border border-zinc-200 dark:border-zinc-700 active:scale-95 shadow-sm"
+                            >
+                                <ExternalLink size={14} />
+                                Acessar no Portal INPI
+                            </a>
                             <button
                                 onClick={() => setSelectedConflict(null)}
-                                className="px-6 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm"
+                                className="w-full sm:w-auto px-6 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm active:scale-95 flex items-center justify-center"
                             >
                                 Fechar Ficha
                             </button>
