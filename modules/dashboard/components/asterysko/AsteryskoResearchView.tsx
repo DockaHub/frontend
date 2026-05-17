@@ -27,6 +27,327 @@ const AsteryskoResearchView = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
 
+    // Ganchos de estado para o protocolo e dossiê
+    const [isProtocolModalOpen, setIsProtocolModalOpen] = useState(false);
+    const [clientName, setClientName] = useState('');
+    const [clientEmail, setClientEmail] = useState('');
+    const [clientPhone, setClientPhone] = useState('');
+    const [selectedPlan, setSelectedPlan] = useState('ESSENCIAL');
+    const [serviceValue, setServiceValue] = useState('899');
+    const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false);
+    const [protocolSuccess, setProtocolSuccess] = useState(false);
+
+    const handlePlanChange = (plan: string) => {
+        setSelectedPlan(plan);
+        if (plan === 'ESSENCIAL') setServiceValue('899');
+        else if (plan === 'PREMIUM') setServiceValue('1499');
+        else if (plan === 'PRO') setServiceValue('2499');
+    };
+
+    const handleGenerateDossier = () => {
+        if (!result || !searchName.trim()) return;
+
+        const printWindow = window.open('', '_blank');
+        if (!printWindow) return;
+
+        const riskColor = result.riskLevel === 'HIGH' ? '#f43f5e' : result.riskLevel === 'MEDIUM' ? '#f59e0b' : '#10b981';
+        const riskBg = result.riskLevel === 'HIGH' ? '#fef2f2' : result.riskLevel === 'MEDIUM' ? '#fffbeb' : '#ecfdf5';
+        const riskLabel = result.riskLevel === 'HIGH' ? 'Alto Risco' : result.riskLevel === 'MEDIUM' ? 'Atenção' : 'Excelente';
+        const riskTitle = result.riskLevel === 'HIGH' ? 'Registro Altamente Obstruído' : result.riskLevel === 'MEDIUM' ? 'Requer Estratégia de Defesa' : 'Caminho Livre para Registro';
+
+        const conflictsHtml = (result.conflicts || []).map((c: any) => `
+            <div style="padding: 16px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; justify-content: space-between; page-break-inside: avoid;">
+                <div>
+                    <div style="font-weight: bold; font-size: 14px; text-transform: uppercase; color: #111827;">${c.brandName}</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">
+                        Processo INPI: <strong>${c.processNumber || 'N/A'}</strong> | Classe: <strong>${c.nclClass || 'N/A'}</strong> | Origem: <strong>${c.ownerName || 'INPI'}</strong>
+                    </div>
+                </div>
+                <div style="padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; text-transform: uppercase; ${
+                    c.status?.toLowerCase().includes('arquivado') || c.status?.toLowerCase().includes('extinto')
+                    ? 'background-color: #f3f4f6; color: #9ca3af;'
+                    : 'background-color: #fee2e2; color: #dc2626;'
+                }">
+                    ${c.status || 'Desconhecido'}
+                </div>
+            </div>
+        `).join('');
+
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Dossie de Viabilidade - ${searchName}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                    <style>
+                        body {
+                            font-family: 'Plus Jakarta Sans', sans-serif;
+                            color: #1f2937;
+                            margin: 0;
+                            padding: 40px;
+                            background-color: #ffffff;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        .header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            border-bottom: 2px solid #f3f4f6;
+                            padding-bottom: 20px;
+                            margin-bottom: 40px;
+                        }
+                        .logo {
+                            font-size: 24px;
+                            font-weight: 800;
+                            color: #1d4ed8;
+                            letter-spacing: -1px;
+                        }
+                        .date {
+                            font-size: 12px;
+                            color: #9ca3af;
+                            font-weight: 500;
+                        }
+                        .title-section {
+                            margin-bottom: 30px;
+                        }
+                        .title-section h1 {
+                            font-size: 28px;
+                            font-weight: 800;
+                            margin: 0 0 8px 0;
+                            color: #111827;
+                        }
+                        .title-section p {
+                            font-size: 14px;
+                            color: #6b7280;
+                            margin: 0;
+                        }
+                        .grid {
+                            display: grid;
+                            grid-template-cols: 1fr 1fr;
+                            gap: 30px;
+                            margin-bottom: 40px;
+                        }
+                        .card-score {
+                            background-color: ${riskBg};
+                            border: 1px solid ${riskColor}30;
+                            border-radius: 16px;
+                            padding: 30px;
+                            display: flex;
+                            flex-direction: column;
+                            align-items: center;
+                            text-align: center;
+                        }
+                        .score-circle {
+                            width: 120px;
+                            height: 120px;
+                            border-radius: 50%;
+                            border: 8px solid ${riskColor};
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            font-size: 32px;
+                            font-weight: 800;
+                            color: ${riskColor};
+                            margin-bottom: 20px;
+                            background-color: #ffffff;
+                        }
+                        .risk-badge {
+                            padding: 6px 16px;
+                            border-radius: 9999px;
+                            background-color: ${riskColor};
+                            color: #ffffff;
+                            font-size: 11px;
+                            font-weight: 700;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            margin-bottom: 12px;
+                            display: inline-block;
+                        }
+                        .risk-title {
+                            font-size: 18px;
+                            font-weight: 700;
+                            margin: 0 0 10px 0;
+                            color: #111827;
+                        }
+                        .risk-summary {
+                            font-size: 12px;
+                            color: #4b5563;
+                            line-height: 1.6;
+                            margin: 0;
+                        }
+                        .card-info {
+                            border: 1px solid #e5e7eb;
+                            border-radius: 16px;
+                            padding: 30px;
+                            background-color: #fafafa;
+                        }
+                        .info-title {
+                            font-size: 12px;
+                            font-weight: 700;
+                            text-transform: uppercase;
+                            color: #9ca3af;
+                            margin-bottom: 20px;
+                            letter-spacing: 1px;
+                        }
+                        .info-item {
+                            margin-bottom: 16px;
+                        }
+                        .info-label {
+                            font-size: 11px;
+                            color: #9ca3af;
+                            text-transform: uppercase;
+                            font-weight: 600;
+                        }
+                        .info-value {
+                            font-size: 14px;
+                            font-weight: 700;
+                            color: #111827;
+                            margin-top: 4px;
+                        }
+                        .section-title {
+                            font-size: 16px;
+                            font-weight: 800;
+                            color: #111827;
+                            margin-bottom: 20px;
+                            padding-bottom: 10px;
+                            border-bottom: 2px solid #f3f4f6;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            margin-top: 30px;
+                        }
+                        .conflicts-list {
+                            border: 1px solid #e5e7eb;
+                            border-radius: 12px;
+                            overflow: hidden;
+                            margin-bottom: 40px;
+                        }
+                        .no-conflicts {
+                            padding: 30px;
+                            text-align: center;
+                            color: #6b7280;
+                            font-size: 13px;
+                            font-weight: 500;
+                        }
+                        .footer {
+                            margin-top: 60px;
+                            border-top: 1px solid #e5e7eb;
+                            padding-top: 20px;
+                            text-align: center;
+                            font-size: 11px;
+                            color: #9ca3af;
+                        }
+                        @media print {
+                            body {
+                                padding: 0;
+                            }
+                            .no-print {
+                                display: none;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="logo">Asterysko.</div>
+                        <div class="date">Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                    </div>
+
+                    <div class="title-section">
+                        <h1>Dossie de Viabilidade de Registro</h1>
+                        <p>Relatório de colidência e análise preventiva de propriedade industrial</p>
+                    </div>
+
+                    <div class="grid">
+                        <div class="card-score">
+                            <div class="risk-badge">${riskLabel}</div>
+                            <div class="score-circle">${result.score}%</div>
+                            <h2 class="risk-title">${riskTitle}</h2>
+                            <p class="risk-summary">${result.summary}</p>
+                        </div>
+
+                        <div class="card-info">
+                            <div class="info-title">Detalhes do Ativo Analisado</div>
+                            <div class="info-item">
+                                <div class="info-label">Nome da Marca</div>
+                                <div class="info-value" style="font-size: 20px; color: #1d4ed8;">${searchName}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Classe NCL Selecionada</div>
+                                <div class="info-value">Classe ${selectedNcl?.id} - ${selectedNcl?.description}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Status da Consulta</div>
+                                <div class="info-value" style="color: #10b981;">Análise Concluída</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">Registros Colidentes Encontrados</div>
+                    <div class="conflicts-list">
+                        ${conflictsHtml || '<div class="no-conflicts">Nenhum registro colidente encontrado na classe indicada. O caminho está livre.</div>'}
+                    </div>
+
+                    <div class="section-title">Orientações e Próximos Passos</div>
+                    <div style="font-size: 12px; line-height: 1.8; color: #4b5563; padding: 20px; background-color: #f9fafb; border-radius: 12px; border: 1px solid #e5e7eb; page-break-inside: avoid;">
+                        <p style="margin-top: 0;"><strong>Análise Preventiva:</strong> O score apresentado baseia-se na similaridade exata e fonética em vigor nas bases ativas e de histórico do INPI e dos nossos clientes monitorados.</p>
+                        <p style="margin-bottom: 0;"><strong>Recomendação Legal:</strong> ${
+                            result.riskLevel === 'HIGH' 
+                            ? 'Devido ao alto risco de colisão e existência de processos idênticos ativos, é desaconselhado iniciar o protocolo de registro sem antes reformular o nome da marca ou obter assessoria para contestação/acordo.'
+                            : result.riskLevel === 'MEDIUM'
+                            ? 'Há registros similares ou arquivados que exigem atenção. É altamente recomendável contar com um plano de oposição e proteção robusta durante o período de exame de mérito.'
+                            : 'O cenário é excelente! Recomendamos iniciar o protocolo de registro o quanto antes para garantir o direito de prioridade sobre a marca.'
+                        }</p>
+                    </div>
+
+                    <div class="footer">
+                        Este documento é um relatório preliminar gerado pelo sistema de inteligência artificial da Asterysko e não substitui a consulta a assessores jurídicos especializados em propriedade industrial.
+                    </div>
+
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
+
+    const handleStartProtocol = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!clientName.trim() || !clientEmail.trim() || !clientPhone.trim()) return;
+
+        setIsSubmittingProtocol(true);
+        try {
+            await api.post('/asterysko/crm/deals', {
+                title: searchName,
+                subtitle: clientName,
+                contactName: clientName,
+                contactEmail: clientEmail,
+                contactPhone: clientPhone,
+                value: parseFloat(serviceValue) || 0,
+                status: 'leads',
+                planType: selectedPlan,
+                priority: 'medium',
+                tags: ['Viabilidade']
+            });
+            setProtocolSuccess(true);
+            setClientName('');
+            setClientEmail('');
+            setClientPhone('');
+            setTimeout(() => {
+                setIsProtocolModalOpen(false);
+                setProtocolSuccess(false);
+            }, 2000);
+        } catch (error) {
+            console.error('Failed to create protocol deal', error);
+        } finally {
+            setIsSubmittingProtocol(false);
+        }
+    };
+
+
     useEffect(() => {
         if (selectedNcl) {
             setNclQuery(`Classe ${selectedNcl.id} - ${selectedNcl.description.substring(0, 30)}...`);
@@ -210,14 +531,20 @@ const AsteryskoResearchView = () => {
                             <div className="bg-white dark:bg-zinc-900 p-8 rounded-xl border border-docka-100 dark:border-zinc-800 shadow-sm">
                                 <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400 mb-6 ml-1">Próximos Passos Sugeridos</h4>
                                 <div className="space-y-3">
-                                    <button className="w-full p-4 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-between group hover:bg-docka-100 dark:hover:bg-zinc-700 transition-all border border-transparent hover:border-docka-200">
+                                    <button 
+                                        onClick={handleGenerateDossier}
+                                        className="w-full p-4 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-between group hover:bg-docka-100 dark:hover:bg-zinc-700 transition-all border border-transparent hover:border-docka-200"
+                                    >
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg flex items-center justify-center font-bold">1</div>
                                             <span className="text-xs font-bold uppercase tracking-widest text-docka-900 dark:text-zinc-200">Gerar Dossier PDF</span>
                                         </div>
                                         <ChevronDown size={14} className="-rotate-90 text-docka-200 group-hover:text-blue-600" />
                                     </button>
-                                    <button className="w-full p-4 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-between group hover:bg-docka-100 dark:hover:bg-zinc-700 transition-all border border-transparent hover:border-docka-200">
+                                    <button 
+                                        onClick={() => setIsProtocolModalOpen(true)}
+                                        className="w-full p-4 bg-docka-50 dark:bg-zinc-800 rounded-lg flex items-center justify-between group hover:bg-docka-100 dark:hover:bg-zinc-700 transition-all border border-transparent hover:border-docka-200"
+                                    >
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-lg flex items-center justify-center font-bold">2</div>
                                             <span className="text-xs font-bold uppercase tracking-widest text-docka-900 dark:text-zinc-200">Iniciar Protocolo</span>
@@ -276,6 +603,145 @@ const AsteryskoResearchView = () => {
                     </div>
                 )}
             </div>
+
+            {/* Modal de Iniciar Protocolo */}
+            {isProtocolModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-zinc-900 border border-docka-100 dark:border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-docka-50 dark:border-zinc-800 flex items-center justify-between bg-docka-50/50 dark:bg-zinc-900/50">
+                            <div>
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                    <Sparkles size={16} className="text-blue-600 animate-pulse" />
+                                    Iniciar Protocolo de Registro
+                                </h3>
+                                <p className="text-[11px] font-semibold text-docka-400 uppercase tracking-wider mt-1">Crie um lead diretamente no CRM Kanban para este ativo</p>
+                            </div>
+                            <button 
+                                onClick={() => setIsProtocolModalOpen(false)}
+                                className="text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 text-sm font-bold w-8 h-8 rounded-full hover:bg-docka-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-all"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {protocolSuccess ? (
+                            <div className="p-12 flex flex-col items-center justify-center text-center space-y-4">
+                                <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full flex items-center justify-center">
+                                    <CheckCircle2 size={36} />
+                                </div>
+                                <h4 className="text-lg font-bold text-docka-900 dark:text-zinc-100">Protocolo Iniciado com Sucesso!</h4>
+                                <p className="text-xs font-semibold text-docka-400 uppercase tracking-wider">
+                                    O lead foi criado na coluna de "Novos Leads" do seu CRM Kanban.
+                                </p>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleStartProtocol} className="p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Ativo / Marca</label>
+                                        <input
+                                            type="text"
+                                            value={searchName}
+                                            disabled
+                                            className="w-full mt-1.5 px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-docka-400 dark:text-zinc-500 cursor-not-allowed"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Classe Nice</label>
+                                        <input
+                                            type="text"
+                                            value={`Classe ${selectedNcl?.id}`}
+                                            disabled
+                                            className="w-full mt-1.5 px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border-none rounded-lg text-xs font-bold text-docka-400 dark:text-zinc-500 cursor-not-allowed"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Nome do Cliente</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={clientName}
+                                        onChange={(e) => setClientName(e.target.value)}
+                                        placeholder="Ex: João da Silva"
+                                        className="w-full mt-1.5 px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-800 focus:border-blue-600 focus:ring-1 focus:ring-blue-600/10 rounded-lg text-xs font-bold outline-none transition-all"
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-docka-400">E-mail de Contato</label>
+                                        <input
+                                            type="email"
+                                            required
+                                            value={clientEmail}
+                                            onChange={(e) => setClientEmail(e.target.value)}
+                                            placeholder="Ex: joao@email.com"
+                                            className="w-full mt-1.5 px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-800 focus:border-blue-600 focus:ring-1 focus:ring-blue-600/10 rounded-lg text-xs font-bold outline-none transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Telefone / WhatsApp</label>
+                                        <input
+                                            type="tel"
+                                            required
+                                            value={clientPhone}
+                                            onChange={(e) => setClientPhone(e.target.value)}
+                                            placeholder="Ex: (11) 99999-9999"
+                                            className="w-full mt-1.5 px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-800 focus:border-blue-600 focus:ring-1 focus:ring-blue-600/10 rounded-lg text-xs font-bold outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Plano Escolhido</label>
+                                        <select
+                                            value={selectedPlan}
+                                            onChange={(e) => handlePlanChange(e.target.value)}
+                                            className="w-full mt-1.5 px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-800 focus:border-blue-600 focus:ring-1 focus:ring-blue-600/10 rounded-lg text-xs font-bold outline-none transition-all"
+                                        >
+                                            <option value="ESSENCIAL">Essencial (R$ 899,00)</option>
+                                            <option value="PREMIUM">Premium (R$ 1.499,00)</option>
+                                            <option value="PRO">Pro (R$ 2.499,00)</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Valor do Serviço (R$)</label>
+                                        <input
+                                            type="number"
+                                            required
+                                            value={serviceValue}
+                                            onChange={(e) => setServiceValue(e.target.value)}
+                                            placeholder="Ex: 899"
+                                            className="w-full mt-1.5 px-4 py-2.5 bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-800 focus:border-blue-600 focus:ring-1 focus:ring-blue-600/10 rounded-lg text-xs font-bold outline-none transition-all"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-docka-50 dark:border-zinc-800 flex justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsProtocolModalOpen(false)}
+                                        className="px-6 h-12 border border-docka-100 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-800 text-docka-700 dark:text-zinc-300 rounded-lg font-bold text-xs uppercase tracking-wider transition-all"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmittingProtocol || !clientName.trim() || !clientEmail.trim() || !clientPhone.trim()}
+                                        className="px-6 h-12 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm shadow-emerald-600/10 disabled:opacity-50"
+                                    >
+                                        {isSubmittingProtocol ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} fill="currentColor" />}
+                                        Iniciar Protocolo
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+                    </div>
+                </div>
+            )}
         </DashboardPage>
     );
 };
