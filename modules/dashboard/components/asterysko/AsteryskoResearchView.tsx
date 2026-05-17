@@ -37,6 +37,56 @@ const AsteryskoResearchView = () => {
     const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false);
     const [protocolSuccess, setProtocolSuccess] = useState(false);
 
+    // Gancho de estado e auxiliares para detalhe de conflito e tradução de status
+    const [selectedConflict, setSelectedConflict] = useState<any | null>(null);
+
+    const getStatusLabel = (status: string) => {
+        const s = (status || '').toUpperCase().trim();
+        switch (s) {
+            case 'GRANTED': return 'Deferido / Concedido';
+            case 'REFUSED': return 'Indeferido';
+            case 'OPPOSITION': return 'Oposição';
+            case 'EXAMINATION': return 'Em Exame de Mérito';
+            case 'ARCHIVED': return 'Arquivado / Extinto';
+            case 'WAITING_PAYMENT': return 'Aguardando Pagamento';
+            case 'PENDING': return 'Pendente';
+            default:
+                return status;
+        }
+    };
+
+    const getStatusBadgeStyle = (status: string) => {
+        const s = (status || '').toUpperCase().trim();
+        if (s.includes('ARQUIVADO') || s.includes('EXTINTO') || s === 'ARCHIVED') {
+            return 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400 border-zinc-200 dark:border-zinc-700';
+        }
+        if (s === 'GRANTED') {
+            return 'bg-emerald-500 text-white border-emerald-500 shadow-emerald-900/10';
+        }
+        if (s === 'REFUSED') {
+            return 'bg-rose-600 text-white border-rose-600 shadow-rose-900/10';
+        }
+        if (s === 'OPPOSITION') {
+            return 'bg-amber-600 text-white border-amber-600 shadow-amber-900/10';
+        }
+        if (s === 'EXAMINATION' || s === 'PENDING') {
+            return 'bg-blue-600 text-white border-blue-600 shadow-blue-900/10';
+        }
+        if (s === 'WAITING_PAYMENT') {
+            return 'bg-amber-500 text-white border-amber-500 shadow-amber-900/10';
+        }
+        
+        const sLower = s.toLowerCase();
+        if (sLower.includes('deferido') || sLower.includes('concedido')) {
+            return 'bg-emerald-500 text-white border-emerald-500';
+        }
+        if (sLower.includes('indeferido')) {
+            return 'bg-rose-600 text-white border-rose-600';
+        }
+        return 'bg-rose-600 text-white border-rose-600 shadow-rose-900/10';
+    };
+
+
     const handlePlanChange = (plan: string) => {
         setSelectedPlan(plan);
         if (plan === 'ESSENCIAL') setServiceValue('899');
@@ -583,14 +633,13 @@ const AsteryskoResearchView = () => {
                                                 </div>
                                             </div>
                                             <div className="mt-4 md:mt-0 flex items-center gap-3 w-full md:w-auto justify-end">
-                                                <div className={`px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border shadow-sm ${
-                                                    conflict.status?.toLowerCase().includes('arquivado') || conflict.status?.toLowerCase().includes('extinto')
-                                                    ? 'bg-white dark:bg-zinc-800 text-docka-200 border-docka-100 dark:border-zinc-700'
-                                                    : 'bg-rose-600 text-white border-rose-600 shadow-rose-900/10'
-                                                }`}>
-                                                    {conflict.status || 'Desconhecido'}
+                                                <div className={`px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider border shadow-sm ${getStatusBadgeStyle(conflict.status)}`}>
+                                                    {getStatusLabel(conflict.status) || 'Pendente'}
                                                 </div>
-                                                <button className="p-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 transition-all shadow-sm">
+                                                <button 
+                                                    onClick={() => setSelectedConflict(conflict)}
+                                                    className="p-2.5 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 transition-all shadow-sm active:scale-95"
+                                                >
                                                     <Info size={16} />
                                                 </button>
                                             </div>
@@ -739,6 +788,105 @@ const AsteryskoResearchView = () => {
                                 </div>
                             </form>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Detalhes do Processo */}
+            {selectedConflict && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white dark:bg-zinc-900 border border-docka-100 dark:border-zinc-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-docka-50 dark:border-zinc-800 flex items-center justify-between bg-docka-50/50 dark:bg-zinc-900/50">
+                            <div>
+                                <h3 className="text-sm font-bold uppercase tracking-wider text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                    <Scale size={16} className="text-blue-600" />
+                                    Detalhes do Processo
+                                </h3>
+                                <p className="text-[11px] font-semibold text-docka-400 uppercase tracking-wider mt-1">Ficha completa de registro de marca INPI</p>
+                            </div>
+                            <button 
+                                onClick={() => setSelectedConflict(null)}
+                                className="text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 text-sm font-bold w-8 h-8 rounded-full hover:bg-docka-100 dark:hover:bg-zinc-800 flex items-center justify-center transition-all"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6">
+                            {/* Brand Header */}
+                            <div className="flex items-center gap-4 bg-docka-50/50 dark:bg-zinc-800/50 p-4 rounded-xl border border-docka-50 dark:border-zinc-800">
+                                <div className="w-12 h-12 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-sm shrink-0">
+                                    {selectedConflict.nclClass}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <h4 className="text-lg font-extrabold uppercase tracking-widest text-docka-900 dark:text-zinc-100 truncate">{selectedConflict.brandName}</h4>
+                                    <p className="text-xs font-semibold text-docka-400 uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+                                        <Scale size={12} /> Processo {selectedConflict.processNumber || 'N/A'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Details Grid */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-docka-50/30 dark:bg-zinc-800/30 p-3 rounded-lg border border-docka-50/50 dark:border-zinc-800/50">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Classe Nice</span>
+                                    <p className="text-xs font-bold text-docka-850 dark:text-zinc-200 mt-1">NCL {selectedConflict.nclClass || 'N/A'}</p>
+                                </div>
+
+                                <div className="bg-docka-50/30 dark:bg-zinc-800/30 p-3 rounded-lg border border-docka-50/50 dark:border-zinc-800/50">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Status Atual</span>
+                                    <div className="mt-1">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeStyle(selectedConflict.status)}`}>
+                                            {getStatusLabel(selectedConflict.status)}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="bg-docka-50/30 dark:bg-zinc-800/30 p-3 rounded-lg border border-docka-50/50 dark:border-zinc-800/50">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Titular da Marca</span>
+                                    <p className="text-xs font-bold text-docka-850 dark:text-zinc-200 mt-1 truncate">{selectedConflict.ownerName || 'N/A'}</p>
+                                </div>
+
+                                <div className="bg-docka-50/30 dark:bg-zinc-800/30 p-3 rounded-lg border border-docka-50/50 dark:border-zinc-800/50">
+                                    <span className="text-[10px] font-bold uppercase tracking-widest text-docka-400">Data de Depósito</span>
+                                    <p className="text-xs font-bold text-docka-850 dark:text-zinc-200 mt-1">
+                                        {selectedConflict.filingDate ? new Date(selectedConflict.filingDate).toLocaleDateString('pt-BR') : 'N/A'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Informações de Colidência */}
+                            <div className="bg-blue-50/30 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100/50 dark:border-blue-900/20 space-y-2">
+                                <h5 className="text-[10px] font-bold uppercase tracking-widest text-blue-700 dark:text-blue-400 flex items-center gap-1.5">
+                                    <Sparkles size={12} /> Parecer Tecnológico Asterysko
+                                </h5>
+                                <p className="text-xs font-medium text-blue-900 dark:text-blue-200/80 leading-relaxed">
+                                    {selectedConflict.type === 'EXACT' 
+                                    ? `Marca com colidência fonética/visual EXATA na classe ${selectedConflict.nclClass}. A probabilidade de indeferimento de novos registros sob este mesmo nome é extremamente alta.`
+                                    : `Marca com colidência PARCIAL ou fonética aproximada na classe ${selectedConflict.nclClass}. Recomenda-se realizar uma análise de anterioridade e preparar argumentos de defesa antes de protocolar.`}
+                                </p>
+                            </div>
+
+                            {selectedConflict.ownerName === 'Asterysko (Processo Interno)' && (
+                                <div className="bg-emerald-50/30 dark:bg-emerald-900/10 p-4 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 space-y-2">
+                                    <h5 className="text-[10px] font-bold uppercase tracking-widest text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                                        <CheckCircle2 size={12} /> Cliente da Base Interna
+                                    </h5>
+                                    <p className="text-xs font-medium text-emerald-900 dark:text-emerald-200/80 leading-relaxed">
+                                        Este processo pertence a um cliente ativo cadastrado no seu CRM! Acesse o Kanban ou Painel de Processos para acompanhar os detalhes de acompanhamento operacional.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="p-6 border-t border-docka-50 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-900/50 flex justify-end">
+                            <button
+                                onClick={() => setSelectedConflict(null)}
+                                className="px-6 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs uppercase tracking-wider transition-all shadow-sm"
+                            >
+                                Fechar Ficha
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
