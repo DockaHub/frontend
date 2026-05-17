@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff, Search as SearchIcon, Edit2, Pencil } from 'lucide-react';
 import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
-import api from '../../../../services/api';
+import api, { getBackendUrl } from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { useToast } from '../../../../context/ToastContext';
 
@@ -169,6 +169,121 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         }
     };
 
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const triggerFileSelect = () => {
+        if (!processData?.id) {
+            addToast({
+                type: 'error',
+                title: 'Processo Necessário',
+                message: 'Você precisa primeiro vincular ou criar um Processo INPI para esta marca para poder associar um logotipo.'
+            });
+            return;
+        }
+        fileInputRef.current?.click();
+    };
+
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (!processData?.id) {
+            addToast({
+                type: 'error',
+                title: 'Processo Necessário',
+                message: 'Você precisa primeiro vincular ou criar um Processo INPI para esta marca para poder associar um logotipo.'
+            });
+            return;
+        }
+
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', file);
+
+        try {
+            setSaveStatus('saving');
+            const response = await api.post(`/asterysko/processes/${processData.id}/logo`, formDataUpload, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+
+            if (response.data?.success) {
+                const newLogoUrl = response.data.logoUrl;
+                setFormData((prev: any) => ({ ...prev, brandLogo: newLogoUrl }));
+                addToast({
+                    type: 'success',
+                    title: 'Sucesso',
+                    message: 'Logotipo atualizado com sucesso!'
+                });
+                
+                // Atualizar também o processData localmente
+                if (processData) {
+                    setProcessData({
+                        ...processData,
+                        brand: {
+                            ...processData.brand,
+                            logoUrl: newLogoUrl
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to upload logo', error);
+            addToast({
+                type: 'error',
+                title: 'Erro',
+                message: 'Falha ao fazer upload do logotipo.'
+            });
+        } finally {
+            setSaveStatus('saved');
+        }
+    };
+
+    const handleLogoRemove = async () => {
+        if (!processData?.id) {
+            addToast({
+                type: 'error',
+                title: 'Processo Necessário',
+                message: 'Não há nenhum logotipo associado a este processo para remover.'
+            });
+            return;
+        }
+
+        try {
+            setSaveStatus('saving');
+            const response = await api.put(`/asterysko/processes/${processData.id}`, { logoUrl: null });
+
+            if (response.data) {
+                setFormData((prev: any) => ({ ...prev, brandLogo: '' }));
+                addToast({
+                    type: 'success',
+                    title: 'Sucesso',
+                    message: 'Logotipo removido com sucesso!'
+                });
+                
+                // Atualizar também o processData localmente
+                if (processData) {
+                    setProcessData({
+                        ...processData,
+                        brand: {
+                            ...processData.brand,
+                            logoUrl: null
+                        }
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Failed to remove logo', error);
+            addToast({
+                type: 'error',
+                title: 'Erro',
+                message: 'Falha ao remover o logotipo.'
+            });
+        } finally {
+            setSaveStatus('saved');
+        }
+    };
+
     // Permissions logic
     const isAdmin = user?.role === 'admin' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
 
@@ -255,7 +370,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 address: info.address || '',
                 city: info.city || '',
                 state: info.state || '',
-                postalCode: info.postalCode || ''
+                postalCode: info.postalCode || '',
+                brandLogo: (deal as any).process?.brand?.logoUrl || ''
             });
             fetchDealDetails();
         }
@@ -293,7 +409,8 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     address: info.address || response.data.client?.address || '',
                     city: info.city || response.data.client?.city || '',
                     state: info.state || response.data.client?.state || '',
-                    postalCode: info.postalCode || response.data.client?.postalCode || ''
+                    postalCode: info.postalCode || response.data.client?.postalCode || '',
+                    brandLogo: response.data.process?.brand?.logoUrl || ''
                 }));
             }
         } catch (error) {
@@ -626,9 +743,19 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     <div className="lg:col-span-7 space-y-8">
                         
                         <div className="bg-white dark:bg-zinc-900/40 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm flex items-start gap-6">
-                            <div className="w-32 h-32 bg-docka-50 dark:bg-zinc-800 rounded-xl border-2 border-dashed border-docka-100 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-docka-100/50 transition-all relative overflow-hidden group">
+                            <div 
+                                onClick={triggerFileSelect}
+                                className="w-32 h-32 bg-docka-50 dark:bg-zinc-800 rounded-xl border-2 border-dashed border-docka-100 dark:border-zinc-700 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-docka-100/50 transition-all relative overflow-hidden group"
+                            >
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    onChange={handleLogoUpload} 
+                                    accept="image/*" 
+                                    className="hidden" 
+                                />
                                 {formData.brandLogo ? (
-                                    <img src={formData.brandLogo} className="w-full h-full object-contain p-2" alt="Logo da Marca" />
+                                    <img src={formData.brandLogo.startsWith('http') ? formData.brandLogo : `${getBackendUrl()}${formData.brandLogo}`} className="w-full h-full object-contain p-2" alt="Logo da Marca" />
                                 ) : (
                                     <>
                                         <Upload size={24} className="text-docka-300" />
@@ -646,10 +773,16 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     <p className="text-xs text-docka-400">Insira o logo oficial para controle visual e geração de materiais.</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <button className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-docka-600 dark:text-zinc-400 hover:bg-docka-100">
+                                    <button 
+                                        onClick={triggerFileSelect}
+                                        className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-docka-600 dark:text-zinc-400 hover:bg-docka-100"
+                                    >
                                         Substituir
                                     </button>
-                                    <button className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-docka-600 dark:text-zinc-400 hover:bg-docka-100">
+                                    <button 
+                                        onClick={handleLogoRemove}
+                                        className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-docka-600 dark:text-zinc-400 hover:bg-docka-100"
+                                    >
                                         Remover
                                     </button>
                                 </div>
