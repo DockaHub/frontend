@@ -336,6 +336,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                             allProcessesMap.set(proc.id, {
                                 ...proc,
                                 brandName: brand.name,
+                                brandLogo: brand.logoUrl,
                                 brandType: brand.type,
                                 brandNature: brand.nature,
                                 brandPresentation: brand.presentation,
@@ -855,9 +856,19 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                         >
                                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                                 <div className="flex gap-4 items-center">
-                                                    <div className={`w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0`}>
-                                                        {proc.brandName ? proc.brandName[0] : 'M'}
-                                                    </div>
+                                                    {proc.brandLogo ? (
+                                                        <div className="w-14 h-14 bg-slate-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center border border-slate-100 dark:border-zinc-700 shadow-sm shrink-0 overflow-hidden">
+                                                            <img 
+                                                                src={proc.brandLogo.startsWith('http') ? proc.brandLogo : `${getBackendUrl()}${proc.brandLogo}`} 
+                                                                className="w-full h-full object-contain p-1" 
+                                                                alt="Logo da Marca" 
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0">
+                                                            {proc.brandName ? proc.brandName[0] : 'M'}
+                                                        </div>
+                                                    )}
                                                     <div>
                                                         <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">{proc.brandName}</h2>
                                                         <div className="flex flex-wrap gap-2 mt-1.5">
