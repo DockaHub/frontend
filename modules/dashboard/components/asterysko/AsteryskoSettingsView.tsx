@@ -175,6 +175,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         const [editingSlug, setEditingSlug] = useState<string | null>(null);
         const [editContent, setEditContent] = useState('');
         const [saving, setSaving] = useState(false);
+        const [uploadingSlug, setUploadingSlug] = useState<string | null>(null);
 
         const fetchTemplates = async () => {
             try {
@@ -209,7 +210,51 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             }
         };
 
+        const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, slug: string) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            setUploadingSlug(slug);
+            try {
+                await api.post(`/whatsapp/templates/${slug}/image`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                addToast({ type: 'success', title: 'Upload Concluído', message: 'Imagem do template salva com sucesso.' });
+                fetchTemplates();
+            } catch (err) {
+                console.error(err);
+                addToast({ type: 'error', title: 'Erro no Upload', message: 'Não foi possível salvar a imagem.' });
+            } finally {
+                setUploadingSlug(null);
+            }
+        };
+
+        const handleRemoveImage = async (slug: string) => {
+            if (!window.confirm('Deseja realmente remover a imagem deste template?')) return;
+
+            setUploadingSlug(slug);
+            try {
+                await api.delete(`/whatsapp/templates/${slug}/image`);
+                addToast({ type: 'success', title: 'Removido', message: 'Imagem removida com sucesso.' });
+                fetchTemplates();
+            } catch (err) {
+                console.error(err);
+                addToast({ type: 'error', title: 'Erro', message: 'Não foi possível remover a imagem.' });
+            } finally {
+                setUploadingSlug(null);
+            }
+        };
+
         const DEFAULT_TEMPLATES = [
+            {
+                slug: 'registro-vigor',
+                name: 'Registro de Marca em Vigor',
+                variables: ['cliente', 'marca', 'processo'],
+                description: 'Enviado automaticamente quando o status do processo muda para Registro de marca em vigor na RPI.'
+            },
             {
                 slug: 'new-dispatch',
                 name: 'Novo Despacho (INPI)',
@@ -260,6 +305,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                         {DEFAULT_TEMPLATES.map((tpl) => {
                             const dbTpl = templates.find(t => t.slug === tpl.slug);
                             const isEditing = editingSlug === tpl.slug;
+                            const metadata = (dbTpl?.metadata as Record<string, any>) || {};
 
                             return (
                                 <div key={tpl.slug} className="p-4 border border-docka-100 dark:border-zinc-800 rounded-xl hover:border-docka-200 dark:hover:border-zinc-700 transition-colors">
@@ -306,23 +352,100 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                                 className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500/20"
                                                 placeholder="Escreva sua mensagem aqui..."
                                             />
-                                            <div className="flex flex-wrap gap-1.5">
-                                                {tpl.variables.map(v => (
-                                                    <button 
-                                                        key={v}
-                                                        onClick={() => setEditContent(prev => prev + `{{${v}}}`)}
-                                                        className="px-2 py-1 bg-docka-50 dark:bg-zinc-800 text-[10px] font-bold text-docka-600 dark:text-zinc-400 rounded hover:bg-docka-100 transition-colors"
-                                                    >
-                                                        + {`{{${v}}}`}
-                                                    </button>
-                                                ))}
+                                            <div className="flex flex-wrap gap-1.5 justify-between items-center">
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {tpl.variables.map(v => (
+                                                        <button 
+                                                            key={v}
+                                                            onClick={() => setEditContent(prev => prev + `{{${v}}}`)}
+                                                            className="px-2 py-1 bg-docka-50 dark:bg-zinc-800 text-[10px] font-bold text-docka-600 dark:text-zinc-400 rounded hover:bg-docka-100 transition-colors"
+                                                        >
+                                                            + {`{{${v}}}`}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Imagem do Template na Edição */}
+                                            <div className="pt-3 border-t border-docka-100 dark:border-zinc-800 space-y-2">
+                                                <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400">
+                                                    Imagem Comemorativa / Informativa (Opcional - Envia antes do texto)
+                                                </label>
+                                                
+                                                {metadata.imageUrl ? (
+                                                    <div className="flex items-center gap-3 p-2 bg-docka-50 dark:bg-zinc-800 rounded-lg border border-docka-100 dark:border-zinc-800">
+                                                        <img 
+                                                            src={`${api.defaults.baseURL?.replace('/api', '') || ''}${metadata.imageUrl}`}
+                                                            alt="Preview" 
+                                                            className="w-12 h-12 object-cover rounded border border-docka-200 dark:border-zinc-700" 
+                                                        />
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-xs font-semibold text-docka-800 dark:text-zinc-200 truncate">
+                                                                {metadata.imageName || 'imagem.jpg'}
+                                                            </p>
+                                                            <p className="text-[10px] text-docka-400">Imagem ativa para disparo</p>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            disabled={uploadingSlug === tpl.slug}
+                                                            onClick={() => handleRemoveImage(tpl.slug)}
+                                                            className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors text-xs font-bold flex items-center gap-1"
+                                                        >
+                                                            <Trash2 size={12} /> Remover
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="file"
+                                                            id={`image-upload-${tpl.slug}`}
+                                                            className="hidden"
+                                                            accept="image/*"
+                                                            onChange={(e) => handleImageUpload(e, tpl.slug)}
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            disabled={uploadingSlug === tpl.slug}
+                                                            onClick={() => document.getElementById(`image-upload-${tpl.slug}`)?.click()}
+                                                            className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-bold hover:bg-docka-100 dark:hover:bg-zinc-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                                        >
+                                                            {uploadingSlug === tpl.slug ? (
+                                                                <RefreshCw size={12} className="animate-spin" />
+                                                            ) : (
+                                                                <Upload size={12} />
+                                                            )}
+                                                            Anexar Imagem
+                                                        </button>
+                                                        <span className="text-[10px] text-docka-400 italic">PNG, JPG ou JPEG. Enviada primeiro no WhatsApp.</span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-docka-100 dark:border-zinc-800/50">
-                                            <p className="text-xs text-docka-700 dark:text-zinc-300 whitespace-pre-wrap italic">
-                                                {dbTpl?.content || 'Template ainda não configurado.'}
-                                            </p>
+                                        <div className="space-y-3">
+                                            <div className="bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-lg border border-docka-100 dark:border-zinc-800/50">
+                                                <p className="text-xs text-docka-700 dark:text-zinc-300 whitespace-pre-wrap italic">
+                                                    {dbTpl?.content || 'Template ainda não configurado.'}
+                                                </p>
+                                            </div>
+                                            
+                                            {metadata.imageUrl && (
+                                                <div className="flex items-center gap-3 p-2 bg-docka-50/50 dark:bg-zinc-800/30 rounded-lg border border-docka-100/50 dark:border-zinc-800/50 max-w-sm">
+                                                    <img 
+                                                        src={`${api.defaults.baseURL?.replace('/api', '') || ''}${metadata.imageUrl}`}
+                                                        alt="Preview" 
+                                                        className="w-10 h-10 object-cover rounded border border-docka-200 dark:border-zinc-700/50" 
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-[11px] font-bold text-docka-800 dark:text-zinc-200 truncate">
+                                                            {metadata.imageName || 'imagem.jpg'}
+                                                        </p>
+                                                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                                            <Check size={10} /> Imagem comemorativa anexada
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

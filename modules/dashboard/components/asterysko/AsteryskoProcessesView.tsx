@@ -150,7 +150,58 @@ const AsteryskoProcessesView: React.FC = () => {
     const [clients, setClients] = useState<Client[]>([]);
     const [clientSearch, setClientSearch] = useState('');
     const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
+    const [approvalModal, setApprovalModal] = useState<{
+        isOpen: boolean;
+        processId: string;
+        stage: 'contract' | 'proxy' | 'gru' | null;
+        title: string;
+        notify: boolean;
+    }>({
+        isOpen: false,
+        processId: '',
+        stage: null,
+        title: '',
+        notify: true
+    });
+
+    const [isSubmittingApproval, setIsSubmittingApproval] = useState(false);
+
+    const submitStageApproval = async () => {
+        if (!approvalModal.processId || !approvalModal.stage) return;
+        setIsSubmittingApproval(true);
+        try {
+            const res = await api.post(`/asterysko/processes/${approvalModal.processId}/approve-stage`, {
+                stage: approvalModal.stage,
+                notify: approvalModal.notify
+            });
+            
+            // Re-map the selected process to reflect changes immediately
+            const updatedProc = res.data.process;
+            const mappedProc = {
+                ...selectedProcess,
+                contractSignStatus: updatedProc.contractSignStatus,
+                contractSignDate: updatedProc.contractSignDate,
+                proxySignStatus: updatedProc.proxySignStatus,
+                proxyUrl: updatedProc.proxyUrl,
+                gruStatus: updatedProc.gruStatus,
+                status: updatedProc.status,
+                nextStep: getNextStep(updatedProc.status)
+            };
+            setSelectedProcess(mappedProc);
+            
+            // Also update main list silently
+            setProcesses(prev => prev.map(p => p.id === approvalModal.processId ? { ...p, ...mappedProc } : p));
+            
+            addToast({ type: 'success', title: 'Sucesso', message: 'Etapa homologada e aprovada com sucesso!' });
+            setApprovalModal(prev => ({ ...prev, isOpen: false }));
+        } catch (error: any) {
+            console.error('Failed to approve stage:', error);
+            const msg = error.response?.data?.details || error.response?.data?.error || 'Erro ao homologar etapa.';
+            addToast({ type: 'error', title: 'Erro', message: msg });
+        } finally {
+            setIsSubmittingApproval(false);
+        }
+    };
 
     const [isDownloadingPdf, setIsDownloadingPdf] = useState<string | null>(null);
 
@@ -185,8 +236,9 @@ const AsteryskoProcessesView: React.FC = () => {
         }
     };
 
-    // Helper for Status Translation
+    // Helper for Status Translation (case‑insensitive)
     const formatStatus = (status: string) => {
+        const key = status?.toUpperCase();
         const map: Record<string, string> = {
             'NEW': 'Novo',
             'WAITING_PAYMENT': 'Aguardando Pagamento',
@@ -199,7 +251,7 @@ const AsteryskoProcessesView: React.FC = () => {
             'RETIRED': 'Arquivado',
             'APPEAL': 'Em Recurso'
         };
-        return map[status] || status;
+        return map[key] || status;
     };
 
     // Helper for Next Step
@@ -998,7 +1050,26 @@ const AsteryskoProcessesView: React.FC = () => {
                                                      <h5 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{event.title}</h5>
                                                      <span className="text-xs font-semibold text-docka-400 uppercase tracking-wider">{event.date}</span>
                                                  </div>
-                                                 <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1.5 leading-relaxed">{event.desc}</p>
+                                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-2">
+                                                     <p className="text-xs text-docka-500 dark:text-zinc-400 leading-relaxed">{event.desc}</p>
+                                                     {event.status !== 'completed' && ['contract', 'proxy', 'gru'].includes(event.type) && (
+                                                         <button
+                                                             onClick={(e) => {
+                                                                 e.stopPropagation();
+                                                                 setApprovalModal({
+                                                                     isOpen: true,
+                                                                     processId: selectedProcess.id,
+                                                                     stage: event.type,
+                                                                     title: event.title,
+                                                                     notify: true
+                                                                 });
+                                                             }}
+                                                             className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[10px] uppercase tracking-wider px-3 py-1.5 rounded-lg shadow-sm transition-all shrink-0 flex items-center gap-1.5 border border-emerald-500 self-end sm:self-center"
+                                                         >
+                                                             <CheckCircle2 size={11} /> Homologar Etapa
+                                                         </button>
+                                                     )}
+                                                 </div>
                                              </div>
                                          </div>
                                     ))}
@@ -1131,6 +1202,65 @@ const AsteryskoProcessesView: React.FC = () => {
                                     </div>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </Modal>
+            )}
+
+            {approvalModal.isOpen && (
+                <Modal
+                    isOpen={approvalModal.isOpen}
+                    onClose={() => setApprovalModal(prev => ({ ...prev, isOpen: false }))}
+                    title={`Homologar Etapa: ${approvalModal.title}`}
+                    size="md"
+                >
+                    <div className="p-6 space-y-6 text-left">
+                        <div className="flex items-start gap-4 p-4 rounded-xl bg-amber-500/10 dark:bg-zinc-800/20 border border-amber-500/20 dark:border-zinc-800 shadow-sm text-left">
+                            <div className="w-10 h-10 rounded-full bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0 border border-amber-500/20 shadow-sm">
+                                <AlertCircle size={18} />
+                            </div>
+                            <div>
+                                <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100">Homologação Manual</h4>
+                                <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                                    Esta ação irá marcar esta etapa da linha do tempo como concluída no portal do usuário de forma imediata e definitiva.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400">Opções de Notificação</h4>
+                            <div className="p-5 rounded-xl bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 shadow-sm flex flex-col gap-4">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={approvalModal.notify}
+                                        onChange={(e) => setApprovalModal(prev => ({ ...prev, notify: e.target.checked }))}
+                                        className="w-4 h-4 rounded border-docka-200 dark:border-zinc-800 text-blue-600 focus:ring-blue-500/20 outline-none transition-all cursor-pointer"
+                                    />
+                                    <div className="text-left">
+                                        <div className="text-xs font-bold text-docka-800 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white transition-colors">Notificar o cliente</div>
+                                        <div className="text-[10px] text-docka-400 dark:text-zinc-500 mt-0.5">Envia um alerta automático por WhatsApp e E-mail avisando sobre a aprovação.</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 items-center pt-4 border-t border-docka-100 dark:border-zinc-800">
+                            <button
+                                onClick={() => setApprovalModal(prev => ({ ...prev, isOpen: false }))}
+                                disabled={isSubmittingApproval}
+                                className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-docka-400 hover:text-docka-900 dark:hover:text-zinc-200 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={submitStageApproval}
+                                disabled={isSubmittingApproval}
+                                className="px-10 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs uppercase tracking-wider rounded-lg shadow-sm transition-all flex items-center gap-2"
+                            >
+                                {isSubmittingApproval ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                                Confirmar e Homologar
+                            </button>
                         </div>
                     </div>
                 </Modal>

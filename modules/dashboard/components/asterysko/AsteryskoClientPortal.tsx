@@ -279,21 +279,28 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
             }
         }
     };
-    // Helper for Status Translation
+    // Helper for Status Translation (case‑insensitive)
     const formatStatus = (status: string) => {
+        const key = status?.toUpperCase();
         const map: Record<string, string> = {
             'NEW': 'Novo',
             'WAITING_PAYMENT': 'Aguardando Pagamento',
-            // ... (rest of status map)
+            'WAITING_DOCS': 'Aguardando Documentos',
+            'FILED': 'Protocolado',
+            'EXAMINATION': 'Em Exame',
+            'OPPOSITION': 'Oposição',
+            'GRANTED': 'Concedido',
+            'DENIED': 'Indeferido',
+            'RETIRED': 'Arquivado',
             'APPEAL': 'Em Recurso'
         };
-        return map[status] || status;
+        return map[key] || status;
     };
 
     const getStatusColor = (status: string) => {
-        const s = status || '';
-        if (s === 'GRANTED' || s === 'Concedido') return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800';
-        if (s === 'FILED' || s === 'Publicado') return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800';
+        const s = (status || '').toUpperCase();
+        if (s === 'GRANTED' || s === 'CONCEDIDO') return 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800';
+        if (s === 'FILED' || s === 'PUBLICADO') return 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-800';
         if (s === 'WAITING_PAYMENT' || s === 'WAITING_DOCS') return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-800';
         if (s === 'NEW') return 'bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border-slate-200 dark:border-zinc-700';
         return 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border-amber-100 dark:border-amber-800';
