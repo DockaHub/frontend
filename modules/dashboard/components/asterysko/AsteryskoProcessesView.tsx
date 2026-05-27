@@ -143,6 +143,7 @@ const getTimelineEvents = (process: any) => {
 
 const AsteryskoProcessesView: React.FC = () => {
     const [processes, setProcesses] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [selectedProcess, setSelectedProcess] = useState<any | null>(null);
     const { addToast } = useToast();
     const [activeTab, setActiveTab] = useState<'timeline' | 'docs' | 'info'>('timeline');
@@ -303,6 +304,8 @@ const AsteryskoProcessesView: React.FC = () => {
                     contractUrl: p.contractUrl,
                     contractSignStatus: p.contractSignStatus,
                     contractSignDate: p.contractSignDate,
+                    certificateUrl: p.certificateUrl,
+                    certificateDate: p.certificateDate,
                     createdAt: p.createdAt,
                     brand: p.brand
                 }));
@@ -391,6 +394,8 @@ const AsteryskoProcessesView: React.FC = () => {
                 contractUrl: p.contractUrl,
                 contractSignStatus: p.contractSignStatus,
                 contractSignDate: p.contractSignDate,
+                certificateUrl: p.certificateUrl,
+                certificateDate: p.certificateDate,
                 logoUrl: p.brand?.logoUrl
             }));
             setProcesses(mapped);
@@ -684,6 +689,55 @@ const AsteryskoProcessesView: React.FC = () => {
             setUploadingGru(false);
             setGruBarcode('');
         }
+    };
+
+    const [uploadingCertificate, setUploadingCertificate] = useState(false);
+
+    const handleCertificateUpload = async (e: React.ChangeEvent<HTMLInputElement>, processId: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingCertificate(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const res = await api.post(`/asterysko/processes/${processId}/certificate/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            addToast({ type: 'success', title: 'Sucesso', message: 'Certificado de Registro enviado com sucesso! Notificações disparadas para o cliente.' });
+
+            if (selectedProcess?.id === processId) {
+                setSelectedProcess((prev: any) => prev ? { 
+                    ...prev, 
+                    certificateUrl: res.data.certificateUrl, 
+                    status: 'GRANTED',
+                    nextStep: 'Monitorar Vigência'
+                } : null);
+            }
+
+            setProcesses((prev: any[]) => prev.map((p: any) => 
+                p.id === processId ? { 
+                    ...p, 
+                    certificateUrl: res.data.certificateUrl, 
+                    status: 'GRANTED',
+                    nextStep: 'Monitorar Vigência'
+                } : p
+            ));
+
+        } catch (error: any) {
+            console.error('Certificate upload error:', error);
+            const msg = error.response?.data?.details || error.response?.data?.error || 'Falha no envio do Certificado.';
+            addToast({ type: 'error', title: 'Erro', message: msg });
+        } finally {
+            setUploadingCertificate(false);
+        }
+    };
+
+    const handleDownloadCertificate = (processId: string) => {
+        const token = localStorage.getItem('token');
+        window.open(`${getBackendUrl()}/api/asterysko/processes/${processId}/certificate/download?token=${token}`, '_blank');
     };
 
     return (
@@ -1137,6 +1191,44 @@ const AsteryskoProcessesView: React.FC = () => {
                                         {selectedProcess.proxyUrl && (
                                             <button onClick={() => handleDownloadProxyPdf(selectedProcess.id, selectedProcess.title)} className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-blue-700 dark:text-blue-400 text-xs font-semibold uppercase tracking-wider rounded-lg border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2 shadow-sm">
                                                 <Download size={14} /> Baixar Cópia
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Certificado de Registro de Marca */}
+                                    <div className="p-6 rounded-xl bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 shadow-sm flex flex-col justify-between hover:border-docka-300 dark:hover:border-zinc-700 transition-all">
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="w-12 h-12 bg-emerald-500/10 text-emerald-600 rounded-xl flex items-center justify-center border border-emerald-500/20 shadow-sm"><Shield size={20} /></div>
+                                                <div>
+                                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-docka-400 dark:text-zinc-500">Certificado de Registro</h4>
+                                                    <span className={`inline-flex items-center gap-1.5 mt-1 text-xs font-semibold uppercase px-2.5 py-1 rounded-full border ${selectedProcess.certificateUrl ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' : 'bg-zinc-500/10 text-zinc-500 border-zinc-500/20'}`}>
+                                                        {selectedProcess.certificateUrl ? 'Emitido (Em Vigor)' : 'Não Disponível'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="space-y-4">
+                                                <label className="flex items-center justify-center gap-2 w-full py-4 bg-emerald-50/10 dark:bg-zinc-800/10 border-2 border-dashed border-emerald-500/30 dark:border-zinc-700 rounded-xl text-xs font-semibold uppercase tracking-wider text-emerald-600 cursor-pointer hover:bg-emerald-500/5 transition-all">
+                                                    {uploadingCertificate ? (
+                                                        <>
+                                                            <Loader2 className="animate-spin" size={14} /> Enviando...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Upload size={14} /> {selectedProcess.certificateUrl ? 'Substituir Certificado' : 'Anexar Certificado (PDF)'}
+                                                        </>
+                                                    )}
+                                                    <input type="file" hidden accept=".pdf" disabled={uploadingCertificate} onChange={(e) => handleCertificateUpload(e, selectedProcess.id)} />
+                                                </label>
+                                            </div>
+                                        </div>
+                                        {selectedProcess.certificateUrl && (
+                                            <button 
+                                                onClick={() => handleDownloadCertificate(selectedProcess.id)} 
+                                                className="mt-6 w-full py-3 bg-white dark:bg-zinc-800 text-emerald-700 dark:text-emerald-400 text-xs font-semibold uppercase tracking-wider rounded-lg border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2 shadow-sm"
+                                            >
+                                                <Download size={14} /> Baixar Certificado
                                             </button>
                                         )}
                                     </div>

@@ -152,18 +152,18 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
         });
     }
 
-    // 7. Despachos do DB
     if (process.dispatches && process.dispatches.length > 0) {
         process.dispatches.forEach((d: any) => {
             events.push({
                 id: d.id || `dispatch-${Math.random()}`,
-                type: 'dispatch',
+                type: d.type || 'dispatch',
                 title: d.isVirtual ? (d.description || 'Despacho') : `${d.code || ''} - ${d.description || 'Despacho'}`.trim().replace(/^- /, ''),
                 date: safeDate(d.createdAt),
                 desc: d.details || `Publicado na RPI ${d.rpiNumber || '-'}`,
                 createdAt: d.createdAt || process.createdAt,
                 isCompleted: true,
-                isActiveAction: false
+                isActiveAction: false,
+                downloadUrl: d.downloadUrl
             });
         });
     }
@@ -402,8 +402,8 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                   };
                   
                   setClientData({ 
-                    name: user.name, 
-                    email: user.email, 
+                    name: 'Cliente Preview', 
+                    email: 'contato@preview.com', 
                     role: 'ADMIN_PREVIEW',
                     cpfCnpj: '00.000.000/0001-00',
                     address: 'Av. Paulista, 1000 - São Paulo, SP'
@@ -934,8 +934,8 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
 
                                                                     {/* Status Icon */}
                                                                     {step.isCompleted ? (
-                                                                        <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-emerald-600 bg-emerald-600 text-white shadow-md">
-                                                                            {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2.8} /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2.8} /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2.8} /> : <CheckCircle2 size={13} strokeWidth={2.8} />}
+                                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 text-white shadow-md ${step.type === 'certificate' ? 'bg-gradient-to-r from-amber-500 to-yellow-500 border-amber-500' : 'border-emerald-600 bg-emerald-600'}`}>
+                                                                            {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2.8} /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2.8} /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2.8} /> : step.type === 'certificate' ? <ShieldCheck size={13} strokeWidth={2.8} /> : <CheckCircle2 size={13} strokeWidth={2.8} />}
                                                                         </div>
                                                                     ) : step.isActiveAction ? (
                                                                         <div className="relative w-6 h-6 z-10 shrink-0">
@@ -947,7 +947,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                         </div>
                                                                     ) : (
                                                                         <div className="w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 border-slate-200 dark:border-zinc-800 bg-slate-50 dark:bg-zinc-900 text-slate-400 dark:text-zinc-600">
-                                                                            {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2} /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2} /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2} /> : <CheckCircle2 size={11} strokeWidth={2} />}
+                                                                            {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2} /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2} /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2} /> : step.type === 'certificate' ? <ShieldCheck size={11} strokeWidth={2} /> : <CheckCircle2 size={11} strokeWidth={2} />}
                                                                         </div>
                                                                     )}
 
@@ -1124,6 +1124,38 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                             {isDownloadingPdf === proc.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                                                                                             Baixar Cópia
                                                                                         </button>
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {/* CUSTOM RENDER FOR CERTIFICATE (GRAND CELEBRATION) */}
+                                                                                {step.type === 'certificate' && step.downloadUrl && (
+                                                                                    <div className="mt-4 p-6 rounded-2xl bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent border border-amber-500/35 shadow-lg relative overflow-hidden animate-in zoom-in duration-500 text-left">
+                                                                                        <div className="absolute top-0 right-0 p-12 bg-amber-500/10 rounded-full blur-2xl transform translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+                                                                                        <div className="flex items-start gap-4">
+                                                                                            <div className="w-12 h-12 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 shadow-inner">
+                                                                                                🏆
+                                                                                            </div>
+                                                                                            <div className="space-y-1">
+                                                                                                <h5 className="text-sm font-black text-amber-850 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                                                                                                    Conquista Histórica! 🏆🛡️✨
+                                                                                                </h5>
+                                                                                                <p className="text-xs text-slate-600 dark:text-zinc-400 leading-relaxed font-semibold">
+                                                                                                    Sua marca está registrada em todo o Brasil de forma exclusiva! Baixe agora seu Certificado Oficial de Registro de Marca e comemore essa grande vitória!
+                                                                                                </p>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                        
+                                                                                        <div className="mt-5">
+                                                                                            <button
+                                                                                                onClick={() => {
+                                                                                                    const token = localStorage.getItem('token');
+                                                                                                    window.open(`${getBackendUrl()}${step.downloadUrl}?token=${token}`, '_blank');
+                                                                                                }}
+                                                                                                className="text-xs flex items-center justify-center gap-2 font-black text-white bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 px-6 py-3.5 w-full sm:w-fit rounded-xl transition-all shadow-md shadow-amber-500/10 transform active:scale-[0.98] tracking-widest uppercase"
+                                                                                            >
+                                                                                                <Download size={15} strokeWidth={2.5} /> Baixar Certificado de Registro 🏆
+                                                                                            </button>
+                                                                                        </div>
                                                                                     </div>
                                                                                 )}
                                                                             </div>
