@@ -342,17 +342,15 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                         </div>
                                         {!isEditing ? (
                                             <div className="flex gap-2 items-center">
-                                                {dbTpl?.content && (
-                                                    <button 
-                                                        onClick={() => {
-                                                            setTestingTemplateSlug(tpl.slug);
-                                                        }}
-                                                        className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all flex items-center gap-1 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg border border-emerald-100 dark:border-emerald-900/30 shadow-sm"
-                                                        title="Testar Envio desta Mensagem"
-                                                    >
-                                                        <Send size={11} /> Testar
-                                                    </button>
-                                                )}
+                                                <button 
+                                                    onClick={() => {
+                                                        setTestingTemplateSlug(tpl.slug);
+                                                    }}
+                                                    className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all flex items-center gap-1 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg border border-emerald-100 dark:border-emerald-900/30 shadow-sm"
+                                                    title="Testar Envio desta Mensagem"
+                                                >
+                                                    <Send size={11} /> Testar
+                                                </button>
                                                 <button 
                                                     onClick={() => {
                                                         setEditingSlug(tpl.slug);
