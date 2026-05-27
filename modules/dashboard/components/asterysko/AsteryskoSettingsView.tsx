@@ -177,6 +177,11 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         const [saving, setSaving] = useState(false);
         const [uploadingSlug, setUploadingSlug] = useState<string | null>(null);
 
+        // Estados para o Modal de Teste de Envio por Template
+        const [testingTemplateSlug, setTestingTemplateSlug] = useState<string | null>(null);
+        const [testPhoneNumber, setTestPhoneNumber] = useState('');
+        const [sendingTemplateTest, setSendingTemplateTest] = useState(false);
+
         const fetchTemplates = async () => {
             try {
                 setLoading(true);
@@ -200,7 +205,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                     content: editContent,
                     name: DEFAULT_TEMPLATES.find(t => t.slug === slug)?.name
                 });
-                addToast({ type: 'success', title: 'Salvo', message: 'Template atualizado com sucesso.' });
+                addToast({ type: 'success', title: 'Salvo', message: 'Template updated successfully.' });
                 setEditingSlug(null);
                 fetchTemplates();
             } catch (err) {
@@ -245,6 +250,27 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                 addToast({ type: 'error', title: 'Erro', message: 'Não foi possível remover a imagem.' });
             } finally {
                 setUploadingSlug(null);
+            }
+        };
+
+        const handleSendTemplateTest = async () => {
+            if (!testPhoneNumber) {
+                addToast({ type: 'error', title: 'Número vazio', message: 'Digite um número de telefone com DDD (ex: 5511999999999).' });
+                return;
+            }
+            if (!testingTemplateSlug) return;
+
+            setSendingTemplateTest(true);
+            try {
+                const res = await api.post(`/whatsapp/templates/${testingTemplateSlug}/send-test`, { number: testPhoneNumber });
+                addToast({ type: 'success', title: 'Teste Enviado', message: res.data.message || 'Verifique seu WhatsApp!' });
+                setTestingTemplateSlug(null);
+                setTestPhoneNumber('');
+            } catch (err: any) {
+                console.error(err);
+                addToast({ type: 'error', title: 'Falha no Envio', message: err.response?.data?.error || 'Erro ao disparar mensagem de teste.' });
+            } finally {
+                setSendingTemplateTest(false);
             }
         };
 
@@ -315,15 +341,28 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                                             <p className="text-xs text-docka-500 mt-1">{tpl.description}</p>
                                         </div>
                                         {!isEditing ? (
-                                            <button 
-                                                onClick={() => {
-                                                    setEditingSlug(tpl.slug);
-                                                    setEditContent(dbTpl?.content || '');
-                                                }}
-                                                className="p-2 text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 transition-colors"
-                                            >
-                                                <Edit2 size={14} />
-                                            </button>
+                                            <div className="flex gap-2 items-center">
+                                                {dbTpl?.content && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            setTestingTemplateSlug(tpl.slug);
+                                                        }}
+                                                        className="px-2.5 py-1 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all flex items-center gap-1 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg border border-emerald-100 dark:border-emerald-900/30 shadow-sm"
+                                                        title="Testar Envio desta Mensagem"
+                                                    >
+                                                        <Send size={11} /> Testar
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingSlug(tpl.slug);
+                                                        setEditContent(dbTpl?.content || '');
+                                                    }}
+                                                    className="p-2 text-docka-400 hover:text-docka-900 dark:hover:text-zinc-100 transition-colors"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+                                            </div>
                                         ) : (
                                             <div className="flex gap-2">
                                                 <button 
@@ -453,6 +492,47 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
                         })}
                     </div>
                 </div>
+
+                {/* Modal de Teste de Envio */}
+                <Modal
+                    isOpen={!!testingTemplateSlug}
+                    onClose={() => { setTestingTemplateSlug(null); setTestPhoneNumber(''); }}
+                    title={`Testar Envio: ${DEFAULT_TEMPLATES.find(t => t.slug === testingTemplateSlug)?.name}`}
+                >
+                    <div className="space-y-4 py-2">
+                        <p className="text-xs text-docka-500">
+                            Digite o número de telefone completo com DDD e código do país (ex: 5511999999999) para receber este disparo de teste.
+                        </p>
+                        <div className="space-y-1">
+                            <label className="block text-[10px] font-bold text-docka-500 uppercase">Número do WhatsApp</label>
+                            <input 
+                                type="text" 
+                                placeholder="5511999999999"
+                                value={testPhoneNumber}
+                                onChange={(e) => setTestPhoneNumber(e.target.value)}
+                                className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                            />
+                            <p className="text-[9px] text-docka-400 italic">Dica: Use 55 (Brasil) + DDD + Número. Se possuir imagem anexada, ela será enviada primeiro.</p>
+                        </div>
+                        
+                        <div className="flex justify-end gap-2 pt-2">
+                            <button
+                                onClick={() => { setTestingTemplateSlug(null); setTestPhoneNumber(''); }}
+                                className="px-4 py-2 text-xs font-bold text-docka-500 hover:text-docka-900 transition-colors"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSendTemplateTest}
+                                disabled={sendingTemplateTest || !testPhoneNumber}
+                                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5"
+                            >
+                                {sendingTemplateTest ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} />}
+                                Enviar Disparo de Teste
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             </div>
         );
     };
