@@ -384,11 +384,11 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                   // MOCK DATA FOR ADMIN PREVIEW
                   const mockProc = {
                     id: 'preview-1',
-                    brandName: 'DOCKA HUB',
+                    brandName: 'MANYSPACE',
                     brandPresentation: 'Mista',
                     brandNature: 'Serviço',
                     brandType: 'Tecnologia',
-                    holders: 'Docka Hub Tecnologia Ltda.',
+                    holders: 'ManySpace Tecnologia Ltda.',
                     inpiProcessNumber: '928374655',
                     filingDate: new Date().toISOString(),
                     status: 'FILED',

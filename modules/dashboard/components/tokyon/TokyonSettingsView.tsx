@@ -42,7 +42,7 @@ const TokyonSettingsView: React.FC<TokyonSettingsViewProps> = ({ onOpenClientPor
                                         <div>
                                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Slug URL</label>
                                             <div className="flex items-center">
-                                                <span className="bg-docka-50 dark:bg-zinc-800 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs py-2 px-2 rounded-l-lg">docka.io/</span>
+                                                <span className="bg-docka-50 dark:bg-zinc-800 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs py-2 px-2 rounded-l-lg">manyspace.io/</span>
                                                 <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100" defaultValue="tokyon" />
                                             </div>
                                         </div>

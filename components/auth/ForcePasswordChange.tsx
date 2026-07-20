@@ -107,7 +107,7 @@ export const ForcePasswordChange: React.FC = () => {
             </div>
 
             <div className="mt-8 text-docka-400 text-sm font-medium">
-                © {new Date().getFullYear()} Docka Workspace • Advanced Agentic Coding
+                © {new Date().getFullYear()} ManySpace • Advanced Agentic Coding
             </div>
         </div>
     );

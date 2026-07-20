@@ -110,7 +110,7 @@ const UserHomeView: React.FC = () => {
                                             </div>
                                             <div>
                                                 <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-lg tracking-tight group-hover:text-black dark:group-hover:text-white transition-colors">{org.name}</h3>
-                                                <p className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-black mt-0.5 tracking-tighter opacity-60">Ecossistema Docka</p>
+                                                <p className="text-[10px] text-docka-400 dark:text-zinc-500 uppercase font-black mt-0.5 tracking-tighter opacity-60">Ecossistema ManySpace</p>
                                             </div>
                                         </div>
 
@@ -249,9 +249,9 @@ const UserHomeView: React.FC = () => {
             </div>
             
             {loading && (
-                <div className="fixed inset-0 bg-docka-50/80 dark:bg-zinc-950/80 backdrop-blur-md flex flex-col items-center justify-center z-[200] animate-in fade-in duration-500">
-                    <div className="w-12 h-12 border-4 border-docka-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin shadow-2xl"></div>
-                    <span className="mt-6 text-[10px] font-black uppercase tracking-[0.3em] text-docka-900 dark:text-zinc-100 animate-pulse">Iniciando Docka</span>
+                <div className="fixed inset-0 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md flex flex-col items-center justify-center z-[200] animate-in fade-in duration-500">
+                    <div className="w-12 h-12 border-4 border-[#fd6b32] border-t-transparent rounded-full animate-spin shadow-2xl"></div>
+                    <span className="mt-6 text-[10px] font-black uppercase tracking-[0.3em] text-[#fd6b32] animate-pulse">Iniciando ManySpace</span>
                 </div>
             )}
         </DashboardPage>

@@ -32,7 +32,7 @@ export const mailService = {
       mailboxId: email.mailboxId,
       from: {
         name: email.fromName || email.sender?.name || 'Desconhecido',
-        email: email.fromEmail || email.sender?.email || 'no-reply@docka.io',
+        email: email.fromEmail || email.sender?.email || 'no-reply@manyspace.io',
         avatar: email.sender?.avatar
       },
       to: email.recipients?.map((r: any) => r.recipientEmail) || [],

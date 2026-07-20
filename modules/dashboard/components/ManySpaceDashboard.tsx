@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { LayoutTemplate } from 'lucide-react';
 import { Organization } from '../../../types';
@@ -13,12 +12,12 @@ import UserHomeView from './docka/UserHomeView';
 import DockaGroupFinanceView from './docka/DockaGroupFinanceView';
 import DockaClientsView from './docka/DockaClientsView';
 
-interface DockaDashboardProps {
+interface ManySpaceDashboardProps {
     activeView: string;
     organization?: Organization;
 }
 
-const DockaDashboard: React.FC<DockaDashboardProps> = ({ activeView, organization }) => {
+const ManySpaceDashboard: React.FC<ManySpaceDashboardProps> = ({ activeView, organization }) => {
     switch (activeView) {
         case 'home':
             return <UserHomeView />;
@@ -42,7 +41,7 @@ const DockaDashboard: React.FC<DockaDashboardProps> = ({ activeView, organizatio
             return (
                 <div className="h-full bg-white animate-in fade-in duration-300">
                     <PlaceholderView
-                        title={`Docka ${activeView.charAt(0).toUpperCase() + activeView.slice(1)}`}
+                        title={`ManySpace ${activeView.charAt(0).toUpperCase() + activeView.slice(1)}`}
                         icon={LayoutTemplate}
                         description="Módulo em desenvolvimento."
                     />
@@ -51,4 +50,4 @@ const DockaDashboard: React.FC<DockaDashboardProps> = ({ activeView, organizatio
     }
 };
 
-export default DockaDashboard;
+export default ManySpaceDashboard;

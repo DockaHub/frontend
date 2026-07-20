@@ -154,7 +154,7 @@ const MailReader: React.FC<MailReaderProps> = ({ email, onClose, onArchive, onDe
                             </div>
                             <div className="text-right">
                                 <div className="text-sm font-medium text-docka-600 dark:text-zinc-400">{email.timestamp}</div>
-                                <div className="text-xs text-docka-400 dark:text-zinc-600 mt-0.5">via docka.io</div>
+                                <div className="text-xs text-docka-400 dark:text-zinc-600 mt-0.5">via manyspace.io</div>
                             </div>
                         </div>
 

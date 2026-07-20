@@ -6,7 +6,7 @@ import FauvesDashboard from './components/FauvesDashboard';
 import TokyonDashboard from './components/TokyonDashboard';
 import AsteryskoDashboard from './components/AsteryskoDashboard';
 import UmaChaveDashboard from './components/UmaChaveDashboard';
-import DockaDashboard from './components/DockaDashboard';
+import ManySpaceDashboard from './components/ManySpaceDashboard';
 import HostiziDashboard from './components/HostiziDashboard';
 import { Menu, ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
@@ -85,7 +85,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
         }
 
         // Default / SAAS
-        return <DockaDashboard activeView={activeView} organization={selectedOrg} />;
+        return <ManySpaceDashboard activeView={activeView} organization={selectedOrg} />;
     };
 
     return (
@@ -147,7 +147,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
             )}
 
             {/* Content Area */}
-            <div className="flex-1 h-full overflow-hidden bg-docka-50 dark:bg-zinc-950 relative">
+            <div className="flex-1 h-full overflow-hidden bg-white dark:bg-zinc-950 relative">
                 {renderContent()}
             </div>
         </div>

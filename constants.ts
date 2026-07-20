@@ -4,13 +4,13 @@ import { Email, Domain, User, Organization, ChatChannel, ChatMessage, CalendarEv
 export const CURRENT_USER: User = {
   id: 'u1',
   name: 'Alex Arquiteto',
-  email: 'alex@docka.io',
+  email: 'alex@manyspace.io',
   avatar: 'https://picsum.photos/id/64/200/200',
   role: 'admin',
 };
 
 export const ORGANIZATIONS: Organization[] = [
-  { id: 'ae14ea68-91f6-4be3-bd67-d6c1d9762e67', name: 'Docka', slug: 'docka', logoColor: 'bg-slate-900', type: 'SAAS', features: { calendar: true, drive: true, contacts: true } },
+  { id: 'ae14ea68-91f6-4be3-bd67-d6c1d9762e67', name: 'ManySpace', slug: 'manyspace', logoColor: 'bg-manyspace-orange', type: 'SAAS', features: { calendar: true, drive: true, contacts: true } },
   { id: 'org_2', name: 'Fauves', slug: 'fauves', logoColor: 'bg-amber-700', type: 'EVENT_TECH', features: { calendar: true, drive: true, contacts: true } },
   { id: '2a89b3f0-643f-4514-b201-3c7e43db859a', name: 'Tokyon', slug: 'tokyon', logoColor: 'bg-red-600', type: 'INFRASTRUCTURE', features: { calendar: false, drive: false, contacts: false } },
   { id: 'org_4', name: 'Asterysko', slug: 'asterysko', logoColor: 'bg-blue-600', type: 'AGENCY' },
@@ -20,7 +20,7 @@ export const ORGANIZATIONS: Organization[] = [
 ];
 
 export const INITIAL_DOMAINS: Domain[] = [
-  { id: 'd1', name: 'docka.io', status: 'VERIFIED' },
+  { id: 'd1', name: 'manyspace.io', status: 'VERIFIED' },
   { id: 'd2', name: 'fauves.com', status: 'VERIFIED' },
   { id: 'd3', name: 'tokyon.jp', status: 'PENDING' },
 ];
@@ -29,21 +29,21 @@ export const MOCK_MAILBOXES: Mailbox[] = [
   {
     id: 'mb_personal',
     name: 'Alex Arquiteto',
-    email: 'alex@docka.io',
+    email: 'alex@manyspace.io',
     type: 'personal',
     avatar: 'https://picsum.photos/id/64/200/200'
   },
   {
     id: 'mb_sales',
     name: 'Time de Vendas',
-    email: 'vendas@docka.io',
+    email: 'vendas@manyspace.io',
     type: 'shared',
     color: 'bg-emerald-500'
   },
   {
     id: 'mb_support',
     name: 'Suporte',
-    email: 'suporte@docka.io',
+    email: 'suporte@manyspace.io',
     type: 'shared',
     color: 'bg-blue-500'
   }
@@ -88,15 +88,15 @@ export const MOCK_EMAILS: Email[] = [
   {
     id: 'e1',
     mailboxId: 'mb_personal',
-    from: { name: 'Equipe Docka', email: 'ola@docka.io', avatar: 'https://picsum.photos/id/20/200/200' },
-    to: ['alex@docka.io'],
-    subject: 'Bem-vindo ao Docka Workspace v1.0',
+    from: { name: 'Equipe ManySpace', email: 'ola@manyspace.io', avatar: 'https://picsum.photos/id/20/200/200' },
+    to: ['alex@manyspace.io'],
+    subject: 'Bem-vindo ao ManySpace v1.0',
     preview: 'A arquitetura multi-tenant agora está ativa...',
     body: `
-      <h2>Docka Workspace v1.0</h2>
+      <h2>ManySpace v1.0</h2>
       <p>Olá Alex,</p>
       <p>Nós implementamos com sucesso a nova <strong>Arquitetura Multi-Tenant</strong>.</p>
-      <p><em>Equipe de Produto Docka</em></p>
+      <p><em>Equipe de Produto ManySpace</em></p>
     `,
     timestamp: '10:00',
     read: false,
@@ -108,7 +108,7 @@ export const MOCK_EMAILS: Email[] = [
     id: 'e2',
     mailboxId: 'mb_personal',
     from: { name: 'Sarah Engenheira', email: 'sarah@fauves.com', avatar: 'https://picsum.photos/id/32/200/200' },
-    to: ['alex@docka.io'],
+    to: ['alex@manyspace.io'],
     subject: 'Ativos da Coleção de Inverno Fauves',
     preview: 'As novas imagens da campanha estão prontas para revisão no Drive...',
     body: `<p>Oi Alex, os arquivos foram sincronizados.</p>`,
@@ -122,7 +122,7 @@ export const MOCK_EMAILS: Email[] = [
     id: 'e3',
     mailboxId: 'mb_personal',
     from: { name: 'Servidor Tokyon', email: 'alert@tokyon.jp' },
-    to: ['alex@docka.io'],
+    to: ['alex@manyspace.io'],
     subject: '[Alerta] Alta latência no nó Asia-East',
     preview: 'Tempo de resposta > 500ms detectado...',
     body: `<p>Sistema de alerta automatizado para infraestrutura <strong>Tokyon</strong>.</p>`,
@@ -137,7 +137,7 @@ export const MOCK_EMAILS: Email[] = [
     id: 'e4',
     mailboxId: 'mb_sales',
     from: { name: 'Big Client Corp', email: 'compras@bigclient.com' },
-    to: ['vendas@docka.io'],
+    to: ['vendas@manyspace.io'],
     subject: 'RFP para Serviços de Software Q3',
     preview: 'Estamos convidando vocês para submeter uma proposta...',
     body: `<p>Olá Time de Vendas,</p><p>Por favor, encontrem em anexo a RFP.</p>`,
@@ -151,7 +151,7 @@ export const MOCK_EMAILS: Email[] = [
     id: 'e5',
     mailboxId: 'mb_sales',
     from: { name: 'Lead Gen Service', email: 'leads@growth.com' },
-    to: ['vendas@docka.io'],
+    to: ['vendas@manyspace.io'],
     subject: '50 Novos Leads Qualificados',
     preview: 'Seu relatório semanal de leads está pronto...',
     body: `<p>Baixe seus leads.</p>`,
@@ -166,7 +166,7 @@ export const MOCK_EMAILS: Email[] = [
     id: 'e6',
     mailboxId: 'mb_support',
     from: { name: 'Usuário Irritado', email: 'irritado@cliente.com' },
-    to: ['suporte@docka.io'],
+    to: ['suporte@manyspace.io'],
     subject: 'O login não está funcionando!!',
     preview: 'Tentei 5 vezes e diz senha inválida...',
     body: `<p>Arrumem isso agora.</p>`,
@@ -253,7 +253,7 @@ export const MOCK_DRIVE_ITEMS: DriveItem[] = [
 
 export const MOCK_CONTACTS: Contact[] = [
   {
-    id: 'u1', name: 'Alex Arquiteto', email: 'alex@docka.io', avatar: 'https://picsum.photos/id/64/200/200',
+    id: 'u1', name: 'Alex Arquiteto', email: 'alex@manyspace.io', avatar: 'https://picsum.photos/id/64/200/200',
     role: 'CTO', department: 'Executivo', organizationId: 'org_1', status: 'online', location: 'São Paulo', joinDate: 'Jan 2022'
   },
   {
@@ -261,11 +261,11 @@ export const MOCK_CONTACTS: Contact[] = [
     role: 'Lead Designer', department: 'Design', organizationId: 'org_2', status: 'busy', location: 'Rio de Janeiro', joinDate: 'Mar 2022'
   },
   {
-    id: 'u3', name: 'Mike Vendas', email: 'mike@docka.io', avatar: 'https://picsum.photos/id/11/200/200',
+    id: 'u3', name: 'Mike Vendas', email: 'mike@manyspace.io', avatar: 'https://picsum.photos/id/11/200/200',
     role: 'Head de Vendas', department: 'Vendas', organizationId: 'org_1', status: 'offline', location: 'Lisboa', joinDate: 'Jun 2023', isStarred: true
   },
   {
-    id: 'u4', name: 'Jessica Finanças', email: 'jess@docka.io', avatar: 'https://picsum.photos/id/5/200/200',
+    id: 'u4', name: 'Jessica Finanças', email: 'jess@manyspace.io', avatar: 'https://picsum.photos/id/5/200/200',
     role: 'CFO', department: 'Financeiro', organizationId: 'org_1', status: 'away', location: 'Remoto', joinDate: 'Fev 2024'
   },
   {
@@ -300,7 +300,7 @@ export const MOCK_TASKS: Task[] = [
     createdAt: new Date(), updatedAt: new Date(), creatorId: 'u1'
   },
   {
-    id: 't5', title: 'Renovar Certificados SSL', description: '*.docka.io e *.fauves.com',
+    id: 't5', title: 'Renovar Certificados SSL', description: '*.manyspace.io e *.fauves.com',
     organizationId: 'org_1', status: 'DONE', priority: 'MEDIUM', dueDate: 'Ontem', assigneeId: 'u1', tags: ['Infra'],
     createdAt: new Date(), updatedAt: new Date(), creatorId: 'u1'
   },

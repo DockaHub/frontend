@@ -5,18 +5,27 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="color-scheme" content="light">
-  <title>Docka Workspace</title>
+  <title>manyways</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+            season: ['"Season Mix"', '"Playfair Display"', 'serif'],
           },
           colors: {
+            manyspace: {
+              orange: '#fd6b32',
+              gray: {
+                border: '#e5e5e5',
+                text: '#7f7f7f',
+                bg: '#f5f5f5'
+              }
+            },
             docka: {
               50: '#f8f9fa',
               100: '#f1f3f5',
@@ -28,7 +37,7 @@
               700: '#495057',
               800: '#343a40',
               900: '#212529',
-              accent: '#0f172a', // Slate 900
+              accent: '#fd6b32', // Update accent to ManySpace orange
             }
           }
         }
@@ -36,8 +45,23 @@
     }
   </script>
   <style>
+    @font-face {
+      font-family: 'Season Mix';
+      src: url('/fonts/SeasonMix-Regular.woff2') format('woff2'),
+           url('/fonts/SeasonMix-Regular.ttf') format('truetype');
+      font-weight: 400 500;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'Season Mix';
+      src: url('/fonts/SeasonMix-Light.ttf') format('truetype');
+      font-weight: 300;
+      font-style: normal;
+      font-display: swap;
+    }
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
       -webkit-font-smoothing: antialiased;
     }
 

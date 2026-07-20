@@ -41,13 +41,13 @@ const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization }) =
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div>
                                     <label className="block text-[10px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2 tracking-wider">Nome da Holding</label>
-                                    <input className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-800 text-docka-900 dark:text-zinc-100 font-sans" defaultValue="Docka Group" />
+                                    <input className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-800 text-docka-900 dark:text-zinc-100 font-sans" defaultValue="ManySpace Group" />
                                 </div>
                                 <div>
                                     <label className="block text-[10px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2 tracking-wider">Domínio Raiz (CNAME)</label>
                                     <div className="flex items-center">
                                         <span className="bg-docka-50 dark:bg-zinc-900 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-[10px] font-bold py-3 px-3 rounded-l-lg">HTTPS://</span>
-                                        <input className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-800 text-docka-900 dark:text-zinc-100 font-sans" defaultValue="docka.io" />
+                                        <input className="w-full px-4 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-800 text-docka-900 dark:text-zinc-100 font-sans" defaultValue="manyspace.io" />
                                     </div>
                                 </div>
                             </div>

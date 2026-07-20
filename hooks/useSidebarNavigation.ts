@@ -107,14 +107,14 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         // Specific Menu for Asterysko
         if (currentOrg.slug === 'asterysko') {
             return [
-                { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
-                { id: 'research', label: 'Pesquisa & Viabilidade', icon: Search },
-                { id: 'clients', label: 'Clientes', icon: Briefcase },
-                { id: 'crm', label: 'CRM & Leads', icon: Users, badgeCount: unreadLeads > 0 ? unreadLeads : undefined, badgeColor: 'bg-red-500' },
-                { id: 'processes', label: 'Processos INPI', icon: Scale },
+                { id: 'overview', label: 'Início', icon: Home },
+                { id: 'research', label: 'Radar da Marca', icon: Search },
+                { id: 'clients', label: 'Clientes', icon: Users },
+                { id: 'processes', label: 'Processos', icon: Scale },
+                { id: 'crm', label: 'CRM', icon: Briefcase, badgeCount: unreadLeads > 0 ? unreadLeads : undefined, badgeColor: 'bg-red-500' },
                 { id: 'performance', label: 'Minhas Metas', icon: Trophy },
                 { id: 'financial', label: 'Financeiro', icon: CreditCard },
-                { id: 'settings', label: 'Configurações', icon: Settings },
+                { id: 'settings', label: 'Configuração', icon: Settings },
             ];
         }
 
@@ -145,8 +145,8 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
             ];
         }
 
-        // Docka (Holding)
-        if (currentOrg.slug === 'docka') {
+        // ManySpace (Holding)
+        if (currentOrg.slug === 'manyspace') {
             return [
                 { id: 'overview', label: 'Visão Global', icon: Globe },
                 { id: 'finance', label: 'Financeiro do Grupo', icon: Wallet },

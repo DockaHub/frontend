@@ -16,7 +16,7 @@ interface EmailAccount {
 const INITIAL_ACCOUNTS: EmailAccount[] = [
     { id: 'em_01', email: 'contato@tokyon.jp', domain: 'tokyon.jp', usage: 45, usageVal: '4.5 GB', quota: '10 GB', status: 'active' },
     { id: 'em_02', email: 'financeiro@tokyon.jp', domain: 'tokyon.jp', usage: 12, usageVal: '600 MB', quota: '5 GB', status: 'active' },
-    { id: 'em_03', email: 'alex@docka.io', domain: 'docka.io', usage: 85, usageVal: '42.5 GB', quota: '50 GB', status: 'active' },
+    { id: 'em_03', email: 'alex@manyspace.io', domain: 'manyspace.io', usage: 85, usageVal: '42.5 GB', quota: '50 GB', status: 'active' },
     { id: 'em_04', email: 'no-reply@fauves.com', domain: 'fauves.com', usage: 1, usageVal: '10 MB', quota: '1 GB', status: 'active' },
     { id: 'em_05', email: 'suporte@fauves.com', domain: 'fauves.com', usage: 98, usageVal: '4.9 GB', quota: '5 GB', status: 'full' },
 ];
@@ -270,7 +270,7 @@ const HostiziWebmailView: React.FC = () => {
                             <select className="px-3 py-2 bg-white dark:bg-zinc-800 border border-l-0 border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900 text-docka-700 dark:text-zinc-300 w-40">
                                 <option>tokyon.jp</option>
                                 <option>fauves.com</option>
-                                <option>docka.io</option>
+                                <option>manyspace.io</option>
                             </select>
                         </div>
                     </div>

@@ -206,25 +206,21 @@ const AppContent: React.FC = () => {
     root.classList.add(theme);
     localStorage.setItem('docka-theme', theme);
 
-    // Dynamic Favicon for Docka (runs only if not Asterysko Tenant)
+    // Dynamic Favicon for ManySpace (runs only if not Asterysko Tenant)
     if (!isTenantDomain && !resolvingDomain) {
-      document.title = 'Docka Workspace';
+      document.title = 'ManySpace';
 
       const oldIcons = document.querySelectorAll("link[rel~='icon']");
       oldIcons.forEach(icon => icon.remove());
 
-      // Icon paths from DockaLogo (variant='icon')
-      // Original color was dark, so for dark theme we use white, and for light theme we use dark
-      const dockaPath1 = `<path d="M201.569 0L86.6709 113.697H314.998L315.267 0H201.569Z" />`;
-      const dockaPath2 = `<path d="M86.671 113.698C86.671 177.505 138.024 228.793 200.834 228.793C263.645 228.793 314.998 177.505 314.998 113.698H401.669C401.669 224.889 311.993 315.464 200.834 315.464C89.676 315.464 0 224.889 0 113.698H86.671Z" />`;
+      const fillColor = '%23fd6b32'; // ManySpace Orange
+      const stripeColor = '%23FFFFFF';
 
-      const fillColor = theme === 'dark' ? '%23FFFFFF' : '%2318181b'; // zinc-900 for light
+      const manyspaceFavicon = document.createElement('link');
+      manyspaceFavicon.rel = 'icon';
+      manyspaceFavicon.href = `data:image/svg+xml;utf8,<svg viewBox="0 0 40 45" fill="none" xmlns="http://www.w3.org/2000/svg"><rect opacity="0.2" x="4" y="13" width="32" height="32" rx="6" fill="${fillColor}"/><rect width="40" height="40" rx="8" fill="${fillColor}"/><path d="M34.3704 33.6496V34.6249H5.59999V33.6496H34.3704Z" fill="${stripeColor}"/><path d="M30.1921 27.2694L30.4445 28.2114L6.90722 34.5182L6.6548 33.5762L30.1921 27.2694Z" fill="${stripeColor}"/><path d="M24.7894 22.9656L25.277 23.8102L7.11543 34.2958L6.6278 33.4512L24.7894 22.9656Z" fill="${stripeColor}"/><path d="M18.9506 20.8487L19.6403 21.5383L6.84869 34.3299L6.15907 33.6402L18.9506 20.8487Z" fill="${stripeColor}"/><path d="M13.4071 20.8095L14.2517 21.2972L6.77129 34.2537L5.92668 33.766L13.4071 20.8095Z" fill="${stripeColor}"/><path d="M8.79206 22.5166L9.7341 22.769L6.66855 34.2098L5.72651 33.9574L8.79206 22.5166Z" fill="${stripeColor}"/><path d="M5.59999 25.2784L6.57526 25.2784L6.57526 34.6082L5.59999 34.6082L5.59999 25.2784Z" fill="${stripeColor}"/></svg>`;
 
-      const dockaFavicon = document.createElement('link');
-      dockaFavicon.rel = 'icon';
-      dockaFavicon.href = `data:image/svg+xml;utf8,<svg viewBox="0 0 402 316" fill="none" xmlns="http://www.w3.org/2000/svg"><g fill="${fillColor}">${dockaPath1}${dockaPath2}</g></svg>`;
-
-      document.head.appendChild(dockaFavicon);
+      document.head.appendChild(manyspaceFavicon);
     }
   }, [theme, isTenantDomain, resolvingDomain]);
 

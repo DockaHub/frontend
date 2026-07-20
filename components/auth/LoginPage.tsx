@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ArrowRight, Lock, Mail, ShieldCheck, Sun, Moon, Fingerprint, Command } from 'lucide-react';
-import DockaLogo from '../common/DockaLogo';
+import ManySpaceLogo from '../common/ManySpaceLogo';
 
 interface LoginPageProps {
   onLogin: () => void;
@@ -51,11 +51,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, theme, onToggleTheme }) 
             
             {/* Brand Header */}
             <div className="text-center mb-8 flex flex-col items-center">
-               <div className="text-docka-900 dark:text-zinc-100 mb-4">
-                  <DockaLogo variant="icon" className="h-14 w-auto" />
+               <div className="text-black dark:text-white mb-4">
+                  <ManySpaceLogo variant="icon" className="h-14 w-auto" />
                </div>
-               <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 tracking-tight">Docka Workspace</h1>
-               <p className="text-sm text-docka-500 dark:text-zinc-400 mt-2">Entre para acessar seu ecossistema.</p>
+               <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight">ManySpace</h1>
+               <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-2">Entre para acessar seu ecossistema.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -69,7 +69,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, theme, onToggleTheme }) 
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-docka-50 dark:bg-zinc-950 border border-docka-200 dark:border-zinc-800 rounded-xl text-sm outline-none focus:border-docka-400 dark:focus:border-zinc-600 focus:ring-4 focus:ring-docka-100 dark:focus:ring-zinc-800 transition-all font-medium placeholder:text-docka-300 dark:placeholder:text-zinc-600 text-docka-900 dark:text-zinc-100"
-                        placeholder="usuario@docka.io"
+                        placeholder="usuario@manyspace.io"
                      />
                   </div>
                </div>
@@ -133,7 +133,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, theme, onToggleTheme }) 
                <a href="#" className="hover:text-docka-900 dark:hover:text-zinc-300 transition-colors">Status</a>
             </div>
             <p className="text-[10px] text-docka-300 dark:text-zinc-700 mt-4 font-mono">
-               Docka Workspace v2.5.0 • Build 8921
+               ManySpace v2.5.0 • Build 8921
             </p>
         </div>
 

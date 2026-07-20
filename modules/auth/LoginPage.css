@@ -1,0 +1,532 @@
+.manyways-login {
+  --ink: #050505;
+  --surface: #f4f4f4;
+  position: fixed;
+  inset: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+  background: #fff;
+  color: var(--ink);
+  font-family: 'Inter Tight', 'Inter', 'Plus Jakarta Sans', sans-serif;
+  isolation: isolate;
+}
+
+.manyways-login,
+.manyways-login * {
+  box-sizing: border-box;
+}
+
+.manyways-wordmark {
+  position: absolute;
+  z-index: 4;
+  top: clamp(92px, 21.7vh, 214px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  transform: translateX(-50%);
+  color: #050505;
+  font-size: clamp(34px, 3.18vw, 49px);
+  font-weight: 400;
+  letter-spacing: -0.055em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.manyways-wordmark__mark {
+  width: clamp(49px, 4.1vw, 63px);
+  height: auto;
+  margin-right: 4px;
+  overflow: visible;
+}
+
+.manyways-wordmark__mark path {
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: square;
+}
+
+.login-stage {
+  position: absolute;
+  z-index: 10;
+  top: clamp(280px, 38.9vh, 382px);
+  left: 50%;
+  width: min(52.05vw, 787px);
+  min-width: 560px;
+  transform: translateX(-50%);
+}
+
+.login-form {
+  width: 100%;
+}
+
+.login-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 64px;
+  padding: 0 82px 0 35px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--surface);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.login-pill:focus-within {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: #f7f7f7;
+  box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.035);
+}
+
+.login-form--error .login-pill {
+  border-color: rgba(196, 37, 37, 0.32);
+  animation: login-shake 340ms ease;
+}
+
+.login-pill__input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #090909;
+  font: inherit;
+  font-size: clamp(18px, 1.59vw, 24px);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+}
+
+.login-pill__input::placeholder {
+  color: #090909;
+  opacity: 1;
+}
+
+.login-pill__input:disabled {
+  color: #090909;
+  opacity: 0.62;
+  -webkit-text-fill-color: #090909;
+}
+
+.login-pill__action {
+  position: absolute;
+  z-index: 2;
+  top: 4px;
+  right: 8px;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 180ms cubic-bezier(.2, .8, .2, 1), box-shadow 180ms ease, opacity 120ms ease;
+}
+
+.login-pill__action:hover:not(:disabled) {
+  transform: scale(1.055);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.16);
+}
+
+.login-pill__action:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.login-pill__action:disabled {
+  opacity: 0;
+}
+
+.login-pill__back,
+.login-pill__visibility {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #8c8c8c;
+  cursor: pointer;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.login-pill__back {
+  width: 28px;
+  margin-right: 6px;
+  margin-left: -15px;
+}
+
+.login-pill__visibility {
+  position: absolute;
+  right: 73px;
+  width: 34px;
+  height: 40px;
+}
+
+.login-pill__back:hover,
+.login-pill__visibility:hover {
+  color: #111;
+  transform: scale(1.06);
+}
+
+.login-pill:has(.login-pill__visibility) .login-pill__input {
+  padding-right: 32px;
+}
+
+.login-message {
+  min-height: 18px;
+  margin-top: 20px;
+  padding: 0 28px;
+  color: #a1a1a1;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.login-message strong {
+  color: #737373;
+  font-weight: 500;
+}
+
+.login-message__error {
+  color: #bd2929;
+}
+
+.login-flight {
+  position: fixed;
+  z-index: 100;
+  top: var(--flight-top);
+  left: var(--flight-left);
+  display: grid;
+  width: var(--flight-size);
+  height: var(--flight-size);
+  place-items: center;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
+  pointer-events: none;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+}
+
+.login-flight--outbound,
+.login-flight--loading {
+  top: 50%;
+  left: 50%;
+  width: 68px;
+  height: 68px;
+  transform: translate(-50%, -50%);
+}
+
+.login-flight--outbound {
+  transition: top 500ms cubic-bezier(.65, 0, .2, 1), left 500ms cubic-bezier(.65, 0, .2, 1), width 500ms cubic-bezier(.65, 0, .2, 1), height 500ms cubic-bezier(.65, 0, .2, 1), transform 500ms cubic-bezier(.65, 0, .2, 1);
+}
+
+.login-flight--loading {
+  animation: flight-breathe 1.1s ease-in-out infinite;
+}
+
+.login-flight--returning {
+  transition: top 460ms cubic-bezier(.6, 0, .2, 1), left 460ms cubic-bezier(.6, 0, .2, 1), width 460ms cubic-bezier(.6, 0, .2, 1), height 460ms cubic-bezier(.6, 0, .2, 1), transform 460ms cubic-bezier(.6, 0, .2, 1);
+}
+
+.login-flight__spinner {
+  animation: login-spin 780ms linear infinite;
+}
+
+.orbit-scene {
+  --outer-size: min(62vw, 815px);
+  position: absolute;
+  z-index: 1;
+  top: clamp(590px, 66.5vh, 654px);
+  left: 50%;
+  width: var(--outer-size);
+  height: var(--outer-size);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.orbit-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.19);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.orbit-ring--outer {
+  width: 100%;
+  height: 100%;
+}
+
+.orbit-ring--middle {
+  width: 68.4%;
+  height: 68.4%;
+}
+
+.orbit-ring--inner {
+  width: 29.5%;
+  height: 29.5%;
+}
+
+.orbit-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform-origin: center;
+}
+
+.orbit-track--outer {
+  animation: orbit-clockwise 44s linear infinite;
+}
+
+.orbit-track--middle {
+  animation: orbit-counterclockwise 34s linear infinite;
+}
+
+.orbit-node {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform: rotate(var(--orbit-angle)) translateX(calc(var(--outer-size) / 2));
+  transform-origin: center;
+}
+
+.orbit-track--middle .orbit-node {
+  transform: rotate(var(--orbit-angle)) translateX(calc(var(--outer-size) * .342));
+}
+
+.brand-tile {
+  position: absolute;
+  top: -32px;
+  left: -32px;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+  transform: rotate(var(--orbit-counter-angle));
+}
+
+.orbit-track--outer .brand-tile {
+  animation: tile-counterspin 44s linear infinite;
+}
+
+.orbit-track--middle .brand-tile {
+  animation: tile-clockwise 34s linear infinite;
+}
+
+.brand-tile--milla {
+  background: #210016;
+  color: #ff18ae;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: -0.08em;
+}
+
+.brand-tile--milla span {
+  transform: rotate(-61deg);
+}
+
+.brand-tile--manyways {
+  background: #050505;
+  color: #fff;
+}
+
+.brand-tile--manyways svg {
+  width: 38px;
+  height: 38px;
+  stroke: currentColor;
+  stroke-width: 3.2;
+  stroke-linecap: square;
+}
+
+.brand-tile--asterysko {
+  background: #101eea;
+  color: #fff;
+}
+
+.brand-tile--asterysko svg {
+  width: 39px;
+  height: 36px;
+}
+
+.brand-tile--fauves {
+  background: #2b31d6;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: -0.13em;
+  line-height: .72;
+  text-align: center;
+}
+
+.brand-tile--fauves span {
+  transform: rotate(14deg);
+}
+
+.brand-tile--umachave {
+  background: #072820;
+  color: #c9f36b;
+  font-family: Georgia, serif;
+  font-size: 33px;
+  letter-spacing: -0.22em;
+}
+
+.brand-tile--umachave span {
+  transform: rotate(16deg);
+}
+
+.brand-tile--hostizi {
+  background: #20242e;
+  color: #fff;
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.brand-tile--space {
+  background: #111;
+  color: #fff;
+}
+
+.brand-tile--space svg {
+  width: 38px;
+}
+
+.brand-tile--space path {
+  stroke: currentColor;
+  stroke-width: 2.5;
+}
+
+.brand-tile--docka {
+  background: #6d28d9;
+  color: #fff;
+  font-family: Georgia, serif;
+  font-size: 29px;
+}
+
+@keyframes login-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes flight-breathe {
+  50% { transform: translate(-50%, -50%) scale(1.07); }
+}
+
+@keyframes login-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes orbit-clockwise {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes orbit-counterclockwise {
+  to { transform: rotate(-360deg); }
+}
+
+@keyframes tile-counterspin {
+  to { transform: rotate(calc(var(--orbit-counter-angle) - 360deg)); }
+}
+
+@keyframes tile-clockwise {
+  to { transform: rotate(calc(var(--orbit-counter-angle) + 360deg)); }
+}
+
+@media (max-width: 760px) {
+  .manyways-wordmark {
+    top: clamp(82px, 14vh, 116px);
+    font-size: 36px;
+  }
+
+  .login-stage {
+    top: clamp(220px, 30vh, 270px);
+    width: calc(100vw - 32px);
+    min-width: 0;
+  }
+
+  .login-pill {
+    height: 60px;
+    padding-left: 24px;
+    padding-right: 73px;
+  }
+
+  .login-pill__action {
+    top: 4px;
+    right: 5px;
+    width: 52px;
+    height: 52px;
+  }
+
+  .login-pill__input {
+    font-size: 18px;
+  }
+
+  .login-pill__back {
+    margin-left: -10px;
+  }
+
+  .login-pill__visibility {
+    right: 61px;
+  }
+
+  .login-message {
+    margin-top: 16px;
+    padding: 0 18px;
+  }
+
+  .orbit-scene {
+    --outer-size: 690px;
+    top: 60vh;
+  }
+
+  .brand-tile {
+    top: -27px;
+    left: -27px;
+    width: 54px;
+    height: 54px;
+    border-radius: 7px;
+  }
+
+  .brand-tile--asterysko svg,
+  .brand-tile--manyways svg {
+    width: 32px;
+  }
+}
+
+@media (max-height: 740px) and (min-width: 761px) {
+  .manyways-wordmark { top: 86px; }
+  .login-stage { top: 245px; }
+  .orbit-scene { top: 510px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orbit-track,
+  .brand-tile,
+  .login-flight,
+  .login-flight__spinner,
+  .login-form--error .login-pill {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

@@ -9,8 +9,8 @@ interface GenericDashboardProps {
 }
 
 const GenericDashboard: React.FC<GenericDashboardProps> = ({ org }) => {
-    // Filter out the 'docka' org from the list to show as children
-    const portfolioOrgs = ORGANIZATIONS.filter(o => o.slug !== 'docka');
+    // Filter out the 'manyspace' org from the list to show as children
+    const portfolioOrgs = ORGANIZATIONS.filter(o => o.slug !== 'manyspace');
 
     return (
         <div className="h-full bg-docka-50 dark:bg-zinc-950 p-8 overflow-y-auto custom-scrollbar transition-colors">

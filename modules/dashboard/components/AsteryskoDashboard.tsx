@@ -16,6 +16,7 @@ import AsteryskoPerformanceView from './asterysko/AsteryskoPerformanceView';
 
 import SearchAssistant from '../../asterysko/SearchAssistant';
 import AsteryskoResearchView from './asterysko/AsteryskoResearchView';
+import AsteryskoHomeView from './asterysko/AsteryskoHomeView';
 
 interface AsteryskoDashboardProps {
     user: User;
@@ -62,15 +63,12 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
         case 'documents':
             return <AsteryskoDocumentsView />;
         case 'overview':
-            return <AsteryskoOverviewView />;
+        case 'home':
+            return <AsteryskoHomeView userName="Levy" />;
         default:
             return (
                 <div className="h-full bg-white dark:bg-zinc-950 animate-in fade-in duration-300">
-                    <PlaceholderView
-                        title={`Asterysko ${activeView.charAt(0).toUpperCase() + activeView.slice(1)}`}
-                        icon={LayoutTemplate}
-                        description="Módulo em desenvolvimento."
-                    />
+                    <AsteryskoHomeView userName="Levy" />
                 </div>
             );
     }

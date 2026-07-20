@@ -64,7 +64,7 @@ const MeetHome: React.FC<MeetHomeProps> = ({ onStartInstantMeeting, onJoinMeetin
                 <h1 className="text-4xl font-bold text-docka-900 dark:text-zinc-100 mb-2">Chamadas de vídeo premium.</h1>
                 <h1 className="text-4xl font-bold text-docka-400 dark:text-zinc-500 mb-6">Agora disponível para todos.</h1>
                 <p className="text-lg text-docka-600 dark:text-zinc-400 mb-10 leading-relaxed max-w-md">
-                    Nós redesenhamos o serviço de reuniões para ser seguro, interno e totalmente integrado ao seu Docka Workspace.
+                    Nós redesenhamos o serviço de reuniões para ser seguro, interno e totalmente integrado ao seu ManySpace.
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center mb-8">

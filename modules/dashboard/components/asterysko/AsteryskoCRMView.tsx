@@ -1,504 +1,233 @@
-
 import React, { useState, useEffect } from 'react';
-import KanbanBoard from '../kanban/KanbanBoard';
-import { KanbanColumnData, KanbanCardData } from '../../../../types';
-import { Plus, Users, Search as SearchIcon, Filter, Kanban, List, ChevronDown, Tag, DollarSign } from 'lucide-react';
-import Modal from '../../../../components/common/Modal';
-import DealDetailsModal from './DealDetailsModal';
+import { Plus, Loader2 } from 'lucide-react';
 import api from '../../../../services/api';
-import { DropResult } from '@hello-pangea/dnd';
-import { useAuth } from '../../../../context/AuthContext';
 import { Organization } from '../../../../types';
-import DashboardPage from '../../../../components/DashboardPage';
+import AsteryskoNewLeadModal from './AsteryskoNewLeadModal';
+import AsteryskoDealDetailsModal from './AsteryskoDealDetailsModal';
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
-    constructor(props: any) {
-        super(props);
-        this.state = { hasError: false, error: null };
-    }
-
-    static getDerivedStateFromError(error: any) {
-        return { hasError: true, error };
-    }
-
-    componentDidCatch(error: any, errorInfo: any) {
-        console.error("ErrorBoundary caught an error", error, errorInfo);
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return (
-                <div className="p-8 bg-red-50 text-red-900 h-full overflow-auto">
-                    <h1 className="text-2xl font-bold mb-4">Algo deu errado no CRM 🚨</h1>
-                    <p className="mb-4">Por favor, tire um print desta tela e me envie:</p>
-                    <pre className="bg-red-100 p-4 rounded text-sm font-mono whitespace-pre-wrap border border-red-200">
-                        {this.state.error?.toString()}
-                        {'\n\nStack:\n' + this.state.error?.stack}
-                    </pre>
-                </div>
-            );
-        }
-
-        return this.props.children;
-    }
+interface DealCard {
+    id: string;
+    title: string;
+    subtitle?: string;
+    status: string;
+    value: string | null;
+    date: string;
+    contactName?: string;
+    tags?: any[];
+    members?: any[];
+    assignedUserId?: string;
 }
 
+interface Column {
+    id: string;
+    title: string;
+    color: string;
+    cards: DealCard[];
+}
 
+interface Props {
+    organization?: Organization;
+}
 
-const AsteryskoCRMView: React.FC<{ organization?: Organization }> = ({ organization }) => {
-    return (
-        <ErrorBoundary>
-            <AsteryskoCRMViewContent organization={organization} />
-        </ErrorBoundary>
-    );
-};
+const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
+    const [columns, setColumns] = useState<Column[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
+    const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+    const [selectedCard, setSelectedCard] = useState<DealCard | null>(null);
 
-const AsteryskoCRMViewContent: React.FC<{ organization?: Organization }> = ({ organization }) => {
-    const { user } = useAuth();
-    const [isNewLeadModalOpen, setIsNewLeadModalOpen] = useState(false);
-    const [selectedCard, setSelectedCard] = useState<KanbanCardData | null>(null);
-    const [columns, setColumns] = useState<KanbanColumnData[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
-    const [isDealDetailsModalOpen, setIsDealDetailsModalOpen] = useState(false);
-
-    // Client Selector State
-    const [clientSearch, setClientSearch] = useState('');
-    const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
-
-    const [newLead, setNewLead] = useState({
-        title: '',
-        contactName: '',
-        contactPhone: '',
-        contactEmail: '',
-        service: 'Registro de Marca (Mista)',
-        source: 'Site (Orgânico)',
-        value: '',
-        status: 'leads',
-        clientId: '',
-        cnpj: '',
-        address: '',
-        razaoSocial: '',
-        planType: 'ESSENCIAL',
-        assignedUserId: '',
-        planId: ''
-    });
-
-    const [plans, setPlans] = useState<any[]>([]);
-    const [clients, setClients] = useState<any[]>([]);
-    const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
-
-    useEffect(() => {
-        api.get('/asterysko/clients').then(res => setClients(res.data)).catch(err => console.error('Error loading clients:', err));
-        api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
-
-        if (organization?.id) {
-            api.get(`/organizations/${organization.id}/members`)
-                .then(res => {
-                    const staff = res.data.filter((m: any) => m.globalRole !== 'CLIENT');
-                    setOrganizationMembers(staff);
-                })
-                .catch(err => console.error('Error loading members:', err));
-        }
-    }, [organization?.id]);
-
-    const handleClientSelect = (clientId: string) => {
-        const client = clients.find(c => c.id === clientId);
-        if (client) {
-            setNewLead(prev => ({
-                ...prev,
-                clientId: client.id,
-                contactName: client.name,
-                contactEmail: client.email,
-                contactPhone: client.phone || '',
-                title: client.company !== 'Sem Empresa' ? client.company : client.name
-            }));
-        } else {
-            setNewLead(prev => ({ ...prev, clientId: '' }));
-        }
-    };
-
-    const handleFeeSelect = (feeId: string) => {
-        const fee = plans.find(f => f.id === feeId);
-        if (fee) {
-            setNewLead(prev => ({
-                ...prev,
-                planId: fee.id,
-                value: Number(fee.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
-                service: fee.name,
-                planType: fee.type || 'ESSENCIAL'
-            }));
-        } else {
-            setNewLead(prev => ({ ...prev, planId: '' }));
+    const fetchDeals = async () => {
+        try {
+            setIsLoading(true);
+            const response = await api.get(`/asterysko/crm/deals`);
+            setColumns(response.data);
+        } catch (error) {
+            console.error('Failed to fetch deals', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
     useEffect(() => {
         fetchDeals();
-    }, []);
+    }, [organization?.id]);
 
-    const fetchDeals = async () => {
-        try {
-            const response = await api.get('/asterysko/crm/deals');
-            if (Array.isArray(response.data)) {
-                setColumns(response.data);
-            } else {
-                setColumns([]);
+    const handleDragStart = (e: React.DragEvent, cardId: string) => {
+        setDraggedCardId(cardId);
+        e.dataTransfer.effectAllowed = 'move';
+        // Subtle opacity to the dragging element can be achieved by the browser
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault(); // Necessary to allow dropping
+        e.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleDrop = async (e: React.DragEvent, targetColumnId: string) => {
+        e.preventDefault();
+        if (!draggedCardId) return;
+
+        // Optimistic UI update
+        setColumns(prevColumns => {
+            const newColumns = prevColumns.map(col => ({ ...col, cards: [...col.cards] }));
+            let cardToMove: DealCard | null = null;
+            let sourceColIdx = -1;
+
+            // Find and remove card from source
+            for (let i = 0; i < newColumns.length; i++) {
+                const cardIdx = newColumns[i].cards.findIndex(c => c.id === draggedCardId);
+                if (cardIdx !== -1) {
+                    cardToMove = newColumns[i].cards[cardIdx];
+                    newColumns[i].cards.splice(cardIdx, 1);
+                    sourceColIdx = i;
+                    break;
+                }
             }
+
+            // If card not found
+            if (!cardToMove) return prevColumns;
+            
+            // If dropped in same column, restore and do nothing
+            if (newColumns[sourceColIdx].id === targetColumnId) {
+                newColumns[sourceColIdx].cards.push(cardToMove);
+                return prevColumns; 
+            }
+
+            // Update card status and add to target column
+            cardToMove.status = targetColumnId;
+            const targetColIdx = newColumns.findIndex(c => c.id === targetColumnId);
+            if (targetColIdx !== -1) {
+                newColumns[targetColIdx].cards.push(cardToMove);
+            }
+
+            return newColumns;
+        });
+
+        const movedCardId = draggedCardId;
+        setDraggedCardId(null);
+
+        // Make API call to update status
+        try {
+            await api.patch(`/asterysko/crm/deals/${movedCardId}`, { status: targetColumnId });
         } catch (error) {
-            console.error('Failed to fetch deals', error);
-            setColumns([]);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCardClick = async (card: KanbanCardData) => {
-        setSelectedCard(card);
-        setIsDealDetailsModalOpen(true);
-
-        if (card.unread) {
-            try {
-                await api.patch(`/asterysko/crm/deals/${card.id}/read`);
-                setColumns(prev => prev.map(col => ({
-                    ...col,
-                    cards: col.cards.map(c => c.id === card.id ? { ...c, unread: false } : c)
-                })));
-                window.dispatchEvent(new CustomEvent('asterysko-lead-read'));
-            } catch (error) {
-                console.error('Falhou ao marcar o card como lido', error);
-            }
-        }
-    };
-
-    const handleCreateLead = async () => {
-        try {
-            const tags = [
-                { label: newLead.service, color: 'bg-blue-100 text-blue-700' },
-                { label: newLead.source, color: 'bg-gray-100 text-gray-700' }
-            ];
-
-            if (newLead.cnpj) tags.push({ label: `CNPJ: ${newLead.cnpj}`, color: 'bg-indigo-100 text-indigo-700' });
-            if (newLead.razaoSocial) tags.push({ label: `Razão Social: ${newLead.razaoSocial}`, color: 'bg-purple-100 text-purple-700' });
-            if (newLead.address) tags.push({ label: `Endereço: ${newLead.address}`, color: 'bg-amber-100 text-amber-700' });
-
-            const payload = {
-                ...newLead,
-                organizationId: organization?.id,
-                assignedUserId: newLead.assignedUserId || user?.id,
-                planId: newLead.planId,
-                value: newLead.value ? parseFloat(newLead.value.replace('R$', '').replace('.', '').replace(',', '.')) : 0,
-                tags
-            };
-
-            await api.post('/asterysko/crm/deals', payload);
-            setIsNewLeadModalOpen(false);
-            setNewLead({
-                title: '', contactName: '', contactPhone: '', contactEmail: '',
-                service: 'Registro de Marca (Mista)', source: 'Site (Orgânico)',
-                value: '', status: 'leads', clientId: '', cnpj: '', address: '',
-                razaoSocial: '', planType: 'ESSENCIAL', assignedUserId: '', planId: ''
-            });
+            console.error('Failed to update deal status', error);
+            // Revert on error by refetching
             fetchDeals();
-        } catch (error) {
-            console.error('Error creating lead', error);
-            alert('Erro ao criar lead.');
         }
-    };
-
-    const handleAddCard = (columnId: string) => {
-        setNewLead(prev => ({ ...prev, status: columnId }));
-        setIsNewLeadModalOpen(true);
-    };
-
-    const handleDragEnd = async (result: DropResult) => {
-        const { source, destination, draggableId } = result;
-
-        if (!destination) return;
-        if (source.droppableId === destination.droppableId && source.index === destination.index) return;
-
-        const newColumns = [...columns];
-        const sourceColIdx = newColumns.findIndex(col => col.id === source.droppableId);
-        const destColIdx = newColumns.findIndex(col => col.id === destination.droppableId);
-
-        if (sourceColIdx === -1 || destColIdx === -1) return;
-
-        const sourceCol = newColumns[sourceColIdx];
-        const destCol = newColumns[destColIdx];
-
-        const [movedCard] = sourceCol.cards.splice(source.index, 1);
-        destCol.cards.splice(destination.index, 0, movedCard);
-
-        setColumns(newColumns);
-
-        try {
-            await api.put(`/asterysko/crm/deals/${draggableId}/status`, { status: destination.droppableId });
-        } catch (error) {
-            console.error('Error moving card', error);
-            fetchDeals(); 
-        }
-    };
-
-    const maskPhone = (value: string) => {
-        return value.replace(/\D/g, '').replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2').replace(/(-\d{4})\d+?$/, '$1');
-    };
-
-    const maskCurrency = (value: string) => {
-        const numericValue = value.replace(/\D/g, '');
-        const floatValue = parseFloat(numericValue) / 100;
-        return floatValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
     return (
-        <DashboardPage 
-            title="Pipeline de Vendas (PI)" 
-            icon={Kanban}
-            padding="p-0"
-            actions={
-                <div className="flex items-center gap-3">
-                    <div className="flex bg-docka-50 dark:bg-zinc-800 p-1 rounded-lg border border-docka-100 dark:border-zinc-700 mr-2">
-                        <button 
-                            onClick={() => setViewMode('kanban')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-wider transition-all ${viewMode === 'kanban' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
+        <div className="bg-white dark:bg-zinc-950 min-h-full font-sans transition-colors duration-300 flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pt-8 px-10 pb-6 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
+                <span className="font-season text-[22px] font-[420] text-black dark:text-white">CRM</span>
+                
+                <button 
+                    onClick={() => setIsLeadModalOpen(true)}
+                    className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 text-black dark:text-white font-sans text-xs font-semibold px-4 h-[32px] rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
+                >
+                    <div className="bg-[#0412dd] dark:bg-[#3b48ff] rounded-full p-0.5 mr-2">
+                        <Plus size={10} className="text-white" strokeWidth={3} />
+                    </div>
+                    Novo lead
+                </button>
+            </div>
+
+            {/* Kanban Board */}
+            <div className="flex-1 w-full overflow-x-auto flex custom-scrollbar relative items-stretch">
+                {isLoading && (
+                    <div className="absolute inset-0 z-10 flex justify-center pt-12 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm">
+                        <Loader2 className="animate-spin text-[#0412dd] dark:text-[#3b48ff]" size={24} />
+                    </div>
+                )}
+                {columns.map((col, idx) => {
+                    return (
+                        <div 
+                            key={col.id} 
+                            className={`shrink-0 w-[300px] flex flex-col ${idx !== columns.length - 1 ? 'border-r border-[#e5e5e5] dark:border-zinc-800' : ''}`}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDrop(e, col.id)}
                         >
-                            Kanban
-                        </button>
-                        <button 
-                            onClick={() => setViewMode('list')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-semibold tracking-wider transition-all ${viewMode === 'list' ? 'bg-white dark:bg-zinc-700 text-docka-900 dark:text-zinc-100 shadow-sm' : 'text-docka-400 hover:text-docka-600'}`}
-                        >
-                            Lista
-                        </button>
-                    </div>
-
-                    <div className="relative">
-                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" size={14} />
-                        <input className="pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-docka-100 w-48" placeholder="Filtrar leads..." />
-                    </div>
-
-                    <button
-                        onClick={() => setIsNewLeadModalOpen(true)}
-                        className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-5 py-2.5 rounded-lg text-xs font-semibold tracking-wider hover:bg-docka-800 dark:hover:bg-white transition-all shadow-sm flex items-center gap-2"
-                    >
-                        <Plus size={14} /> Novo Lead
-                    </button>
-                </div>
-            }
-        >
-            {loading ? (
-                <div className="flex flex-col items-center justify-center h-64 gap-3 animate-in fade-in duration-500">
-                    <div className="w-8 h-8 border-2 border-docka-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin"></div>
-                    <span className="text-xs font-semibold text-docka-400 tracking-wider">Sincronizando pipeline...</span>
-                </div>
-            ) : (
-                <div className="h-full w-full flex flex-col animate-in fade-in duration-500 overflow-hidden">
-                    <div className="flex-1 min-h-0">
-                        {columns.length > 0 ? (
-                            viewMode === 'kanban' ? (
-                                <KanbanBoard
-                                    columns={columns}
-                                    onCardClick={handleCardClick}
-                                    onAddCard={handleAddCard}
-                                    onDragEnd={handleDragEnd}
-                                    members={organizationMembers}
-                                 />
-                            ) : (
-                                <div className="bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 overflow-x-auto shadow-sm custom-scrollbar">
-                                    <table className="w-full text-left min-w-[800px]">
-                                        <thead className="bg-docka-50 dark:bg-zinc-800/50 text-xs font-semibold uppercase tracking-wider text-docka-500 dark:text-zinc-500 border-b border-docka-100 dark:border-zinc-800">
-                                            <tr>
-                                                <th className="px-6 py-4">Título / Marca</th>
-                                                <th className="px-6 py-4">Contato</th>
-                                                <th className="px-6 py-4 text-right">Valor Estimado</th>
-                                                <th className="px-6 py-4 text-center">Status Atual</th>
-                                                <th className="px-6 py-4">Data de Entrada</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
-                                            {columns.flatMap(col => col.cards).map(card => (
-                                                <tr key={card.id} onClick={() => handleCardClick(card)} className="hover:bg-docka-50/50 dark:hover:bg-zinc-800/20 cursor-pointer group transition-colors">
-                                                    <td className="px-6 py-4">
-                                                        <span className="text-sm font-bold text-docka-900 dark:text-zinc-100 group-hover:text-black dark:group-hover:text-white transition-colors">{card.title}</span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <div className="text-xs text-docka-600 dark:text-zinc-400">{card.subtitle || '-'}</div>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        <span className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">{card.value || 'R$ 0,00'}</span>
-                                                    </td>
-                                                    <td className="px-6 py-4 text-center">
-                                                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider bg-docka-50 dark:bg-zinc-800 text-docka-500 dark:text-zinc-400 border border-docka-100 dark:border-zinc-700">
-                                                            {columns.find(c => c.cards.some(cd => cd.id === card.id))?.title}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        <span className="text-xs font-semibold text-docka-400 dark:text-zinc-500">{card.date}</span>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )
-                        ) : (
-                            <div className="flex flex-col items-center justify-center h-full text-docka-400 dark:text-zinc-500 p-20 border-2 border-dashed border-docka-100 dark:border-zinc-800 rounded-xl opacity-50">
-                                <Kanban size={48} className="mb-4" />
-                                <p className="text-xs font-semibold tracking-wider">O Pipeline está vazio no momento.</p>
-                                <button onClick={fetchDeals} className="mt-4 text-xs font-semibold text-indigo-600 hover:underline">Recarregar dados</button>
+                            {/* Column Header */}
+                            <div className="flex items-center gap-2 px-6 py-4 border-b border-[#e5e5e5] dark:border-zinc-800 bg-[#fafafa] dark:bg-zinc-900/50 shrink-0 sticky top-0">
+                                <div className={`w-2.5 h-2.5 rounded-full ${col.color.replace('bg-', 'bg-').replace('-400', '-500')} shrink-0`} />
+                                <span className="text-sm font-semibold text-[#131f15] dark:text-zinc-200 truncate">{col.title}</span>
                             </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
-            {/* MODAL: NEW LEAD (Asterysko Specific) */}
-            <Modal
-                isOpen={isNewLeadModalOpen}
-                onClose={() => setIsNewLeadModalOpen(false)}
-                title="Novo Lead de Registro"
-                footer={
-                    <>
-                        <button onClick={() => setIsNewLeadModalOpen(false)} className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-docka-400 hover:bg-docka-50 rounded-lg transition-all">Cancelar</button>
-                        <button onClick={handleCreateLead} className="px-6 py-2.5 text-xs font-semibold tracking-wider text-white bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white rounded-lg shadow-sm transition-all border border-transparent">Criar Lead no Funil</button>
-                    </>
-                }
-            >
-                <div className="space-y-6 max-h-[70vh] overflow-y-auto px-1 custom-scrollbar">
-                    {/* Campos de formulário (mantendo lógica original com visual DS 3.0) */}
-                    <div>
-                        <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Cliente Existente</label>
-                        <div className="relative">
-                            <div
-                                onClick={() => setIsClientDropdownOpen(!isClientDropdownOpen)}
-                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-docka-900 dark:text-zinc-100 cursor-pointer flex items-center justify-between shadow-sm"
-                            >
-                                <span className="truncate">
-                                    {clients.find(c => c.id === newLead.clientId)?.name ?
-                                        `${clients.find(c => c.id === newLead.clientId).name}` :
-                                        '-- Selecionar Cliente --'}
-                                </span>
-                                <ChevronDown size={14} className={`text-docka-400 transition-transform ${isClientDropdownOpen ? 'rotate-180' : ''}`} />
-                            </div>
-
-                            {isClientDropdownOpen && (
-                                <div className="absolute z-[100] w-full mt-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-xl shadow-lg animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
-                                    <div className="p-3 border-b border-docka-50 dark:border-zinc-800">
-                                        <div className="relative">
-                                            <SearchIcon size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" />
-                                            <input
-                                                autoFocus
-                                                className="w-full pl-9 pr-3 py-2 text-xs bg-docka-50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg outline-none focus:border-docka-400"
-                                                placeholder="Filtrar por nome ou empresa..."
-                                                value={clientSearch}
-                                                onChange={(e) => setClientSearch(e.target.value)}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="max-h-56 overflow-y-auto p-2 custom-scrollbar">
-                                        <div onClick={() => { setNewLead(prev => ({ ...prev, clientId: '' })); setIsClientDropdownOpen(false); }} className="px-4 py-2 text-xs text-docka-400 italic hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer">Desmarcar seleção</div>
-                                        {clients.filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.company && c.company.toLowerCase().includes(clientSearch.toLowerCase()))).map(c => (
-                                            <div key={c.id} onClick={() => { handleClientSelect(c.id); setIsClientDropdownOpen(false); }} className="px-4 py-2.5 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg cursor-pointer flex flex-col">
-                                                <span className="font-bold">{c.name}</span>
-                                                <span className="text-xs font-semibold uppercase tracking-wider opacity-50">{c.company || 'Sem Empresa'}</span>
+                            
+                            {/* Column Content */}
+                            <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
+                                {col.cards.map((card) => {
+                                    
+                                    // Try to find the tag that indicates source (e.g. "site")
+                                    const sourceTag = card.tags?.find((t: any) => typeof t === 'string' ? t.toLowerCase().includes('site') : t.label?.toLowerCase().includes('site')) ? 'Site' : 'Manual';
+                                    
+                                    return (
+                                        <div 
+                                            key={card.id} 
+                                            draggable
+                                            onClick={() => setSelectedCard(card)}
+                                            onDragStart={(e) => handleDragStart(e, card.id)}
+                                            className={`bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 rounded-[12px] p-5 shadow-sm flex flex-col hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors cursor-grab active:cursor-grabbing shrink-0 ${draggedCardId === card.id ? 'opacity-50' : ''}`}
+                                        >
+                                            
+                                            {/* Top Pills */}
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <span className="h-6 px-3 rounded-full bg-[#f0f0ff] dark:bg-blue-900/20 text-[#0412dd] dark:text-[#3b48ff] text-[10px] font-bold flex items-center justify-center max-w-[120px] truncate">
+                                                    {card.assignedUserId ? 'Atribuído' : 'Sem dono'}
+                                                </span>
+                                                <span className="h-6 px-3 rounded-full bg-[#f5f5f5] dark:bg-zinc-800 text-[#9f9f9f] text-[10px] font-bold flex items-center justify-center truncate max-w-[100px]">
+                                                    {sourceTag}
+                                                </span>
                                             </div>
-                                        ))}
+                                            
+                                            {/* Main Info */}
+                                            <h3 className="font-season text-[26px] font-[420] text-black dark:text-white leading-none mb-1 break-words">
+                                                {card.title}
+                                            </h3>
+                                            <p className="text-[11px] font-semibold text-[#9f9f9f] mb-6 truncate">
+                                                {card.contactName || card.subtitle || 'Sem nome'}
+                                            </p>
+                                            
+                                            {/* Bottom Info */}
+                                            <div className="flex items-center justify-between mt-auto">
+                                                <span className="text-[12px] font-medium text-black dark:text-white opacity-80">
+                                                    {card.date}
+                                                </span>
+                                                <span className="text-[12px] font-medium text-black dark:text-white">
+                                                    {card.value || '-'}
+                                                </span>
+                                            </div>
+                                            
+                                        </div>
+                                    )
+                                })}
+                                {col.cards.length === 0 && !isLoading && (
+                                    <div className="text-center py-4 opacity-40">
+                                        <span className="text-[10px] font-medium text-black dark:text-white">Solte aqui</span>
                                     </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Marca / Título</label>
-                            <input
-                                value={newLead.title}
-                                onChange={(e) => setNewLead({ ...newLead, title: e.target.value })}
-                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-docka-900 dark:text-zinc-100 shadow-sm"
-                                placeholder="Ex: Asterysko Hub"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Plano de Serviço</label>
-                            <select
-                                value={newLead.planId}
-                                onChange={e => handleFeeSelect(e.target.value)}
-                                className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-docka-900 dark:text-zinc-100 shadow-sm"
-                            >
-                                <option value="">-- Selecione um Plano --</option>
-                                {plans.map(p => (
-                                    <option key={p.id} value={p.id}>{p.name} - {Number(p.value).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</option>
-                                ))}
-                            </select>
-                        </div>
-                        {user?.globalRole === 'ADMIN' && (
-                            <div>
-                                <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Responsável Vendas</label>
-                                <select
-                                    value={newLead.assignedUserId}
-                                    onChange={e => setNewLead({ ...newLead, assignedUserId: e.target.value })}
-                                    className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-docka-900 dark:text-zinc-100 shadow-sm"
-                                >
-                                    <option value="">-- Atribuir a Mim --</option>
-                                    {organizationMembers.map(m => (
-                                        <option key={m.id} value={m.userId || m.id}>{m.user?.name || m.name || "Membro"}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-5 bg-white dark:bg-zinc-900 rounded-xl border border-docka-200 dark:border-zinc-800 space-y-4 shadow-sm">
-                        <label className="text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider flex items-center gap-2">
-                             <Tag size={12} /> Configurações do Lead
-                        </label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">Serviço</label>
-                                <select value={newLead.service} onChange={(e) => setNewLead({ ...newLead, service: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20">
-                                    <option>Registro de Marca (Mista)</option>
-                                    <option>Registro de Marca (Nominativa)</option>
-                                    <option>Registro de Patente</option>
-                                    <option>Oposição</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-docka-400 uppercase mb-1.5 ml-1">Origem</label>
-                                <select value={newLead.source} onChange={(e) => setNewLead({ ...newLead, source: e.target.value })} className="w-full px-3 py-2 text-xs bg-white dark:bg-zinc-850 border border-docka-200 dark:border-zinc-700 rounded-lg outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20">
-                                    <option value="Site (Orgânico)">Site (Orgânico)</option>
-                                    <option value="Instagram Ads">Instagram Ads</option>
-                                    <option value="Google Ads">Google Ads</option>
-                                    <option value="Indicação">Indicação</option>
-                                </select>
+                                )}
                             </div>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <div>
-                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Telefone / WhatsApp</label>
-                            <input value={newLead.contactPhone} onChange={(e) => setNewLead({ ...newLead, contactPhone: maskPhone(e.target.value) })} className="w-full px-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-semibold outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 text-docka-900 dark:text-zinc-100 shadow-sm" placeholder="(00) 00000-0000" />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-2">Valor Estimado</label>
-                            <div className="relative">
-                                <DollarSign size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-emerald-500" />
-                                <input value={newLead.value} onChange={(e) => setNewLead({ ...newLead, value: maskCurrency(e.target.value) })} className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-bold text-emerald-600 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 shadow-sm" placeholder="R$ 0,00" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* MODAL: DEAL DETAILS */}
-            <DealDetailsModal
-                isOpen={isDealDetailsModalOpen}
-                onClose={() => setIsDealDetailsModalOpen(false)}
-                deal={selectedCard}
-                onConvertSuccess={fetchDeals}
-                organization={organization}
+                    );
+                })}
+            </div>
+            
+            <AsteryskoNewLeadModal 
+                isOpen={isLeadModalOpen}
+                onClose={() => setIsLeadModalOpen(false)}
+                onSuccess={() => {
+                    setIsLeadModalOpen(false);
+                    fetchDeals();
+                }}
+                organizationId={organization?.id}
             />
-        </DashboardPage>
+
+            <AsteryskoDealDetailsModal
+                isOpen={!!selectedCard}
+                onClose={() => setSelectedCard(null)}
+                card={selectedCard}
+            />
+        </div>
     );
 };
 

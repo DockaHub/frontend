@@ -23,7 +23,7 @@ import {
   Building2
 } from 'lucide-react';
 import { ViewState, Organization, User } from '../types';
-import DockaLogo from './common/DockaLogo';
+import ManySpaceLogo from './common/ManySpaceLogo';
 import Tooltip from './common/Tooltip';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useSidebarNavigation } from '../hooks/useSidebarNavigation';
@@ -96,7 +96,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const isDocka = currentOrg.slug === 'docka';
+  const isManySpace = currentOrg.slug === 'manyspace';
 
   return (
     <>
@@ -108,7 +108,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* 1. Header: Brand Identity & Toggle */}
         <div className={`px-4 mb-4 mt-4 flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
           <div className={`${isCollapsed ? '' : 'ml-1'}`}>
-            <DockaLogo variant={isCollapsed ? 'icon' : 'full'} className={`${isCollapsed ? 'h-8 w-8' : 'h-6'} text-docka-900 dark:text-zinc-100`} />
+            <ManySpaceLogo variant={isCollapsed ? 'icon' : 'full'} className={`${isCollapsed ? 'h-8 w-8' : 'h-6'} text-black dark:text-zinc-100`} />
           </div>
 
           {/* Collapse Toggle Button */}
@@ -188,7 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-100/50 dark:hover:bg-zinc-800/50 hover:text-docka-900 dark:hover:text-zinc-200 border border-transparent'
                     } ${isCollapsed ? 'justify-center' : ''}`}
                 >
-                  <Icon size={20} className={`shrink-0 transition-colors ${isActive ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-500 dark:text-zinc-500 group-hover:text-docka-700 dark:group-hover:text-zinc-300'} ${isDocka && isActive ? 'text-docka-900 dark:text-zinc-100' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
+                  <Icon size={20} className={`shrink-0 transition-colors ${isActive ? 'text-docka-900 dark:text-zinc-100' : 'text-docka-500 dark:text-zinc-500 group-hover:text-docka-700 dark:group-hover:text-zinc-300'} ${isManySpace && isActive ? 'text-docka-900 dark:text-zinc-100' : ''}`} strokeWidth={isActive ? 2.5 : 2} />
                   {!isCollapsed && (
                     <span className="ml-3 text-sm whitespace-nowrap transition-all duration-200">
                       {item.label}

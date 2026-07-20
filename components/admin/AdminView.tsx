@@ -118,7 +118,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onSelectOrg }) => {
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-docka-900">Admin Console</h1>
-            <p className="text-sm text-docka-500 mt-1">Gerenciamento global da Suíte Docka Workspace.</p>
+            <p className="text-sm text-docka-500 mt-1">Gerenciamento global da Suíte ManySpace.</p>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right hidden md:block">
@@ -222,7 +222,7 @@ const AdminView: React.FC<AdminViewProps> = ({ onSelectOrg }) => {
             <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Building2 size={40} className="text-indigo-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Bem-vindo ao Docka Hub!</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Bem-vindo ao ManySpace!</h2>
             <p className="text-gray-500 max-w-md mx-auto mb-8">
               Para começar a gerenciar domínios e e-mails, você precisa criar sua primeira organização.
             </p>

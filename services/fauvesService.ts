@@ -589,7 +589,7 @@ export const fauvesService = {
 
     getUserDetailed: async (id: string) => {
         try {
-            // Chamada direta para o backend local (Docka Hub), ignorando o proxy da Fauves
+            // Chamada direta para o backend local (ManySpace), ignorando o proxy da Fauves
             const response = await api.get(`users/${id}/detailed`);
             return response.data.user || response.data;
         } catch (error) {

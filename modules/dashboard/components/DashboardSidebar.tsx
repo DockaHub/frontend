@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { Organization, User } from '../../../types';
 import Modal from '../../../components/common/Modal';
-import DockaLogo from '../../../components/common/DockaLogo';
+import ManySpaceLogo from '../../../components/common/ManySpaceLogo';
 import Tooltip from '../../../components/common/Tooltip';
 import { useSidebarNavigation } from '../../../hooks/useSidebarNavigation';
 
@@ -70,12 +70,12 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     if (!currentOrg) return null;
 
     return (
-        <div className={`flex flex-col bg-docka-50 dark:bg-zinc-900 pt-4 h-full border-r border-docka-200/50 dark:border-zinc-800 shrink-0 transition-all duration-300 ease-in-out relative group/sidebar ${isCollapsed ? 'w-[60px]' : 'w-[260px]'} ${className}`}>
+        <div className={`flex flex-col bg-white dark:bg-zinc-950 pt-[15px] pb-[15px] h-full border-r border-[#e5e5e5] dark:border-zinc-800 shrink-0 transition-all duration-300 ease-in-out relative group/sidebar ${isCollapsed ? 'w-[68px]' : 'w-[180px]'} ${className}`}>
 
             {/* Header / Toggle */}
             <div className={`px-4 mb-4 flex items-center ${isCollapsed ? 'justify-center flex-col gap-4' : 'justify-between'}`}>
                 <div className={`${isCollapsed ? '' : 'ml-1'}`}>
-                    <DockaLogo variant={isCollapsed ? 'icon' : 'full'} className={`${isCollapsed ? 'h-8 w-8' : 'h-6'} text-docka-900 dark:text-zinc-100`} />
+                    <ManySpaceLogo variant={isCollapsed ? 'icon' : 'full'} className={`${isCollapsed ? 'h-8 w-8' : 'h-6'} text-black dark:text-white`} />
                 </div>
 
                 {/* Mobile Close Button */}
@@ -297,7 +297,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                         <div>
                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Slug (Domínio)</label>
                             <div className="flex items-center">
-                                <span className="bg-docka-50 dark:bg-zinc-900 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs py-2 px-2 rounded-l-lg">docka.io/</span>
+                                <span className="bg-docka-50 dark:bg-zinc-900 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs py-2 px-2 rounded-l-lg">manyspace.io/</span>
                                 <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100" placeholder="acme" />
                             </div>
                         </div>
@@ -457,7 +457,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                         <div>
                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Slug (Domínio)</label>
                             <div className="flex items-center">
-                                <span className="bg-docka-50 dark:bg-zinc-900 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs py-2 px-2 rounded-l-lg">docka.io/</span>
+                                <span className="bg-docka-50 dark:bg-zinc-900 border border-r-0 border-docka-200 dark:border-zinc-700 text-docka-500 dark:text-zinc-500 text-xs py-2 px-2 rounded-l-lg">manyspace.io/</span>
                                 <input className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-r-lg text-sm outline-none focus:ring-2 focus:ring-docka-100 dark:focus:ring-zinc-700 text-docka-900 dark:text-zinc-100" placeholder="acme" />
                             </div>
                         </div>

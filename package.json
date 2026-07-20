@@ -1,5 +1,5 @@
 {
-  "name": "docka-workspace",
+  "name": "manyspace-workspace",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -42,8 +42,8 @@
     "wait-on": "^9.0.4"
   },
   "build": {
-    "appId": "com.dockahub.workspace",
-    "productName": "Docka Hub",
+    "appId": "com.manyspace.workspace",
+    "productName": "ManySpace",
     "directories": {
       "output": "dist-electron"
     },
