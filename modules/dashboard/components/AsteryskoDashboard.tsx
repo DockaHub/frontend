@@ -64,11 +64,11 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
             return <AsteryskoDocumentsView />;
         case 'overview':
         case 'home':
-            return <AsteryskoHomeView userName="Levy" />;
+            return <AsteryskoHomeView userName={user.name ? user.name.split(' ')[0] : 'Usuário'} />;
         default:
             return (
                 <div className="h-full bg-white dark:bg-zinc-950 animate-in fade-in duration-300">
-                    <AsteryskoHomeView userName="Levy" />
+                    <AsteryskoHomeView userName={user.name ? user.name.split(' ')[0] : 'Usuário'} />
                 </div>
             );
     }

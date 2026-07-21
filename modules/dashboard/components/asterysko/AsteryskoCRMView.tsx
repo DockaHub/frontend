@@ -224,8 +224,12 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
             <AsteryskoDealDetailsModal
                 isOpen={!!selectedCard}
-                onClose={() => setSelectedCard(null)}
+                onClose={() => {
+                    setSelectedCard(null);
+                    fetchDeals();
+                }}
                 card={selectedCard}
+                onUpdate={fetchDeals}
             />
         </div>
     );

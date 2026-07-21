@@ -111,11 +111,19 @@ const AsteryskoResearchView: React.FC = () => {
 
     return (
         <div className="bg-white dark:bg-zinc-950 min-h-full font-sans relative flex flex-col z-0 overflow-x-hidden">
+            <style>{`
+                .grid-bg-overlay {
+                    background-image: linear-gradient(to right, #f0f0f0 1px, transparent 1px), linear-gradient(to bottom, #f0f0f0 1px, transparent 1px);
+                }
+                .dark .grid-bg-overlay {
+                    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+                }
+            `}</style>
+
             {/* Grid Background */}
             <div 
-                className="absolute inset-0 pointer-events-none z-[-1]" 
+                className="absolute inset-0 pointer-events-none z-[-1] grid-bg-overlay" 
                 style={{
-                    backgroundImage: 'linear-gradient(to right, #f0f0f0 1px, transparent 1px), linear-gradient(to bottom, #f0f0f0 1px, transparent 1px)',
                     backgroundSize: '100px 100px',
                     opacity: 0.5
                 }}

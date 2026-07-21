@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Loader2 } from 'lucide-react';
+import { Plus, MoreVertical, Loader2, X, User, Mail, Phone, MapPin, Calendar, FileText } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewProcessModal from './AsteryskoNewProcessModal';
@@ -10,10 +10,23 @@ interface Process {
     status: string;
     brand?: {
         name: string;
+        logoUrl?: string;
         nclClasses?: string[];
         client?: {
+            id: string;
+            type: string;
+            cpfCnpj: string;
+            rg?: string;
+            address: string;
+            city: string;
+            state: string;
+            postalCode: string;
+            createdAt?: string;
             user?: {
                 name: string;
+                email: string;
+                phone: string;
+                avatar?: string;
             }
         }
     };
@@ -23,10 +36,60 @@ interface Props {
     organization?: Organization;
 }
 
+const getStatusLabelAndColor = (status: string) => {
+    const st = status?.toUpperCase() || '';
+    switch (st) {
+        case 'NEW':
+        case 'NOVO':
+            return { label: 'Novo', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' };
+        case 'WAITING_PAYMENT':
+        case 'AGUARDANDO_PAGAMENTO':
+            return { label: 'Aguardando Pagamento', color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' };
+        case 'PAID':
+        case 'PAGO':
+            return { label: 'Pago', color: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' };
+        case 'FILED':
+        case 'PROTOCOLADO':
+            return { label: 'Protocolado (RPI)', color: 'bg-cyan-100 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400' };
+        case 'EXAMINATION':
+        case 'EXAME':
+            return { label: 'Exame de Mérito', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400' };
+        case 'GRANTED':
+        case 'CONCEDIDO':
+        case 'DEFERIDO':
+            return { label: 'Deferido', color: 'bg-emerald-100 dark:bg-emerald-900/20 text-green-750 dark:text-green-400' };
+        case 'OPPOSITION':
+        case 'OPOSICAO':
+        case 'OPOSIÇÃO':
+            return { label: 'Oposição / Exigência', color: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400' };
+        case 'ARCHIVED':
+        case 'ARQUIVADO':
+            return { label: 'Arquivado', color: 'bg-zinc-150 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400' };
+        default:
+            const l = status?.toLowerCase() || '';
+            if (l === 'leads') return { label: 'Novo Lead', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' };
+            if (l === 'preparation') return { label: 'Preparação', color: 'bg-cyan-100 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400' };
+            if (l === 'viability') return { label: 'Viabilidade', color: 'bg-indigo-100 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400' };
+            if (l === 'contract') return { label: 'Contrato', color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' };
+            if (l === 'service_payment') return { label: 'Pagamento Serviço', color: 'bg-emerald-100 dark:bg-emerald-900/20 text-green-750 dark:text-green-400' };
+            if (l === 'documentation') return { label: 'Procuração/Docs', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400' };
+            if (l === 'federal_fee') return { label: 'Taxa Federal (GRU)', color: 'bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400' };
+            if (l === 'ready_to_file') return { label: 'A Protocolar', color: 'bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400' };
+            if (l === 'filed') return { label: 'Protocolado (RPI)', color: 'bg-cyan-100 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-400' };
+            if (l === 'examination') return { label: 'Exame de Mérito', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400' };
+            if (l === 'opposition') return { label: 'Oposição / Exigência', color: 'bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400' };
+            if (l === 'granted') return { label: 'Deferido', color: 'bg-emerald-100 dark:bg-emerald-900/20 text-green-750 dark:text-green-400' };
+            if (l === 'won') return { label: 'Concluído', color: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' };
+            
+            return { label: status, color: 'bg-zinc-100 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300' };
+    }
+};
+
 const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
     const [processes, setProcesses] = useState<Process[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedClient, setSelectedClient] = useState<any>(null);
 
     const fetchProcesses = async () => {
         try {
@@ -96,21 +159,23 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                             const brandName = process.brand?.name || 'Sem Marca';
                             const clientName = process.brand?.client?.user?.name || 'N/A';
                             const nclClass = process.brand?.nclClasses?.[0] ? `NCL ${process.brand.nclClasses[0]}` : '-';
-                            const status = process.status || 'N/A';
-
-                            // Format status for pill color mapping (optional fallback to standard color)
-                            let statusColor = 'bg-[#fff8eb] dark:bg-amber-900/20 text-[#c07f00] dark:text-amber-400';
-                            if (status.includes('Concedido') || status === 'GRANTED' || status === 'PAID') {
-                                statusColor = 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400';
-                            } else if (status === 'NEW' || status === 'PROTOCOL') {
-                                statusColor = 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400';
-                            }
+                            const statusInfo = getStatusLabelAndColor(process.status);
 
                             return (
                                 <div key={process.id} className="grid grid-cols-12 px-10 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors items-center relative group">
                                     
                                     <div className="col-span-3 flex items-center gap-3 pr-4">
-                                        <div className="w-8 h-8 rounded-lg bg-[#e5e5e5] dark:bg-zinc-800 shrink-0" />
+                                        {process.brand?.logoUrl ? (
+                                            <img 
+                                                src={process.brand.logoUrl} 
+                                                alt={brandName}
+                                                className="w-8 h-8 rounded-lg object-contain border border-zinc-200 dark:border-zinc-800 shrink-0"
+                                            />
+                                        ) : (
+                                            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 select-none">
+                                                {brandName.substring(0, 1).toUpperCase()}
+                                            </div>
+                                        )}
                                         <span className="text-[13px] font-medium text-black dark:text-white truncate">
                                             {brandName}
                                         </span>
@@ -120,7 +185,12 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                         {process.inpiProcessNumber || 'N/A'}
                                     </div>
                                     
-                                    <div className="col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 truncate">
+                                    <div 
+                                        onClick={() => process.brand?.client && setSelectedClient(process.brand.client)}
+                                        className={`col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 truncate ${
+                                            process.brand?.client ? 'cursor-pointer hover:underline hover:text-[#0412dd] dark:hover:text-blue-400 transition-colors' : ''
+                                        }`}
+                                    >
                                         {clientName}
                                     </div>
                                     
@@ -129,8 +199,8 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                     </div>
                                     
                                     <div className="col-span-2 pl-4 pr-8">
-                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${statusColor}`}>
-                                            {status}
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${statusInfo.color}`}>
+                                            {statusInfo.label}
                                         </span>
                                     </div>
                                     
@@ -155,6 +225,135 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                     </div>
                 )}
             </div>
+
+            {/* Sliding Side Panel (Drawer) for Client Details */}
+            {selectedClient && (
+                <>
+                    {/* Backdrop */}
+                    <div 
+                        className="fixed inset-0 bg-black/40 z-40 backdrop-blur-xs transition-opacity duration-300 animate-in fade-in" 
+                        onClick={() => setSelectedClient(null)} 
+                    />
+                    
+                    {/* Drawer container */}
+                    <div className="fixed inset-y-0 right-0 w-[450px] bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl z-50 p-8 flex flex-col justify-between animate-in slide-in-from-right duration-300">
+                        <div className="flex flex-col gap-6 overflow-y-auto flex-1 pr-2">
+                            {/* Drawer Header */}
+                            <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">
+                                <span className="font-season text-lg font-medium text-black dark:text-white">Perfil do Titular</span>
+                                <button 
+                                    onClick={() => setSelectedClient(null)}
+                                    className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 transition-colors"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+
+                            {/* Client Header Info */}
+                            <div className="flex items-center gap-4 py-2">
+                                {selectedClient.user?.avatar ? (
+                                    <img 
+                                        src={selectedClient.user.avatar} 
+                                        alt={selectedClient.user.name} 
+                                        className="w-14 h-14 rounded-full object-cover border border-zinc-200 dark:border-zinc-850"
+                                    />
+                                ) : (
+                                    <div className="w-14 h-14 rounded-full bg-[#0412dd]/10 dark:bg-[#3b48ff]/10 border border-[#0412dd]/20 dark:border-[#3b48ff]/20 flex items-center justify-center text-xl font-bold text-[#0412dd] dark:text-[#3b48ff] select-none">
+                                        {(selectedClient.user?.name || 'C').substring(0, 1).toUpperCase()}
+                                    </div>
+                                )}
+                                <div className="min-w-0">
+                                    <h4 className="font-bold text-base text-zinc-900 dark:text-white truncate">
+                                        {selectedClient.user?.name || 'Sem nome'}
+                                    </h4>
+                                    <span className="inline-block mt-1 text-[10px] font-bold uppercase tracking-wider bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 px-2 py-0.5 rounded">
+                                        {selectedClient.type === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Details Grid */}
+                            <div className="flex flex-col gap-5 mt-4">
+                                {/* Contato */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Contato</span>
+                                    
+                                    <div className="flex items-center gap-3 text-xs text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800/50">
+                                        <Mail size={14} className="text-zinc-400 shrink-0" />
+                                        <span className="truncate">{selectedClient.user?.email || 'Nenhum e-mail cadastrado'}</span>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 text-xs text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800/50">
+                                        <Phone size={14} className="text-zinc-400 shrink-0" />
+                                        <span>{selectedClient.user?.phone || 'Nenhum telefone cadastrado'}</span>
+                                    </div>
+                                </div>
+
+                                {/* Dados Cadastrais */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Documentação</span>
+                                    
+                                    <div className="flex items-center gap-3 text-xs text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800/50">
+                                        <FileText size={14} className="text-zinc-400 shrink-0" />
+                                        <div>
+                                            <span className="font-semibold">{selectedClient.type === 'PJ' ? 'CNPJ' : 'CPF'}: </span>
+                                            <span>{selectedClient.cpfCnpj || 'Não preenchido'}</span>
+                                        </div>
+                                    </div>
+
+                                    {selectedClient.rg && (
+                                        <div className="flex items-center gap-3 text-xs text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800/50">
+                                            <FileText size={14} className="text-zinc-400 shrink-0" />
+                                            <div>
+                                                <span className="font-semibold">RG: </span>
+                                                <span>{selectedClient.rg}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Endereço */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Endereço</span>
+                                    
+                                    <div className="flex items-start gap-3 text-xs text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800/50">
+                                        <MapPin size={14} className="text-zinc-400 shrink-0 mt-0.5" />
+                                        <div className="flex flex-col gap-0.5 leading-relaxed">
+                                            <span>{selectedClient.address || 'Nenhum endereço cadastrado'}</span>
+                                            {(selectedClient.city || selectedClient.state) && (
+                                                <span>{selectedClient.city} - {selectedClient.state}</span>
+                                            )}
+                                            {selectedClient.postalCode && (
+                                                <span className="text-[10px] font-semibold text-zinc-400 mt-1">CEP: {selectedClient.postalCode}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Data de Criação */}
+                                <div className="flex flex-col gap-2">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Cadastro</span>
+                                    
+                                    <div className="flex items-center gap-3 text-xs text-zinc-700 dark:text-zinc-300 bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-zinc-100 dark:border-zinc-800/50">
+                                        <Calendar size={14} className="text-zinc-400 shrink-0" />
+                                        <span>Cliente ativo desde: {selectedClient.createdAt ? new Date(selectedClient.createdAt).toLocaleDateString('pt-BR') : 'Sem data'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Drawer Footer */}
+                        <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800 flex justify-end gap-3 mt-6">
+                            <button 
+                                onClick={() => setSelectedClient(null)}
+                                className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 text-zinc-650 dark:text-zinc-300 font-sans text-xs font-semibold rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 };
