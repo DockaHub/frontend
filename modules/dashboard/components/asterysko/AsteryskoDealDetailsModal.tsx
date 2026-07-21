@@ -842,7 +842,14 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                             <div className="flex items-center gap-2 shrink-0">
                                 <a 
-                                    href={previewFile.url} 
+                                    href={(() => {
+                                        const rawUrl = previewFile.url || '';
+                                        if (!rawUrl) return '#';
+                                        if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) return rawUrl;
+                                        if (rawUrl.startsWith('/sign/') || rawUrl.startsWith('/portal/')) return rawUrl;
+                                        const getBackendUrl = () => window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://backend-production-0647.up.railway.app';
+                                        return `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+                                    })()}
                                     target="_blank" 
                                     rel="noreferrer"
                                     className="flex items-center gap-1.5 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
@@ -861,6 +868,30 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         <div className="flex-1 bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
                             {(() => {
                                 const rawUrl = previewFile.url || '';
+                                const isSignPage = rawUrl.startsWith('/sign/') || rawUrl.startsWith('/portal/');
+                                
+                                if (isSignPage) {
+                                    return (
+                                        <div className="flex flex-col items-center justify-center p-10 text-center text-zinc-500 max-w-md">
+                                            <div className="w-16 h-16 rounded-2xl bg-[#0412dd]/10 text-[#0412dd] flex items-center justify-center mb-4">
+                                                <FileText size={32} />
+                                            </div>
+                                            <h4 className="font-bold text-base text-black dark:text-white mb-2">Página de Assinatura Digital</h4>
+                                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
+                                                Este item refere-se ao link de assinatura digital do contrato gerado para o cliente. Clique no botão abaixo para abrir a página de assinatura em uma nova aba.
+                                            </p>
+                                            <a 
+                                                href={rawUrl} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="bg-[#0412dd] text-white text-xs font-bold px-6 py-3 rounded-xl hover:bg-blue-800 transition-all flex items-center gap-2 shadow-md"
+                                            >
+                                                <ExternalLink size={16} /> Abrir Página de Assinatura
+                                            </a>
+                                        </div>
+                                    );
+                                }
+
                                 const isAbsolute = rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:') || rawUrl.startsWith('blob:');
                                 const getBackendUrl = () => window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://backend-production-0647.up.railway.app';
                                 const resolvedUrl = isAbsolute ? rawUrl : (rawUrl && rawUrl !== '/' ? `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}` : '');
@@ -872,7 +903,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                             <h4 className="font-bold text-sm text-black dark:text-white mb-1">Documento Não Armazenado Localmente</h4>
                                             <p className="text-xs max-w-sm mb-4">Este documento está catalogado no processo, mas seu arquivo físico ainda não foi enviado para pré-visualização direta.</p>
                                             <label className="bg-[#0412dd] text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer hover:bg-blue-800 transition-colors">
-                                                Fazer Upload do Arquivo
+                                                Fazer Upload do Arquivo Físico
                                                 <input type="file" className="hidden" onChange={(e) => {
                                                     const file = e.target.files?.[0];
                                                     if (file) {
