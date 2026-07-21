@@ -610,10 +610,15 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             setSendingTest(true);
             try {
                 await api.post('/whatsapp/send-test', { number: testNumber });
-                addToast({ type: 'success', title: 'Mensagem Enviada', message: 'Verifique seu WhatsApp!' });
+                addToast({ type: 'success', title: 'Mensagem Enviada', message: 'Verifique seu WhatsApp! A mensagem de teste foi entregue.' });
             } catch (err: any) {
                 console.error('Erro ao enviar teste WhatsApp:', err);
-                addToast({ type: 'error', title: 'Erro ao Enviar', message: err.response?.data?.error || 'Falha ao enviar mensagem de teste.' });
+                const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Falha ao enviar mensagem de teste.';
+                addToast({ type: 'error', title: 'Erro de Envio WhatsApp', message: errorMsg });
+                
+                // Ao ocorrer erro de envio por desconexão/sessão expirada, reseta a UI imediatamente para permitir gerar novo QR Code
+                setStatus('disconnected');
+                setQrCode(null);
             } finally {
                 setSendingTest(false);
             }
