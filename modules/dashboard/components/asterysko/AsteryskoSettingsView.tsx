@@ -169,6 +169,679 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         }
     };
 
+// Standalone NotificationTemplatesManager component outside parent render scope
+const NotificationTemplatesManager: React.FC = () => {
+    const { addToast } = useToast();
+    const [templates, setTemplates] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [activeChannel, setActiveChannel] = useState<'WHATSAPP' | 'EMAIL' | 'PUSH'>('WHATSAPP');
+    
+    // Estado para Edição
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editContent, setEditContent] = useState('');
+    const [editSubject, setEditSubject] = useState('');
+    const [editStageSlug, setEditStageSlug] = useState('');
+    const [saving, setSaving] = useState(false);
+    const [uploadingSlug, setUploadingSlug] = useState<string | null>(null);
+
+    // Estado para Criação
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [newName, setNewName] = useState('');
+    const [newChannel, setNewChannel] = useState<'WHATSAPP' | 'EMAIL' | 'PUSH'>('WHATSAPP');
+    const [newStageSlug, setNewStageSlug] = useState('new-dispatch');
+    const [newSubject, setNewSubject] = useState('');
+    const [newContent, setNewContent] = useState('');
+    const [creating, setCreating] = useState(false);
+
+    // Estado para Teste de Envio
+    const [testingTemplateSlug, setTestingTemplateSlug] = useState<string | null>(null);
+    const [testPhoneNumber, setTestPhoneNumber] = useState('');
+    const [sendingTemplateTest, setSendingTemplateTest] = useState(false);
+
+    const STAGE_OPTIONS = [
+        { slug: 'lead-created', name: '🚀 Lead Criado / Boas-Vindas', badgeColor: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' },
+        { slug: 'contract-pending', name: '✍️ Contrato Pendente de Assinatura', badgeColor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' },
+        { slug: 'contract-signed', name: '✅ Contrato Assinado', badgeColor: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
+        { slug: 'protocolar', name: '🏛️ Protocolar Processo no INPI', badgeColor: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' },
+        { slug: 'new-dispatch', name: '📑 Movimentação & Despacho RPI', badgeColor: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
+        { slug: 'invoice-pending', name: '💳 Fatura de Serviço Gerada', badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' },
+        { slug: 'payment-success', name: '💰 Confirmação de Pagamento', badgeColor: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
+        { slug: 'registro-vigor', name: '🏆 Registro de Marca Concedido', badgeColor: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+        { slug: 'custom', name: '⚡ Notificação Customizada', badgeColor: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300' }
+    ];
+
+    const VARIABLE_PILLS = [
+        { key: 'nomeCliente', label: 'Nome do Cliente', example: 'João Silva' },
+        { key: 'nomeMarca', label: 'Nome da Marca', example: 'Asterysko' },
+        { key: 'codigoProcesso', label: 'Código do Processo (AST-XXXXX)', example: 'AST-12345' },
+        { key: 'detalhes', label: 'Resumo / Detalhes', example: 'Despacho publicado na RPI' },
+        { key: 'linkPortal', label: 'Link do Portal', example: 'https://cliente.asterysko.com' },
+        { key: 'valorFatura', label: 'Valor da Fatura', example: 'R$ 1.500,00' },
+        { key: 'vencimentoFatura', label: 'Vencimento', example: '30/06/2026' }
+    ];
+
+    const fetchTemplates = async () => {
+        try {
+            setLoading(true);
+            const res = await api.get('/whatsapp/templates');
+            setTemplates(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            console.error('Erro ao buscar templates:', err);
+            setTemplates([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTemplates();
+    }, []);
+
+    const handleToggleActive = async (id: string, currentStatus: boolean) => {
+        try {
+            await api.patch(`/whatsapp/templates/${id}/toggle`);
+            addToast({ 
+                type: 'success', 
+                title: currentStatus ? 'Notificação Desativada' : 'Notificação Ativada', 
+                message: `O modelo foi ${currentStatus ? 'desativado' : 'ativado'} com sucesso.` 
+            });
+            fetchTemplates();
+        } catch (err) {
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao alterar status da notificação.' });
+        }
+    };
+
+    const handleDeleteTemplate = async (id: string, name: string) => {
+        if (!window.confirm(`Deseja realmente excluir permanentemente a notificação "${name}"?`)) return;
+        try {
+            await api.delete(`/whatsapp/templates/${id}`);
+            addToast({ type: 'success', title: 'Excluído', message: 'Modelo de notificação excluído com sucesso.' });
+            fetchTemplates();
+        } catch (err) {
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao excluir modelo.' });
+        }
+    };
+
+    const handleSaveEdit = async (tpl: any) => {
+        setSaving(true);
+        try {
+            await api.put(`/whatsapp/templates/${tpl.slug}`, {
+                name: editName || tpl.name,
+                content: editContent,
+                channel: activeChannel,
+                stageSlug: editStageSlug || tpl.stageSlug,
+                emailSubject: editSubject
+            });
+            addToast({ type: 'success', title: 'Salvo', message: 'Configurações de notificação salvas com sucesso.' });
+            setEditingId(null);
+            fetchTemplates();
+        } catch (err) {
+            addToast({ type: 'error', title: 'Erro', message: 'Falha ao salvar notificação.' });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleCreateTemplate = async () => {
+        if (!newName || !newContent) {
+            addToast({ type: 'error', title: 'Campos vazios', message: 'Preencha o nome e o conteúdo da mensagem.' });
+            return;
+        }
+        setCreating(true);
+        try {
+            await api.post('/whatsapp/templates', {
+                name: newName,
+                channel: newChannel,
+                stageSlug: newStageSlug,
+                emailSubject: newSubject,
+                content: newContent
+            });
+            addToast({ type: 'success', title: 'Criado', message: 'Nova notificação criada com sucesso.' });
+            setIsCreateModalOpen(false);
+            setNewName('');
+            setNewContent('');
+            setNewSubject('');
+            fetchTemplates();
+        } catch (err: any) {
+            addToast({ type: 'error', title: 'Erro de Criação', message: err.response?.data?.error || 'Falha ao criar nova notificação.' });
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, slug: string) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        setUploadingSlug(slug);
+
+        try {
+            await api.post(`/whatsapp/templates/${slug}/image`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            addToast({ type: 'success', title: 'Imagem Salva', message: 'Imagem comemorativa anexada com sucesso.' });
+            fetchTemplates();
+        } catch (err) {
+            addToast({ type: 'error', title: 'Erro no Upload', message: 'Não foi possível anexar a imagem.' });
+        } finally {
+            setUploadingSlug(null);
+        }
+    };
+
+    const handleRemoveImage = async (slug: string) => {
+        if (!window.confirm('Deseja realmente remover a imagem anexada?')) return;
+        setUploadingSlug(slug);
+        try {
+            await api.delete(`/whatsapp/templates/${slug}/image`);
+            addToast({ type: 'success', title: 'Removido', message: 'Imagem removida com sucesso.' });
+            fetchTemplates();
+        } catch (err) {
+            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível remover a imagem.' });
+        } finally {
+            setUploadingSlug(null);
+        }
+    };
+
+    const handleSendTemplateTest = async () => {
+        if (!testPhoneNumber) {
+            addToast({ type: 'error', title: 'Número vazio', message: 'Digite um número de telefone com DDD (ex: 5511999999999).' });
+            return;
+        }
+        if (!testingTemplateSlug) return;
+
+        setSendingTemplateTest(true);
+        try {
+            const res = await api.post(`/whatsapp/templates/${testingTemplateSlug}/send-test`, { number: testPhoneNumber });
+            addToast({ type: 'success', title: 'Teste Enviado', message: res.data.message || 'Verifique seu WhatsApp!' });
+            setTestingTemplateSlug(null);
+            setTestPhoneNumber('');
+        } catch (err: any) {
+            addToast({ type: 'error', title: 'Falha no Envio', message: err.response?.data?.error || 'Erro ao disparar teste.' });
+        } finally {
+            setSendingTemplateTest(false);
+        }
+    };
+
+    const channelTemplates = (Array.isArray(templates) ? templates : []).filter(t => (t.channel || 'WHATSAPP') === activeChannel);
+
+    return (
+        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-8">
+            <div className="p-6 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/20 dark:bg-zinc-800/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                        <MessageSquare size={16} className="text-emerald-500" /> Automação de Mensagens & Notificações
+                    </h3>
+                    <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">
+                        Configure e personalize as mensagens automáticas disparadas a cada etapa do processo.
+                    </p>
+                </div>
+
+                <button
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+                >
+                    <Plus size={14} /> Nova Notificação
+                </button>
+            </div>
+
+            <div className="flex border-b border-docka-100 dark:border-zinc-800 bg-docka-50/50 dark:bg-zinc-900/50 px-6 pt-3 gap-2 overflow-x-auto">
+                <button
+                    onClick={() => setActiveChannel('WHATSAPP')}
+                    className={`px-4 py-2.5 rounded-t-xl font-bold text-xs flex items-center gap-2 border-b-2 transition-all ${
+                        activeChannel === 'WHATSAPP' 
+                            ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-white dark:bg-zinc-900 shadow-sm' 
+                            : 'border-transparent text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200'
+                    }`}
+                >
+                    <MessageSquare size={14} className="text-emerald-500" /> 📱 WhatsApp
+                    <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                        {(Array.isArray(templates) ? templates : []).filter(t => (t.channel || 'WHATSAPP') === 'WHATSAPP').length}
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => setActiveChannel('EMAIL')}
+                    className={`px-4 py-2.5 rounded-t-xl font-bold text-xs flex items-center gap-2 border-b-2 transition-all ${
+                        activeChannel === 'EMAIL' 
+                            ? 'border-blue-500 text-blue-600 dark:text-blue-400 bg-white dark:bg-zinc-900 shadow-sm' 
+                            : 'border-transparent text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200'
+                    }`}
+                >
+                    <Mail size={14} className="text-blue-500" /> ✉️ E-mail
+                    <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                        {(Array.isArray(templates) ? templates : []).filter(t => t.channel === 'EMAIL').length}
+                    </span>
+                </button>
+
+                <button
+                    onClick={() => setActiveChannel('PUSH')}
+                    className={`px-4 py-2.5 rounded-t-xl font-bold text-xs flex items-center gap-2 border-b-2 transition-all ${
+                        activeChannel === 'PUSH' 
+                            ? 'border-purple-500 text-purple-600 dark:text-purple-400 bg-white dark:bg-zinc-900 shadow-sm' 
+                            : 'border-transparent text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200'
+                    }`}
+                >
+                    <Bell size={14} className="text-purple-500" /> 🔔 Notificação Push (Portal)
+                    <span className="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                        {(Array.isArray(templates) ? templates : []).filter(t => t.channel === 'PUSH').length}
+                    </span>
+                </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+                {loading ? (
+                    <div className="py-12 text-center text-docka-400 text-xs italic flex items-center justify-center gap-2">
+                        <RefreshCw size={14} className="animate-spin" /> Carregando modelo de notificações...
+                    </div>
+                ) : channelTemplates.length === 0 ? (
+                    <div className="p-8 border-2 border-dashed border-docka-200 dark:border-zinc-800 rounded-xl text-center">
+                        <MessageSquare size={32} className="mx-auto mb-2 text-docka-300 dark:text-zinc-600" />
+                        <p className="text-sm font-bold text-docka-800 dark:text-zinc-200">Nenhuma notificação configurada para este canal</p>
+                        <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1 mb-4">Clique no botão abaixo para criar a primeira mensagem de disparo.</p>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                        >
+                            + Criar Notificação para {activeChannel}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {channelTemplates.map((tpl) => {
+                            const isEditing = editingId === tpl.id;
+                            const stageObj = STAGE_OPTIONS.find(s => s.slug === (tpl.stageSlug || tpl.slug)) || STAGE_OPTIONS.find(s => s.slug === 'custom');
+                            const metadata = (tpl.metadata as Record<string, any>) || {};
+
+                            return (
+                                <div 
+                                    key={tpl.id} 
+                                    className={`p-5 border rounded-2xl transition-all duration-300 shadow-sm ${
+                                        tpl.isActive 
+                                            ? 'bg-white dark:bg-zinc-900 border-docka-200 dark:border-zinc-800' 
+                                            : 'bg-zinc-50/60 dark:bg-zinc-900/40 border-zinc-200/60 dark:border-zinc-800/40 opacity-75'
+                                    }`}
+                                >
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => handleToggleActive(tpl.id, tpl.isActive)}
+                                                className={`w-10 h-5 rounded-full transition-colors relative flex items-center p-0.5 shrink-0 ${
+                                                    tpl.isActive ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                                                }`}
+                                                title={tpl.isActive ? 'Clique para desativar esta notificação' : 'Clique para ativar esta notificação'}
+                                            >
+                                                <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${
+                                                    tpl.isActive ? 'translate-x-5' : 'translate-x-0'
+                                                }`} />
+                                            </button>
+
+                                            <div>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100">{tpl.name}</h4>
+                                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${stageObj?.badgeColor}`}>
+                                                        {stageObj?.name}
+                                                    </span>
+                                                    {tpl.isActive ? (
+                                                        <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                                                            ATIVO
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-[9px] font-bold text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-200 dark:border-zinc-700">
+                                                            INATIVO
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="text-[11px] text-docka-400 font-mono mt-0.5">Identificador: {tpl.slug}</p>
+                                            </div>
+                                        </div>
+
+                                        {!isEditing ? (
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                {activeChannel === 'WHATSAPP' && (
+                                                    <button 
+                                                        onClick={() => setTestingTemplateSlug(tpl.slug)}
+                                                        className="px-2.5 py-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all flex items-center gap-1 text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-lg border border-emerald-100 dark:border-emerald-900/30 shadow-sm"
+                                                        title="Testar Envio desta Mensagem"
+                                                    >
+                                                        <Send size={12} /> Testar
+                                                    </button>
+                                                )}
+                                                <button 
+                                                    onClick={() => {
+                                                        setEditingId(tpl.id);
+                                                        setEditName(tpl.name);
+                                                        setEditContent(tpl.content);
+                                                        setEditSubject(tpl.emailSubject || '');
+                                                        setEditStageSlug(tpl.stageSlug || tpl.slug);
+                                                    }}
+                                                    className="p-1.5 text-docka-500 hover:text-docka-900 dark:hover:text-zinc-100 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                                                    title="Editar Notificação"
+                                                >
+                                                    <Edit2 size={14} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDeleteTemplate(tpl.id, tpl.name)}
+                                                    className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
+                                                    title="Excluir Notificação"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <button 
+                                                    onClick={() => setEditingId(null)}
+                                                    className="px-3 py-1.5 text-xs font-bold text-docka-500 hover:text-docka-900 transition-colors"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleSaveEdit(tpl)}
+                                                    disabled={saving}
+                                                    className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1 disabled:opacity-50"
+                                                >
+                                                    {saving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={12} />} Salvar
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isEditing ? (
+                                        <div className="space-y-4 pt-3 border-t border-docka-100 dark:border-zinc-800 animate-in fade-in duration-200">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Nome da Notificação</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={editName}
+                                                        onChange={(e) => setEditName(e.target.value)}
+                                                        className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Etapa de Disparo Automático</label>
+                                                    <select
+                                                        value={editStageSlug}
+                                                        onChange={(e) => setEditStageSlug(e.target.value)}
+                                                        className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                                    >
+                                                        {STAGE_OPTIONS.map(s => (
+                                                            <option key={s.slug} value={s.slug}>{s.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {activeChannel === 'EMAIL' && (
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Assunto do E-mail</label>
+                                                    <input 
+                                                        type="text" 
+                                                        placeholder="Ex: Atualização sobre o seu processo de marca {{nomeMarca}}"
+                                                        value={editSubject}
+                                                        onChange={(e) => setEditSubject(e.target.value)}
+                                                        className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs outline-none focus:ring-2 focus:ring-blue-500/20 font-medium"
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1.5">
+                                                    <label className="block text-[11px] font-bold text-docka-700 dark:text-zinc-400 uppercase">Mensagem / Corpo</label>
+                                                    <span className="text-[10px] text-docka-400 italic">Clique nas pílulas abaixo para inserir variáveis dinâmicas</span>
+                                                </div>
+
+                                                <textarea
+                                                    value={editContent}
+                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                    rows={5}
+                                                    className="w-full px-3.5 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono leading-relaxed"
+                                                    placeholder="Digite o texto da mensagem..."
+                                                />
+
+                                                <div className="mt-2.5 pt-2 border-t border-docka-100 dark:border-zinc-800/60">
+                                                    <p className="text-[10px] font-bold text-docka-500 dark:text-zinc-400 uppercase mb-1.5">Pílulas de Variáveis Rápidas:</p>
+                                                    <div className="flex flex-wrap gap-1.5">
+                                                        {VARIABLE_PILLS.map(v => (
+                                                            <button 
+                                                                key={v.key}
+                                                                type="button"
+                                                                onClick={() => setEditContent(prev => prev + `{{${v.key}}}`)}
+                                                                className="px-2 py-1 bg-emerald-50 dark:bg-emerald-950/40 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 rounded-lg hover:bg-emerald-100 transition-colors shadow-2xs flex items-center gap-1"
+                                                                title={`Exemplo: ${v.example}`}
+                                                            >
+                                                                + {`{{${v.key}}}`}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {activeChannel === 'WHATSAPP' && (
+                                                <div className="pt-3 border-t border-docka-100 dark:border-zinc-800 space-y-2">
+                                                    <label className="block text-[11px] font-bold text-docka-700 dark:text-zinc-400 uppercase">
+                                                        Imagem Anexa (Enviada antes da mensagem de texto)
+                                                    </label>
+                                                    
+                                                    {metadata.imageUrl ? (
+                                                        <div className="flex items-center gap-3 p-2 bg-docka-50 dark:bg-zinc-800 rounded-lg border border-docka-100 dark:border-zinc-800 max-w-md">
+                                                            <img 
+                                                                src={`${api.defaults.baseURL?.replace('/api', '') || ''}${metadata.imageUrl}`}
+                                                                alt="Preview" 
+                                                                className="w-12 h-12 object-cover rounded border border-docka-200 dark:border-zinc-700" 
+                                                            />
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="text-xs font-semibold text-docka-800 dark:text-zinc-200 truncate">
+                                                                    {metadata.imageName || 'imagem.jpg'}
+                                                                </p>
+                                                                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Imagem comemorativa ativa</p>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                disabled={uploadingSlug === tpl.slug}
+                                                                onClick={() => handleRemoveImage(tpl.slug)}
+                                                                className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors text-xs font-bold flex items-center gap-1"
+                                                            >
+                                                                <Trash2 size={12} /> Remover
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="file"
+                                                                id={`image-upload-${tpl.slug}`}
+                                                                className="hidden"
+                                                                accept="image/*"
+                                                                onChange={(e) => handleImageUpload(e, tpl.slug)}
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                disabled={uploadingSlug === tpl.slug}
+                                                                onClick={() => document.getElementById(`image-upload-${tpl.slug}`)?.click()}
+                                                                className="px-3 py-1.5 bg-docka-50 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 border border-docka-200 dark:border-zinc-700 rounded-lg text-xs font-bold hover:bg-docka-100 dark:hover:bg-zinc-700 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                                                            >
+                                                                {uploadingSlug === tpl.slug ? <RefreshCw size={12} className="animate-spin" /> : <Upload size={12} />}
+                                                                Anexar Imagem
+                                                            </button>
+                                                            <span className="text-[10px] text-docka-400 italic">PNG, JPG ou JPEG.</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {activeChannel === 'EMAIL' && tpl.emailSubject && (
+                                                <div className="px-3 py-1.5 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-100 dark:border-blue-900/30 text-xs font-semibold text-blue-900 dark:text-blue-300">
+                                                    <strong>Assunto:</strong> {tpl.emailSubject}
+                                                </div>
+                                            )}
+                                            <div className="bg-zinc-50 dark:bg-zinc-800/40 p-3.5 rounded-xl border border-docka-100/70 dark:border-zinc-800/70">
+                                                <p className="text-xs text-docka-800 dark:text-zinc-200 whitespace-pre-wrap font-sans leading-relaxed">
+                                                    {tpl.content || 'Mensagem ainda não configurada.'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Modal de Criar Nova Notificação */}
+            <Modal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                title="Criar Nova Notificação Automática"
+            >
+                <div className="space-y-4 py-2">
+                    <div>
+                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Nome da Notificação</label>
+                        <input 
+                            type="text"
+                            placeholder="Ex: Notificação de Protocolo Realizado"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 font-medium"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Canal de Disparo</label>
+                            <select
+                                value={newChannel}
+                                onChange={(e: any) => setNewChannel(e.target.value)}
+                                className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                                <option value="WHATSAPP">📱 WhatsApp</option>
+                                <option value="EMAIL">✉️ E-mail</option>
+                                <option value="PUSH">🔔 Push (Portal)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Etapa Vinculada</label>
+                            <select
+                                value={newStageSlug}
+                                onChange={(e) => setNewStageSlug(e.target.value)}
+                                className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20"
+                            >
+                                {STAGE_OPTIONS.map(s => (
+                                    <option key={s.slug} value={s.slug}>{s.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {newChannel === 'EMAIL' && (
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Assunto do E-mail</label>
+                            <input 
+                                type="text"
+                                placeholder="Ex: Atualização do seu processo {{codigoProcesso}}"
+                                value={newSubject}
+                                onChange={(e) => setNewSubject(e.target.value)}
+                                className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
+                            />
+                        </div>
+                    )}
+
+                    <div>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase">Mensagem</label>
+                            <span className="text-[10px] text-docka-400 italic">Pílulas rápidas:</span>
+                        </div>
+
+                        <textarea
+                            value={newContent}
+                            onChange={(e) => setNewContent(e.target.value)}
+                            rows={4}
+                            className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-emerald-500/20 font-mono"
+                            placeholder="Olá, {{nomeCliente}}! O seu processo {{codigoProcesso}} teve uma novidade..."
+                        />
+
+                        <div className="flex flex-wrap gap-1 mt-2">
+                            {VARIABLE_PILLS.map(v => (
+                                <button 
+                                    key={v.key}
+                                    type="button"
+                                    onClick={() => setNewContent(prev => prev + `{{${v.key}}}`)}
+                                    className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/30 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 rounded hover:bg-emerald-100 transition-colors"
+                                >
+                                    + {`{{${v.key}}}`}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-3">
+                        <button
+                            onClick={() => setIsCreateModalOpen(false)}
+                            className="px-4 py-2 text-xs font-bold text-docka-500 hover:text-docka-900 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleCreateTemplate}
+                            disabled={creating || !newName || !newContent}
+                            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                            {creating ? <RefreshCw size={12} className="animate-spin" /> : <Plus size={12} />}
+                            Criar Notificação
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal de Teste de Envio por Template */}
+            <Modal
+                isOpen={!!testingTemplateSlug}
+                onClose={() => { setTestingTemplateSlug(null); setTestPhoneNumber(''); }}
+                title={`Testar Envio da Mensagem`}
+            >
+                <div className="space-y-4 py-2">
+                    <p className="text-xs text-docka-500">
+                        Digite o número de telefone completo com DDD e código do país (ex: 5511999999999) para receber este disparo de teste.
+                    </p>
+                    <div className="space-y-1">
+                        <label className="block text-[10px] font-bold text-docka-500 uppercase">Número do WhatsApp</label>
+                        <input 
+                            type="text" 
+                            placeholder="5511999999999"
+                            value={testPhoneNumber}
+                            onChange={(e) => setTestPhoneNumber(e.target.value)}
+                            className="w-full px-4 py-2 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all"
+                        />
+                    </div>
+                    
+                    <div className="flex justify-end gap-2 pt-2">
+                        <button
+                            onClick={() => { setTestingTemplateSlug(null); setTestPhoneNumber(''); }}
+                            className="px-4 py-2 text-xs font-bold text-docka-500 hover:text-docka-900 transition-colors"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleSendTemplateTest}
+                            disabled={sendingTemplateTest || !testPhoneNumber}
+                            className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                            {sendingTemplateTest ? <RefreshCw size={12} className="animate-spin" /> : <Send size={12} />}
+                            Enviar Disparo de Teste
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        </div>
+    );
+};
+
 // Standalone WhatsAppCard component outside parent render scope
 const WhatsAppCard: React.FC = () => {
     const { addToast } = useToast();
@@ -496,7 +1169,7 @@ const WhatsAppCard: React.FC = () => {
                                 <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
                                     {loadingHistory ? (
                                         <div className="text-sm text-center text-docka-400 py-4">Carregando histórico...</div>
-                                    ) : inpiHistory.length === 0 ? (
+                                    ) : (!Array.isArray(inpiHistory) || inpiHistory.length === 0) ? (
                                         <div className="text-sm border-2 border-dashed border-docka-200 dark:border-zinc-800 p-6 rounded-xl text-center text-docka-500 dark:text-zinc-500 flex flex-col items-center">
                                             <Info size={20} className="mb-2 opacity-50" />
                                             Nenhum histórico de Revista do INPI encontrado. Faça seu primeiro Upload.
@@ -511,13 +1184,17 @@ const WhatsAppCard: React.FC = () => {
                                                         {log.status === 'COMPLETED' && <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
                                                         {log.status === 'FAILED' && <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold">Falhou</span>}
                                                     </span>
-                                                    <span className="text-xs text-docka-500 uppercase mt-1">Data da Edição: {new Date(log.rpiDate).toLocaleDateString('pt-BR')} • {log.fileName}</span>
+                                                    <span className="text-xs text-docka-500 uppercase mt-1">
+                                                        Data da Edição: {log.rpiDate ? new Date(log.rpiDate).toLocaleDateString('pt-BR') : 'N/A'} • {log.fileName || ''}
+                                                    </span>
                                                     {log.status === 'FAILED' && log.errorMessage && (
                                                         <span className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold">{log.errorMessage}</span>
                                                     )}
                                                 </div>
                                                 <div className="text-right flex flex-col items-end">
-                                                    <span className="font-mono font-bold text-docka-700 dark:text-zinc-300">{log.totalExtracted.toLocaleString('pt-BR')}</span>
+                                                    <span className="font-mono font-bold text-docka-700 dark:text-zinc-300">
+                                                        {(log.totalExtracted || 0).toLocaleString('pt-BR')}
+                                                    </span>
                                                     <span className="text-xs text-docka-400 uppercase">Marcas extraídas</span>
                                                 </div>
                                             </div>
@@ -558,14 +1235,14 @@ const WhatsAppCard: React.FC = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
-                                            {plans.map((plan) => (
+                                            {(Array.isArray(plans) ? plans : []).map((plan) => (
                                                 <tr key={plan.id} className="group hover:bg-docka-50/50 dark:hover:bg-zinc-800/30">
                                                     <td className="py-3">
                                                         <p className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{plan.name}</p>
                                                         {plan.description && <p className="text-xs text-docka-500 dark:text-zinc-500">{plan.description}</p>}
                                                     </td>
                                                     <td className="py-3 text-right font-mono font-bold text-docka-900 dark:text-zinc-100">
-                                                        R$ {Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                        R$ {Number(plan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                     </td>
                                                     <td className="py-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                                                         R$ {Number(plan.commissionSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -591,7 +1268,7 @@ const WhatsAppCard: React.FC = () => {
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {plans.length === 0 && (
+                                            {(!Array.isArray(plans) || plans.length === 0) && (
                                                 <tr>
                                                     <td colSpan={5} className="py-8 text-center text-docka-400 text-xs italic">Nenhum plano cadastrado.</td>
                                                 </tr>
