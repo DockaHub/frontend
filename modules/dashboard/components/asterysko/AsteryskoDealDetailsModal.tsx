@@ -185,13 +185,20 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const [uploadingFile, setUploadingFile] = useState(false);
     const [showUploadMenu, setShowUploadMenu] = useState(false);
 
-    // States for File Operations (Preview, Rename, Delete)
+    // States for File Operations (Preview, Rename, Delete, Visibility)
     const [previewFile, setPreviewFile] = useState<{ name: string; url: string; type: string; isPublic: boolean } | null>(null);
     const [customFileNames, setCustomFileNames] = useState<Record<string, string>>({});
+    const [customFileVisibility, setCustomFileVisibility] = useState<Record<string, boolean>>({});
     const [editingFileId, setEditingFileId] = useState<string | null>(null);
     const [editingFileNameInput, setEditingFileNameInput] = useState('');
     const [openMenuFileKey, setOpenMenuFileKey] = useState<string | null>(null);
     const [isDragging, setIsDragging] = useState(false);
+
+    const handleToggleFileVisibility = (fileKey: string, currentIsPublic: boolean) => {
+        const nextState = !currentIsPublic;
+        setCustomFileVisibility(prev => ({ ...prev, [fileKey]: nextState }));
+        alert(`Visibilidade alterada: ${nextState ? '🟢 Público (Visível para o cliente no Portal)' : '🔒 Privado (Apenas visível para a equipe)'}`);
+    };
 
     // Financial States
     const [invoices, setInvoices] = useState<any[]>([]);
@@ -616,7 +623,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 type: 'Recibo',
                 date: updateDate,
                 size: '1.4 MB',
-                isPublic: false
+                isPublic: customFileVisibility['protocolReceiptUrl'] !== undefined ? customFileVisibility['protocolReceiptUrl'] : true
             });
         }
         if (p.certificateUrl) {
@@ -627,16 +634,35 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 type: 'Certificado',
                 date: updateDate,
                 size: '2.8 MB',
-                isPublic: true
+                isPublic: customFileVisibility['certificateUrl'] !== undefined ? customFileVisibility['certificateUrl'] : true
             });
         }
     }
 
+    filesList.forEach(file => {
+        if (customFileVisibility[file.key] !== undefined) {
+            file.isPublic = customFileVisibility[file.key];
+        }
+    });
+
     // Helper to generate notification dispatch details for activity logs
     const getNotificationDispatchesForActivity = (activity: any) => {
         const type = activity.type || '';
-        const content = activity.content || '';
+        const rawContent = activity.content || '';
         const status = activity.metadata?.status || currentDeal?.status || '';
+
+        const content = rawContent
+            .replace(/ready_to_file/g, 'A Protocolar')
+            .replace(/filed/g, 'Protocolado (RPI)')
+            .replace(/examination/g, 'Exame de Mérito')
+            .replace(/granted/g, 'Deferido')
+            .replace(/won/g, 'Concluído')
+            .replace(/preparation/g, 'Preparação')
+            .replace(/viability/g, 'Viabilidade')
+            .replace(/contract/g, 'Contrato')
+            .replace(/service_payment/g, 'Pagamento Serviço')
+            .replace(/documentation/g, 'Procuração/Docs')
+            .replace(/federal_fee/g, 'Taxa Federal (GRU)');
 
         const isStageChange = type === 'status_change' || content.toLowerCase().includes('etapa') || content.toLowerCase().includes('estágio') || content.toLowerCase().includes('criado');
         const isInvoice = type === 'notification_sent' || content.toLowerCase().includes('fatura') || content.toLowerCase().includes('pagamento');
@@ -652,7 +678,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         if (isStageChange || isInvoice || isFile) {
             dispatches.push({
                 type: 'whatsapp',
-                label: 'WhatsApp Sent',
+                label: 'WhatsApp Enviado',
                 mockupTitle: `WhatsApp: ${content}`,
                 mockupText: `Olá ${clientName}! Seu processo de registro da marca "${dealTitle}" teve uma atualização importante na etapa "${getStatusLabel(status)}". Acompanhe todos os detalhes diretamente na sua área do cliente.`
             });
@@ -833,19 +859,53 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         </div>
 
                         <div className="flex-1 bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
-                            {previewFile.url.endsWith('.png') || previewFile.url.endsWith('.jpg') || previewFile.url.endsWith('.jpeg') || previewFile.url.endsWith('.webp') ? (
-                                <img 
-                                    src={previewFile.url} 
-                                    alt={previewFile.name} 
-                                    className="max-h-full max-w-full object-contain rounded-lg shadow-md"
-                                />
-                            ) : (
-                                <iframe 
-                                    src={previewFile.url} 
-                                    title={previewFile.name} 
-                                    className="w-full h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white"
-                                />
-                            )}
+                            {(() => {
+                                const rawUrl = previewFile.url || '';
+                                const isAbsolute = rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:') || rawUrl.startsWith('blob:');
+                                const getBackendUrl = () => window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://backend-production-0647.up.railway.app';
+                                const resolvedUrl = isAbsolute ? rawUrl : (rawUrl && rawUrl !== '/' ? `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}` : '');
+
+                                if (!resolvedUrl) {
+                                    return (
+                                        <div className="flex flex-col items-center justify-center p-10 text-center text-zinc-500">
+                                            <FileText size={48} className="mb-3 text-zinc-400" />
+                                            <h4 className="font-bold text-sm text-black dark:text-white mb-1">Documento Não Armazenado Localmente</h4>
+                                            <p className="text-xs max-w-sm mb-4">Este documento está catalogado no processo, mas seu arquivo físico ainda não foi enviado para pré-visualização direta.</p>
+                                            <label className="bg-[#0412dd] text-white text-xs font-bold px-4 py-2 rounded-xl cursor-pointer hover:bg-blue-800 transition-colors">
+                                                Fazer Upload do Arquivo
+                                                <input type="file" className="hidden" onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) {
+                                                        handleFileUpload(file, previewFile.type === 'Recibo' ? 'protocol' : 'proxy');
+                                                        setPreviewFile(null);
+                                                    }
+                                                }} />
+                                            </label>
+                                        </div>
+                                    );
+                                }
+
+                                const lowerUrl = resolvedUrl.toLowerCase();
+                                const isImg = lowerUrl.endsWith('.png') || lowerUrl.endsWith('.jpg') || lowerUrl.endsWith('.jpeg') || lowerUrl.endsWith('.webp') || lowerUrl.startsWith('data:image/');
+
+                                if (isImg) {
+                                    return (
+                                        <img 
+                                            src={resolvedUrl} 
+                                            alt={previewFile.name} 
+                                            className="max-h-full max-w-full object-contain rounded-lg shadow-md"
+                                        />
+                                    );
+                                }
+
+                                return (
+                                    <iframe 
+                                        src={resolvedUrl} 
+                                        title={previewFile.name} 
+                                        className="w-full h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white"
+                                    />
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
@@ -1440,16 +1500,17 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                     </p>
                                                 )}
                                                 
-                                                <p className="text-[11.5px] text-[#666] dark:text-zinc-400 mb-2">{file.date} • {file.size}</p>
-                                                
-                                                <div className="flex items-center justify-between">
-                                                    <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded ${
-                                                        file.isPublic 
-                                                            ? 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400' 
-                                                            : 'bg-red-50 text-red-750 dark:bg-red-950/20 dark:text-red-400'
-                                                    }`}>
-                                                        {file.isPublic ? 'Público (Cliente)' : 'Privado (Apenas Time)'}
-                                                    </span>
+                                                            <button 
+                                                        onClick={() => handleToggleFileVisibility(file.key, file.isPublic)}
+                                                        className={`inline-block text-[9.5px] font-bold px-2.5 py-0.5 rounded transition-all cursor-pointer ${
+                                                            file.isPublic 
+                                                                ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-400 hover:bg-green-200' 
+                                                                : 'bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-400 hover:bg-red-200'
+                                                        }`}
+                                                        title="Clique para alterar a visibilidade com o cliente no Portal"
+                                                    >
+                                                        {file.isPublic ? '🟢 Público (Cliente)' : '🔒 Privado (Apenas Time)'}
+                                                    </button>
 
                                                     <button 
                                                         onClick={() => setPreviewFile(file)}
@@ -1473,13 +1534,21 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 </button>
 
                                                 {openMenuFileKey === file.key && (
-                                                    <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-20 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
+                                                    <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-20 py-1 animate-in fade-in slide-in-from-top-1 duration-150">
                                                         <button 
                                                             onClick={() => { setPreviewFile(file); setOpenMenuFileKey(null); }}
                                                             className="w-full text-left px-3.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2"
                                                         >
-                                                            <Eye size={14} /> Visualizar
+                                                            <Eye size={14} /> Visualizar Documento
                                                         </button>
+
+                                                        <button 
+                                                            onClick={() => { handleToggleFileVisibility(file.key, file.isPublic); setOpenMenuFileKey(null); }}
+                                                            className="w-full text-left px-3.5 py-1.5 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2"
+                                                        >
+                                                            <ShieldCheck size={14} /> {file.isPublic ? 'Tornar Privado (Time)' : 'Tornar Público (Cliente)'}
+                                                        </button>
+
                                                         <button 
                                                             onClick={() => { 
                                                                 setEditingFileId(file.key); 
@@ -1490,6 +1559,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                         >
                                                             <Edit2 size={14} /> Renomear
                                                         </button>
+
                                                         <button 
                                                             onClick={() => { handleDeleteFile(file.key, file.name); setOpenMenuFileKey(null); }}
                                                             className="w-full text-left px-3.5 py-1.5 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 border-t border-zinc-100 dark:border-zinc-800 mt-1 pt-1.5"
