@@ -1499,8 +1499,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                         {file.name}
                                                     </p>
                                                 )}
+                                                <p className="text-[11.5px] text-[#666] dark:text-zinc-400 mb-2">{file.date} • {file.size}</p>
                                                 
-                                                            <button 
+                                                <div className="flex items-center justify-between">
+                                                    <button 
                                                         onClick={() => handleToggleFileVisibility(file.key, file.isPublic)}
                                                         className={`inline-block text-[9.5px] font-bold px-2.5 py-0.5 rounded transition-all cursor-pointer ${
                                                             file.isPublic 
