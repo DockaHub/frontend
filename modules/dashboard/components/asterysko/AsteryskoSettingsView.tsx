@@ -587,18 +587,17 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
         };
 
         const handleDisconnect = async () => {
-            if (!window.confirm('Tem certeza que deseja desconectar o WhatsApp?')) return;
+            if (!window.confirm('Tem certeza que deseja desconectar e resetar a sessão do WhatsApp?')) return;
             setChecking(true);
             try {
                 await api.delete('/whatsapp/disconnect');
-                setStatus('disconnected');
-                setQrCode(null);
-                addToast({ type: 'success', title: 'Desconectado', message: 'WhatsApp desconectado com sucesso.' });
+                addToast({ type: 'success', title: 'Sessão Resetada', message: 'WhatsApp desconectado com sucesso. Você já pode gerar um novo QR Code!' });
             } catch (err: any) {
                 console.error('Erro ao desconectar WhatsApp:', err);
-                const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Falha ao desconectar.';
-                addToast({ type: 'error', title: 'Erro', message: errorMsg });
+                addToast({ type: 'info', title: 'Sessão Desconectada', message: 'Sessão local resetada.' });
             } finally {
+                setStatus('disconnected');
+                setQrCode(null);
                 setChecking(false);
             }
         };
