@@ -650,6 +650,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         const type = activity.type || '';
         const rawContent = activity.content || '';
         const status = activity.metadata?.status || currentDeal?.status || '';
+        const meta = activity.metadata || {};
 
         const content = rawContent
             .replace(/ready_to_file/g, 'A Protocolar')
@@ -671,17 +672,31 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         const dispatches: Array<{
             type: 'whatsapp' | 'email' | 'app';
             label: string;
+            isError?: boolean;
             mockupTitle: string;
             mockupText: string;
         }> = [];
 
         if (isStageChange || isInvoice || isFile) {
-            dispatches.push({
-                type: 'whatsapp',
-                label: 'WhatsApp Enviado',
-                mockupTitle: `WhatsApp: ${content}`,
-                mockupText: `Olá ${clientName}! Seu processo de registro da marca "${dealTitle}" teve uma atualização importante na etapa "${getStatusLabel(status)}". Acompanhe todos os detalhes diretamente na sua área do cliente.`
-            });
+            const isWaFailed = meta.whatsappStatus === 'failed';
+            const isWaSent = meta.whatsappStatus === 'sent' || (!meta.whatsappStatus && !isWaFailed);
+
+            if (isWaFailed) {
+                dispatches.push({
+                    type: 'whatsapp',
+                    label: 'WhatsApp Falhou',
+                    isError: true,
+                    mockupTitle: `🔴 Falha no Envio do WhatsApp`,
+                    mockupText: `ERRO DE ENVIO / CONEXÃO DO WHATSAPP:\n\n${meta.whatsappError || 'O WhatsApp estava desconectado ou a sessão expirou no momento do avanço de etapa.'}\n\nMensagem que tentou enviar:\n"${meta.whatsappMessageSent || `Olá ${clientName}! Atualização na etapa ${getStatusLabel(status)}.`}"\n\nAção Recomendada: Acesse a página de Configurações no menu lateral para reconectar o WhatsApp via QR Code.`
+                });
+            } else if (isWaSent) {
+                dispatches.push({
+                    type: 'whatsapp',
+                    label: 'WhatsApp Enviado',
+                    mockupTitle: `WhatsApp: ${content}`,
+                    mockupText: meta.whatsappMessageSent || `Olá ${clientName}! Seu processo de registro da marca "${dealTitle}" teve uma atualização importante na etapa "${getStatusLabel(status)}". Acompanhe todos os detalhes diretamente na sua área do cliente.`
+                });
+            }
 
             dispatches.push({
                 type: 'email',
@@ -1087,7 +1102,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             )}
 
             <div 
-                className={`bg-[#fcfcfc] dark:bg-zinc-950 w-full max-w-[1000px] h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform ${isOpen && !isClosing ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-4 opacity-0'}`}
+                className={`bg-[#fcfcfc] dark:bg-zinc-950 w-full max-w-6xl h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform ${isOpen && !isClosing ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-4 opacity-0'}`}
             >
                 {/* Header */}
                 <div className="bg-white dark:bg-zinc-900 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
@@ -1123,7 +1138,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 </div>
 
                 {/* Content Body */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar relative bg-[#fcfcfc] dark:bg-zinc-950">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar relative bg-[#fcfcfc] dark:bg-zinc-950">
                     {isLoadingDetails ? (
                         <div className="absolute inset-0 bg-[#fcfcfc]/80 dark:bg-[#09090b]/80 z-30 flex items-center justify-center">
                             <Loader2 className="animate-spin text-[#0412dd] dark:text-[#3b48ff] mr-2" size={24} />
@@ -1133,9 +1148,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                     {/* TAB: VISÃO GERAL */}
                     {activeTab === 'Visão geral' && (
-                        <div className="flex min-h-full">
+                        <div className="flex flex-col lg:flex-row min-h-full w-full max-w-full overflow-x-hidden">
                             {/* Left Column (Main) */}
-                            <div className="flex-1 border-r border-[#e5e5e5] dark:border-zinc-800 p-8 pb-16 flex flex-col gap-8">
+                            <div className="flex-1 min-w-0 border-r border-[#e5e5e5] dark:border-zinc-800 p-6 lg:p-8 pb-16 flex flex-col gap-8 max-w-full overflow-x-hidden">
                                 
                                 {/* Próxima Ação */}
                                 <div>
@@ -1259,7 +1274,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                             </div>
 
                             {/* Right Column (Sidebar) */}
-                            <div className="w-[320px] bg-white dark:bg-zinc-900 p-8 flex flex-col gap-8 shrink-0">
+                            <div className="w-full lg:w-[300px] bg-white dark:bg-zinc-900 p-6 lg:p-8 flex flex-col gap-8 shrink-0">
                                 
                                 {/* Resumo Comercial */}
                                 <div>
@@ -1842,11 +1857,13 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                                             date: new Date(event.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
                                                                         })}
                                                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ${
-                                                                            disp.type === 'whatsapp' 
-                                                                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/50'
-                                                                                : disp.type === 'email'
-                                                                                    ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/50'
-                                                                                    : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/50'
+                                                                            disp.isError
+                                                                                ? 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800'
+                                                                                : disp.type === 'whatsapp' 
+                                                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800/50'
+                                                                                    : disp.type === 'email'
+                                                                                        ? 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800/50'
+                                                                                        : 'bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800/50'
                                                                         }`}
                                                                     >
                                                                         {disp.type === 'whatsapp' && <MessageCircle size={13} className="shrink-0" />}
@@ -1854,7 +1871,11 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                                         {disp.type === 'app' && <Bell size={13} className="shrink-0" />}
                                                                         
                                                                         <span>{disp.label}</span>
-                                                                        <CheckCircle2 size={12} className="ml-1 opacity-70" />
+                                                                        {disp.isError ? (
+                                                                            <AlertTriangle size={12} className="ml-1 text-red-600 dark:text-red-400 shrink-0" />
+                                                                        ) : (
+                                                                            <CheckCircle2 size={12} className="ml-1 opacity-70 shrink-0" />
+                                                                        )}
                                                                     </button>
                                                                 ))}
                                                             </div>
