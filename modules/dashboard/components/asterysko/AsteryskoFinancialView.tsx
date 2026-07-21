@@ -31,9 +31,10 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
         try {
             setIsLoading(true);
             const response = await api.get('/asterysko/financial/invoices');
-            setInvoices(response.data);
+            setInvoices(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Failed to fetch invoices', error);
+            setInvoices([]);
         } finally {
             setIsLoading(false);
         }
@@ -42,9 +43,10 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
     const fetchClients = async () => {
         try {
             const response = await api.get('/asterysko/clients');
-            setClients(response.data);
+            setClients(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Failed to fetch clients', error);
+            setClients([]);
         }
     };
 

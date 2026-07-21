@@ -24,7 +24,7 @@ interface AsteryskoDashboardProps {
     organization?: Organization;
 }
 
-const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, organization }) => {
+const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ user, activeView, organization }) => {
     const [viewingAsClient, setViewingAsClient] = useState(false);
 
     // If viewing as client, override everything else
@@ -36,13 +36,11 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
         );
     }
 
+    const userName = user?.name ? user.name.split(' ')[0] : 'Usuário';
+
     // Routing
     switch (activeView) {
         case 'search':
-            // NOTE: 'search' might refer to SearchAssistant or ResearchView. 
-            // Ideally we rename 'search' to 'onboarding' or something for the assistant
-            // and 'research' for the new view.
-            // But for now, let's assume 'research' is the key for the new view.
             return <SearchAssistant onNext={() => { }} organizationId={organization?.id} />;
 
         case 'research':
@@ -55,7 +53,7 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
         case 'clients':
             return <AsteryskoClientsView organization={organization} />;
         case 'financial':
-            return <div className="h-full bg-docka-50 dark:bg-zinc-950"><AsteryskoFinancialView /></div>;
+            return <div className="h-full bg-[#fafafa] dark:bg-zinc-950"><AsteryskoFinancialView /></div>;
         case 'settings':
             return <AsteryskoSettingsView onOpenClientPortal={() => setViewingAsClient(true)} organization={organization} />;
         case 'performance':
@@ -64,11 +62,11 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ activeView, org
             return <AsteryskoDocumentsView />;
         case 'overview':
         case 'home':
-            return <AsteryskoHomeView userName={user.name ? user.name.split(' ')[0] : 'Usuário'} />;
+            return <AsteryskoHomeView userName={userName} />;
         default:
             return (
                 <div className="h-full bg-white dark:bg-zinc-950 animate-in fade-in duration-300">
-                    <AsteryskoHomeView userName={user.name ? user.name.split(' ')[0] : 'Usuário'} />
+                    <AsteryskoHomeView userName={userName} />
                 </div>
             );
     }

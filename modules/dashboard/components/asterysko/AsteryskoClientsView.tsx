@@ -45,9 +45,10 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
             setIsLoading(true);
             const params = organization ? { organizationId: organization.id } : {};
             const response = await api.get('/asterysko/clients', { params });
-            setClients(response.data);
+            setClients(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Failed to fetch clients', error);
+            setClients([]);
         } finally {
             setIsLoading(false);
         }

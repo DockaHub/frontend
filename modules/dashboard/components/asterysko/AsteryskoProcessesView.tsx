@@ -95,9 +95,10 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
         try {
             setIsLoading(true);
             const response = await api.get('/asterysko/processes');
-            setProcesses(response.data);
+            setProcesses(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Failed to fetch processes', error);
+            setProcesses([]);
         } finally {
             setIsLoading(false);
         }

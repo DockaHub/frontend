@@ -40,9 +40,10 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
         try {
             setIsLoading(true);
             const response = await api.get(`/asterysko/crm/deals`);
-            setColumns(response.data);
+            setColumns(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
             console.error('Failed to fetch deals', error);
+            setColumns([]);
         } finally {
             setIsLoading(false);
         }
