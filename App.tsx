@@ -414,7 +414,7 @@ const AppContent: React.FC = () => {
           <Route path="/" element={
             user?.role?.toUpperCase() === 'CLIENT' ? 
             <Navigate to="/portal" replace /> : 
-            <Navigate to={`/dashboard?view=overview&org=${currentOrg.id}`} replace />
+            <Navigate to={`/dashboard?view=overview&org=${currentOrg?.id || 'org_4'}`} replace />
           } />
           
           {/* Catch-all route to prevent black screen */}

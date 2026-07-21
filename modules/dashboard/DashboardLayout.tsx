@@ -58,6 +58,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
 
 
     const renderContent = () => {
+        if (!selectedOrg) {
+            return <AsteryskoDashboard user={user} activeView={activeView} organization={initialOrg} />;
+        }
         // Routing by Organization Type (More robust for real data)
         if (selectedOrg.type === 'AGENCY') {
             return <AsteryskoDashboard user={user} activeView={activeView} organization={selectedOrg} />;
@@ -75,7 +78,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
         }
         if (selectedOrg.type === 'INFRASTRUCTURE') {
             // Check for specific overrides if needed, otherwise default infra dashboard
-            if (selectedOrg.slug.includes('hostizi')) {
+            if (selectedOrg.slug?.includes('hostizi')) {
                 return <HostiziDashboard user={user} activeView={activeView} organization={selectedOrg} />;
             }
             return <TokyonDashboard user={user} activeView={activeView} onNavigate={handleViewChange} organization={selectedOrg} />;
@@ -94,11 +97,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
             {/* MOBILE HEADER: Only visible on small screens */}
             <div className="lg:hidden h-14 bg-white dark:bg-zinc-900 border-b border-docka-200 dark:border-zinc-800 flex items-center justify-between px-4 shrink-0 z-20">
                 <div className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(true)}>
-                    <div className={`w-6 h-6 rounded-md ${selectedOrg.logoColor} flex items-center justify-center text-white text-[10px] font-bold`}>
-                        {selectedOrg.name.substring(0, 1)}
+                    <div className={`w-6 h-6 rounded-md ${selectedOrg?.logoColor || 'bg-blue-600'} flex items-center justify-center text-white text-[10px] font-bold`}>
+                        {selectedOrg?.name?.substring(0, 1) || 'A'}
                     </div>
                     <div className="flex items-center gap-1">
-                        <span className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{selectedOrg.name}</span>
+                        <span className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{selectedOrg?.name || 'Asterysko'}</span>
                         <ChevronDown size={14} className="text-docka-400 dark:text-zinc-500" />
                     </div>
                 </div>
