@@ -218,8 +218,18 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         date: string;
     } | null>(null);
 
+    // Tasks / Action Plan state for Atividades tab
+    const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+
+    const handleToggleTask = (taskId: string) => {
+        setCompletedTasks(prev => 
+            prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
+        );
+    };
+
     const currentDeal = dealDetails || card;
     const clientId = currentDeal?.clientId || currentDeal?.client?.id;
+    const stageTasks = stageTasksMap[currentDeal?.status] || stageTasksMap['leads'] || [];
 
     const fetchInvoices = async () => {
         if (!clientId) return;
@@ -680,7 +690,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             
             {/* NOTIFICATION MOCKUP LIGHTBOX MODAL */}
             {activeNotificationMockup && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
                     <div className="flex flex-col items-center gap-4 relative">
                         
                         {/* Close bar */}
@@ -793,7 +803,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
             {/* IN-APP DOCUMENT PREVIEW LIGHTBOX MODAL */}
             {previewFile && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
                     <div className="bg-white dark:bg-zinc-900 w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-zinc-200 dark:border-zinc-800">
                         <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
                             <div className="flex items-center gap-3 min-w-0 pr-4">
@@ -851,7 +861,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
             {/* CREATE INVOICE MODAL */}
             {isCreateInvoiceOpen && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
                     <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl shadow-2xl p-6 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-5">
                         <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
                             <h3 className="font-season text-xl font-medium text-black dark:text-white">Gerar Nova Fatura</h3>
@@ -930,7 +940,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
             {/* EDIT INVOICE MODAL */}
             {editingInvoice && (
-                <div className="fixed inset-0 z-60 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
                     <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl shadow-2xl p-6 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-5">
                         <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
                             <h3 className="font-season text-xl font-medium text-black dark:text-white">Editar Fatura</h3>
