@@ -218,18 +218,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         date: string;
     } | null>(null);
 
-    // Tasks / Action Plan state for Atividades tab
-    const [completedTasks, setCompletedTasks] = useState<string[]>([]);
-
-    const handleToggleTask = (taskId: string) => {
-        setCompletedTasks(prev => 
-            prev.includes(taskId) ? prev.filter(id => id !== taskId) : [...prev, taskId]
-        );
-    };
-
     const currentDeal = dealDetails || card;
     const clientId = currentDeal?.clientId || currentDeal?.client?.id;
     const stageTasks = stageTasksMap[currentDeal?.status] || stageTasksMap['leads'] || [];
+    const completedTasks = Array.isArray(currentDeal?.members) ? currentDeal.members : [];
 
     const fetchInvoices = async () => {
         if (!clientId) return;
