@@ -591,13 +591,23 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             setChecking(true);
             try {
                 await api.delete('/whatsapp/disconnect');
-                addToast({ type: 'success', title: 'Sessão Resetada', message: 'WhatsApp desconectado com sucesso. Você já pode gerar um novo QR Code!' });
+                addToast({ type: 'success', title: 'Sessão Resetada', message: 'Sessão resetada. Gerando novo QR Code...' });
+                
+                // Força o pedido de um novo QR Code imediatamente após o reset da instância
+                const res = await api.get('/whatsapp/connect?reset=true');
+                const raw = res.data.base64 || res.data.qrcode?.base64 || res.data.code;
+                if (raw) {
+                    setQrCode(raw.startsWith('data:image') ? raw : `data:image/png;base64,${raw}`);
+                } else {
+                    setQrCode(null);
+                }
+                setStatus('disconnected');
             } catch (err: any) {
                 console.error('Erro ao desconectar WhatsApp:', err);
-                addToast({ type: 'info', title: 'Sessão Desconectada', message: 'Sessão local resetada.' });
-            } finally {
                 setStatus('disconnected');
                 setQrCode(null);
+                addToast({ type: 'info', title: 'Sessão Limpa', message: 'Instância resetada. Clique em Gerar QR Code.' });
+            } finally {
                 setChecking(false);
             }
         };
