@@ -561,26 +561,45 @@ const WhatsAppCard: React.FC = () => {
         }
     };
 
-    const handleConnect = async () => {
+    const handleConnect = async (forceReset: boolean = false) => {
         setChecking(true);
+        setQrCode(null);
         try {
-            const res = await api.get('/whatsapp/connect');
-            if (res.data.base64) {
-                setQrCode(res.data.base64.startsWith('data:image') ? res.data.base64 : `data:image/png;base64,${res.data.base64}`);
-                setStatus('disconnected');
-            } else if (res.data.qrcode?.base64) {
-                setQrCode(res.data.qrcode.base64.startsWith('data:image') ? res.data.qrcode.base64 : `data:image/png;base64,${res.data.qrcode.base64}`);
+            const endpoint = forceReset ? '/whatsapp/connect?reset=true' : '/whatsapp/connect';
+            const res = await api.get(endpoint);
+            const rawBase64 = res.data.base64 || res.data.qrcode?.base64;
+            
+            if (rawBase64) {
+                setQrCode(rawBase64.startsWith('data:image') ? rawBase64 : `data:image/png;base64,${rawBase64}`);
                 setStatus('disconnected');
             } else if (res.data.code) {
-                setQrCode(res.data.code);
+                const codeUrl = res.data.code.startsWith('data:image') || res.data.code.startsWith('http') 
+                    ? res.data.code 
+                    : `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(res.data.code)}`;
+                setQrCode(codeUrl);
                 setStatus('disconnected');
-            } else if (res.data.instance?.state === 'open') {
-                setStatus('connected');
+            } else if (res.data.instance?.state === 'open' || res.data.state === 'open') {
+                if (forceReset) {
+                    // Se foi pedido reset forçado mas retornou open, faz retry chamando connect com reset
+                    const retryRes = await api.get('/whatsapp/connect?reset=true');
+                    const retryRaw = retryRes.data.base64 || retryRes.data.qrcode?.base64 || retryRes.data.code;
+                    if (retryRaw) {
+                        setQrCode(retryRaw.startsWith('data:image') || retryRaw.startsWith('http') ? retryRaw : `data:image/png;base64,${retryRaw}`);
+                        setStatus('disconnected');
+                    } else {
+                        setStatus('connected');
+                    }
+                } else {
+                    setStatus('connected');
+                }
+            } else {
+                setStatus('disconnected');
             }
         } catch (err: any) {
             console.error('Erro ao conectar WhatsApp:', err);
             const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Falha ao gerar QR Code. Verifique se a API está online.';
             addToast({ type: 'error', title: 'Erro de Conexão', message: errorMsg });
+            setStatus('disconnected');
         } finally {
             setChecking(false);
         }
@@ -592,15 +611,7 @@ const WhatsAppCard: React.FC = () => {
         try {
             await api.delete('/whatsapp/disconnect');
             addToast({ type: 'success', title: 'Sessão Resetada', message: 'Sessão resetada. Gerando novo QR Code...' });
-            
-            const res = await api.get('/whatsapp/connect?reset=true');
-            const raw = res.data.base64 || res.data.qrcode?.base64 || res.data.code;
-            if (raw) {
-                setQrCode(raw.startsWith('data:image') ? raw : `data:image/png;base64,${raw}`);
-            } else {
-                setQrCode(null);
-            }
-            setStatus('disconnected');
+            await handleConnect(true);
         } catch (err: any) {
             console.error('Erro ao desconectar WhatsApp:', err);
             setStatus('disconnected');
