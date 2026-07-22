@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
-import { Smartphone, Mail, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle2, MessageCircle, Sun, Moon, Sparkles } from 'lucide-react';
+import { Smartphone, Mail, ArrowRight, Loader2, AlertCircle, CheckCircle2, MessageCircle, Sun, Moon } from 'lucide-react';
 
 const AsteryskoLogoSVG = () => (
     <svg width="180" height="30" viewBox="0 0 200 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -33,6 +33,13 @@ const AsteryskoLogoSVG = () => (
     </svg>
 );
 
+const formatPhoneMask = (val: string) => {
+    const digits = val.replace(/\D/g, '').slice(0, 11);
+    if (digits.length <= 2) return digits ? `(${digits}` : '';
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
 interface AsteryskoLoginPageProps {
     theme?: 'light' | 'dark';
     onToggleTheme?: () => void;
@@ -42,51 +49,40 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
     const navigate = useNavigate();
     const { refreshUser } = useAuth();
     
+    const [loginType, setLoginType] = useState<'phone' | 'email'>('phone');
     const [otpStep, setOtpStep] = useState<'identifier' | 'code'>('identifier');
-    const [identifier, setIdentifier] = useState('');
+    const [phoneInput, setPhoneInput] = useState('');
+    const [emailInput, setEmailInput] = useState('');
     const [otpCode, setOtpCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [infoMessage, setInfoMessage] = useState('');
 
-    // Magic Link Auto-login
-    React.useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const token = params.get('magic_token');
+    const activeIdentifier = loginType === 'phone' ? phoneInput : emailInput;
 
-        if (token) {
-            handleMagicLogin(token);
-        }
-    }, []);
-
-    const handleMagicLogin = async (token: string) => {
-        setLoading(true);
-        setError('');
-        try {
-            const response = await api.post('/auth/login-by-token', { token });
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('user', JSON.stringify(response.data.user));
-            await refreshUser();
-            navigate('/portal');
-        } catch (err: any) {
-            setError('Seu link de acesso expirou ou é inválido.');
-            setLoading(false);
-        }
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setPhoneInput(formatPhoneMask(e.target.value));
     };
 
     const handleRequestOtp = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setInfoMessage('');
+
+        if (!activeIdentifier.trim()) {
+            setError(loginType === 'phone' ? 'Informe o número do celular.' : 'Informe seu e-mail.');
+            return;
+        }
+
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/request-otp', { identifier });
-            setInfoMessage(response.data?.message || 'Código enviado via WhatsApp e E-mail.');
+            const response = await api.post('/auth/request-otp', { identifier: activeIdentifier });
+            setInfoMessage(response.data?.message || 'Código enviado com sucesso!');
             setOtpStep('code');
             setOtpCode('');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao enviar código de acesso. Verifique seus dados.');
+            setError(err.response?.data?.error || 'Não encontramos este cadastro. Verifique os dados digitados.');
         } finally {
             setLoading(false);
         }
@@ -98,7 +94,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/verify-otp', { identifier, code: otpCode });
+            const response = await api.post('/auth/verify-otp', { identifier: activeIdentifier, code: otpCode });
             
             if (response.data?.user?.role?.toUpperCase() !== 'CLIENT') {
                 setError('Este portal é exclusivo para clientes. Acesse a plataforma principal.');
@@ -119,166 +115,199 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans text-slate-100 relative overflow-hidden">
-            {/* Ambient Background Gradient Bubbles */}
-            <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-
-            {/* Header */}
-            <header className="w-full max-w-md mx-auto flex items-center justify-between pt-2 pb-6 z-10">
-                <div className="text-white scale-90 sm:scale-100 origin-left">
+        <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 font-sans text-slate-100 relative">
+            
+            {/* Header / Theme Toggle */}
+            <div className="w-full max-w-sm flex items-center justify-between mb-8 z-10">
+                <div className="text-white scale-90 origin-left">
                     <AsteryskoLogoSVG />
                 </div>
                 {onToggleTheme && (
                     <button
                         onClick={onToggleTheme}
-                        className="p-2.5 bg-white/10 hover:bg-white/20 active:scale-95 transition-all rounded-full text-slate-200 cursor-pointer"
+                        className="p-2 bg-white/10 hover:bg-white/20 transition-all rounded-full text-slate-300 cursor-pointer"
                         title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
                     >
-                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
                     </button>
                 )}
-            </header>
+            </div>
 
-            {/* Main Content Card (Mobile First Container) */}
-            <main className="w-full max-w-md mx-auto my-auto z-10">
-                <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-blue-950/40">
+            {/* Clean Minimalist Card */}
+            <main className="w-full max-w-sm z-10">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
                     
-                    {/* Badge Pill */}
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
-                        <ShieldCheck size={14} className="text-blue-400" />
-                        <span>Portal do Cliente • Acesso Seguro</span>
-                    </div>
-
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
-                        Entrar no Portal
+                    <h1 className="text-xl font-bold text-white mb-1">
+                        Portal do Cliente
                     </h1>
-                    <p className="text-sm text-slate-400 mb-8 leading-relaxed">
-                        Acesse instantaneamente usando o código enviado para o seu <span className="text-emerald-400 font-bold">WhatsApp</span> ou <span className="text-blue-400 font-bold">E-mail</span>.
+                    <p className="text-xs text-slate-400 mb-6">
+                        Acesse seu processo com o código sem senha.
                     </p>
 
                     {otpStep === 'identifier' ? (
-                        /* STEP 1: Enter Email or Phone */
-                        <form onSubmit={handleRequestOtp} className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
-                                    Seu E-mail ou Telefone / WhatsApp
-                                </label>
-                                <div className="relative group">
-                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors flex items-center gap-1.5">
-                                        <Smartphone size={18} />
-                                        <span className="text-slate-600 text-xs">/</span>
-                                        <Mail size={16} />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={identifier}
-                                        onChange={(e) => setIdentifier(e.target.value)}
-                                        className="w-full pl-16 pr-4 py-4 bg-slate-950/80 border border-slate-700/80 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all text-white placeholder:text-slate-500 text-sm sm:text-base"
-                                        placeholder="seu@email.com ou (98) 99110-2121"
-                                        required
-                                        autoFocus
-                                    />
-                                </div>
-                                <p className="text-[11px] text-slate-400">
-                                    Enviaremos um código único de 6 dígitos sem a necessidade de senha.
-                                </p>
+                        <div className="space-y-6">
+                            {/* Type Choice Tabs */}
+                            <div className="grid grid-cols-2 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setLoginType('phone');
+                                        setError('');
+                                    }}
+                                    className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                        loginType === 'phone'
+                                            ? 'bg-emerald-600 text-white shadow-sm'
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    <Smartphone size={15} />
+                                    WhatsApp
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setLoginType('email');
+                                        setError('');
+                                    }}
+                                    className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                        loginType === 'email'
+                                            ? 'bg-blue-600 text-white shadow-sm'
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    <Mail size={15} />
+                                    E-mail
+                                </button>
                             </div>
 
-                            {error && (
-                                <div className="p-4 bg-red-950/40 border border-red-800/50 text-red-300 text-xs sm:text-sm rounded-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2">
-                                    <AlertCircle size={18} className="shrink-0 text-red-400" />
-                                    <span>{error}</span>
-                                </div>
-                            )}
-
-                            <button
-                                type="submit"
-                                disabled={loading || !identifier.trim()}
-                                className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white py-4 rounded-2xl font-bold text-base shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="animate-spin" size={20} />
-                                        Enviando código...
-                                    </>
+                            <form onSubmit={handleRequestOtp} className="space-y-5">
+                                {loginType === 'phone' ? (
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-bold text-slate-300">
+                                            Celular / WhatsApp
+                                        </label>
+                                        <div className="relative">
+                                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                            <input
+                                                type="tel"
+                                                value={phoneInput}
+                                                onChange={handlePhoneChange}
+                                                placeholder="(98) 99110-2121"
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-emerald-500 text-white placeholder:text-slate-600 text-sm font-medium"
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
+                                    </div>
                                 ) : (
-                                    <>
-                                        Receber Código de Acesso
-                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
-                                    </>
-                                )}
-                            </button>
-                        </form>
-                    ) : (
-                        /* STEP 2: Enter 6-Digit Code */
-                        <form onSubmit={handleVerifyOtp} className="space-y-6">
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800">
-                                    <div className="text-xs text-slate-300 truncate pr-2">
-                                        <span className="text-slate-400">Código enviado para: </span>
-                                        <strong className="text-white font-bold">{identifier}</strong>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setOtpStep('identifier');
-                                            setError('');
-                                            setInfoMessage('');
-                                        }}
-                                        className="text-xs text-blue-400 hover:underline font-bold shrink-0 cursor-pointer"
-                                    >
-                                        Alterar
-                                    </button>
-                                </div>
-
-                                {infoMessage && (
-                                    <div className="p-3.5 bg-emerald-950/40 border border-emerald-800/50 text-emerald-300 text-xs rounded-2xl flex items-center gap-2.5">
-                                        <MessageCircle size={16} className="shrink-0 text-emerald-400" />
-                                        <span>{infoMessage}</span>
+                                    <div className="space-y-1.5">
+                                        <label className="block text-xs font-bold text-slate-300">
+                                            Endereço de E-mail
+                                        </label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                            <input
+                                                type="email"
+                                                value={emailInput}
+                                                onChange={(e) => setEmailInput(e.target.value)}
+                                                placeholder="seu@email.com"
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-blue-500 text-white placeholder:text-slate-600 text-sm font-medium"
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
                                     </div>
                                 )}
 
-                                <div className="space-y-2">
-                                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider text-center">
-                                        Digite o Código de 6 Dígitos
-                                    </label>
-                                    <input
-                                        type="text"
-                                        maxLength={6}
-                                        pattern="[0-9]*"
-                                        inputMode="numeric"
-                                        value={otpCode}
-                                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                        className="w-full text-center tracking-[12px] font-mono text-3xl py-4 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/40 transition-all text-white placeholder:text-slate-700"
-                                        placeholder="000000"
-                                        required
-                                        autoFocus
-                                    />
-                                </div>
-                            </div>
+                                {error && (
+                                    <div className="p-3.5 bg-red-950/50 border border-red-900/60 text-red-300 text-xs rounded-xl flex items-center gap-2">
+                                        <AlertCircle size={16} className="shrink-0 text-red-400" />
+                                        <span>{error}</span>
+                                    </div>
+                                )}
 
-                            {error && (
-                                <div className="p-4 bg-red-950/40 border border-red-800/50 text-red-300 text-xs sm:text-sm rounded-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2">
-                                    <AlertCircle size={18} className="shrink-0 text-red-400" />
-                                    <span>{error}</span>
-                                </div>
-                            )}
-
-                            <div className="space-y-3">
                                 <button
                                     type="submit"
-                                    disabled={loading || otpCode.length !== 6}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white py-4 rounded-2xl font-bold text-base shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+                                    disabled={loading || !activeIdentifier.trim()}
+                                    className={`w-full py-3.5 rounded-2xl font-bold text-sm text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
+                                        loginType === 'phone' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'
+                                    }`}
                                 >
                                     {loading ? (
                                         <>
-                                            <Loader2 className="animate-spin" size={20} />
-                                            Entrando...
+                                            <Loader2 className="animate-spin" size={18} />
+                                            Enviando código...
                                         </>
                                     ) : (
                                         <>
-                                            <CheckCircle2 size={18} />
+                                            Receber Código
+                                            <ArrowRight size={16} />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+                        </div>
+                    ) : (
+                        /* STEP 2: Code Entry */
+                        <form onSubmit={handleVerifyOtp} className="space-y-5">
+                            <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-300 flex justify-between items-center">
+                                <span className="truncate pr-2">Enviado para: <strong>{activeIdentifier}</strong></span>
+                                <button
+                                    type="button"
+                                    onClick={() => setOtpStep('identifier')}
+                                    className="text-blue-400 hover:underline font-bold shrink-0 cursor-pointer"
+                                >
+                                    Alterar
+                                </button>
+                            </div>
+
+                            {infoMessage && (
+                                <div className="p-3 bg-emerald-950/40 border border-emerald-900/50 text-emerald-300 text-xs rounded-xl flex items-center gap-2">
+                                    <MessageCircle size={15} className="shrink-0 text-emerald-400" />
+                                    <span>{infoMessage}</span>
+                                </div>
+                            )}
+
+                            <div className="space-y-1.5">
+                                <label className="block text-xs font-bold text-slate-300 text-center uppercase tracking-wider">
+                                    Código de 6 Dígitos
+                                </label>
+                                <input
+                                    type="text"
+                                    maxLength={6}
+                                    pattern="[0-9]*"
+                                    inputMode="numeric"
+                                    value={otpCode}
+                                    onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                    className="w-full text-center tracking-[10px] font-mono text-2xl py-3.5 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-2xl outline-none text-white placeholder:text-slate-700"
+                                    placeholder="000000"
+                                    required
+                                    autoFocus
+                                />
+                            </div>
+
+                            {error && (
+                                <div className="p-3.5 bg-red-950/50 border border-red-900/60 text-red-300 text-xs rounded-xl flex items-center gap-2">
+                                    <AlertCircle size={16} className="shrink-0 text-red-400" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
+
+                            <div className="space-y-2.5">
+                                <button
+                                    type="submit"
+                                    disabled={loading || otpCode.length !== 6}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={18} />
+                                            Verificando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 size={16} />
                                             Entrar no Portal
                                         </>
                                     )}
@@ -288,9 +317,9 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                     type="button"
                                     onClick={handleRequestOtp}
                                     disabled={loading}
-                                    className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer"
+                                    className="w-full py-2 text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer"
                                 >
-                                    Reenviar código por WhatsApp / E-mail
+                                    Reenviar código
                                 </button>
                             </div>
                         </form>
@@ -299,10 +328,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
             </main>
 
             {/* Footer */}
-            <footer className="w-full max-w-md mx-auto text-center pt-6 pb-2 z-10">
-                <p className="text-[11px] text-slate-500 font-medium">
-                    Asterysko Propriedade Intelectual &copy; 2026. Todos os direitos reservados.
-                </p>
+            <footer className="mt-8 text-center text-[11px] text-slate-600 font-medium">
+                Asterysko Propriedade Intelectual &copy; 2026
             </footer>
         </div>
     );
