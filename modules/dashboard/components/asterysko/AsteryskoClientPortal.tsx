@@ -3,6 +3,7 @@ import axios from 'axios';
 import { FileSignature, FileText, CheckCircle2, Download, Menu, User, Bell, Shield, ShieldCheck, ExternalLink, LogOut, HelpCircle, ChevronDown, Share2, Building2, Lock, Mail, MessageSquare, AlertCircle, Loader2, Briefcase, CreditCard, Smartphone, Copy, Upload, UploadCloud, Sun, Moon, Clock } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
+import { useAuth } from '../../../../context/AuthContext';
 
 interface AsteryskoClientPortalProps {
     onExit: () => void;
@@ -186,6 +187,7 @@ const getTimelineEvents = (process: any, invoices: any[] = []) => {
 };
 
 const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, theme, onToggleTheme }) => {
+    const { logout } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [clientData, setClientData] = useState<any>(null);
@@ -373,9 +375,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
             } catch (err: any) {
                 console.error('Error loading portal data:', err);
                 if (err.response?.status === 401) {
-                    // Token inválido ou expirado — mostra erro sem redirecionar para /login
-                    setError('Sua sessão expirou. Peça ao administrador para gerar um novo link de acesso.');
-                    setLoading(false);
+                    // Sessão inválida — fazer logout e redirecionar para login
+                    logout();
+                    window.location.replace('/portal/login');
                     return;
                 }
                 if (err.response?.status === 404) {
@@ -594,8 +596,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         <div className="flex flex-col gap-3">
                             <button
                                 onClick={() => {
-                                    localStorage.removeItem('token');
-                                    localStorage.removeItem('user');
+                                    logout();
                                     window.location.replace('/portal/login');
                                 }}
                                 className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-bold shadow-lg shadow-blue-900/20"
@@ -764,8 +765,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                             <div className="border-t border-slate-100 dark:border-zinc-800 py-1 bg-white dark:bg-zinc-900">
                                                 <button
                                                     onClick={() => {
-                                                        localStorage.removeItem('token');
-                                                        localStorage.removeItem('user');
+                                                        logout();
                                                         window.location.replace('/portal/login');
                                                     }}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 font-medium transition-colors"
