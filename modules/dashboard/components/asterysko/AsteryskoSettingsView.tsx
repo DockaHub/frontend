@@ -221,14 +221,120 @@ const NotificationTemplatesManager: React.FC = () => {
         { key: 'vencimentoFatura', label: 'Vencimento', example: '30/06/2026' }
     ];
 
+    const DEFAULT_TEMPLATES_FALLBACK = [
+        {
+            id: 'registro-vigor',
+            slug: 'registro-vigor',
+            name: 'Registro de Marca em Vigor',
+            channel: 'WHATSAPP',
+            stageSlug: 'registro-vigor',
+            content: 'Parabéns {{nomeCliente}}! O registro da sua marca {{nomeMarca}} foi concedido pelo INPI (Processo {{codigoProcesso}}).',
+            isActive: true
+        },
+        {
+            id: 'new-dispatch',
+            slug: 'new-dispatch',
+            name: 'Novo Despacho (INPI)',
+            channel: 'WHATSAPP',
+            stageSlug: 'new-dispatch',
+            content: 'Olá {{nomeCliente}}! Identificamos uma nova movimentação no INPI para o seu processo {{codigoProcesso}} da marca {{nomeMarca}}.\n\nDetalhes: {{detalhes}}',
+            isActive: true
+        },
+        {
+            id: 'invoice-pending',
+            slug: 'invoice-pending',
+            name: 'Fatura Pendente',
+            channel: 'WHATSAPP',
+            stageSlug: 'invoice-pending',
+            content: 'Olá {{nomeCliente}}, a fatura referente aos serviços da marca {{nomeMarca}} foi gerada no valor de {{valorFatura}} com vencimento em {{vencimentoFatura}}.\n\nAcesse o portal: {{linkPortal}}',
+            isActive: true
+        },
+        {
+            id: 'payment-success',
+            slug: 'payment-success',
+            name: 'Confirmação de Pagamento',
+            channel: 'WHATSAPP',
+            stageSlug: 'payment-success',
+            content: 'Olá {{nomeCliente}}! Confirmamos o recebimento do pagamento referente à sua fatura da marca {{nomeMarca}}. Obrigado!',
+            isActive: true
+        },
+        {
+            id: 'contract-pending',
+            slug: 'contract-pending',
+            name: 'Contrato Pendente (Assinatura)',
+            channel: 'WHATSAPP',
+            stageSlug: 'contract-pending',
+            content: 'Olá {{nomeCliente}}! O seu contrato para o registro da marca {{nomeMarca}} está pronto para assinatura.\n\nAcesse para assinar: {{linkPortal}}',
+            isActive: true
+        },
+        {
+            id: 'contract-signed',
+            slug: 'contract-signed',
+            name: 'Contrato Assinado',
+            channel: 'WHATSAPP',
+            stageSlug: 'contract-signed',
+            content: 'Olá {{nomeCliente}}! Recebemos o seu contrato assinado referente à marca {{nomeMarca}}. Daremos início ao protocolo junto ao INPI em breve.',
+            isActive: true
+        },
+        {
+            id: 'welcome-client',
+            slug: 'welcome-client',
+            name: 'Boas-vindas ao Cliente',
+            channel: 'WHATSAPP',
+            stageSlug: 'lead-created',
+            content: 'Seja bem-vindo(a) à Asterysko, {{nomeCliente}}! Estamos felizes em cuidar da proteção da sua marca {{nomeMarca}}. Qualquer dúvida, estamos à disposição!',
+            isActive: true
+        },
+        {
+            id: 'email-welcome',
+            slug: 'email-welcome',
+            name: 'E-mail de Boas-vindas',
+            channel: 'EMAIL',
+            stageSlug: 'lead-created',
+            emailSubject: 'Seja bem-vindo à Asterysko - Proteção de Marcas',
+            content: 'Olá {{nomeCliente}},\n\nSeja muito bem-vindo(a) à Asterysko! Estamos iniciando os trabalhos para o registro da sua marca {{nomeMarca}}.\n\nAcompanhe seu processo em tempo real através do portal do cliente: {{linkPortal}}',
+            isActive: true
+        },
+        {
+            id: 'email-dispatch',
+            slug: 'email-dispatch',
+            name: 'E-mail de Movimentação RPI',
+            channel: 'EMAIL',
+            stageSlug: 'new-dispatch',
+            emailSubject: 'Atualização RPI no Processo {{codigoProcesso}} ({{nomeMarca}})',
+            content: 'Olá {{nomeCliente}},\n\nIdentificamos uma nova publicação da Revista da Propriedade Industrial (INPI) referente ao seu processo {{codigoProcesso}} da marca {{nomeMarca}}.\n\nResumo da Movimentação: {{detalhes}}\n\nAcesse o portal do cliente para ver o documento completo: {{linkPortal}}',
+            isActive: true
+        },
+        {
+            id: 'email-invoice',
+            slug: 'email-invoice',
+            name: 'E-mail de Fatura Gerada',
+            channel: 'EMAIL',
+            stageSlug: 'invoice-pending',
+            emailSubject: 'Fatura Gerada - Asterysko (Marca {{nomeMarca}})',
+            content: 'Olá {{nomeCliente}},\n\nUma nova fatura de serviço foi gerada no valor de {{valorFatura}} com vencimento em {{vencimentoFatura}}.\n\nAcesse o link para efetuar o pagamento: {{linkPortal}}',
+            isActive: true
+        }
+    ];
+
     const fetchTemplates = async () => {
         try {
             setLoading(true);
             const res = await api.get('/whatsapp/templates');
-            setTemplates(Array.isArray(res.data) ? res.data : []);
+            const dbTemplates = Array.isArray(res.data) ? res.data : [];
+
+            // Mescla templates do BD com os padrões fallback caso falte algum
+            const merged = [...dbTemplates];
+            for (const fallbackTpl of DEFAULT_TEMPLATES_FALLBACK) {
+                const exists = merged.some(t => t.slug === fallbackTpl.slug || t.id === fallbackTpl.id);
+                if (!exists) {
+                    merged.push(fallbackTpl);
+                }
+            }
+            setTemplates(merged);
         } catch (err) {
             console.error('Erro ao buscar templates:', err);
-            setTemplates([]);
+            setTemplates(DEFAULT_TEMPLATES_FALLBACK);
         } finally {
             setLoading(false);
         }
