@@ -594,8 +594,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         <div className="flex flex-col gap-3">
                             <button
                                 onClick={() => {
-                                    localStorage.clear();
-                                    window.location.href = '/login';
+                                    localStorage.removeItem('token');
+                                    localStorage.removeItem('user');
+                                    window.location.replace('/portal/login');
                                 }}
                                 className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all font-bold shadow-lg shadow-blue-900/20"
                             >
@@ -762,7 +763,11 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                             </div>
                                             <div className="border-t border-slate-100 dark:border-zinc-800 py-1 bg-white dark:bg-zinc-900">
                                                 <button
-                                                    onClick={onExit}
+                                                    onClick={() => {
+                                                        localStorage.removeItem('token');
+                                                        localStorage.removeItem('user');
+                                                        window.location.replace('/portal/login');
+                                                    }}
                                                     className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 font-medium transition-colors"
                                                 >
                                                     <LogOut size={16} /> Sair

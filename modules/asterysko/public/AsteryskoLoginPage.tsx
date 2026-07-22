@@ -95,12 +95,6 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
 
         try {
             const response = await api.post('/auth/verify-otp', { identifier: activeIdentifier, code: otpCode });
-            
-            if (response.data?.user?.role?.toUpperCase() !== 'CLIENT') {
-                setError('Este portal é exclusivo para clientes. Acesse a plataforma principal.');
-                setLoading(false);
-                return;
-            }
 
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
@@ -191,10 +185,11 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                             <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                                             <input
                                                 type="tel"
+                                                inputMode="tel"
                                                 value={phoneInput}
                                                 onChange={handlePhoneChange}
                                                 placeholder="(98) 99110-2121"
-                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-emerald-500 text-white placeholder:text-slate-600 text-sm font-medium"
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-emerald-500 text-white placeholder:text-slate-600 text-base font-medium"
                                                 required
                                                 autoFocus
                                             />
@@ -209,10 +204,11 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                             <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                                             <input
                                                 type="email"
+                                                inputMode="email"
                                                 value={emailInput}
                                                 onChange={(e) => setEmailInput(e.target.value)}
                                                 placeholder="seu@email.com"
-                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-blue-500 text-white placeholder:text-slate-600 text-sm font-medium"
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-blue-500 text-white placeholder:text-slate-600 text-base font-medium"
                                                 required
                                                 autoFocus
                                             />
@@ -280,7 +276,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                     inputMode="numeric"
                                     value={otpCode}
                                     onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                    className="w-full text-center tracking-[10px] font-mono text-2xl py-3.5 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-2xl outline-none text-white placeholder:text-slate-700"
+                                    className="w-full text-center tracking-[10px] font-mono text-2xl py-4 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-2xl outline-none text-white placeholder:text-slate-700"
+                                    style={{ fontSize: '24px' }}
                                     placeholder="000000"
                                     required
                                     autoFocus
