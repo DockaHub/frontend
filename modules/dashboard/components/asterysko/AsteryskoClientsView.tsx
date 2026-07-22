@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Loader2 } from 'lucide-react';
+import { Plus, MoreVertical, Loader2, Edit2, X, Save, User, Phone, Mail, FileText, MapPin } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewClientModal from './AsteryskoNewClientModal';
@@ -90,15 +90,188 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
         }
     };
 
+    const [editingClient, setEditingClient] = useState<any | null>(null);
+    const [editName, setEditName] = useState('');
+    const [editEmail, setEditEmail] = useState('');
+    const [editPhone, setEditPhone] = useState('');
+    const [editCpfCnpj, setEditCpfCnpj] = useState('');
+    const [editAddress, setEditAddress] = useState('');
+    const [editCity, setEditCity] = useState('');
+    const [editState, setEditState] = useState('');
+    const [isSavingEdit, setIsSavingEdit] = useState(false);
+
+    const handleOpenEdit = (client: any) => {
+        setEditingClient(client);
+        setEditName(client.name || client.company || '');
+        setEditEmail(client.email || '');
+        setEditPhone(client.phone || '');
+        setEditCpfCnpj(client.cpfCnpj || client.cnpj || '');
+        setEditAddress(client.address || '');
+        setEditCity(client.city || '');
+        setEditState(client.state || '');
+        setActiveDropdownClientId(null);
+    };
+
+    const handleSaveClient = async () => {
+        if (!editingClient?.id) return;
+        try {
+            setIsSavingEdit(true);
+            await api.put(`/asterysko/clients/${editingClient.id}`, {
+                name: editName,
+                email: editEmail,
+                phone: editPhone,
+                cnpj: editCpfCnpj,
+                address: editAddress,
+                city: editCity,
+                state: editState
+            });
+            alert('Dados do cliente atualizados com sucesso!');
+            setEditingClient(null);
+            fetchClients();
+        } catch (err: any) {
+            console.error('Failed to update client', err);
+            alert(err.response?.data?.error || 'Falha ao atualizar dados do cliente.');
+        } finally {
+            setIsSavingEdit(false);
+        }
+    };
+
     return (
         <div className="bg-white dark:bg-zinc-950 min-h-full font-sans transition-colors duration-300 flex flex-col relative z-0">
-            {/* Modal */}
+            {/* Modal Novo Cliente */}
             <AsteryskoNewClientModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
                 onSuccess={fetchClients} 
                 organizationId={organization?.id}
             />
+
+            {/* Modal Editar Cliente */}
+            {editingClient && (
+                <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                        <div className="flex justify-between items-center mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
+                            <h3 className="font-season text-[22px] font-bold text-black dark:text-white flex items-center gap-2">
+                                <Edit2 size={18} className="text-[#0412dd] dark:text-[#3b48ff]" /> Editar Cliente
+                            </h3>
+                            <button onClick={() => setEditingClient(null)} className="text-zinc-400 hover:text-zinc-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Nome Completo / Razão Social</label>
+                                <div className="flex items-center bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2">
+                                    <User size={16} className="text-zinc-400 mr-2 shrink-0" />
+                                    <input
+                                        type="text"
+                                        value={editName}
+                                        onChange={e => setEditName(e.target.value)}
+                                        className="w-full bg-transparent text-sm text-black dark:text-white outline-none"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">E-mail</label>
+                                    <div className="flex items-center bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2">
+                                        <Mail size={16} className="text-zinc-400 mr-2 shrink-0" />
+                                        <input
+                                            type="email"
+                                            value={editEmail}
+                                            onChange={e => setEditEmail(e.target.value)}
+                                            className="w-full bg-transparent text-sm text-black dark:text-white outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Telefone / WhatsApp</label>
+                                    <div className="flex items-center bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2">
+                                        <Phone size={16} className="text-zinc-400 mr-2 shrink-0" />
+                                        <input
+                                            type="text"
+                                            value={editPhone}
+                                            onChange={e => setEditPhone(e.target.value)}
+                                            placeholder="(98) 99110-2121"
+                                            className="w-full bg-transparent text-sm text-black dark:text-white outline-none"
+                                        />
+                                    </div>
+                                    <p className="text-[10px] text-zinc-400 mt-1">* Formatado automaticamente com DDI Brasil (+55)</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">CPF / CNPJ</label>
+                                    <div className="flex items-center bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2">
+                                        <FileText size={16} className="text-zinc-400 mr-2 shrink-0" />
+                                        <input
+                                            type="text"
+                                            value={editCpfCnpj}
+                                            onChange={e => setEditCpfCnpj(e.target.value)}
+                                            className="w-full bg-transparent text-sm text-black dark:text-white outline-none"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Cidade / Estado</label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="Cidade"
+                                            value={editCity}
+                                            onChange={e => setEditCity(e.target.value)}
+                                            className="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-black dark:text-white outline-none"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="UF"
+                                            maxLength={2}
+                                            value={editState}
+                                            onChange={e => setEditState(e.target.value)}
+                                            className="w-16 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-black dark:text-white outline-none text-center font-bold"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-zinc-500 uppercase mb-1">Endereço Completo</label>
+                                <div className="flex items-center bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-3 py-2">
+                                    <MapPin size={16} className="text-zinc-400 mr-2 shrink-0" />
+                                    <input
+                                        type="text"
+                                        value={editAddress}
+                                        onChange={e => setEditAddress(e.target.value)}
+                                        className="w-full bg-transparent text-sm text-black dark:text-white outline-none"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-2 pt-6 mt-6 border-t border-zinc-100 dark:border-zinc-800">
+                            <button
+                                onClick={() => setEditingClient(null)}
+                                className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 cursor-pointer"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSaveClient}
+                                disabled={isSavingEdit}
+                                className="px-5 py-2.5 bg-[#0412dd] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                            >
+                                {isSavingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                Salvar Alterações
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Header */}
             <div className="flex items-center justify-between pt-8 px-10 pb-6 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
@@ -211,14 +384,21 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                             <>
                                                 <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-30 py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
                                                     <button 
+                                                        onClick={() => handleOpenEdit(client)}
+                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <Edit2 size={13} className="text-blue-600 dark:text-blue-400 shrink-0" />
+                                                        Editar Cliente
+                                                    </button>
+                                                    <button 
                                                         onClick={() => handleResendAccess(client)}
-                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2"
+                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
                                                     >
                                                         Reenviar Acesso
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDeleteClient(client)}
-                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2"
+                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 cursor-pointer"
                                                     >
                                                         Excluir Cliente
                                                     </button>
