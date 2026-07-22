@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FileSignature, FileText, CheckCircle2, Download, Menu, User, Bell, Shield, ShieldCheck, ExternalLink, LogOut, HelpCircle, ChevronDown, Share2, Building2, Lock, Mail, MessageSquare, AlertCircle, Loader2, Briefcase, CreditCard, Smartphone, Copy, Upload, UploadCloud, Sun, Moon, Clock } from 'lucide-react';
+import { FileSignature, FileText, CheckCircle2, Download, Menu, User, Bell, Shield, ShieldCheck, ExternalLink, LogOut, HelpCircle, ChevronDown, Share2, Building2, Lock, Mail, MessageSquare, AlertCircle, Loader2, Briefcase, CreditCard, Smartphone, Copy, Upload, UploadCloud, Sun, Moon, Clock, Award } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
@@ -1330,7 +1330,39 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                         </div>
                                                                     )}
 
-                                                                    {!proc.contractUrl && !proc.proxyUrl && !proc.proxySignedUrl && (
+                                                                    {proc.certificateUrl && (
+                                                                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/50 rounded-xl hover:shadow-md transition-all group">
+                                                                            <div className="flex items-center gap-4">
+                                                                                <div className="w-10 h-10 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center border border-amber-300 dark:border-amber-700 shrink-0">
+                                                                                    <Award size={20} />
+                                                                                </div>
+                                                                                <div>
+                                                                                    <p className="text-sm font-black text-slate-900 dark:text-zinc-100 group-hover:text-amber-600 transition-colors flex items-center gap-1.5">
+                                                                                        Certificado Oficial de Registro de Marca 🏆
+                                                                                    </p>
+                                                                                    <div className="flex items-center gap-2 mt-1">
+                                                                                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">DOCUMENTO OFICIAL</span>
+                                                                                        <span className="w-1 h-1 bg-amber-300 dark:bg-amber-600 rounded-full" />
+                                                                                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">EMITIDO E DISPONÍVEL</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    const token = localStorage.getItem('token');
+                                                                                    const baseUrl = proc.certificateUrl.startsWith('http') ? proc.certificateUrl : `${getBackendUrl()}${proc.certificateUrl.startsWith('/') ? '' : '/'}${proc.certificateUrl}`;
+                                                                                    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                    window.open(url, '_blank');
+                                                                                }}
+                                                                                className="px-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold shrink-0"
+                                                                                title="Baixar Certificado"
+                                                                            >
+                                                                                <Download size={15} /> Baixar
+                                                                            </button>
+                                                                        </div>
+                                                                    )}
+
+                                                                    {!proc.contractUrl && !proc.proxyUrl && !proc.proxySignedUrl && !proc.certificateUrl && (
                                                                         <div className="p-8 text-center bg-slate-50/50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-slate-200 dark:border-zinc-700">
                                                                             <p className="text-xs text-slate-500 dark:text-zinc-400 italic">Documentos de protocolo e certificados do INPI estarão disponíveis em breve.</p>
                                                                         </div>
