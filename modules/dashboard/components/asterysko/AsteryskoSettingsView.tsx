@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Save, Check, X, Bell, Mail } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Save, Check, X, Bell, Mail, CheckSquare } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -948,6 +948,272 @@ const NotificationTemplatesManager: React.FC = () => {
     );
 };
 
+// Standalone CrmStageTaskManager component outside parent render scope
+const CrmStageTaskManager: React.FC = () => {
+    const { addToast } = useToast();
+    const [selectedStageKey, setSelectedStageKey] = useState('leads');
+    const [tasksMap, setTasksMap] = useState<Record<string, { id: string; title: string; due: string }[]>>(() => {
+        const saved = localStorage.getItem('asterysko_crm_stage_tasks');
+        if (saved) {
+            try { return JSON.parse(saved); } catch (e) {}
+        }
+        return {
+            'leads': [
+                { id: 'leads_contact', title: 'Fazer contato inicial via WhatsApp / Ligação', due: 'Hoje' },
+                { id: 'leads_qualify', title: 'Qualificar interesse e definir marcas/classes de Nice', due: 'Hoje' }
+            ],
+            'preparation': [
+                { id: 'prep_proposal', title: 'Enviar proposta comercial em PDF', due: 'Hoje' },
+                { id: 'prep_system_info', title: 'Cadastrar informações do cliente no portal', due: 'Amanhã' }
+            ],
+            'viability': [
+                { id: 'viab_search', title: 'Realizar busca de anterioridade no Radar de Marcas', due: 'Hoje' },
+                { id: 'viab_report', title: 'Gerar parecer técnico de viabilidade', due: 'Hoje' }
+            ],
+            'contract': [
+                { id: 'cont_send', title: 'Enviar link do contrato para assinatura digital', due: 'Hoje' },
+                { id: 'cont_docs', title: 'Coletar documento de identidade (RG ou CNH) e Contrato Social', due: 'Amanhã' }
+            ],
+            'service_payment': [
+                { id: 'pay_invoice', title: 'Emitir fatura de honorários da Asterysko', due: 'Hoje' },
+                { id: 'pay_confirm', title: 'Confirmar compensação do pagamento do serviço', due: 'Em 2 dias' }
+            ],
+            'documentation': [
+                { id: 'docs_proxy', title: 'Solicitar assinatura da Procuração pelo cliente', due: 'Hoje' },
+                { id: 'docs_validate', title: 'Validar procuração assinada no portal', due: 'Amanhã' }
+            ],
+            'federal_fee': [
+                { id: 'fee_emit', title: 'Gerar guia GRU no portal do INPI', due: 'Hoje' },
+                { id: 'fee_send', title: 'Enviar guia GRU e código de barras para o cliente', due: 'Hoje' },
+                { id: 'fee_confirm', title: 'Acompanhar compensação da GRU (retribuição federal)', due: 'Em 3 dias' }
+            ],
+            'ready_to_file': [
+                { id: 'file_collate', title: 'Conferir todos os documentos e guias anexadas', due: 'Hoje' },
+                { id: 'file_protocol', title: 'Efetuar protocolo do pedido de registro no INPI', due: 'Hoje' }
+            ],
+            'filed': [
+                { id: 'filed_receipt', title: 'Enviar recibo de protocolo INPI ao cliente', due: 'Hoje' },
+                { id: 'filed_monitor', title: 'Monitorar publicação oficial na RPI (Revista da P.I.)', due: 'Semanal' }
+            ],
+            'examination': [
+                { id: 'exam_monitor', title: 'Acompanhar andamento do exame de mérito do INPI', due: 'Mensal' }
+            ],
+            'opposition': [
+                { id: 'opp_analyze', title: 'Analisar teor da oposição ou exigência notificada', due: 'Hoje' },
+                { id: 'opp_reply', title: 'Elaborar e protocolar manifestação/réplica no INPI', due: 'Prazo RPI' }
+            ],
+            'granted': [
+                { id: 'grant_emit', title: 'Gerar GRU do primeiro decênio e expedição de certificado', due: 'Hoje' },
+                { id: 'grant_pay', title: 'Acompanhar pagamento da GRU de concessão pelo cliente', due: 'Prazo legal' }
+            ],
+            'won': [
+                { id: 'won_cert', title: 'Enviar certificado de registro de marca ao cliente', due: 'Hoje' },
+                { id: 'won_congrats', title: 'Enviar mensagem de congratulações e pós-venda', due: 'Amanhã' }
+            ]
+        };
+    });
+
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [newTitle, setNewTitle] = useState('');
+    const [newDue, setNewDue] = useState('Hoje');
+
+    const stagesList = [
+        { key: 'leads', label: 'Novos Leads' },
+        { key: 'preparation', label: 'Preparação' },
+        { key: 'viability', label: 'Viabilidade' },
+        { key: 'contract', label: 'Contrato' },
+        { key: 'service_payment', label: 'Pagamento Serviço' },
+        { key: 'documentation', label: 'Procuração/Docs' },
+        { key: 'federal_fee', label: 'Taxa Federal (GRU)' },
+        { key: 'ready_to_file', label: 'A Protocolar' },
+        { key: 'filed', label: 'Protocolado (RPI)' },
+        { key: 'examination', label: 'Exame de Mérito' },
+        { key: 'opposition', label: 'Oposição / Exigência' },
+        { key: 'granted', label: 'Deferido' },
+        { key: 'won', label: 'Concluído' }
+    ];
+
+    const saveTasks = (newMap: Record<string, { id: string; title: string; due: string }[]>) => {
+        setTasksMap(newMap);
+        localStorage.setItem('asterysko_crm_stage_tasks', JSON.stringify(newMap));
+    };
+
+    const handleAddTask = () => {
+        if (!newTitle.trim()) return;
+        const task = {
+            id: `task_${Date.now()}`,
+            title: newTitle.trim(),
+            due: newDue || 'Hoje'
+        };
+        const currentTasks = tasksMap[selectedStageKey] || [];
+        const updatedMap = {
+            ...tasksMap,
+            [selectedStageKey]: [...currentTasks, task]
+        };
+        saveTasks(updatedMap);
+        setNewTitle('');
+        setIsAddModalOpen(false);
+        addToast({ type: 'success', title: 'Tarefa Criada', message: 'Nova tarefa pré-definida salva para esta etapa!' });
+    };
+
+    const handleDeleteTask = (taskId: string) => {
+        const currentTasks = tasksMap[selectedStageKey] || [];
+        const updatedMap = {
+            ...tasksMap,
+            [selectedStageKey]: currentTasks.filter(t => t.id !== taskId)
+        };
+        saveTasks(updatedMap);
+        addToast({ type: 'success', title: 'Tarefa Removida', message: 'Tarefa excluída da etapa com sucesso.' });
+    };
+
+    const currentStageObj = stagesList.find(s => s.key === selectedStageKey) || stagesList[0];
+    const currentTasksList = tasksMap[selectedStageKey] || [];
+
+    return (
+        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-6">
+            <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                        <CheckSquare size={16} className="text-[#0412dd] dark:text-[#3b48ff]" /> Gerenciador de Tarefas por Etapa (CRM)
+                    </h3>
+                    <p className="text-xs text-docka-500 dark:text-zinc-400 mt-0.5">
+                        Defina quais tarefas e prazos o time deve executar ao mover negócios para cada etapa do funil.
+                    </p>
+                </div>
+                <button
+                    onClick={() => setIsAddModalOpen(true)}
+                    className="px-4 py-2 bg-[#0412dd] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                    <Plus size={14} /> + Nova Tarefa
+                </button>
+            </div>
+
+            {/* Stages Selector Tabs */}
+            <div className="p-6">
+                <div className="flex gap-2 overflow-x-auto pb-3 custom-scrollbar border-b border-docka-100 dark:border-zinc-800 mb-6">
+                    {stagesList.map(st => {
+                        const count = (tasksMap[st.key] || []).length;
+                        const isSel = st.key === selectedStageKey;
+                        return (
+                            <button
+                                key={st.key}
+                                onClick={() => setSelectedStageKey(st.key)}
+                                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 border cursor-pointer ${
+                                    isSel 
+                                        ? 'bg-[#0412dd] text-white border-[#0412dd] shadow-sm'
+                                        : 'bg-docka-50 dark:bg-zinc-800/60 text-docka-600 dark:text-zinc-400 border-docka-200 dark:border-zinc-700 hover:bg-docka-100 dark:hover:bg-zinc-800'
+                                }`}
+                            >
+                                <span>{st.label}</span>
+                                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${isSel ? 'bg-white/20 text-white' : 'bg-docka-200/60 dark:bg-zinc-700 text-docka-700 dark:text-zinc-300'}`}>
+                                    {count}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Tasks List */}
+                <div className="space-y-3">
+                    <h4 className="text-xs font-bold uppercase text-docka-400 dark:text-zinc-500 tracking-wider">
+                        Tarefas pré-definidas da etapa: <span className="text-docka-900 dark:text-white">{currentStageObj.label}</span>
+                    </h4>
+
+                    {currentTasksList.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {currentTasksList.map(task => (
+                                <div key={task.id} className="p-4 bg-zinc-50 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-800 rounded-xl flex items-center justify-between group hover:border-blue-300 transition-colors">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-5 h-5 rounded-full border-2 border-zinc-300 dark:border-zinc-600 flex items-center justify-center shrink-0">
+                                            <div className="w-2 h-2 rounded-full bg-transparent group-hover:bg-blue-500 transition-colors" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-docka-900 dark:text-zinc-100">{task.title}</p>
+                                            <p className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5 flex items-center gap-1">
+                                                <Clock size={10} /> Prazo: {task.due}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDeleteTask(task.id)}
+                                        className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                                        title="Excluir tarefa"
+                                    >
+                                        <Trash2 size={14} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="p-8 text-center border-2 border-dashed border-docka-200 dark:border-zinc-800 rounded-xl">
+                            <p className="text-xs font-semibold text-docka-400 dark:text-zinc-500">Nenhuma tarefa pré-definida para esta etapa.</p>
+                            <button
+                                onClick={() => setIsAddModalOpen(true)}
+                                className="mt-3 text-xs font-bold text-[#0412dd] dark:text-[#3b48ff] hover:underline cursor-pointer"
+                            >
+                                + Adicionar primeira tarefa
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Modal: Adicionar Tarefa */}
+            <Modal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                title={`+ Nova Tarefa: ${currentStageObj.label}`}
+                size="md"
+            >
+                <div className="space-y-4 pt-2">
+                    <div>
+                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Título da Tarefa</label>
+                        <input
+                            type="text"
+                            placeholder="Ex: Confirmar dados da procuração com o cliente"
+                            value={newTitle}
+                            onChange={e => setNewTitle(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Prazo Recomendado</label>
+                        <select
+                            value={newDue}
+                            onChange={e => setNewDue(e.target.value)}
+                            className="w-full px-4 py-2.5 bg-zinc-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm outline-none focus:border-blue-500"
+                        >
+                            <option value="Hoje">Hoje</option>
+                            <option value="Amanhã">Amanhã</option>
+                            <option value="Em 2 dias">Em 2 dias</option>
+                            <option value="Em 3 dias">Em 3 dias</option>
+                            <option value="Semanal">Semanal</option>
+                            <option value="Mensal">Mensal</option>
+                            <option value="Prazo RPI">Prazo RPI (Legal)</option>
+                        </select>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4 border-t border-docka-100 dark:border-zinc-800">
+                        <button
+                            onClick={() => setIsAddModalOpen(false)}
+                            className="px-4 py-2 text-xs font-bold text-docka-500 hover:text-docka-900"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={handleAddTask}
+                            disabled={!newTitle.trim()}
+                            className="px-5 py-2 bg-[#0412dd] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 cursor-pointer"
+                        >
+                            Salvar Tarefa
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        </div>
+    );
+};
+
 // Standalone WhatsAppCard component outside parent render scope
 const WhatsAppCard: React.FC = () => {
     const { addToast } = useToast();
@@ -1191,6 +1457,9 @@ const WhatsAppCard: React.FC = () => {
 
                     {/* WhatsApp Templates Section */}
                     <NotificationTemplatesManager />
+
+                    {/* CRM Stage Task Manager Section */}
+                    <CrmStageTaskManager />
 
                     {/* INPI Integration & RPI Upload */}
                     <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">

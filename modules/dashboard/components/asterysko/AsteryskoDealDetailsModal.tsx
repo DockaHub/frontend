@@ -314,23 +314,36 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         }
     };
 
-    const handleAdvanceStage = async () => {
+    const [isAdvancingStage, setIsAdvancingStage] = useState(false);
+    const [showExaminationBranchModal, setShowExaminationBranchModal] = useState(false);
+
+    const handleAdvanceStage = async (targetNextStatus?: string) => {
         if (!currentDeal?.id) return;
+
+        if (currentDeal.status === 'examination' && !targetNextStatus) {
+            setShowExaminationBranchModal(true);
+            return;
+        }
+
         const currentIdx = stepsKeys.indexOf(currentDeal.status);
         if (currentIdx === -1 || currentIdx >= stepsKeys.length - 1) {
             alert('Este processo já está no estágio final!');
             return;
         }
-        const nextStatus = stepsKeys[currentIdx + 1];
+        const nextStatus = targetNextStatus || stepsKeys[currentIdx + 1];
         try {
+            setIsAdvancingStage(true);
             await api.put(`/asterysko/crm/deals/${currentDeal.id}/status`, { status: nextStatus });
             alert(`Processo avançado com sucesso para "${getStatusLabel(nextStatus)}"!`);
+            setShowExaminationBranchModal(false);
             onUpdate?.();
             fetchDetails();
             fetchInvoices();
         } catch (error: any) {
             console.error('Failed to advance stage', error);
             alert(error.response?.data?.error || 'Falha ao avançar estágio.');
+        } finally {
+            setIsAdvancingStage(false);
         }
     };
 
@@ -360,15 +373,18 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         } else {
             currentCompleted.push(taskId);
         }
+
+        // Atualização otimista no estado local
+        setCurrentDeal(prev => prev ? { ...prev, members: currentCompleted } : prev);
         
         try {
-            await api.patch(`/asterysko/crm/deals/${currentDeal.id}`, {
+            await api.put(`/asterysko/crm/deals/${currentDeal.id}`, {
                 members: currentCompleted
             });
-            fetchDetails();
         } catch (error) {
             console.error('Failed to toggle task state', error);
             alert('Falha ao atualizar tarefa.');
+            fetchDetails();
         }
     };
 
@@ -1976,14 +1992,51 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         Arquivar lead
                     </button>
                     <button 
-                        onClick={handleAdvanceStage}
-                        className="flex-1 max-w-[400px] ml-4 h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[14px] font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-sm cursor-pointer"
+                        onClick={() => handleAdvanceStage()}
+                        disabled={isAdvancingStage}
+                        className="flex-1 max-w-[400px] ml-4 h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[14px] font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
+                        {isAdvancingStage ? <Loader2 size={18} className="animate-spin" /> : null}
                         Avançar etapa do funil
                     </button>
                 </div>
 
             </div>
+
+            {/* Modal de Bifurcação: Exame de Mérito */}
+            {showExaminationBranchModal && (
+                <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 max-w-md w-full shadow-xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-season text-[20px] font-bold text-black dark:text-white">Resultado do Exame de Mérito</h3>
+                            <button onClick={() => setShowExaminationBranchModal(false)} className="text-zinc-400 hover:text-zinc-600">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-6">
+                            O INPI concluiu a análise do exame de mérito. Qual foi o desdobramento publicado na RPI?
+                        </p>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => handleAdvanceStage('granted')}
+                                disabled={isAdvancingStage}
+                                className="w-full p-4 rounded-xl border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 font-bold text-sm flex items-center justify-between transition-colors cursor-pointer"
+                            >
+                                <span>🟢 Deferido (Concessão do INPI)</span>
+                                {isAdvancingStage ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={18} />}
+                            </button>
+                            <button
+                                onClick={() => handleAdvanceStage('opposition')}
+                                disabled={isAdvancingStage}
+                                className="w-full p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 hover:bg-amber-100 font-bold text-sm flex items-center justify-between transition-colors cursor-pointer"
+                            >
+                                <span>🟠 Oposição / Exigência (Manifestação)</span>
+                                {isAdvancingStage ? <Loader2 size={16} className="animate-spin" /> : <Clock size={18} />}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
