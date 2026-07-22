@@ -109,7 +109,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
         // Make API call to update status
         try {
-            await api.patch(`/asterysko/crm/deals/${movedCardId}`, { status: targetColumnId });
+            await api.put(`/asterysko/crm/deals/${movedCardId}/status`, { status: targetColumnId });
         } catch (error) {
             console.error('Failed to update deal status', error);
             // Revert on error by refetching
