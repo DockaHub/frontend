@@ -2216,6 +2216,8 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         </div>
                     </div>
                 </div>
+            )}
+
             {/* Modal de Progresso de Upload */}
             {uploadingFile && (
                 <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
