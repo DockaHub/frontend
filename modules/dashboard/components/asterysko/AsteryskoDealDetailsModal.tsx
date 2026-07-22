@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, FileSignature, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck } from 'lucide-react';
+import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, FileSignature, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle } from 'lucide-react';
 import api from '../../../../services/api';
 
 interface Props {
