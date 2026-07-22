@@ -406,8 +406,13 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            alert('Arquivo enviado com sucesso!');
+            if (uploadType === 'certificate') {
+                alert('🏆 Certificado de Registro enviado com sucesso! O processo foi alterado para CONCLUÍDO e as notificações foram disparadas ao cliente por WhatsApp, E-mail e Portal.');
+            } else {
+                alert('Arquivo enviado com sucesso!');
+            }
             fetchDetails();
+            if (onUpdate) onUpdate();
         } catch (error) {
             console.error('Failed to upload file', error);
             alert('Erro ao enviar arquivo.');
