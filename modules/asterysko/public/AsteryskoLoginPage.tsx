@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
-import { Eye, EyeOff, Mail, Lock, Loader2, AlertCircle, ArrowRight, Sun, Moon, ShieldCheck, KeyRound } from 'lucide-react';
+import { Smartphone, Mail, ShieldCheck, ArrowRight, Loader2, AlertCircle, CheckCircle2, MessageCircle, Sun, Moon, Sparkles } from 'lucide-react';
 
 const AsteryskoLogoSVG = () => (
     <svg width="180" height="30" viewBox="0 0 200 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -40,17 +40,14 @@ interface AsteryskoLoginPageProps {
 
 export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, onToggleTheme }) => {
     const navigate = useNavigate();
-    const { login, refreshUser } = useAuth();
-    const [loginMode, setLoginMode] = useState<'otp' | 'password'>('otp');
-    const [otpStep, setOtpStep] = useState<'email' | 'code'>('email');
-    const [showPassword, setShowPassword] = useState(false);
+    const { refreshUser } = useAuth();
+    
+    const [otpStep, setOtpStep] = useState<'identifier' | 'code'>('identifier');
+    const [identifier, setIdentifier] = useState('');
+    const [otpCode, setOtpCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [infoMessage, setInfoMessage] = useState('');
-
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [otpCode, setOtpCode] = useState('');
 
     // Magic Link Auto-login
     React.useEffect(() => {
@@ -67,39 +64,12 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         setError('');
         try {
             const response = await api.post('/auth/login-by-token', { token });
-            
-            // Removendo restrição de role temporariamente para testes
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
-            
             await refreshUser();
             navigate('/portal');
         } catch (err: any) {
             setError('Seu link de acesso expirou ou é inválido.');
-            setLoading(false);
-        }
-    };
-
-    const handlePasswordSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError('');
-        setInfoMessage('');
-        setLoading(true);
-
-        try {
-            const response: any = await login({ email, password });
-
-            // Ensure only CLIENT role can access the portal via this login
-            if (response?.user?.role?.toUpperCase() !== 'CLIENT') {
-                setError('Este portal é exclusivo para clientes. Acesse a plataforma principal.');
-                setLoading(false);
-                return;
-            }
-
-            navigate('/portal');
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Credenciais inválidas. Tente novamente.');
-        } finally {
             setLoading(false);
         }
     };
@@ -111,12 +81,12 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/request-otp', { email });
-            setInfoMessage(response.data?.message || 'Código enviado com sucesso para o seu e-mail.');
+            const response = await api.post('/auth/request-otp', { identifier });
+            setInfoMessage(response.data?.message || 'Código enviado via WhatsApp e E-mail.');
             setOtpStep('code');
-            setOtpCode(''); // Clear previous inputs
+            setOtpCode('');
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao enviar código de acesso. Tente novamente.');
+            setError(err.response?.data?.error || 'Erro ao enviar código de acesso. Verifique seus dados.');
         } finally {
             setLoading(false);
         }
@@ -128,9 +98,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/verify-otp', { email, code: otpCode });
+            const response = await api.post('/auth/verify-otp', { identifier, code: otpCode });
             
-            // Ensure only CLIENT role can access the portal
             if (response.data?.user?.role?.toUpperCase() !== 'CLIENT') {
                 setError('Este portal é exclusivo para clientes. Acesse a plataforma principal.');
                 setLoading(false);
@@ -150,309 +119,191 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-slate-900 to-slate-950 flex items-center justify-center p-4 font-sans">
-            {/* Theme Toggle - Absolute Position */}
-            {onToggleTheme && (
-                <button
-                    onClick={onToggleTheme}
-                    className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full text-white transition-all shadow-lg"
-                    title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-                >
-                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-            )}
+        <div className="min-h-screen bg-slate-950 flex flex-col justify-between p-4 sm:p-6 md:p-10 font-sans text-slate-100 relative overflow-hidden">
+            {/* Ambient Background Gradient Bubbles */}
+            <div className="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
 
-            <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row relative z-10">
+            {/* Header */}
+            <header className="w-full max-w-md mx-auto flex items-center justify-between pt-2 pb-6 z-10">
+                <div className="text-white scale-90 sm:scale-100 origin-left">
+                    <AsteryskoLogoSVG />
+                </div>
+                {onToggleTheme && (
+                    <button
+                        onClick={onToggleTheme}
+                        className="p-2.5 bg-white/10 hover:bg-white/20 active:scale-95 transition-all rounded-full text-slate-200 cursor-pointer"
+                        title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+                    >
+                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
+                )}
+            </header>
 
-                {/* Left Side - Form */}
-                <div className="w-full md:w-1/2 p-10 md:p-14 flex flex-col justify-center">
-                    <div className="mb-10 text-slate-900 dark:text-white">
-                        <AsteryskoLogoSVG />
+            {/* Main Content Card (Mobile First Container) */}
+            <main className="w-full max-w-md mx-auto my-auto z-10">
+                <div className="bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-blue-950/40">
+                    
+                    {/* Badge Pill */}
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-6">
+                        <ShieldCheck size={14} className="text-blue-400" />
+                        <span>Portal do Cliente • Acesso Seguro</span>
                     </div>
 
-                    <h1 className="text-3xl font-bold text-slate-900 dark:text-zinc-100 mb-3">Bem-vindo(a)</h1>
-                    <p className="text-slate-500 dark:text-zinc-400 mb-8">
-                        Acompanhe seus processos e marcas de forma rápida e segura.
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mb-2">
+                        Entrar no Portal
+                    </h1>
+                    <p className="text-sm text-slate-400 mb-8 leading-relaxed">
+                        Acesse instantaneamente usando o código enviado para o seu <span className="text-emerald-400 font-bold">WhatsApp</span> ou <span className="text-blue-400 font-bold">E-mail</span>.
                     </p>
 
-                    {/* Navigation Tabs */}
-                    <div className="flex border border-slate-100 dark:border-zinc-800 mb-8 p-1 bg-slate-50 dark:bg-zinc-800/40 rounded-2xl">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setLoginMode('otp');
-                                setError('');
-                                setInfoMessage('');
-                                setOtpStep('email');
-                            }}
-                            className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
-                                loginMode === 'otp'
-                                    ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-md border border-slate-100/50 dark:border-zinc-700/30'
-                                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-zinc-200'
-                            }`}
-                        >
-                            <KeyRound size={16} />
-                            Código por E-mail
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setLoginMode('password');
-                                setError('');
-                                setInfoMessage('');
-                            }}
-                            className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 ${
-                                loginMode === 'password'
-                                    ? 'bg-white dark:bg-zinc-800 text-blue-600 dark:text-blue-400 shadow-md border border-slate-100/50 dark:border-zinc-700/30'
-                                    : 'text-slate-500 dark:text-zinc-400 hover:text-slate-950 dark:hover:text-zinc-200'
-                            }`}
-                        >
-                            <Lock size={16} />
-                            Senha Tradicional
-                        </button>
-                    </div>
-
-                    {/* Conditional Login Forms */}
-                    {loginMode === 'otp' ? (
-                        otpStep === 'email' ? (
-                            /* OTP Step 1: Email Request */
-                            <form onSubmit={handleRequestOtp} className="space-y-6">
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
-                                        Endereço de E-mail
-                                    </label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
-                                            placeholder="seu@email.com"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {error && (
-                                    <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                                        <AlertCircle size={16} className="shrink-0" />
-                                        <span>{error}</span>
-                                    </div>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={20} />
-                                            Enviando código...
-                                        </>
-                                    ) : (
-                                        <>
-                                            Receber Código de Acesso
-                                            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
-                        ) : (
-                            /* OTP Step 2: Code Verification */
-                            <form onSubmit={handleVerifyOtp} className="space-y-6">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-zinc-800 rounded-xl border border-slate-100 dark:border-zinc-700/50">
-                                        <div className="text-sm">
-                                            <span className="text-slate-500 dark:text-zinc-400">Enviado para: </span>
-                                            <strong className="text-slate-700 dark:text-zinc-200">{email}</strong>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setOtpStep('email');
-                                                setError('');
-                                                setInfoMessage('');
-                                            }}
-                                            className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-bold"
-                                        >
-                                            Alterar
-                                        </button>
-                                    </div>
-
-                                    {infoMessage && (
-                                        <div className="p-3.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-sm rounded-xl flex items-center gap-2">
-                                            <ShieldCheck size={18} className="shrink-0 text-blue-500" />
-                                            <span>{infoMessage}</span>
-                                        </div>
-                                    )}
-
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
-                                            Código de Acesso (6 dígitos)
-                                        </label>
-                                        <input
-                                            type="text"
-                                            maxLength={6}
-                                            pattern="[0-9]*"
-                                            inputMode="numeric"
-                                            value={otpCode}
-                                            onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                            className="w-full text-center tracking-[12px] font-mono text-2xl py-4 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-300 dark:placeholder:text-zinc-700"
-                                            placeholder="000000"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                {error && (
-                                    <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                                        <AlertCircle size={16} className="shrink-0" />
-                                        <span>{error}</span>
-                                    </div>
-                                )}
-
-                                <div className="flex flex-col gap-3">
-                                    <button
-                                        type="submit"
-                                        disabled={loading}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <Loader2 className="animate-spin" size={20} />
-                                                Verificando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                Acessar Portal
-                                                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
-                                            </>
-                                        )}
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        onClick={handleRequestOtp}
-                                        disabled={loading}
-                                        className="w-full py-2 text-sm font-bold text-slate-500 dark:text-zinc-400 hover:text-blue-600 dark:hover:text-blue-400 transition-all"
-                                    >
-                                        Reenviar Código de Acesso
-                                    </button>
-                                </div>
-                            </form>
-                        )
-                    ) : (
-                        /* Traditional Password Login */
-                        <form onSubmit={handlePasswordSubmit} className="space-y-6">
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
-                                        E-mail
-                                    </label>
-                                    <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
-                                        <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
-                                            placeholder="seu@email.com"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="block text-sm font-bold text-slate-700 dark:text-zinc-300">
-                                        Senha
-                                    </label>
-                                    <div className="relative group">
-                                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500 group-focus-within:text-blue-600 transition-colors" size={20} />
-                                        <input
-                                            type={showPassword ? 'text' : 'password'}
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full pl-12 pr-12 py-3.5 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-xl outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 focus:border-blue-500 transition-all text-slate-900 dark:text-zinc-100 placeholder:text-slate-400"
-                                            placeholder="••••••••"
-                                            required
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-zinc-300"
-                                        >
-                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center justify-between text-sm">
-                                <label className="flex items-center gap-2 cursor-pointer text-slate-600 dark:text-zinc-400 font-semibold">
-                                    <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4" />
-                                    Lembrar-me
+                    {otpStep === 'identifier' ? (
+                        /* STEP 1: Enter Email or Phone */
+                        <form onSubmit={handleRequestOtp} className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider">
+                                    Seu E-mail ou Telefone / WhatsApp
                                 </label>
-                                <a href="#" className="font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">
-                                    Esqueceu a senha?
-                                </a>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 transition-colors flex items-center gap-1.5">
+                                        <Smartphone size={18} />
+                                        <span className="text-slate-600 text-xs">/</span>
+                                        <Mail size={16} />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={identifier}
+                                        onChange={(e) => setIdentifier(e.target.value)}
+                                        className="w-full pl-16 pr-4 py-4 bg-slate-950/80 border border-slate-700/80 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all text-white placeholder:text-slate-500 text-sm sm:text-base"
+                                        placeholder="seu@email.com ou (98) 99110-2121"
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                <p className="text-[11px] text-slate-400">
+                                    Enviaremos um código único de 6 dígitos sem a necessidade de senha.
+                                </p>
                             </div>
 
                             {error && (
-                                <div className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
-                                    <AlertCircle size={16} className="shrink-0" />
+                                <div className="p-4 bg-red-950/40 border border-red-800/50 text-red-300 text-xs sm:text-sm rounded-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2">
+                                    <AlertCircle size={18} className="shrink-0 text-red-400" />
                                     <span>{error}</span>
                                 </div>
                             )}
 
                             <button
                                 type="submit"
-                                disabled={loading}
-                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl font-bold text-lg shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed group"
+                                disabled={loading || !identifier.trim()}
+                                className="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white py-4 rounded-2xl font-bold text-base shadow-lg shadow-blue-600/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
                             >
                                 {loading ? (
                                     <>
                                         <Loader2 className="animate-spin" size={20} />
-                                        Entrando...
+                                        Enviando código...
                                     </>
                                 ) : (
                                     <>
-                                        Acessar Portal
-                                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                        Receber Código de Acesso
+                                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                                     </>
                                 )}
                             </button>
                         </form>
-                    )}
-                </div>
-
-                {/* Right Side - Branding/Info */}
-                <div className="hidden md:flex w-1/2 bg-slate-50 dark:bg-zinc-800/30 p-14 flex-col justify-center relative overflow-hidden">
-                    <div className="relative z-10">
-                        <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-xl border border-slate-100 dark:border-zinc-800 mb-8 max-w-sm mx-auto transform -rotate-1 hover:rotate-0 transition-transform duration-500">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                    <ShieldCheck size={24} />
+                    ) : (
+                        /* STEP 2: Enter 6-Digit Code */
+                        <form onSubmit={handleVerifyOtp} className="space-y-6">
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800">
+                                    <div className="text-xs text-slate-300 truncate pr-2">
+                                        <span className="text-slate-400">Código enviado para: </span>
+                                        <strong className="text-white font-bold">{identifier}</strong>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setOtpStep('identifier');
+                                            setError('');
+                                            setInfoMessage('');
+                                        }}
+                                        className="text-xs text-blue-400 hover:underline font-bold shrink-0 cursor-pointer"
+                                    >
+                                        Alterar
+                                    </button>
                                 </div>
-                                <div>
-                                    <h3 className="font-bold text-slate-900 dark:text-zinc-100">Área do Cliente</h3>
-                                    <p className="text-xs text-slate-500 dark:text-zinc-400">Ambiente Criptografado</p>
+
+                                {infoMessage && (
+                                    <div className="p-3.5 bg-emerald-950/40 border border-emerald-800/50 text-emerald-300 text-xs rounded-2xl flex items-center gap-2.5">
+                                        <MessageCircle size={16} className="shrink-0 text-emerald-400" />
+                                        <span>{infoMessage}</span>
+                                    </div>
+                                )}
+
+                                <div className="space-y-2">
+                                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider text-center">
+                                        Digite o Código de 6 Dígitos
+                                    </label>
+                                    <input
+                                        type="text"
+                                        maxLength={6}
+                                        pattern="[0-9]*"
+                                        inputMode="numeric"
+                                        value={otpCode}
+                                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                                        className="w-full text-center tracking-[12px] font-mono text-3xl py-4 bg-slate-950 border border-slate-700 focus:border-blue-500 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500/40 transition-all text-white placeholder:text-slate-700"
+                                        placeholder="000000"
+                                        required
+                                        autoFocus
+                                    />
                                 </div>
                             </div>
-                            <p className="text-slate-600 dark:text-zinc-400 text-sm leading-relaxed font-medium">
-                                Acompanhe o status dos seus processos de marcas em tempo real com total transparência e segurança de ponta.
-                            </p>
-                        </div>
-                    </div>
 
-                    {/* Background decoration */}
-                    <div className="absolute top-0 right-0 w-full h-full opacity-30 pointer-events-none">
-                        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600 rounded-full blur-[100px] opacity-20"></div>
-                        <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-indigo-600 rounded-full blur-[100px] opacity-20"></div>
-                    </div>
+                            {error && (
+                                <div className="p-4 bg-red-950/40 border border-red-800/50 text-red-300 text-xs sm:text-sm rounded-2xl flex items-center gap-2.5 animate-in fade-in slide-in-from-top-2">
+                                    <AlertCircle size={18} className="shrink-0 text-red-400" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
+
+                            <div className="space-y-3">
+                                <button
+                                    type="submit"
+                                    disabled={loading || otpCode.length !== 6}
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white py-4 rounded-2xl font-bold text-base shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="animate-spin" size={20} />
+                                            Entrando...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CheckCircle2 size={18} />
+                                            Entrar no Portal
+                                        </>
+                                    )}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleRequestOtp}
+                                    disabled={loading}
+                                    className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer"
+                                >
+                                    Reenviar código por WhatsApp / E-mail
+                                </button>
+                            </div>
+                        </form>
+                    )}
                 </div>
-            </div>
+            </main>
+
+            {/* Footer */}
+            <footer className="w-full max-w-md mx-auto text-center pt-6 pb-2 z-10">
+                <p className="text-[11px] text-slate-500 font-medium">
+                    Asterysko Propriedade Intelectual &copy; 2026. Todos os direitos reservados.
+                </p>
+            </footer>
         </div>
     );
 };
