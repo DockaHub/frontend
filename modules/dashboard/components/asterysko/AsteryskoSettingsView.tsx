@@ -207,7 +207,8 @@ const NotificationTemplatesManager: React.FC = () => {
         { slug: 'new-dispatch', name: '📑 Movimentação & Despacho RPI', badgeColor: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
         { slug: 'invoice-pending', name: '💳 Fatura de Serviço Gerada', badgeColor: 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' },
         { slug: 'payment-success', name: '💰 Confirmação de Pagamento', badgeColor: 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400' },
-        { slug: 'registro-vigor', name: '🏆 Registro de Marca Concedido', badgeColor: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+        { slug: 'registro-vigor', name: '🛡️ Registro de Marca Concedido (Deferido)', badgeColor: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' },
+        { slug: 'processo-concluido', name: '🏆 Processo Concluído (Certificado Emitido)', badgeColor: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' },
         { slug: 'custom', name: '⚡ Notificação Customizada', badgeColor: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300' }
     ];
 
@@ -225,10 +226,19 @@ const NotificationTemplatesManager: React.FC = () => {
         {
             id: 'registro-vigor',
             slug: 'registro-vigor',
-            name: 'Registro de Marca em Vigor',
+            name: 'Registro de Marca Concedido (Deferido)',
             channel: 'WHATSAPP',
             stageSlug: 'registro-vigor',
             content: 'Parabéns {{nomeCliente}}! O registro da sua marca {{nomeMarca}} foi concedido pelo INPI (Processo {{codigoProcesso}}).',
+            isActive: true
+        },
+        {
+            id: 'certificado-disponivel',
+            slug: 'certificado-disponivel',
+            name: 'Certificado de Registro Emitido (Concluído)',
+            channel: 'WHATSAPP',
+            stageSlug: 'processo-concluido',
+            content: 'Parabéns {{nomeCliente}}! 🎉 O Certificado de Registro da sua marca {{nomeMarca}} foi emitido pelo INPI e já está disponível para download no seu Portal do Cliente!\n\nAcesse: {{linkPortal}}',
             isActive: true
         },
         {
