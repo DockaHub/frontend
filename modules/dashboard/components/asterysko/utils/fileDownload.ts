@@ -1,4 +1,4 @@
-import { getBackendUrl } from '../../../../services/api';
+import { getBackendUrl } from '../../../../../services/api';
 
 /**
  * Resolves a full URL if a relative path is provided.
