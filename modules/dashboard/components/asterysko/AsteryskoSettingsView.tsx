@@ -24,6 +24,7 @@ interface Plan {
 }
 
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenClientPortal, organization }) => {
+    const [activeSettingsTab, setActiveSettingsTab] = useState<'notifications' | 'crm_inpi' | 'plans' | 'portal'>('notifications');
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -61,9 +62,12 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
     ];
 
     useEffect(() => {
-        fetchPlans();
-        fetchInpiHistory();
-    }, []);
+        if (activeSettingsTab === 'plans') {
+            fetchPlans();
+        } else if (activeSettingsTab === 'crm_inpi') {
+            fetchInpiHistory();
+        }
+    }, [activeSettingsTab]);
 
     const fetchInpiHistory = async () => {
         try {
@@ -1458,355 +1462,419 @@ const WhatsAppCard: React.FC = () => {
     return (
         <DashboardPage title="Configurações Asterysko" icon={Shield}>
             <div className="animate-in fade-in duration-500 max-w-4xl mx-auto pb-20">
-                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-10 -mt-2">Preferências do escritório, tabela de planos e portal do cliente.</p>
+                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-6 -mt-2">Preferências do escritório, integração WhatsApp, tabela de planos e portal do cliente.</p>
+
+                {/* SETTINGS TABS NAVIGATION */}
+                <div className="flex border-b border-docka-200 dark:border-zinc-800 mb-8 bg-white dark:bg-zinc-900 rounded-2xl p-1.5 shadow-sm gap-1 overflow-x-auto">
+                    <button
+                        onClick={() => setActiveSettingsTab('notifications')}
+                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeSettingsTab === 'notifications'
+                                ? 'bg-[#0412dd] text-white shadow-md'
+                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
+                        }`}
+                    >
+                        <Smartphone size={16} /> Conexões & Notificações
+                    </button>
+
+                    <button
+                        onClick={() => setActiveSettingsTab('crm_inpi')}
+                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeSettingsTab === 'crm_inpi'
+                                ? 'bg-[#0412dd] text-white shadow-md'
+                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
+                        }`}
+                    >
+                        <CheckSquare size={16} /> CRM & Motor INPI
+                    </button>
+
+                    <button
+                        onClick={() => setActiveSettingsTab('plans')}
+                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeSettingsTab === 'plans'
+                                ? 'bg-[#0412dd] text-white shadow-md'
+                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
+                        }`}
+                    >
+                        <CreditCard size={16} /> Planos & Honorários
+                    </button>
+
+                    <button
+                        onClick={() => setActiveSettingsTab('portal')}
+                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeSettingsTab === 'portal'
+                                ? 'bg-[#0412dd] text-white shadow-md'
+                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
+                        }`}
+                    >
+                        <Users size={16} /> Portal do Cliente & Marca
+                    </button>
+                </div>
 
                 <div className="space-y-8">
                     
-                    {/* WhatsApp Connection Section */}
-                    <WhatsAppCard />
+                    {/* TAB 1: NOTIFICATIONS & WHATSAPP */}
+                    {activeSettingsTab === 'notifications' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            {/* WhatsApp Connection Section */}
+                            <WhatsAppCard />
 
-                    {/* WhatsApp Templates Section */}
-                    <NotificationTemplatesManager />
-
-                    {/* CRM Stage Task Manager Section */}
-                    <CrmStageTaskManager />
-
-                    {/* INPI Integration & RPI Upload */}
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                        <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30">
-                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-                                <Shield size={16} /> Motor INPI (Revista da Propriedade Industrial)
-                            </h3>
+                            {/* WhatsApp Templates Section */}
+                            <NotificationTemplatesManager />
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-lg text-xs text-blue-700 dark:text-blue-300 mb-4">
-                                <strong>Importante:</strong> Faça o upload do arquivo XML das Revistas (RPI) semanais ou históricas do INPI para alimentar o nosso Motor de Busca de Viabilidade interno.
-                            </div>
+                    )}
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                {/* Upload Box */}
-                                <div>
-                                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Processar Revista (XML)</label>
-                                    <div
-                                        onClick={() => document.getElementById('rpi-upload')?.click()}
-                                        className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors"
-                                    >
-                                        <Upload size={24} className="text-docka-400 dark:text-zinc-500 mb-2" />
-                                        <p className="text-sm font-bold text-docka-700 dark:text-zinc-300">Clique para selecionar o XML</p>
-                                        <p className="text-xs text-docka-500 dark:text-zinc-500 mt-1 text-center">Tamanho máx recomendado: 100MB<br />O processamento rodará em segundo plano.</p>
+                    {/* TAB 2: CRM RULES & INPI MOTOR */}
+                    {activeSettingsTab === 'crm_inpi' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            {/* CRM Stage Task Manager Section */}
+                            <CrmStageTaskManager />
+
+                            {/* INPI Integration & RPI Upload */}
+                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30">
+                                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                                        <Shield size={16} /> Motor INPI (Revista da Propriedade Industrial)
+                                    </h3>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-lg text-xs text-blue-700 dark:text-blue-300 mb-4">
+                                        <strong>Importante:</strong> Faça o upload do arquivo XML das Revistas (RPI) semanais ou históricas do INPI para alimentar o nosso Motor de Busca de Viabilidade interno.
                                     </div>
-                                    <input
-                                        id="rpi-upload"
-                                        type="file"
-                                        className="hidden"
-                                        accept=".xml"
-                                        onChange={async (e) => {
-                                            const file = e.target.files?.[0];
-                                            if (!file) return;
 
-                                            try {
-                                                const formData = new FormData();
-                                                formData.append('file', file);
-                                                // Exemplo: Usamos o timestamp atual como número genérico caso não venha no nome
-                                                formData.append('rpiNumber', file.name.replace(/[^0-9]/g, '') || String(Date.now()));
-
-                                                addToast({ type: 'success', title: 'Upload Iniciado', message: `Enviando ${file.name} ao servidor...` });
-
-                                                await api.post('/asterysko/inpi/parse', formData, {
-                                                    headers: { 'Content-Type': 'multipart/form-data' }
-                                                });
-
-                                                addToast({ type: 'success', title: 'Processamento Iniciado', message: 'O arquivo XML está sendo indexado no Motor de Busca em segundo plano.' });
-                                            } catch (err: any) {
-                                                console.error(err);
-                                                addToast({ type: 'error', title: 'Falha no Envio', message: err.response?.data?.error || 'Erro ao comunicar com a API.' });
-                                            } finally {
-                                                // Limpa o input
-                                                e.target.value = '';
-                                                setTimeout(fetchInpiHistory, 1500); // refresh list
-                                            }
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Legacy Credentials info */}
-                                <div>
-                                    <p className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Acesso API Automática (Futuro)</p>
-                                    <div className="space-y-4 opacity-50 pointer-events-none">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* Upload Box */}
                                         <div>
-                                            <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Login e-INPI</label>
-                                            <input className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="asterysko_pi" disabled />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Senha</label>
-                                            <input type="password" className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="********" disabled />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* History List */}
-                            <div className="mt-8 pt-6 border-t border-docka-100 dark:border-zinc-800">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h4 className="text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase flex items-center gap-2">Histórico de Processamento</h4>
-                                    <button onClick={fetchInpiHistory} className="text-xs px-3 py-1 bg-docka-100 dark:bg-zinc-800 text-docka-600 dark:text-zinc-300 rounded-md hover:bg-docka-200 dark:hover:bg-zinc-700 font-bold transition-colors">Atualizar</button>
-                                </div>
-                                <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
-                                    {loadingHistory ? (
-                                        <div className="text-sm text-center text-docka-400 py-4">Carregando histórico...</div>
-                                    ) : (!Array.isArray(inpiHistory) || inpiHistory.length === 0) ? (
-                                        <div className="text-sm border-2 border-dashed border-docka-200 dark:border-zinc-800 p-6 rounded-xl text-center text-docka-500 dark:text-zinc-500 flex flex-col items-center">
-                                            <Info size={20} className="mb-2 opacity-50" />
-                                            Nenhum histórico de Revista do INPI encontrado. Faça seu primeiro Upload.
-                                        </div>
-                                    ) : (
-                                        inpiHistory.map((log: any) => (
-                                            <div key={log.id} className="flex items-center justify-between p-3 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm transition-colors hover:border-docka-300">
-                                                <div className="flex flex-col">
-                                                    <span className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
-                                                        RPI {log.rpiNumber}
-                                                        {log.status === 'PROCESSING' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
-                                                        {log.status === 'COMPLETED' && <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
-                                                        {log.status === 'FAILED' && <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold">Falhou</span>}
-                                                    </span>
-                                                    <span className="text-xs text-docka-500 uppercase mt-1">
-                                                        Data da Edição: {log.rpiDate ? new Date(log.rpiDate).toLocaleDateString('pt-BR') : 'N/A'} • {log.fileName || ''}
-                                                    </span>
-                                                    {log.status === 'FAILED' && log.errorMessage && (
-                                                        <span className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold">{log.errorMessage}</span>
-                                                    )}
-                                                </div>
-                                                <div className="text-right flex flex-col items-end">
-                                                    <span className="font-mono font-bold text-docka-700 dark:text-zinc-300">
-                                                        {(log.totalExtracted || 0).toLocaleString('pt-BR')}
-                                                    </span>
-                                                    <span className="text-xs text-docka-400 uppercase">Marcas extraídas</span>
-                                                </div>
+                                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Processar Revista (XML)</label>
+                                            <div
+                                                onClick={() => document.getElementById('rpi-upload')?.click()}
+                                                className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors"
+                                            >
+                                                <Upload size={24} className="text-docka-400 dark:text-zinc-500 mb-2" />
+                                                <p className="text-sm font-bold text-docka-700 dark:text-zinc-300">Clique para selecionar o XML</p>
+                                                <p className="text-xs text-docka-500 dark:text-zinc-500 mt-1 text-center">Tamanho máx recomendado: 100MB<br />O processamento rodará em segundo plano.</p>
                                             </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    {/* Fees Table Section */}
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                        <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
-                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-                                <CreditCard size={16} /> Tabela de Planos Asterysko
-                            </h3>
-                                <button
-                                    onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0 }); setIsModalOpen(true); }}
-                                    className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
-                                >
-                                <Plus size={14} /> Novo Plano
-                            </button>
-                        </div>
-                        <div className="p-6">
-                            {loading ? (
-                                <div className="py-8 text-center text-docka-400 text-xs italic">Carregando honorários...</div>
-                            ) : (
-                                <>
-                                    <table className="w-full text-sm text-left">
-                                        <thead className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-semibold border-b border-docka-100 dark:border-zinc-800 tracking-wider">
-                                            <tr>
-                                                <th className="pb-3 text-left">Plano / Serviço</th>
-                                                <th className="pb-3 text-right">Valor</th>
-                                                <th className="pb-3 text-right">Com. Vendas</th>
-                                                <th className="pb-3 text-right">Com. Op.</th>
-                                                <th className="pb-3 text-right">Ação</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
-                                            {(Array.isArray(plans) ? plans : []).map((plan) => (
-                                                <tr key={plan.id} className="group hover:bg-docka-50/50 dark:hover:bg-zinc-800/30">
-                                                    <td className="py-3">
-                                                        <p className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{plan.name}</p>
-                                                        {plan.description && <p className="text-xs text-docka-500 dark:text-zinc-500">{plan.description}</p>}
-                                                    </td>
-                                                    <td className="py-3 text-right font-mono font-bold text-docka-900 dark:text-zinc-100">
-                                                        R$ {Number(plan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                    </td>
-                                                    <td className="py-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                                                        R$ {Number(plan.commissionSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                    </td>
-                                                    <td className="py-3 text-right font-mono text-blue-600 dark:text-blue-400 font-bold">
-                                                        R$ {Number(plan.commissionOps || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                    </td>
-                                                    <td className="py-3 text-right">
-                                                        <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <button
-                                                                onClick={() => { setSelectedPlan(plan); setIsModalOpen(true); }}
-                                                                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-                                                            >
-                                                                <Edit2 size={14} />
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleDelete(plan.id)}
-                                                                className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
-                                                            >
-                                                                <Trash2 size={14} />
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            {(!Array.isArray(plans) || plans.length === 0) && (
-                                                <tr>
-                                                    <td colSpan={5} className="py-8 text-center text-docka-400 text-xs italic">Nenhum plano cadastrado.</td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </>
-                            )}
-                            <div className="mt-6 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 flex gap-3">
-                                <Info size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
-                                <p className="text-xs text-blue-800/80 dark:text-blue-300/60 leading-relaxed italic">
-                                    Estes valores servem de base para o CRM. Você ainda poderá ajustar o valor individual de cada lead durante o fechamento.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Client Portal Management */}
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                        <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
-                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
-                                <Users size={16} /> Portal do Cliente
-                            </h3>
-                            <span className="text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">ATIVO</span>
-                        </div>
-                        <div className="p-6 space-y-6">
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1">
-                                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Link de Acesso Geral</label>
-                                    <div className="flex gap-2">
-                                        <div className="flex-1 flex items-center bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-docka-600 dark:text-zinc-400">
-                                            <Link size={14} className="mr-2 text-docka-400 dark:text-zinc-500" />
-                                            portal.asterysko.com/login
-                                        </div>
-                                        <button className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400">
-                                            <Copy size={16} />
-                                        </button>
-                                        <button
-                                            onClick={onOpenClientPortal}
-                                            className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 flex items-center gap-2 shadow-sm transition-transform active:scale-95"
-                                        >
-                                            <Eye size={16} /> Visualizar como Cliente
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-2">Personalização e Domínio</h4>
-
-                                <div className="mb-6">
-                                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Domínio Customizado (White-Label)</label>
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-2">
                                             <input
-                                                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm text-docka-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
-                                                placeholder="Ex: cliente.asterysko.com"
-                                                value={clientPortalDomain}
-                                                onChange={(e) => setClientPortalDomain(e.target.value)}
-                                                onBlur={handleUpdateDomain}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        handleUpdateDomain();
+                                                id="rpi-upload"
+                                                type="file"
+                                                className="hidden"
+                                                accept=".xml"
+                                                onChange={async (e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (!file) return;
+
+                                                    try {
+                                                        const formData = new FormData();
+                                                        formData.append('file', file);
+                                                        formData.append('rpiNumber', file.name.replace(/[^0-9]/g, '') || String(Date.now()));
+
+                                                        addToast({ type: 'success', title: 'Upload Iniciado', message: `Enviando ${file.name} ao servidor...` });
+
+                                                        await api.post('/asterysko/inpi/parse', formData, {
+                                                            headers: { 'Content-Type': 'multipart/form-data' }
+                                                        });
+
+                                                        addToast({ type: 'success', title: 'Processamento Iniciado', message: 'O arquivo XML está sendo indexado no Motor de Busca em segundo plano.' });
+                                                    } catch (err: any) {
+                                                        console.error(err);
+                                                        addToast({ type: 'error', title: 'Falha no Envio', message: err.response?.data?.error || 'Erro ao comunicar com a API.' });
+                                                    } finally {
+                                                        e.target.value = '';
+                                                        setTimeout(fetchInpiHistory, 1500);
                                                     }
                                                 }}
                                             />
-                                            <button
-                                                onClick={handleUpdateDomain}
-                                                className="px-4 py-2 bg-docka-100 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 rounded-xl text-sm font-bold hover:bg-docka-200 dark:hover:bg-zinc-700 transition-colors"
-                                            >
-                                                Salvar
-                                            </button>
                                         </div>
-                                        {clientPortalDomain && (
-                                            <div className="mt-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200 dark:border-zinc-700/50">
-                                                <h5 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2 flex items-center gap-2">
-                                                    Configuração de Zona DNS
-                                                    <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-semibold">Pendente</span>
-                                                </h5>
-                                                <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">Adicione o registro abaixo no seu provedor de domínio (Cloudflare, Hostinger, Registro.br, etc) para ativar o redirecionamento. A propagação pode levar alguns minutos.</p>
 
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    <div>
-                                                        <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1">Tipo</span>
-                                                        <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100">CNAME</div>
-                                                    </div>
-                                                    <div>
-                                                        <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
-                                                            Nome / Host
-                                                        </span>
-                                                        <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate" title={clientPortalDomain}>
-                                                            {clientPortalDomain.split('.').length > 2 ? clientPortalDomain.split('.')[0] : '@'}
-                                                        </div>
-                                                    </div>
-                                                    <div>
-                                                        <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
-                                                            Valor / Destino
-                                                        </span>
-                                                        <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate">
-                                                            cname.vercel-dns.com
-                                                        </div>
-                                                    </div>
+                                        {/* Legacy Credentials info */}
+                                        <div>
+                                            <p className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Acesso API Automática (Futuro)</p>
+                                            <div className="space-y-4 opacity-50 pointer-events-none">
+                                                <div>
+                                                    <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Login e-INPI</label>
+                                                    <input className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="asterysko_pi" disabled />
                                                 </div>
+                                                <div>
+                                                    <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Senha</label>
+                                                    <input type="password" className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="********" disabled />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* History List */}
+                                    <div className="mt-8 pt-6 border-t border-docka-100 dark:border-zinc-800">
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h4 className="text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase flex items-center gap-2">Histórico de Processamento</h4>
+                                            <button onClick={fetchInpiHistory} className="text-xs px-3 py-1 bg-docka-100 dark:bg-zinc-800 text-docka-600 dark:text-zinc-300 rounded-md hover:bg-docka-200 dark:hover:bg-zinc-700 font-bold transition-colors">Atualizar</button>
+                                        </div>
+                                        <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                                            {loadingHistory ? (
+                                                <div className="text-sm text-center text-docka-400 py-4">Carregando histórico...</div>
+                                            ) : (!Array.isArray(inpiHistory) || inpiHistory.length === 0) ? (
+                                                <div className="text-sm border-2 border-dashed border-docka-200 dark:border-zinc-800 p-6 rounded-xl text-center text-docka-500 dark:text-zinc-500 flex flex-col items-center">
+                                                    <Info size={20} className="mb-2 opacity-50" />
+                                                    Nenhum histórico de Revista do INPI encontrado. Faça seu primeiro Upload.
+                                                </div>
+                                            ) : (
+                                                inpiHistory.map((log: any) => (
+                                                    <div key={log.id} className="flex items-center justify-between p-3 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm transition-colors hover:border-docka-300">
+                                                        <div className="flex flex-col">
+                                                            <span className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
+                                                                RPI {log.rpiNumber}
+                                                                {log.status === 'PROCESSING' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
+                                                                {log.status === 'COMPLETED' && <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
+                                                                {log.status === 'FAILED' && <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold">Falhou</span>}
+                                                            </span>
+                                                            <span className="text-xs text-docka-500 uppercase mt-1">
+                                                                Data da Edição: {log.rpiDate ? new Date(log.rpiDate).toLocaleDateString('pt-BR') : 'N/A'} • {log.fileName || ''}
+                                                            </span>
+                                                            {log.status === 'FAILED' && log.errorMessage && (
+                                                                <span className="text-xs text-red-600 dark:text-red-400 mt-1 font-semibold">{log.errorMessage}</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right flex flex-col items-end">
+                                                            <span className="font-mono font-bold text-docka-700 dark:text-zinc-300">
+                                                                {(log.totalExtracted || 0).toLocaleString('pt-BR')}
+                                                            </span>
+                                                            <span className="text-xs text-docka-400 uppercase">Marcas extraídas</span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 3: PLANS & PRICING TABLE */}
+                    {activeSettingsTab === 'plans' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            {/* Fees Table Section */}
+                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
+                                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                                        <CreditCard size={16} /> Tabela de Planos Asterysko
+                                    </h3>
+                                    <button
+                                        onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0 }); setIsModalOpen(true); }}
+                                        className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
+                                    >
+                                        <Plus size={14} /> Novo Plano
+                                    </button>
+                                </div>
+                                <div className="p-6">
+                                    {loading ? (
+                                        <div className="py-8 text-center text-docka-400 text-xs italic">Carregando honorários...</div>
+                                    ) : (
+                                        <>
+                                            <table className="w-full text-sm text-left">
+                                                <thead className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-semibold border-b border-docka-100 dark:border-zinc-800 tracking-wider">
+                                                    <tr>
+                                                        <th className="pb-3 text-left">Plano / Serviço</th>
+                                                        <th className="pb-3 text-right">Valor</th>
+                                                        <th className="pb-3 text-right">Com. Vendas</th>
+                                                        <th className="pb-3 text-right">Com. Op.</th>
+                                                        <th className="pb-3 text-right">Ação</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
+                                                    {(Array.isArray(plans) ? plans : []).map((plan) => (
+                                                        <tr key={plan.id} className="group hover:bg-docka-50/50 dark:hover:bg-zinc-800/30">
+                                                            <td className="py-3">
+                                                                <p className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{plan.name}</p>
+                                                                {plan.description && <p className="text-xs text-docka-500 dark:text-zinc-500">{plan.description}</p>}
+                                                            </td>
+                                                            <td className="py-3 text-right font-mono font-bold text-docka-900 dark:text-zinc-100">
+                                                                R$ {Number(plan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                            </td>
+                                                            <td className="py-3 text-right font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                                                R$ {Number(plan.commissionSales || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                            </td>
+                                                            <td className="py-3 text-right font-mono text-blue-600 dark:text-blue-400 font-bold">
+                                                                R$ {Number(plan.commissionOps || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                            </td>
+                                                            <td className="py-3 text-right">
+                                                                <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <button
+                                                                        onClick={() => { setSelectedPlan(plan); setIsModalOpen(true); }}
+                                                                        className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                                                                    >
+                                                                        <Edit2 size={14} />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleDelete(plan.id)}
+                                                                        className="p-1.5 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                                                                    >
+                                                                        <Trash2 size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    {(!Array.isArray(plans) || plans.length === 0) && (
+                                                        <tr>
+                                                            <td colSpan={5} className="py-8 text-center text-docka-400 text-xs italic">Nenhum plano cadastrado.</td>
+                                                        </tr>
+                                                    )}
+                                                </tbody>
+                                            </table>
+                                        </>
+                                    )}
+                                    <div className="mt-6 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 flex gap-3">
+                                        <Info size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                                        <p className="text-xs text-blue-800/80 dark:text-blue-300/60 leading-relaxed italic">
+                                            Estes valores servem de base para o CRM. Você ainda poderá ajustar o valor individual de cada lead durante o fechamento.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TAB 4: CLIENT PORTAL & BRANDING */}
+                    {activeSettingsTab === 'portal' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
+                            {/* Client Portal Management */}
+                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
+                                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                                        <Users size={16} /> Portal do Cliente
+                                    </h3>
+                                    <span className="text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">ATIVO</span>
+                                </div>
+                                <div className="p-6 space-y-6">
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Link de Acesso Geral</label>
+                                            <div className="flex gap-2">
+                                                <div className="flex-1 flex items-center bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-docka-600 dark:text-zinc-400">
+                                                    <Link size={14} className="mr-2 text-docka-400 dark:text-zinc-500" />
+                                                    portal.asterysko.com/login
+                                                </div>
+                                                <button className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400">
+                                                    <Copy size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={onOpenClientPortal}
+                                                    className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 flex items-center gap-2 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                                                >
+                                                    <Eye size={16} /> Visualizar como Cliente
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-2">Personalização e Domínio</h4>
+
+                                        <div className="mb-6">
+                                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Domínio Customizado (White-Label)</label>
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm text-docka-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
+                                                        placeholder="Ex: cliente.asterysko.com"
+                                                        value={clientPortalDomain}
+                                                        onChange={(e) => setClientPortalDomain(e.target.value)}
+                                                        onBlur={handleUpdateDomain}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                e.preventDefault();
+                                                                handleUpdateDomain();
+                                                            }
+                                                        }}
+                                                    />
+                                                    <button
+                                                        onClick={handleUpdateDomain}
+                                                        className="px-4 py-2 bg-docka-100 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 rounded-xl text-sm font-bold hover:bg-docka-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                                                    >
+                                                        Salvar
+                                                    </button>
+                                                </div>
+                                                {clientPortalDomain && (
+                                                    <div className="mt-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200 dark:border-zinc-700/50">
+                                                        <h5 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2 flex items-center gap-2">
+                                                            Configuração de Zona DNS
+                                                            <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-semibold">Pendente</span>
+                                                        </h5>
+                                                        <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">Adicione o registro abaixo no seu provedor de domínio (Cloudflare, Hostinger, Registro.br, etc) para ativar o redirecionamento. A propagação pode levar alguns minutos.</p>
+
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <div>
+                                                                <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1">Tipo</span>
+                                                                <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100">CNAME</div>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
+                                                                    Nome / Host
+                                                                </span>
+                                                                <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate" title={clientPortalDomain}>
+                                                                    {clientPortalDomain.split('.').length > 2 ? clientPortalDomain.split('.')[0] : '@'}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1 flex items-center justify-between">
+                                                                    Valor / Destino
+                                                                </span>
+                                                                <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100 truncate">
+                                                                    cname.vercel-dns.com
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Cor Primária</label>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded bg-blue-600 border border-docka-200 dark:border-zinc-700" />
+                                                    <input className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100" defaultValue="#2563EB" />
+                                                </div>
+                                            </div>
+
+                                            {/* Logo Upload Section */}
+                                            <div>
+                                                <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Logo do Portal</label>
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    className="hidden"
+                                                    accept="image/*"
+                                                    onChange={handleFileChange}
+                                                />
+                                                <div className="flex items-center gap-3">
+                                                    {organization?.logo && (
+                                                        <div className="w-10 h-10 rounded-lg bg-white border border-docka-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
+                                                            <img src={`${api.defaults.baseURL?.replace('/api', '')}${organization.logo}`} alt="Logo" className="w-full h-full object-contain" />
+                                                        </div>
+                                                    )}
+                                                    <button
+                                                        onClick={handleLogoClick}
+                                                        className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm text-left text-docka-500 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                                                    >
+                                                        {organization?.logo ? 'Alterar imagem...' : 'Carregar imagem...'}
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        {organization && (
+                                            <div className="mt-8 pt-6 border-t border-docka-100 dark:border-zinc-800">
+                                                <OrganizationIconSettings organization={organization} />
                                             </div>
                                         )}
                                     </div>
                                 </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Cor Primária</label>
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded bg-blue-600 border border-docka-200 dark:border-zinc-700" />
-                                            <input className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100" defaultValue="#2563EB" />
-                                        </div>
-                                    </div>
-
-                                    {/* Logo Upload Section */}
-                                    <div>
-                                        <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Logo do Portal</label>
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            className="hidden"
-                                            accept="image/*"
-                                            onChange={handleFileChange}
-                                        />
-                                        <div className="flex items-center gap-3">
-                                            {organization?.logo && (
-                                                <div className="w-10 h-10 rounded-lg bg-white border border-docka-200 dark:border-zinc-700 flex items-center justify-center overflow-hidden shrink-0">
-                                                    <img src={`${api.defaults.baseURL?.replace('/api', '')}${organization.logo}`} alt="Logo" className="w-full h-full object-contain" />
-                                                </div>
-                                            )}
-                                            <button
-                                                onClick={handleLogoClick}
-                                                className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm text-left text-docka-500 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-700 transition-colors"
-                                            >
-                                                {organization?.logo ? 'Alterar imagem...' : 'Carregar imagem...'}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                                {organization && (
-                                    <div className="mt-8 pt-6 border-t border-docka-100 dark:border-zinc-800">
-                                        <OrganizationIconSettings organization={organization} />
-                                    </div>
-                                )}
                             </div>
                         </div>
-                    </div>
+                    )}
 
                 </div>
             </div>
