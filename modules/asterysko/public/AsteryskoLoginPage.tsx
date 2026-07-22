@@ -57,6 +57,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [infoMessage, setInfoMessage] = useState('');
+    // Identifier exato usado no request — garante que o verify usa o mesmo valor
+    const [sentIdentifier, setSentIdentifier] = useState('');
 
     const activeIdentifier = loginType === 'phone' ? phoneInput : emailInput;
 
@@ -79,6 +81,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         try {
             const response = await api.post('/auth/request-otp', { identifier: activeIdentifier });
             setInfoMessage(response.data?.message || 'Código enviado com sucesso!');
+            setSentIdentifier(activeIdentifier); // salva o identifier exato
             setOtpStep('code');
             setOtpCode('');
         } catch (err: any) {
@@ -94,7 +97,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/verify-otp', { identifier: activeIdentifier, code: otpCode });
+            // Usa o identifier salvo no momento do request — nunca o activeIdentifier que pode ter mudado
+            const response = await api.post('/auth/verify-otp', { identifier: sentIdentifier, code: otpCode });
 
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));

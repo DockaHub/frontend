@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, FileSignature, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle } from 'lucide-react';
-import api from '../../../../services/api';
+import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, FileSignature, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon } from 'lucide-react';
+import api, { getBackendUrl } from '../../../../services/api';
+
+// Resolve uma URL relativa ou absoluta para uma URL completa de imagem/arquivo
+const resolveUrl = (rawUrl: string | undefined | null): string => {
+    if (!rawUrl) return '';
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
+        return rawUrl;
+    }
+    const base = getBackendUrl();
+    return `${base}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+};
 
 interface Props {
     isOpen: boolean;
@@ -224,6 +234,13 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         recipientEmail: string;
         date: string;
     } | null>(null);
+
+    // Contact Editing State
+    const [isEditingContact, setIsEditingContact] = useState(false);
+    const [editContactName, setEditContactName] = useState('');
+    const [editContactEmail, setEditContactEmail] = useState('');
+    const [editContactPhone, setEditContactPhone] = useState('');
+    const [isSavingContact, setIsSavingContact] = useState(false);
 
     const currentDeal = dealDetails || card;
     const clientId = currentDeal?.clientId || currentDeal?.client?.id;
@@ -540,6 +557,27 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         alert('Link da fatura copiado com sucesso para a área de transferência!');
     };
 
+    const handleSaveContact = async () => {
+        if (!currentDeal?.id) return;
+        try {
+            setIsSavingContact(true);
+            await api.put(`/asterysko/crm/deals/${currentDeal.id}`, {
+                contactName: editContactName,
+                contactEmail: editContactEmail,
+                contactPhone: editContactPhone
+            });
+            alert('Contato do cliente atualizado com sucesso!');
+            setIsEditingContact(false);
+            fetchDetails();
+            if (onUpdate) onUpdate();
+        } catch (error: any) {
+            console.error('Failed to update contact', error);
+            alert(error.response?.data?.error || 'Erro ao atualizar contato.');
+        } finally {
+            setIsSavingContact(false);
+        }
+    };
+
     if (!isOpen && !isClosing) return null;
 
     const dealTitle = currentDeal?.title || 'Novo Processo';
@@ -573,19 +611,36 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const formattedPaid = `R$ ${totalPaidVal.toFixed(2).replace('.', ',')}`;
     const formattedPending = `R$ ${totalPendingVal.toFixed(2).replace('.', ',')}`;
 
+    // Logo da marca para exibição no header do sidebar
+    const brandLogoUrl = resolveUrl(currentDeal?.process?.brand?.logoUrl);
+    const brandName = currentDeal?.process?.brand?.name || dealTitle;
+
     // Dynamic shared documents list between INPI Process files and local ones
     const filesList: any[] = [];
     if (currentDeal?.process) {
         const p = currentDeal.process;
-        const brandName = p.brand?.name || dealTitle;
         const creationDate = p.createdAt ? new Date(p.createdAt).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
         const updateDate = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('pt-BR') : creationDate;
+
+        // Logo da marca como primeiro item na lista
+        if (p.brand?.logoUrl) {
+            filesList.push({
+                key: 'logoUrl',
+                name: customFileNames['logoUrl'] || `Logo da Marca - ${brandName}.png`,
+                url: resolveUrl(p.brand.logoUrl),
+                type: 'Logo',
+                date: creationDate,
+                size: '—',
+                isPublic: true,
+                isImage: true
+            });
+        }
 
         if (p.contractUrl) {
             filesList.push({
                 key: 'contractUrl',
                 name: customFileNames['contractUrl'] || `Contrato - ${brandName}.pdf`,
-                url: p.contractUrl,
+                url: resolveUrl(p.contractUrl),
                 type: 'Contrato',
                 date: p.contractSignDate ? new Date(p.contractSignDate).toLocaleDateString('pt-BR') : creationDate,
                 size: '1.2 MB',
@@ -596,7 +651,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             filesList.push({
                 key: 'proxyUrl',
                 name: customFileNames['proxyUrl'] || `Procuração (Modelo) - ${brandName}.pdf`,
-                url: p.proxyUrl,
+                url: resolveUrl(p.proxyUrl),
                 type: 'Procuração',
                 date: creationDate,
                 size: '450 KB',
@@ -607,7 +662,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             filesList.push({
                 key: 'proxySignedUrl',
                 name: customFileNames['proxySignedUrl'] || `Procuração Assinada - ${brandName}.pdf`,
-                url: p.proxySignedUrl,
+                url: resolveUrl(p.proxySignedUrl),
                 type: 'Procuração',
                 date: updateDate,
                 size: '850 KB',
@@ -618,7 +673,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             filesList.push({
                 key: 'gruUrl',
                 name: customFileNames['gruUrl'] || `Guia GRU - ${brandName}.pdf`,
-                url: p.gruUrl,
+                url: resolveUrl(p.gruUrl),
                 type: 'GRU',
                 date: creationDate,
                 size: '310 KB',
@@ -629,7 +684,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             filesList.push({
                 key: 'gruReceiptUrl',
                 name: customFileNames['gruReceiptUrl'] || `Comprovante GRU - ${brandName}.pdf`,
-                url: p.gruReceiptUrl,
+                url: resolveUrl(p.gruReceiptUrl),
                 type: 'Comprovante',
                 date: updateDate,
                 size: '220 KB',
@@ -640,7 +695,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             filesList.push({
                 key: 'protocolReceiptUrl',
                 name: customFileNames['protocolReceiptUrl'] || `Recibo de Protocolo - ${brandName}.pdf`,
-                url: p.protocolReceiptUrl,
+                url: resolveUrl(p.protocolReceiptUrl),
                 type: 'Recibo',
                 date: updateDate,
                 size: '1.4 MB',
@@ -651,7 +706,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             filesList.push({
                 key: 'certificateUrl',
                 name: customFileNames['certificateUrl'] || `Certificado de Registro - ${brandName}.pdf`,
-                url: p.certificateUrl,
+                url: resolveUrl(p.certificateUrl),
                 type: 'Certificado',
                 date: updateDate,
                 size: '2.8 MB',
@@ -878,19 +933,19 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                             <div className="flex items-center gap-2 shrink-0">
                                 <a 
-                                    href={(() => {
-                                        const rawUrl = previewFile.url || '';
-                                        if (!rawUrl) return '#';
-                                        if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) return rawUrl;
-                                        if (rawUrl.startsWith('/sign/') || rawUrl.startsWith('/portal/')) return rawUrl;
-                                        const getBackendUrl = () => window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://backend-production-0647.up.railway.app';
-                                        return `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
-                                    })()}
+                                    href={resolveUrl(previewFile.url) || '#'}
+                                    download={previewFile.name}
+                                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+                                >
+                                    <Download size={14} /> Baixar
+                                </a>
+                                <a 
+                                    href={resolveUrl(previewFile.url) || '#'}
                                     target="_blank" 
                                     rel="noreferrer"
                                     className="flex items-center gap-1.5 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
                                 >
-                                    <ExternalLink size={14} /> Abrir externa
+                                    <ExternalLink size={14} /> Abrir
                                 </a>
                                 <button 
                                     onClick={() => setPreviewFile(null)}
@@ -928,9 +983,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     );
                                 }
 
-                                const isAbsolute = rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:') || rawUrl.startsWith('blob:');
-                                const getBackendUrl = () => window.location.hostname === 'localhost' ? 'http://localhost:3001' : 'https://backend-production-0647.up.railway.app';
-                                const resolvedUrl = isAbsolute ? rawUrl : (rawUrl && rawUrl !== '/' ? `${getBackendUrl()}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}` : '');
+                                const resolvedUrl = resolveUrl(rawUrl);
 
                                 if (!resolvedUrl) {
                                     return (
@@ -1324,18 +1377,126 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     </div>
                                 </div>
 
+                                {/* Logo da Marca */}
+                                {brandLogoUrl && (
+                                    <div className="border-t border-[#e5e5e5] dark:border-zinc-800 pt-8">
+                                        <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-3">Logotipo da Marca</p>
+                                        <div className="relative group rounded-xl border border-[#e5e5e5] dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden flex items-center justify-center" style={{ minHeight: 120 }}>
+                                            <img
+                                                src={brandLogoUrl}
+                                                alt={`Logo ${brandName}`}
+                                                className="max-h-[120px] max-w-full object-contain p-3"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                    const placeholder = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                                                    if (placeholder) placeholder.style.display = 'flex';
+                                                }}
+                                            />
+                                            <div className="hidden flex-col items-center justify-center p-4 text-zinc-400" style={{ display: 'none' }}>
+                                                <ImageIcon size={28} className="mb-1" />
+                                                <span className="text-[10px]">Imagem indisponível</span>
+                                            </div>
+                                            {/* Overlay de ações ao hover */}
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button
+                                                    onClick={() => setPreviewFile({ name: `Logo - ${brandName}.png`, url: brandLogoUrl, type: 'Logo', isPublic: true })}
+                                                    className="bg-white text-black text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-zinc-100 transition-colors shadow-md"
+                                                >
+                                                    <Eye size={12} /> Ver
+                                                </button>
+                                                <a
+                                                    href={brandLogoUrl}
+                                                    download={`logo-${brandName}.png`}
+                                                    className="bg-[#0412dd] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-800 transition-colors shadow-md"
+                                                >
+                                                    <Download size={12} /> Baixar
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <p className="text-[10px] text-zinc-400 mt-2 text-center font-medium">{brandName}</p>
+                                    </div>
+                                )}
+
                                 {/* Cliente */}
                                 <div className="border-t border-[#e5e5e5] dark:border-zinc-800 pt-8">
-                                    <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-4">Contato do Cliente</p>
-                                    <h4 className="text-[14px] font-bold text-black dark:text-white mb-2">{clientName}</h4>
-                                    <p className="text-[13px] font-medium text-[#666] dark:text-zinc-400 mb-1 flex items-center gap-2 font-mono">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect><polyline points="3 7 12 13 21 7"></polyline></svg>
-                                        <span className="truncate">{clientEmail}</span>
-                                    </p>
-                                    <p className="text-[13px] font-medium text-[#666] dark:text-zinc-400 mb-4 flex items-center gap-2 font-mono">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="shrink-0"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                                        <span>{clientPhone}</span>
-                                    </p>
+                                    <div className="flex items-center justify-between mb-4">
+                                        <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider">Contato do Cliente</p>
+                                        {!isEditingContact ? (
+                                            <button 
+                                                onClick={() => {
+                                                    setEditContactName(currentDeal?.contactName || currentDeal?.subtitle || '');
+                                                    setEditContactEmail(currentDeal?.contactEmail || '');
+                                                    setEditContactPhone(currentDeal?.contactPhone || '');
+                                                    setIsEditingContact(true);
+                                                }}
+                                                className="text-[11px] font-bold text-[#0412dd] dark:text-[#3b48ff] flex items-center gap-1 hover:underline cursor-pointer"
+                                            >
+                                                <Edit2 size={12} /> Editar
+                                            </button>
+                                        ) : null}
+                                    </div>
+
+                                    {!isEditingContact ? (
+                                        <>
+                                            <h4 className="text-[14px] font-bold text-black dark:text-white mb-2">{clientName}</h4>
+                                            <p className="text-[13px] font-medium text-[#666] dark:text-zinc-400 mb-1 flex items-center gap-2 font-mono">
+                                                <Mail size={14} className="shrink-0 text-zinc-400" />
+                                                <span className="truncate">{clientEmail}</span>
+                                            </p>
+                                            <p className="text-[13px] font-medium text-[#666] dark:text-zinc-400 mb-4 flex items-center gap-2 font-mono">
+                                                <Smartphone size={14} className="shrink-0 text-zinc-400" />
+                                                <span>{clientPhone}</span>
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <div className="flex flex-col gap-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Nome do Contato</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={editContactName} 
+                                                    onChange={(e) => setEditContactName(e.target.value)} 
+                                                    className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                    placeholder="Nome do cliente"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">E-mail</label>
+                                                <input 
+                                                    type="email" 
+                                                    value={editContactEmail} 
+                                                    onChange={(e) => setEditContactEmail(e.target.value)} 
+                                                    className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                    placeholder="email@cliente.com"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Telefone / WhatsApp</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={editContactPhone} 
+                                                    onChange={(e) => setEditContactPhone(e.target.value)} 
+                                                    className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                    placeholder="(00) 00000-0000"
+                                                />
+                                            </div>
+                                            <div className="flex items-center gap-2 pt-1">
+                                                <button
+                                                    onClick={handleSaveContact}
+                                                    disabled={isSavingContact}
+                                                    className="flex-1 bg-[#0412dd] text-white text-xs font-bold py-1.5 rounded-lg hover:bg-blue-800 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                                >
+                                                    {isSavingContact ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Salvar
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsEditingContact(false)}
+                                                    className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Arquivos recentes */}
@@ -1346,19 +1507,37 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         {filesList.length ? filesList.map((file: any, idx: number) => (
                                             <div key={idx} className="flex flex-col p-2.5 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-[#e5e5e5] dark:border-zinc-700/50 gap-1.5 relative group/file">
                                                 <div className="flex items-center gap-2.5">
-                                                    <div className="w-7 h-7 rounded-lg bg-red-100 dark:bg-red-950/20 text-red-500 flex items-center justify-center shrink-0">
-                                                        <FileText size={14} />
+                                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 overflow-hidden ${
+                                                        file.isImage 
+                                                            ? 'bg-transparent border border-zinc-200 dark:border-zinc-700' 
+                                                            : 'bg-red-100 dark:bg-red-950/20 text-red-500'
+                                                    }`}>
+                                                        {file.isImage ? (
+                                                            <img src={file.url} alt={file.name} className="w-full h-full object-contain" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display='none'; }} />
+                                                        ) : (
+                                                            <FileText size={14} />
+                                                        )}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <p className="text-[11px] font-bold text-black dark:text-white leading-tight truncate" title={file.name}>{file.name}</p>
-                                                        <p className="text-[9.5px] font-medium text-[#9f9f9f]">{file.date} • {file.size}</p>
+                                                        <p className="text-[9.5px] font-medium text-[#9f9f9f]">{file.date}{file.size !== '—' ? ` • ${file.size}` : ''}</p>
                                                     </div>
-                                                    <button 
-                                                        onClick={() => setPreviewFile(file)}
-                                                        className="text-[10px] font-bold text-[#0412dd] dark:text-[#3b48ff] hover:underline shrink-0"
-                                                    >
-                                                        Ver
-                                                    </button>
+                                                    <div className="flex items-center gap-1 shrink-0">
+                                                        <button 
+                                                            onClick={() => setPreviewFile(file)}
+                                                            className="text-[10px] font-bold text-[#0412dd] dark:text-[#3b48ff] hover:underline"
+                                                        >
+                                                            Ver
+                                                        </button>
+                                                        <a
+                                                            href={file.url}
+                                                            download={file.name}
+                                                            className="text-[10px] font-bold text-zinc-500 hover:text-black dark:hover:text-white"
+                                                            title="Baixar"
+                                                        >
+                                                            <Download size={12} />
+                                                        </a>
+                                                    </div>
                                                 </div>
                                                 <div className="flex items-center justify-between border-t border-zinc-200/55 dark:border-zinc-850 pt-1.5 mt-0.5">
                                                     <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded ${
