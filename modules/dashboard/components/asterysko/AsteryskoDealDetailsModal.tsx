@@ -446,9 +446,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             }
             fetchDetails();
             if (onUpdate) onUpdate();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to upload file', error);
-            alert('Erro ao enviar arquivo.');
+            const msg = error.response?.data?.details || error.response?.data?.error || 'Erro ao enviar arquivo.';
+            alert(`Falha no upload: ${msg}`);
         } finally {
             setUploadingFile(false);
         }
