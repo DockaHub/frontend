@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import api from '../../../../services/api';
+import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 
 interface Props {
     isOpen: boolean;
@@ -103,7 +104,7 @@ const AsteryskoNewClientModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, 
                 postalCode: formData.cep,
                 name: formData.name, 
                 email: formData.email,
-                phone: formData.phone,
+                phone: sanitizePhoneForSave(formData.phone),
                 organizationId
             };
             
@@ -138,10 +139,7 @@ const AsteryskoNewClientModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, 
                          .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
                          .substring(0, 14);
         } else if (e.target.name === 'phone') {
-            value = value.replace(/\D/g, '')
-                         .replace(/(\d{2})(\d)/, '($1) $2')
-                         .replace(/(\d{5})(\d)/, '$1-$2')
-                         .substring(0, 15);
+            value = formatPhoneMask(value);
         }
 
         setFormData({ ...formData, [e.target.name]: value });

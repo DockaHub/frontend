@@ -3,6 +3,7 @@ import { Plus, MoreVertical, Loader2, Edit2, X, Save, User, Phone, Mail, FileTex
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewClientModal from './AsteryskoNewClientModal';
+import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 
 interface Client {
     id: string;
@@ -104,7 +105,7 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
         setEditingClient(client);
         setEditName(client.name || client.company || '');
         setEditEmail(client.email || '');
-        setEditPhone(client.phone || '');
+        setEditPhone(formatPhoneMask(client.phone || ''));
         setEditCpfCnpj(client.cpfCnpj || client.cnpj || '');
         setEditAddress(client.address || '');
         setEditCity(client.city || '');
@@ -116,10 +117,11 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
         if (!editingClient?.id) return;
         try {
             setIsSavingEdit(true);
+            const cleanedPhone = sanitizePhoneForSave(editPhone);
             await api.put(`/asterysko/clients/${editingClient.id}`, {
                 name: editName,
                 email: editEmail,
-                phone: editPhone,
+                phone: cleanedPhone,
                 cnpj: editCpfCnpj,
                 address: editAddress,
                 city: editCity,
@@ -194,8 +196,8 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                         <input
                                             type="text"
                                             value={editPhone}
-                                            onChange={e => setEditPhone(e.target.value)}
-                                            placeholder="(98) 99110-2121"
+                                            onChange={e => setEditPhone(formatPhoneMask(e.target.value))}
+                                            placeholder="(00) 00000-0000"
                                             className="w-full bg-transparent text-sm text-black dark:text-white outline-none"
                                         />
                                     </div>

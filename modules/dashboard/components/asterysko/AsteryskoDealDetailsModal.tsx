@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, FileSignature, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
+import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 
 // Resolve uma URL relativa ou absoluta para uma URL completa de imagem/arquivo
 const resolveUrl = (rawUrl: string | undefined | null): string => {
@@ -562,10 +563,11 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         if (!currentDeal?.id) return;
         try {
             setIsSavingContact(true);
+            const cleanedPhone = sanitizePhoneForSave(editContactPhone);
             await api.put(`/asterysko/crm/deals/${currentDeal.id}`, {
                 contactName: editContactName,
                 contactEmail: editContactEmail,
-                contactPhone: editContactPhone
+                contactPhone: cleanedPhone
             });
             alert('Contato do cliente atualizado com sucesso!');
             setIsEditingContact(false);
@@ -584,7 +586,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const dealTitle = currentDeal?.title || 'Novo Processo';
     const clientName = currentDeal?.contactName || currentDeal?.subtitle || 'Sem cliente vinculado';
     const clientEmail = currentDeal?.contactEmail || 'Sem email cadastrado';
-    const clientPhone = currentDeal?.contactPhone || 'Sem telefone';
+    const clientPhone = currentDeal?.contactPhone ? formatPhoneMask(currentDeal.contactPhone) : 'Sem telefone';
     
     const rawValue = currentDeal?.value;
     let dealValue = 'R$ 0,00';
@@ -1427,7 +1429,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 onClick={() => {
                                                     setEditContactName(currentDeal?.contactName || currentDeal?.subtitle || '');
                                                     setEditContactEmail(currentDeal?.contactEmail || '');
-                                                    setEditContactPhone(currentDeal?.contactPhone || '');
+                                                    setEditContactPhone(formatPhoneMask(currentDeal?.contactPhone || ''));
                                                     setIsEditingContact(true);
                                                 }}
                                                 className="text-[11px] font-bold text-[#0412dd] dark:text-[#3b48ff] flex items-center gap-1 hover:underline cursor-pointer"
@@ -1476,7 +1478,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 <input 
                                                     type="text" 
                                                     value={editContactPhone} 
-                                                    onChange={(e) => setEditContactPhone(e.target.value)} 
+                                                    onChange={(e) => setEditContactPhone(formatPhoneMask(e.target.value))} 
                                                     className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
                                                     placeholder="(00) 00000-0000"
                                                 />
