@@ -256,7 +256,8 @@ const AppContent: React.FC = () => {
       title: 'Você saiu da conta',
       duration: 3000
     });
-    navigate('/login', { replace: true });
+    // Em domínio de cliente (ex: cliente.asterysko.com), nunca redirecionar para /login da Manyways
+    navigate(isTenantDomain ? '/portal/login' : '/login', { replace: true });
   };
 
   // Open Settings Handlers
@@ -338,7 +339,8 @@ const AppContent: React.FC = () => {
       const dealId = location.pathname.split('/')[2];
       return <ContractSignaturePage dealId={dealId} />;
     }
-    if (location.pathname.startsWith('/portal')) {
+    // Tenant domain (e.g. cliente.asterysko.com) — NUNCA mostrar a tela da Manyways
+    if (isTenantDomain || location.pathname.startsWith('/portal')) {
       return <AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />;
     }
     return <LoginPage />;
