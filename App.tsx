@@ -250,14 +250,13 @@ const AppContent: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    logout();
-    navigate('/login');
     setIsSettingsOpen(false);
     addToast({
       type: 'info',
       title: 'Você saiu da conta',
       duration: 3000
     });
+    navigate('/login', { replace: true });
   };
 
   // Open Settings Handlers
@@ -410,11 +409,23 @@ const AppContent: React.FC = () => {
           <Route path="/portal/*" element={<AsteryskoClientPortal theme={theme} onToggleTheme={toggleTheme} onExit={() => navigate('/')} />} />
 
           {/* Default & Security Routes */}
-          <Route path="/login" element={<Navigate to="/" replace />} />
+          <Route path="/login" element={
+            user ? (
+              user.role?.toUpperCase() === 'CLIENT'
+                ? <Navigate to="/portal" replace />
+                : <Navigate to={`/dashboard?view=overview&org=${currentOrg?.id || 'org_4'}`} replace />
+            ) : (
+              <LoginPage />
+            )
+          } />
           <Route path="/" element={
-            user?.role?.toUpperCase() === 'CLIENT' ? 
-            <Navigate to="/portal" replace /> : 
-            <Navigate to={`/dashboard?view=overview&org=${currentOrg?.id || 'org_4'}`} replace />
+            !user ? (
+              <Navigate to="/login" replace />
+            ) : user.role?.toUpperCase() === 'CLIENT' ? (
+              <Navigate to="/portal" replace />
+            ) : (
+              <Navigate to={`/dashboard?view=overview&org=${currentOrg?.id || 'org_4'}`} replace />
+            )
           } />
           
           {/* Catch-all route to prevent black screen */}
