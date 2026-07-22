@@ -930,6 +930,34 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                     {/* TAB: TIMELINE */}
                                                     {activeTab === 'timeline' && (
                                                         <div className="relative pl-2 animate-in fade-in duration-300">
+                                                            {proc.certificateUrl && (
+                                                                <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-amber-500/5 border border-amber-400/40 dark:border-amber-600/40 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                                                    <div className="flex items-center gap-3.5 min-w-0">
+                                                                        <div className="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 text-xl shadow-inner">
+                                                                            🏆
+                                                                        </div>
+                                                                        <div>
+                                                                            <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1.5">
+                                                                                Certificado de Registro Emitido! 🏆🛡️
+                                                                            </h4>
+                                                                            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-0.5">
+                                                                                Sua marca está registrada e protegida pelo INPI em todo o Brasil.
+                                                                            </p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            const token = localStorage.getItem('token');
+                                                                            const baseUrl = proc.certificateUrl.startsWith('http') ? proc.certificateUrl : `${getBackendUrl()}${proc.certificateUrl.startsWith('/') ? '' : '/'}${proc.certificateUrl}`;
+                                                                            const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                            window.open(url, '_blank');
+                                                                        }}
+                                                                        className="w-full sm:w-auto px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 tracking-wide uppercase shrink-0"
+                                                                    >
+                                                                        <Download size={16} strokeWidth={2.5} /> Baixar Certificado 🏆
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                             {getTimelineEvents(proc, financials.invoices).map((step: any, idx: number, arr: any[]) => (
                                                                 <div key={step.id || idx} className="relative flex gap-6 pb-8 last:pb-0">
                                                                     {/* Connector Line */}
@@ -1260,7 +1288,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                     {
                                                         activeTab === 'docs' && (
                                                             <div className="animate-in fade-in duration-300">
-                                                                <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg p-4 mb-6 flex gap-3">
+                                                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg p-4 mb-6 flex gap-3">
                                                                     <Shield size={20} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                                                                     <div>
                                                                         <h4 className="text-sm font-bold text-blue-900 dark:text-blue-200">Arquivos do Processo</h4>
@@ -1268,99 +1296,101 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                     </div>
                                                                 </div>
 
-                                                                <div className="space-y-3">
-                                                                    {proc.contractUrl && (
-                                                                        <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group">
-                                                                            <div className="flex items-center gap-4">
-                                                                                <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-lg flex items-center justify-center border border-indigo-100 dark:border-indigo-900/30">
-                                                                                    <FileText size={20} />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">Contrato de Prestação de Serviços</p>
-                                                                                    <div className="flex items-center gap-2 mt-1">
-                                                                                        <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded">CONTRATO</span>
-                                                                                        <span className="w-1 h-1 bg-slate-300 dark:bg-zinc-600 rounded-full" />
-                                                                                        <span className="text-xs text-slate-400 dark:text-zinc-500">{proc.contractSignStatus === 'SIGNED' ? 'ASSINADO' : 'PENDENTE'}</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <button 
-                                                                                onClick={() => {
-                                                                                    const token = localStorage.getItem('token');
-                                                                                    const url = proc.contractUrl.startsWith('http') ? proc.contractUrl : `${getBackendUrl()}${proc.contractUrl.startsWith('/') ? '' : '/'}${proc.contractUrl}${proc.contractUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                                    window.open(url, '_blank');
-                                                                                }} 
-                                                                                className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border"
-                                                                            >
-                                                                                <ExternalLink size={20} />
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
+                                                                <div className="space-y-4">
+                                                                     {proc.contractUrl && (
+                                                                         <div className="p-4 sm:p-5 bg-white dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-2xl hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+                                                                             <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 w-full sm:w-auto">
+                                                                                 <div className="w-11 h-11 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:indigo-400 rounded-xl flex items-center justify-center border border-indigo-100 dark:border-indigo-900/30 shrink-0">
+                                                                                     <FileText size={22} />
+                                                                                 </div>
+                                                                                 <div className="min-w-0 flex-1">
+                                                                                     <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">Contrato de Prestação de Serviços</p>
+                                                                                     <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                                                         <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-700 px-2 py-0.5 rounded-md">CONTRATO</span>
+                                                                                         <span className="w-1 h-1 bg-slate-300 dark:bg-zinc-600 rounded-full hidden sm:inline-block" />
+                                                                                         <span className="text-xs text-slate-500 dark:text-zinc-400">{proc.contractSignStatus === 'SIGNED' ? 'ASSINADO' : 'PENDENTE'}</span>
+                                                                                     </div>
+                                                                                 </div>
+                                                                             </div>
+                                                                             <button 
+                                                                                 onClick={() => {
+                                                                                     const token = localStorage.getItem('token');
+                                                                                     const url = proc.contractUrl.startsWith('http') ? proc.contractUrl : `${getBackendUrl()}${proc.contractUrl.startsWith('/') ? '' : '/'}${proc.contractUrl}${proc.contractUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                     window.open(url, '_blank');
+                                                                                 }} 
+                                                                                 className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-xl transition-colors border border-blue-200 dark:border-blue-800 flex items-center justify-center gap-2 shrink-0"
+                                                                             >
+                                                                                 <ExternalLink size={16} /> Visualizar / Assinar
+                                                                             </button>
+                                                                         </div>
+                                                                     )}
 
-                                                                    {(proc.proxyUrl || proc.proxySignedUrl) && (
-                                                                        <div className="flex items-center justify-between p-4 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all group">
-                                                                            <div className="flex items-center gap-4">
-                                                                                <div className="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center border border-amber-100 dark:border-amber-900/30">
-                                                                                    <Shield size={20} />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 group-hover:text-blue-700 dark:group-hover:text-blue-400 transition-colors">Procuração Asterysko</p>
-                                                                                    <div className="flex items-center gap-2 mt-1">
-                                                                                        <span className="text-xs font-medium text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-700 px-1.5 py-0.5 rounded">DOCUMENTO</span>
-                                                                                        <span className="w-1 h-1 bg-slate-300 dark:bg-zinc-600 rounded-full" />
-                                                                                        <span className="text-xs text-slate-400 dark:text-zinc-500">{proc.proxySignStatus === 'VALIDATED' ? 'VALIDADA' : 'PENDENTE'}</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const token = localStorage.getItem('token');
-                                                                                    if (proc.proxySignedUrl) {
-                                                                                        const url = proc.proxySignedUrl.startsWith('http') ? proc.proxySignedUrl : `${getBackendUrl()}${proc.proxySignedUrl.startsWith('/') ? '' : '/'}${proc.proxySignedUrl}${proc.proxySignedUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                                        window.open(url, '_blank');
-                                                                                    } else {
-                                                                                        handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca');
-                                                                                    }
-                                                                                }}
-                                                                                className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border"
-                                                                                title="Baixar Procuração"
-                                                                            >
-                                                                                {isDownloadingPdf === proc.id ? <Loader2 size={20} className="animate-spin" /> : <ExternalLink size={20} />}
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
+                                                                     {(proc.proxyUrl || proc.proxySignedUrl) && (
+                                                                         <div className="p-4 sm:p-5 bg-white dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-2xl hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+                                                                             <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 w-full sm:w-auto">
+                                                                                 <div className="w-11 h-11 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center border border-amber-100 dark:border-amber-900/30 shrink-0">
+                                                                                     <Shield size={22} />
+                                                                                 </div>
+                                                                                 <div className="min-w-0 flex-1">
+                                                                                     <p className="text-sm font-bold text-slate-900 dark:text-zinc-100 truncate">Procuração Asterysko</p>
+                                                                                     <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                                                         <span className="text-[10px] font-bold text-slate-500 dark:text-zinc-400 bg-slate-100 dark:bg-zinc-700 px-2 py-0.5 rounded-md">DOCUMENTO</span>
+                                                                                         <span className="w-1 h-1 bg-slate-300 dark:bg-zinc-600 rounded-full hidden sm:inline-block" />
+                                                                                         <span className="text-xs text-slate-500 dark:text-zinc-400">{proc.proxySignStatus === 'VALIDATED' ? 'VALIDADA' : 'PENDENTE'}</span>
+                                                                                     </div>
+                                                                                 </div>
+                                                                             </div>
+                                                                             <button
+                                                                                 onClick={() => {
+                                                                                     const token = localStorage.getItem('token');
+                                                                                     if (proc.proxySignedUrl) {
+                                                                                         const url = proc.proxySignedUrl.startsWith('http') ? proc.proxySignedUrl : `${getBackendUrl()}${proc.proxySignedUrl.startsWith('/') ? '' : '/'}${proc.proxySignedUrl}${proc.proxySignedUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                         window.open(url, '_blank');
+                                                                                     } else {
+                                                                                         handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca');
+                                                                                     }
+                                                                                 }}
+                                                                                 className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-xl transition-colors border border-slate-200 dark:border-zinc-700 flex items-center justify-center gap-2 shrink-0"
+                                                                                 title="Baixar Procuração"
+                                                                             >
+                                                                                 {isDownloadingPdf === proc.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                                                                 Baixar Procuração
+                                                                             </button>
+                                                                         </div>
+                                                                     )}
 
-                                                                    {proc.certificateUrl && (
-                                                                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/50 rounded-xl hover:shadow-md transition-all group">
-                                                                            <div className="flex items-center gap-4">
-                                                                                <div className="w-10 h-10 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-lg flex items-center justify-center border border-amber-300 dark:border-amber-700 shrink-0">
-                                                                                    <Award size={20} />
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="text-sm font-black text-slate-900 dark:text-zinc-100 group-hover:text-amber-600 transition-colors flex items-center gap-1.5">
-                                                                                        Certificado Oficial de Registro de Marca 🏆
-                                                                                    </p>
-                                                                                    <div className="flex items-center gap-2 mt-1">
-                                                                                        <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/40 px-2 py-0.5 rounded">DOCUMENTO OFICIAL</span>
-                                                                                        <span className="w-1 h-1 bg-amber-300 dark:bg-amber-600 rounded-full" />
-                                                                                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">EMITIDO E DISPONÍVEL</span>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                            <button
-                                                                                onClick={() => {
-                                                                                    const token = localStorage.getItem('token');
-                                                                                    const baseUrl = proc.certificateUrl.startsWith('http') ? proc.certificateUrl : `${getBackendUrl()}${proc.certificateUrl.startsWith('/') ? '' : '/'}${proc.certificateUrl}`;
-                                                                                    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                                    window.open(url, '_blank');
-                                                                                }}
-                                                                                className="px-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-1.5 text-xs font-bold shrink-0"
-                                                                                title="Baixar Certificado"
-                                                                            >
-                                                                                <Download size={15} /> Baixar
-                                                                            </button>
-                                                                        </div>
-                                                                    )}
+                                                                     {proc.certificateUrl && (
+                                                                         <div className="p-4 sm:p-5 bg-gradient-to-br from-amber-500/10 via-yellow-500/5 to-transparent dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700/60 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 w-full">
+                                                                             <div className="flex items-center gap-3.5 sm:gap-4 min-w-0 w-full sm:w-auto">
+                                                                                 <div className="w-11 h-11 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center border border-amber-300 dark:border-amber-700 shrink-0 shadow-inner">
+                                                                                     <Award size={22} />
+                                                                                 </div>
+                                                                                 <div className="min-w-0 flex-1">
+                                                                                     <p className="text-sm font-black text-slate-900 dark:text-zinc-100 flex items-center gap-1.5 truncate">
+                                                                                         Certificado de Registro de Marca 🏆
+                                                                                     </p>
+                                                                                     <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                                                         <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded-md">DOCUMENTO OFICIAL</span>
+                                                                                         <span className="w-1 h-1 bg-amber-300 dark:bg-amber-600 rounded-full hidden sm:inline-block" />
+                                                                                         <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">DISPONÍVEL PARA DOWNLOAD</span>
+                                                                                     </div>
+                                                                                 </div>
+                                                                             </div>
+                                                                             <button
+                                                                                 onClick={() => {
+                                                                                     const token = localStorage.getItem('token');
+                                                                                     const baseUrl = proc.certificateUrl.startsWith('http') ? proc.certificateUrl : `${getBackendUrl()}${proc.certificateUrl.startsWith('/') ? '' : '/'}${proc.certificateUrl}`;
+                                                                                     const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                     window.open(url, '_blank');
+                                                                                 }}
+                                                                                 className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs font-bold shrink-0 tracking-wide uppercase"
+                                                                                 title="Baixar Certificado"
+                                                                             >
+                                                                                 <Download size={16} strokeWidth={2.5} /> Baixar Certificado
+                                                                             </button>
+                                                                         </div>
+                                                                     )}
+                                                                </div>
 
                                                                     {!proc.contractUrl && !proc.proxyUrl && !proc.proxySignedUrl && !proc.certificateUrl && (
                                                                         <div className="p-8 text-center bg-slate-50/50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-slate-200 dark:border-zinc-700">
