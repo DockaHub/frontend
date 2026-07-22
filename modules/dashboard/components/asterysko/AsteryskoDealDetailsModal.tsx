@@ -2216,6 +2216,19 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         </div>
                     </div>
                 </div>
+            {/* Modal de Progresso de Upload */}
+            {uploadingFile && (
+                <div className="fixed inset-0 z-[150] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center text-center animate-in zoom-in-95 duration-150">
+                        <div className="w-16 h-16 rounded-full bg-blue-50 dark:bg-blue-950/40 text-[#0412dd] dark:text-[#3b48ff] flex items-center justify-center mb-4 border border-blue-100 dark:border-blue-900/50">
+                            <Loader2 size={32} className="animate-spin" />
+                        </div>
+                        <h3 className="font-season text-[18px] font-bold text-black dark:text-white mb-1">Enviando Documento...</h3>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-medium leading-relaxed">
+                            Processando o arquivo e disparando notificações ao cliente (WhatsApp, E-mail e Portal)...
+                        </p>
+                    </div>
+                </div>
             )}
         </div>
     );
