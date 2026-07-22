@@ -4,6 +4,7 @@ import { FileSignature, Search, Filter, Download, FileText, CheckCircle2, Clock,
 import { api } from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import DashboardPage from '../../../../components/DashboardPage';
+import { forceDownloadFile } from './utils/fileDownload';
 
 interface DocumentItem {
     id: string;
@@ -39,11 +40,11 @@ const AsteryskoDocumentsView: React.FC = () => {
     };
 
     const handleDownload = (doc: DocumentItem) => {
-        if (doc.type === 'Contrato' && doc.source === 'deal') {
-            // Open the public contract view (or sign page if pending)
+        if (doc.type === 'Contrato' && doc.source === 'deal' && doc.status === 'pending') {
+            // Open the public contract view for signature if pending
             window.open(`/sign/${doc.id}`, '_blank');
         } else if (doc.downloadUrl) {
-            window.open(doc.downloadUrl, '_blank');
+            forceDownloadFile(doc.downloadUrl, `${doc.title.replace(/\s+/g, '_')}.pdf`);
         } else {
             addToast({ type: 'info', title: 'Indisponível', message: 'Visualização não disponível.' });
         }

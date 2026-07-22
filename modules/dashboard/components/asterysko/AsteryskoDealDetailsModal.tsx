@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, FileSignature, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
+import { forceDownloadFile } from './utils/fileDownload';
 
 // Resolve uma URL relativa ou absoluta para uma URL completa de imagem/arquivo
 const resolveUrl = (rawUrl: string | undefined | null): string => {
@@ -935,13 +936,12 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                                <a 
-                                    href={resolveUrl(previewFile.url) || '#'}
-                                    download={previewFile.name}
-                                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+                                <button 
+                                    onClick={() => forceDownloadFile(previewFile.url, previewFile.name)}
+                                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
                                 >
                                     <Download size={14} /> Baixar
-                                </a>
+                                </button>
                                 <a 
                                     href={resolveUrl(previewFile.url) || '#'}
                                     target="_blank" 
@@ -1407,13 +1407,12 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 >
                                                     <Eye size={12} /> Ver
                                                 </button>
-                                                <a
-                                                    href={brandLogoUrl}
-                                                    download={`logo-${brandName}.png`}
-                                                    className="bg-[#0412dd] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-800 transition-colors shadow-md"
+                                                <button
+                                                    onClick={() => forceDownloadFile(brandLogoUrl, `logo-${brandName.replace(/\s+/g, '_')}.png`)}
+                                                    className="bg-[#0412dd] text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-blue-800 transition-colors shadow-md cursor-pointer"
                                                 >
                                                     <Download size={12} /> Baixar
-                                                </a>
+                                                </button>
                                             </div>
                                         </div>
                                         <p className="text-[10px] text-zinc-400 mt-2 text-center font-medium">{brandName}</p>
@@ -1532,14 +1531,13 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                         >
                                                             Ver
                                                         </button>
-                                                        <a
-                                                            href={file.url}
-                                                            download={file.name}
-                                                            className="text-[10px] font-bold text-zinc-500 hover:text-black dark:hover:text-white"
+                                                        <button
+                                                            onClick={() => forceDownloadFile(file.url, file.name)}
+                                                            className="text-[10px] font-bold text-zinc-500 hover:text-black dark:hover:text-white cursor-pointer"
                                                             title="Baixar"
                                                         >
                                                             <Download size={12} />
-                                                        </a>
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center justify-between border-t border-zinc-200/55 dark:border-zinc-850 pt-1.5 mt-0.5">

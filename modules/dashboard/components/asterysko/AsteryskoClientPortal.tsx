@@ -4,6 +4,7 @@ import { FileSignature, FileText, CheckCircle2, Download, Menu, User, Bell, Shie
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
+import { forceDownloadFile } from './utils/fileDownload';
 
 interface AsteryskoClientPortalProps {
     onExit: () => void;
@@ -227,27 +228,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
             setIsDownloadingPdf(procId);
             const token = localStorage.getItem('token');
             const url = `${getBackendUrl()}/api/asterysko/processes/${procId}/proxy/download-pdf?token=${token}`;
-
-            const response = await axios({
-                url,
-                method: 'GET',
-                responseType: 'blob',
-            });
-
-            const blob = new Blob([response.data], { type: 'application/pdf' });
-            const downloadUrl = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.setAttribute('download', `Procuracao_${brandName.replace(/\s+/g, '_')}.pdf`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(downloadUrl);
-        } catch (err: any) {
-            console.error('Download failed:', err);
-            // Fallback to trying window.open as a last resort
-            const token = localStorage.getItem('token');
-            window.open(`${getBackendUrl()}/api/asterysko/processes/${procId}/proxy/download-pdf?token=${token}`, '_blank');
+            await forceDownloadFile(url, `Procuracao_${(brandName || 'Marca').replace(/\s+/g, '_')}.pdf`);
         } finally {
             setIsDownloadingPdf(null);
         }
@@ -1076,11 +1057,10 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                                         <div className="flex flex-col sm:flex-row gap-3 mt-4">
                                                                                                             <button 
                                                                                                                 onClick={() => {
-                                                                                                                    const token = localStorage.getItem('token');
-                                                                                                                    const url = `${getBackendUrl()}/api/asterysko/processes/${proc.id}/gru/download?token=${token}`;
-                                                                                                                    window.open(url, '_blank');
+                                                                                                                    const url = `/api/asterysko/processes/${proc.id}/gru/download`;
+                                                                                                                    forceDownloadFile(url, `Boleto-GRU_${(proc.brandName || 'Marca').replace(/\s+/g, '_')}.pdf`);
                                                                                                                 }}
-                                                                                                                className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                                                                                                className="flex-1 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 px-4 py-2.5 rounded-lg text-xs font-bold hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                                                                                                             >
                                                                                                                 <Download size={16} /> Baixar Boleto PDF
                                                                                                             </button>
@@ -1115,7 +1095,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                                 const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
                                                                                                 window.open(url, '_blank');
                                                                                             }} 
-                                                                                            className="text-xs flex items-center justify-center gap-1 font-bold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-amber-100 transition-colors shadow-sm"
+                                                                                            className="text-xs flex items-center justify-center gap-1 font-bold text-amber-600 border border-amber-200 bg-amber-50 px-3 py-1.5 w-full sm:w-fit rounded hover:bg-amber-100 transition-colors shadow-sm cursor-pointer"
                                                                                         >
                                                                                             <FileSignature size={14} /> Assinar Contrato
                                                                                         </button>
@@ -1127,12 +1107,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                     <div className="mt-3">
                                                                                         <button 
                                                                                             onClick={() => {
-                                                                                                const token = localStorage.getItem('token');
-                                                                                                const baseUrl = proc.contractUrl.startsWith('http') ? proc.contractUrl : `${getBackendUrl()}${proc.contractUrl.startsWith('/') ? '' : '/'}${proc.contractUrl}`;
-                                                                                                const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                                                window.open(url, '_blank');
+                                                                                                forceDownloadFile(proc.contractUrl, `Contrato_${(proc.brandName || 'Marca').replace(/\s+/g, '_')}.pdf`);
                                                                                             }} 
-                                                                                            className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors"
+                                                                                            className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors cursor-pointer"
                                                                                         >
                                                                                             <Download size={14} /> Baixar Cópia
                                                                                         </button>
@@ -1142,17 +1119,14 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                     <div className="mt-3">
                                                                                         <button
                                                                                             onClick={() => {
-                                                                                                const token = localStorage.getItem('token');
                                                                                                 if (proc.proxySignedUrl) {
-                                                                                                    const baseUrl = proc.proxySignedUrl.startsWith('http') ? proc.proxySignedUrl : `${getBackendUrl()}${proc.proxySignedUrl.startsWith('/') ? '' : '/'}${proc.proxySignedUrl}`;
-                                                                                                    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                                                    window.open(url, '_blank');
+                                                                                                    forceDownloadFile(proc.proxySignedUrl, `Procuracao_${(proc.brandName || 'Marca').replace(/\s+/g, '_')}.pdf`);
                                                                                                 } else {
                                                                                                     handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca');
                                                                                                 }
                                                                                             }}
                                                                                             disabled={isDownloadingPdf === proc.id}
-                                                                                            className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors disabled:opacity-50"
+                                                                                            className="text-xs flex items-center gap-1 font-medium text-slate-500 hover:text-emerald-600 transition-colors disabled:opacity-50 cursor-pointer"
                                                                                         >
                                                                                             {isDownloadingPdf === proc.id ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
                                                                                             Baixar Cópia
@@ -1181,10 +1155,9 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                         <div className="mt-5">
                                                                                             <button
                                                                                                 onClick={() => {
-                                                                                                    const token = localStorage.getItem('token');
-                                                                                                    window.open(`${getBackendUrl()}${step.downloadUrl}?token=${token}`, '_blank');
+                                                                                                    forceDownloadFile(step.downloadUrl, `Certificado_${(proc.brandName || 'Marca').replace(/\s+/g, '_')}.pdf`);
                                                                                                 }}
-                                                                                                className="text-xs flex items-center justify-center gap-2 font-black text-white bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 px-6 py-3.5 w-full sm:w-fit rounded-xl transition-all shadow-md shadow-amber-500/10 transform active:scale-[0.98] tracking-widest uppercase"
+                                                                                                className="text-xs flex items-center justify-center gap-2 font-black text-white bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 px-6 py-3.5 w-full sm:w-fit rounded-xl transition-all shadow-md shadow-amber-500/10 transform active:scale-[0.98] tracking-widest uppercase cursor-pointer"
                                                                                             >
                                                                                                 <Download size={15} strokeWidth={2.5} /> Baixar Certificado de Registro 🏆
                                                                                             </button>
@@ -1341,21 +1314,19 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                  </div>
                                                                              </div>
                                                                              <button
-                                                                                 onClick={() => {
-                                                                                     const token = localStorage.getItem('token');
-                                                                                     if (proc.proxySignedUrl) {
-                                                                                         const url = proc.proxySignedUrl.startsWith('http') ? proc.proxySignedUrl : `${getBackendUrl()}${proc.proxySignedUrl.startsWith('/') ? '' : '/'}${proc.proxySignedUrl}${proc.proxySignedUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                                         window.open(url, '_blank');
-                                                                                     } else {
-                                                                                         handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca');
-                                                                                     }
-                                                                                 }}
-                                                                                 className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-xl transition-colors border border-slate-200 dark:border-zinc-700 flex items-center justify-center gap-2 shrink-0"
-                                                                                 title="Baixar Procuração"
-                                                                             >
-                                                                                 {isDownloadingPdf === proc.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
-                                                                                 Baixar Procuração
-                                                                             </button>
+                                                                                  onClick={() => {
+                                                                                      if (proc.proxySignedUrl) {
+                                                                                          forceDownloadFile(proc.proxySignedUrl, `Procuracao_${(proc.brandName || 'Marca').replace(/\s+/g, '_')}.pdf`);
+                                                                                      } else {
+                                                                                          handleDownloadProxyPdf(proc.id, proc.brandName || 'Marca');
+                                                                                      }
+                                                                                  }}
+                                                                                  className="w-full sm:w-auto px-4 py-2.5 text-xs font-bold text-slate-700 dark:text-zinc-300 bg-slate-50 dark:bg-zinc-800 hover:bg-slate-100 dark:hover:bg-zinc-700 rounded-xl transition-colors border border-slate-200 dark:border-zinc-700 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                                                                                  title="Baixar Procuração"
+                                                                              >
+                                                                                  {isDownloadingPdf === proc.id ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
+                                                                                  Baixar Procuração
+                                                                              </button>
                                                                          </div>
                                                                      )}
 
@@ -1377,20 +1348,16 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                                                  </div>
                                                                              </div>
                                                                              <button
-                                                                                 onClick={() => {
-                                                                                     const token = localStorage.getItem('token');
-                                                                                     const baseUrl = proc.certificateUrl.startsWith('http') ? proc.certificateUrl : `${getBackendUrl()}${proc.certificateUrl.startsWith('/') ? '' : '/'}${proc.certificateUrl}`;
-                                                                                     const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                                     window.open(url, '_blank');
-                                                                                 }}
-                                                                                 className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs font-bold shrink-0 tracking-wide uppercase"
-                                                                                 title="Baixar Certificado"
-                                                                             >
-                                                                                 <Download size={16} strokeWidth={2.5} /> Baixar Certificado
-                                                                             </button>
+                                                                                  onClick={() => {
+                                                                                      forceDownloadFile(proc.certificateUrl, `Certificado_${(proc.brandName || 'Marca').replace(/\s+/g, '_')}.pdf`);
+                                                                                  }}
+                                                                                  className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-white rounded-xl transition-all shadow-md flex items-center justify-center gap-2 text-xs font-bold shrink-0 tracking-wide uppercase cursor-pointer"
+                                                                                  title="Baixar Certificado"
+                                                                              >
+                                                                                  <Download size={16} strokeWidth={2.5} /> Baixar Certificado
+                                                                              </button>
                                                                          </div>
                                                                      )}
-                                                                </div>
 
                                                                     {!proc.contractUrl && !proc.proxyUrl && !proc.proxySignedUrl && !proc.certificateUrl && (
                                                                         <div className="p-8 text-center bg-slate-50/50 dark:bg-zinc-800/50 rounded-lg border border-dashed border-slate-200 dark:border-zinc-700">
