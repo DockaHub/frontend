@@ -406,7 +406,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     };
 
     const handleFileUpload = async (file: File | undefined, uploadType: string) => {
-        const processId = dealDetails?.processId || dealDetails?.process?.id;
+        const processId = dealDetails?.processId || dealDetails?.process?.id || card?.processId || card?.id || dealDetails?.id;
         if (!file || !processId) {
             alert('Nenhum processo vinculado para anexar o arquivo.');
             return;
