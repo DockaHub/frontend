@@ -1,8 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, MoreVertical, Loader2, X, User, Mail, Phone, MapPin, Calendar, FileText } from 'lucide-react';
-import api from '../../../../services/api';
+import api, { getBackendUrl } from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewProcessModal from './AsteryskoNewProcessModal';
+
+const ProcessBrandLogo: React.FC<{ logoUrl?: string; brandName: string }> = ({ logoUrl, brandName }) => {
+    const [imgError, setImgError] = useState(false);
+
+    useEffect(() => {
+        setImgError(false);
+    }, [logoUrl]);
+
+    const resolveUrl = (rawUrl?: string): string => {
+        if (!rawUrl) return '';
+        if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:') || rawUrl.startsWith('blob:')) {
+            return rawUrl;
+        }
+        const base = getBackendUrl();
+        return `${base}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+    };
+
+    const resolved = logoUrl ? resolveUrl(logoUrl) : '';
+
+    if (!resolved || imgError) {
+        return (
+            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 select-none">
+                {(brandName || 'M').substring(0, 1).toUpperCase()}
+            </div>
+        );
+    }
+
+    return (
+        <img 
+            src={resolved} 
+            alt={brandName}
+            className="w-8 h-8 rounded-lg object-contain border border-zinc-200 dark:border-zinc-800 shrink-0 bg-white dark:bg-zinc-900"
+            onError={() => setImgError(true)}
+        />
+    );
+};
 
 interface Process {
     id: string;
@@ -166,17 +202,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                 <div key={process.id} className="grid grid-cols-12 px-10 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors items-center relative group">
                                     
                                     <div className="col-span-3 flex items-center gap-3 pr-4">
-                                        {process.brand?.logoUrl ? (
-                                            <img 
-                                                src={process.brand.logoUrl} 
-                                                alt={brandName}
-                                                className="w-8 h-8 rounded-lg object-contain border border-zinc-200 dark:border-zinc-800 shrink-0"
-                                            />
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center shrink-0 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 select-none">
-                                                {brandName.substring(0, 1).toUpperCase()}
-                                            </div>
-                                        )}
+                                        <ProcessBrandLogo logoUrl={process.brand?.logoUrl} brandName={brandName} />
                                         <span className="text-[13px] font-medium text-black dark:text-white truncate">
                                             {brandName}
                                         </span>

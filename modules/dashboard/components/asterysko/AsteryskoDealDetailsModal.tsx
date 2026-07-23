@@ -434,6 +434,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             } else if (uploadType === 'certificate') {
                 formData.append('file', file);
                 endpoint = `/asterysko/processes/${processId}/certificate/upload`;
+            } else if (uploadType === 'logo') {
+                formData.append('file', file);
+                endpoint = `/asterysko/processes/${processId}/logo`;
             }
 
             await api.post(endpoint, formData, {
@@ -443,6 +446,8 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             });
             if (uploadType === 'certificate') {
                 alert('🏆 Certificado de Registro enviado com sucesso! O processo foi alterado para CONCLUÍDO e as notificações foram disparadas ao cliente por WhatsApp, E-mail e Portal.');
+            } else if (uploadType === 'logo') {
+                alert('Logotipo da marca atualizado com sucesso!');
             } else {
                 alert('Arquivo enviado com sucesso!');
             }
@@ -1381,9 +1386,25 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                 </div>
 
                                 {/* Logo da Marca */}
-                                {brandLogoUrl && (
-                                    <div className="border-t border-[#e5e5e5] dark:border-zinc-800 pt-8">
-                                        <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-3">Logotipo da Marca</p>
+                                <div className="border-t border-[#e5e5e5] dark:border-zinc-800 pt-8">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider">Logotipo da Marca</p>
+                                        <label className="text-[10px] font-bold text-[#0412dd] dark:text-[#3b48ff] hover:underline cursor-pointer flex items-center gap-1">
+                                            <UploadCloud size={12} /> {brandLogoUrl ? 'Alterar Logo' : 'Enviar Logo'}
+                                            <input 
+                                                type="file" 
+                                                className="hidden" 
+                                                accept="image/*" 
+                                                disabled={uploadingFile}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleFileUpload(file, 'logo');
+                                                }} 
+                                            />
+                                        </label>
+                                    </div>
+
+                                    {brandLogoUrl ? (
                                         <div className="relative group rounded-xl border border-[#e5e5e5] dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden flex items-center justify-center" style={{ minHeight: 120 }}>
                                             <img
                                                 src={brandLogoUrl}
@@ -1403,7 +1424,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                 <button
                                                     onClick={() => setPreviewFile({ name: `Logo - ${brandName}.png`, url: brandLogoUrl, type: 'Logo', isPublic: true })}
-                                                    className="bg-white text-black text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-zinc-100 transition-colors shadow-md"
+                                                    className="bg-white text-black text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-zinc-100 transition-colors shadow-md cursor-pointer"
                                                 >
                                                     <Eye size={12} /> Ver
                                                 </button>
@@ -1413,11 +1434,48 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 >
                                                     <Download size={12} /> Baixar
                                                 </button>
+                                                <label className="bg-zinc-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 hover:bg-zinc-900 transition-colors shadow-md cursor-pointer">
+                                                    <UploadCloud size={12} /> Alterar
+                                                    <input 
+                                                        type="file" 
+                                                        className="hidden" 
+                                                        accept="image/*" 
+                                                        disabled={uploadingFile}
+                                                        onChange={(e) => {
+                                                            const file = e.target.files?.[0];
+                                                            if (file) handleFileUpload(file, 'logo');
+                                                        }} 
+                                                    />
+                                                </label>
                                             </div>
                                         </div>
-                                        <p className="text-[10px] text-zinc-400 mt-2 text-center font-medium">{brandName}</p>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <label className="border border-dashed border-[#e5e5e5] dark:border-zinc-700 bg-zinc-50/50 dark:bg-zinc-900/50 rounded-xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-100/50 dark:hover:bg-zinc-800/50 transition-colors text-center">
+                                            <div className="w-10 h-10 rounded-full bg-[#0412dd]/10 text-[#0412dd] dark:bg-[#3b48ff]/20 dark:text-[#3b48ff] flex items-center justify-center">
+                                                {uploadingFile ? <Loader2 size={20} className="animate-spin" /> : <ImageIcon size={20} />}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200">
+                                                    {uploadingFile ? 'Enviando logotipo...' : 'Nenhum logotipo cadastrado'}
+                                                </p>
+                                                <p className="text-[11px] text-zinc-400 mt-0.5">
+                                                    Clique para fazer upload da imagem da marca (PNG, JPG, SVG)
+                                                </p>
+                                            </div>
+                                            <input 
+                                                type="file" 
+                                                className="hidden" 
+                                                accept="image/*" 
+                                                disabled={uploadingFile}
+                                                onChange={(e) => {
+                                                    const file = e.target.files?.[0];
+                                                    if (file) handleFileUpload(file, 'logo');
+                                                }} 
+                                            />
+                                        </label>
+                                    )}
+                                    <p className="text-[10px] text-zinc-400 mt-2 text-center font-medium">{brandName}</p>
+                                </div>
 
                                 {/* Cliente */}
                                 <div className="border-t border-[#e5e5e5] dark:border-zinc-800 pt-8">
