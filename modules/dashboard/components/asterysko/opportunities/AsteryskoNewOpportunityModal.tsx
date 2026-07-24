@@ -25,7 +25,6 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, onClose,
     const [state, setState] = useState('');
     const [priority, setPriority] = useState('medium');
     const [summary, setSummary] = useState('');
-    const [internalNotes, setInternalNotes] = useState('');
     const [sourceType, setSourceType] = useState('manual');
 
     if (!isOpen) return null;

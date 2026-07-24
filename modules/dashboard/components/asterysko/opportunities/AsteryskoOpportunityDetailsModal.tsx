@@ -32,7 +32,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     const [cRole, setCRole] = useState('');
     const [cEmail, setCEmail] = useState('');
     const [cPhone, setCPhone] = useState('');
-    const [cType, setCType] = useState('desconhecido');
+    const [cType] = useState('desconhecido');
     const [cIsPrimary, setCIsPrimary] = useState(false);
     const [savingContact, setSavingContact] = useState(false);
 
