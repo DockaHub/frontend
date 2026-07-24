@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Loader2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Plus, Loader2, CheckCircle2 } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewLeadModal from './AsteryskoNewLeadModal';
 import AsteryskoDealDetailsModal from './AsteryskoDealDetailsModal';
+import { AsteryskoOpportunitiesTab } from './opportunities/AsteryskoOpportunitiesTab';
 import { 
     CRM_PHASES, 
     CrmPhaseId, 
@@ -282,18 +283,10 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                     </div>
                 )}
 
-                {/* Empty State for Opportunities Tab */}
-                {activeTab === 'opportunities' && !isLoading && (
-                    <div className="w-full flex-1 flex flex-col items-center justify-center py-20 px-4 text-center">
-                        <div className="w-14 h-14 rounded-full bg-[#f0f0ff] dark:bg-blue-950/40 flex items-center justify-center mb-4 text-[#0412dd] dark:text-[#3b48ff]">
-                            <Sparkles size={24} />
-                        </div>
-                        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-1 max-w-md">
-                            Novas oportunidades identificadas pelo Radar de Prospecção aparecerão aqui.
-                        </h3>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm">
-                            Este recurso será ativado em uma próxima etapa.
-                        </p>
+                {/* Operational View for Opportunities Tab */}
+                {activeTab === 'opportunities' && (
+                    <div className="w-full p-6 md:p-8">
+                        <AsteryskoOpportunitiesTab />
                     </div>
                 )}
 
