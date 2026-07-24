@@ -3,6 +3,7 @@ import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, C
 import api, { getBackendUrl } from '../../../../services/api';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 import { forceDownloadFile } from './utils/fileDownload';
+import { getPhaseForStage, getStagesForPhase } from './config/crmConfig';
 
 // Resolve uma URL relativa ou absoluta para uma URL completa de imagem/arquivo
 const resolveUrl = (rawUrl: string | undefined | null): string => {
@@ -366,17 +367,32 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         }
     };
 
+    const currentPhase = getPhaseForStage(currentDeal?.status || 'leads');
+
     const handleArchiveLead = async () => {
         if (!currentDeal?.id) return;
-        if (!window.confirm('Tem certeza de que deseja arquivar este lead?')) return;
+        
+        let confirmMsg = 'Tem certeza de que deseja arquivar este lead?';
+        if (currentPhase === 'onboarding') {
+            confirmMsg = 'Tem certeza de que deseja cancelar este atendimento?';
+        } else if (currentPhase === 'processual') {
+            confirmMsg = 'ATENÇÃO: Você está prestes a arquivar um processo ativo. Confirma o arquivamento do processo?';
+        }
+
+        if (!window.confirm(confirmMsg)) return;
         try {
             await api.patch(`/asterysko/crm/deals/${currentDeal.id}`, { status: 'archived', closedAt: new Date() });
-            alert('Lead arquivado com sucesso!');
+            const successMsg = currentPhase === 'processual' 
+                ? 'Processo arquivado com sucesso!' 
+                : currentPhase === 'onboarding' 
+                ? 'Atendimento cancelado com sucesso!' 
+                : 'Lead arquivado com sucesso!';
+            alert(successMsg);
             onUpdate?.();
             handleClose();
         } catch (error: any) {
             console.error('Failed to archive lead', error);
-            alert(error.response?.data?.error || 'Falha ao arquivar lead.');
+            alert(error.response?.data?.error || 'Falha ao arquivar registro.');
         }
     };
 
@@ -394,7 +410,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         }
 
         // Atualização otimista no estado local
-        setCurrentDeal(prev => prev ? { ...prev, members: currentCompleted } : prev);
+        setDealDetails((prev: any) => prev ? { ...prev, members: currentCompleted } : prev);
         
         try {
             await api.put(`/asterysko/crm/deals/${currentDeal.id}`, {
@@ -1201,7 +1217,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                             {dealTitle}
                         </h2>
                         <p className="text-sm font-medium text-[#9f9f9f] mt-1 mb-6 flex items-center gap-2">
-                            Processo AST-{currentDeal?.id?.slice(0,8) || '0000'} <span className="w-1 h-1 rounded-full bg-[#ccc]"></span> Cliente: {clientName}
+                            {currentPhase === 'processual' ? 'Processo' : currentPhase === 'onboarding' ? 'Atendimento' : 'Lead'} AST-{currentDeal?.id?.slice(0,8) || '0000'} <span className="w-1 h-1 rounded-full bg-[#ccc]"></span> Cliente: {clientName}
                         </p>
                         
                         {/* Tabs */}
@@ -1255,7 +1271,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 Responsável: <span className="font-bold text-black dark:text-white">{assignedUser}</span>
                                             </p>
                                             <button 
-                                                onClick={handleAdvanceStage}
+                                                onClick={() => handleAdvanceStage()}
                                                 className="bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[12px] font-bold px-4 py-2 rounded-full hover:bg-blue-800 transition-colors flex items-center gap-1.5 cursor-pointer"
                                             >
                                                 Concluir e Avançar
@@ -1264,26 +1280,73 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     </div>
                                 </div>
 
-                                {/* Andamento (Stepper) */}
-                                <div className="border-y border-[#e5e5e5] dark:border-zinc-800 py-8 overflow-x-auto">
-                                    <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-6">Andamento do Funil</p>
-                                    <div className="flex items-center justify-between min-w-[680px] relative px-4">
-                                        <div className="absolute left-10 right-10 top-4 h-[1px] bg-[#e5e5e5] dark:bg-zinc-800 -z-10" />
-                                        {steps.slice(0, 7).map((step, idx) => {
-                                            const isCompleted = idx < currentStepIdx;
-                                            const isActive = idx === currentStepIdx;
+                                {/* Jornada do Atendimento / Processo (3 Fases) */}
+                                <div className="border-y border-[#e5e5e5] dark:border-zinc-800 py-6 overflow-x-auto">
+                                    <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-4">
+                                        {currentPhase === 'processual' ? 'Jornada do processo' : 'Jornada do atendimento'}
+                                    </p>
+
+                                    {/* Visão de 3 Grupos de Fases */}
+                                    <div className="grid grid-cols-3 gap-3 mb-6">
+                                        {[
+                                            { id: 'commercial', label: '1. Comercial' },
+                                            { id: 'onboarding', label: '2. Onboarding' },
+                                            { id: 'processual', label: '3. Processual' },
+                                        ].map((ph, idx) => {
+                                            const phaseOrder = ['commercial', 'onboarding', 'processual'];
+                                            const currentPhaseIdx = phaseOrder.indexOf(currentPhase);
+                                            const thisPhaseIdx = idx;
+
+                                            const isPhaseCompleted = thisPhaseIdx < currentPhaseIdx;
+                                            const isPhaseActive = thisPhaseIdx === currentPhaseIdx;
+
                                             return (
-                                                <div key={step} className="flex flex-col items-center gap-2 bg-[#fcfcfc] dark:bg-zinc-950 px-2 relative z-10">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${isCompleted ? 'bg-[#0412dd] border-[#0412dd] text-white' : isActive ? 'border-[#0412dd] bg-white dark:bg-zinc-900' : 'border-[#ccc] dark:border-zinc-700 bg-white dark:bg-zinc-900'}`}>
-                                                        {isCompleted ? <Check size={16} strokeWidth={3} /> : isActive ? <div className="w-2.5 h-2.5 rounded-full bg-[#0412dd]" /> : null}
+                                                <div 
+                                                    key={ph.id}
+                                                    className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
+                                                        isPhaseCompleted 
+                                                            ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40 text-emerald-700 dark:text-emerald-400' 
+                                                            : isPhaseActive
+                                                            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/60 text-[#0412dd] dark:text-[#3b48ff]'
+                                                            : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-400'
+                                                    }`}
+                                                >
+                                                    <span className="text-xs font-bold">{ph.label}</span>
+                                                    <span className="text-[10px] font-semibold uppercase tracking-wider">
+                                                        {isPhaseCompleted ? '✓ Concluído' : isPhaseActive ? 'Em andamento' : 'Pendente'}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Etapas Detalhadas da Fase Ativa */}
+                                    <div className="flex items-center justify-between min-w-[500px] relative px-4 pt-2">
+                                        <div className="absolute left-8 right-8 top-6 h-[1px] bg-[#e5e5e5] dark:bg-zinc-800 -z-10" />
+                                        {getStagesForPhase(currentPhase).map((stage, idx) => {
+                                            const activePhaseStages = getStagesForPhase(currentPhase);
+                                            const currentStageInPhaseIdx = activePhaseStages.findIndex(s => s.id === currentDeal?.status);
+                                            const isStageCompleted = idx < currentStageInPhaseIdx;
+                                            const isStageActive = idx === currentStageInPhaseIdx;
+
+                                            return (
+                                                <div key={stage.id} className="flex flex-col items-center gap-2 bg-[#fcfcfc] dark:bg-zinc-950 px-2 relative z-10">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                                                        isStageCompleted 
+                                                            ? 'bg-[#0412dd] border-[#0412dd] text-white' 
+                                                            : isStageActive 
+                                                            ? 'border-[#0412dd] bg-white dark:bg-zinc-900' 
+                                                            : 'border-[#ccc] dark:border-zinc-700 bg-white dark:bg-zinc-900'
+                                                    }`}>
+                                                        {isStageCompleted ? <Check size={16} strokeWidth={3} /> : isStageActive ? <div className="w-2.5 h-2.5 rounded-full bg-[#0412dd]" /> : null}
                                                     </div>
                                                     <div className="text-center">
-                                                        <p className={`text-[11px] font-bold whitespace-nowrap ${isActive ? 'text-[#0412dd] dark:text-[#3b48ff]' : isCompleted ? 'text-black dark:text-white' : 'text-[#9f9f9f]'}`}>{step}</p>
-                                                        {isCompleted && <p className="text-[9px] font-medium text-[#9f9f9f]">Concluído</p>}
-                                                        {isActive && <p className="text-[9px] font-bold text-[#0412dd] dark:text-[#3b48ff]">Atual</p>}
+                                                        <p className={`text-[11px] font-bold whitespace-nowrap ${isStageActive ? 'text-[#0412dd] dark:text-[#3b48ff]' : isStageCompleted ? 'text-black dark:text-white' : 'text-[#9f9f9f]'}`}>{stage.title}</p>
+                                                        {isStageCompleted && <p className="text-[9px] font-medium text-[#9f9f9f]">Concluído</p>}
+                                                        {isStageActive && <p className="text-[9px] font-bold text-[#0412dd] dark:text-[#3b48ff]">Atual</p>}
                                                     </div>
                                                 </div>
-                                            )
+                                            );
                                         })}
                                     </div>
                                 </div>
@@ -2227,7 +2290,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         onClick={handleArchiveLead}
                         className="flex-1 max-w-[200px] h-12 bg-white dark:bg-transparent border-2 border-[#eef2ff] dark:border-blue-900 text-[#0412dd] dark:text-[#3b48ff] text-[14px] font-bold rounded-xl hover:bg-[#eef2ff] dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
                     >
-                        Arquivar lead
+                        {currentPhase === 'commercial' ? 'Arquivar lead' : currentPhase === 'onboarding' ? 'Cancelar atendimento' : 'Arquivar processo'}
                     </button>
                     <button 
                         onClick={() => handleAdvanceStage()}
@@ -2235,7 +2298,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         className="flex-1 max-w-[400px] ml-4 h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[14px] font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {isAdvancingStage ? <Loader2 size={18} className="animate-spin" /> : null}
-                        Avançar etapa do funil
+                        {currentPhase === 'commercial' ? 'Avançar etapa comercial' : currentPhase === 'onboarding' ? 'Concluir pendência e avançar' : 'Atualizar andamento'}
                     </button>
                 </div>
 
