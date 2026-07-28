@@ -9,7 +9,12 @@ import { AsteryskoOpportunityDetailsModal } from './AsteryskoOpportunityDetailsM
 import { AsteryskoDiscardModal } from './AsteryskoDiscardModal';
 import { AsteryskoSendToCrmModal } from './AsteryskoSendToCrmModal';
 
-export const AsteryskoOpportunitiesTab: React.FC = () => {
+interface Props {
+    organizationId?: string;
+    onTotalChange?: (total: number) => void;
+}
+
+export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onTotalChange }) => {
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<any[]>([]);
     const [counts, setCounts] = useState({
@@ -39,10 +44,17 @@ export const AsteryskoOpportunitiesTab: React.FC = () => {
     const [actionTargetOpp, setActionTargetOpp] = useState<any>(null);
 
     const loadData = useCallback(async () => {
+        if (!organizationId) {
+            setItems([]);
+            setCounts(current => ({ ...current, total: 0 }));
+            onTotalChange?.(0);
+            return;
+        }
         setLoading(true);
         try {
             const [listRes, countsRes] = await Promise.all([
                 api.get('/asterysko/opportunities', {
+                    headers: { 'x-organization-id': organizationId },
                     params: {
                         page,
                         limit,
@@ -50,18 +62,21 @@ export const AsteryskoOpportunitiesTab: React.FC = () => {
                         search: searchQuery.trim() || undefined
                     }
                 }),
-                api.get('/asterysko/opportunities/counts')
+                api.get('/asterysko/opportunities/counts', {
+                    headers: { 'x-organization-id': organizationId }
+                })
             ]);
 
             setItems(listRes.data.items || []);
             setTotalPages(listRes.data.pagination?.totalPages || 1);
             setCounts(countsRes.data);
+            onTotalChange?.(countsRes.data.total || 0);
         } catch (error) {
             console.error('Failed to load opportunities data', error);
         } finally {
             setLoading(false);
         }
-    }, [page, activeStatus, searchQuery]);
+    }, [page, activeStatus, searchQuery, organizationId, onTotalChange]);
 
     useEffect(() => {
         loadData();
@@ -95,6 +110,7 @@ export const AsteryskoOpportunitiesTab: React.FC = () => {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
+            case 'captured':
             case 'review':
                 return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40">Para analisar</span>;
             case 'qualified':
@@ -382,6 +398,7 @@ export const AsteryskoOpportunitiesTab: React.FC = () => {
             {/* Modais */}
             <AsteryskoNewOpportunityModal
                 isOpen={isNewModalOpen}
+                organizationId={organizationId}
                 onClose={() => setIsNewModalOpen(false)}
                 onCreated={loadData}
             />
@@ -389,6 +406,7 @@ export const AsteryskoOpportunitiesTab: React.FC = () => {
             <AsteryskoOpportunityDetailsModal
                 isOpen={isDetailsOpen}
                 opportunityId={selectedOppId}
+                organizationId={organizationId}
                 onClose={() => setIsDetailsOpen(false)}
                 onUpdate={loadData}
                 onOpenSendToCrm={(opp) => { setIsDetailsOpen(false); openSendToCrm(opp); }}
@@ -398,6 +416,7 @@ export const AsteryskoOpportunitiesTab: React.FC = () => {
             <AsteryskoDiscardModal
                 isOpen={isDiscardOpen}
                 opportunityId={actionTargetOpp?.id || null}
+                organizationId={organizationId}
                 brandName={actionTargetOpp?.brandName}
                 onClose={() => setIsDiscardOpen(false)}
                 onDiscarded={loadData}
@@ -406,6 +425,7 @@ export const AsteryskoOpportunitiesTab: React.FC = () => {
             <AsteryskoSendToCrmModal
                 isOpen={isSendToCrmOpen}
                 opportunity={actionTargetOpp}
+                organizationId={organizationId}
                 onClose={() => setIsSendToCrmOpen(false)}
                 onSentToCrm={loadData}
             />

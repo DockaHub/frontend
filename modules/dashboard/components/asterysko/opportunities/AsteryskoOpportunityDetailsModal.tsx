@@ -8,6 +8,7 @@ import api from '../../../../../services/api';
 interface Props {
     isOpen: boolean;
     opportunityId: string | null;
+    organizationId?: string;
     onClose: () => void;
     onUpdate: () => void;
     onOpenSendToCrm: (opp: any) => void;
@@ -17,6 +18,7 @@ interface Props {
 export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     isOpen,
     opportunityId,
+    organizationId,
     onClose,
     onUpdate,
     onOpenSendToCrm,
@@ -48,13 +50,15 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
         if (isOpen && opportunityId) {
             fetchOpportunity();
         }
-    }, [isOpen, opportunityId]);
+    }, [isOpen, opportunityId, organizationId]);
 
     const fetchOpportunity = async () => {
-        if (!opportunityId) return;
+        if (!opportunityId || !organizationId) return;
         setLoading(true);
         try {
-            const { data } = await api.get(`/asterysko/opportunities/${opportunityId}`);
+            const { data } = await api.get(`/asterysko/opportunities/${opportunityId}`, {
+                headers: { 'x-organization-id': organizationId }
+            });
             setOpportunity(data);
         } catch (error) {
             console.error('Failed to fetch opportunity detail', error);
@@ -67,9 +71,13 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     if (!isOpen || !opportunityId) return null;
 
     const handleQualify = async () => {
-        if (!opportunity) return;
+        if (!opportunity || !organizationId) return;
         try {
-            await api.post(`/asterysko/opportunities/${opportunity.id}/qualify`);
+            await api.post(
+                `/asterysko/opportunities/${opportunity.id}/qualify`,
+                {},
+                { headers: { 'x-organization-id': organizationId } },
+            );
             alert('Oportunidade qualificada com sucesso!');
             fetchOpportunity();
             onUpdate();
@@ -79,9 +87,13 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     };
 
     const handleRestore = async () => {
-        if (!opportunity) return;
+        if (!opportunity || !organizationId) return;
         try {
-            await api.post(`/asterysko/opportunities/${opportunity.id}/restore`);
+            await api.post(
+                `/asterysko/opportunities/${opportunity.id}/restore`,
+                {},
+                { headers: { 'x-organization-id': organizationId } },
+            );
             alert('Oportunidade restaurada para análise.');
             fetchOpportunity();
             onUpdate();
@@ -91,10 +103,14 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     };
 
     const handleArchive = async () => {
-        if (!opportunity) return;
+        if (!opportunity || !organizationId) return;
         if (!window.confirm('Tem certeza de que deseja arquivar esta oportunidade?')) return;
         try {
-            await api.post(`/asterysko/opportunities/${opportunity.id}/archive`);
+            await api.post(
+                `/asterysko/opportunities/${opportunity.id}/archive`,
+                {},
+                { headers: { 'x-organization-id': organizationId } },
+            );
             alert('Oportunidade arquivada com sucesso.');
             onUpdate();
             onClose();
@@ -104,11 +120,13 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     };
 
     const handleToggleDoNotContact = async () => {
-        if (!opportunity) return;
+        if (!opportunity || !organizationId) return;
         const newDoNotContact = !opportunity.doNotContact;
         try {
             await api.post(`/asterysko/opportunities/${opportunity.id}/toggle-do-not-contact`, {
                 doNotContact: newDoNotContact
+            }, {
+                headers: { 'x-organization-id': organizationId }
             });
             alert(newDoNotContact ? 'Marcação de Não Contatar ativada.' : 'Restrição de Não Contatar removida.');
             fetchOpportunity();
@@ -120,7 +138,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
 
     const handleAddContact = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!cName.trim()) return;
+        if (!cName.trim() || !organizationId) return;
         setSavingContact(true);
         try {
             await api.post(`/asterysko/opportunities/${opportunityId}/contacts`, {
@@ -130,6 +148,8 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                 phone: cPhone.trim() || undefined,
                 contactType: cType,
                 isPrimary: cIsPrimary
+            }, {
+                headers: { 'x-organization-id': organizationId }
             });
             setCName('');
             setCRole('');
@@ -146,9 +166,12 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     };
 
     const handleRemoveContact = async (contactId: string) => {
+        if (!organizationId) return;
         if (!window.confirm('Deseja remover este contato?')) return;
         try {
-            await api.delete(`/asterysko/opportunities/${opportunityId}/contacts/${contactId}`);
+            await api.delete(`/asterysko/opportunities/${opportunityId}/contacts/${contactId}`, {
+                headers: { 'x-organization-id': organizationId }
+            });
             fetchOpportunity();
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao remover contato.');
@@ -157,7 +180,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
 
     const handleAddEvidence = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!eTitle.trim()) return;
+        if (!eTitle.trim() || !organizationId) return;
         setSavingEvidence(true);
         try {
             await api.post(`/asterysko/opportunities/${opportunityId}/evidences`, {
@@ -165,6 +188,8 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                 title: eTitle.trim(),
                 url: eUrl.trim() || undefined,
                 summary: eSummary.trim() || undefined
+            }, {
+                headers: { 'x-organization-id': organizationId }
             });
             setETitle('');
             setEUrl('');
@@ -179,9 +204,12 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     };
 
     const handleRemoveEvidence = async (evidenceId: string) => {
+        if (!organizationId) return;
         if (!window.confirm('Deseja remover esta evidência?')) return;
         try {
-            await api.delete(`/asterysko/opportunities/${opportunityId}/evidences/${evidenceId}`);
+            await api.delete(`/asterysko/opportunities/${opportunityId}/evidences/${evidenceId}`, {
+                headers: { 'x-organization-id': organizationId }
+            });
             fetchOpportunity();
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao remover evidência.');
@@ -195,6 +223,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
 
     const getStatusBadge = (status: string) => {
         switch (status) {
+            case 'captured':
             case 'review':
                 return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40">Para analisar</span>;
             case 'qualified':
@@ -207,6 +236,14 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                 return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">{status}</span>;
         }
     };
+
+    const technical = opportunity?.technicalEnrichment;
+    const businessCandidates = technical?.businessContact?.candidates || [];
+    const decisionMakerCandidates = technical?.decisionMaker?.candidates || [];
+    const readinessScore = opportunity?.scoutReadiness?.score;
+    const formatConfidence = (value: number | null | undefined) => (
+        value === null || value === undefined ? '—' : `${Number(value).toLocaleString('pt-BR')}%`
+    );
 
     return (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end">
@@ -226,10 +263,10 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                             )}
                         </div>
                         <h2 className="text-2xl font-bold text-zinc-900 dark:text-white leading-tight">
-                            {opportunity?.brandName}
+                            {opportunity?.companyName || opportunity?.brandName}
                         </h2>
                         <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mt-1 flex items-center gap-2">
-                            {opportunity?.companyName || opportunity?.tradeName || 'Pessoa Física / Não Informado'}
+                            Marca identificada: {opportunity?.brandName || opportunity?.tradeName || 'Não informada'}
                             {opportunity?.city && <span>• {opportunity.city}/{opportunity.state}</span>}
                         </p>
                     </div>
@@ -351,6 +388,128 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                                             <p className="text-xl font-black text-zinc-900 dark:text-white mt-1">
                                                 {formatScore(opportunity.commercialPotential)}
                                             </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Pré-enriquecimento técnico — candidatos permanecem sem aceite automático */}
+                                    <div className="space-y-3">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                                            Scout AI & Pré-enriquecimento
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                            <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/20">
+                                                <p className="text-[10px] font-bold uppercase text-blue-600 dark:text-blue-400">Prontidão comercial</p>
+                                                <p className="text-xl font-black text-zinc-900 dark:text-white mt-1">
+                                                    {readinessScore === null || readinessScore === undefined
+                                                        ? '—'
+                                                        : `${Number(readinessScore).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`}
+                                                </p>
+                                            </div>
+                                            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                                                <p className="text-[10px] font-bold uppercase text-zinc-500">Identificação de marca</p>
+                                                <p className="text-sm font-bold text-zinc-900 dark:text-white mt-1">
+                                                    {technical?.brandIdentification?.candidates?.find((candidate: any) => candidate.isSelected)?.displayName
+                                                        || opportunity.brandName
+                                                        || 'Não identificada'}
+                                                </p>
+                                                <p className="text-[11px] text-zinc-500 mt-1">
+                                                    Confiança {formatConfidence(technical?.brandIdentification?.finalConfidence)}
+                                                </p>
+                                            </div>
+                                            <div className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+                                                <p className="text-[10px] font-bold uppercase text-zinc-500">Screening marcário</p>
+                                                <p className="text-sm font-bold text-zinc-900 dark:text-white mt-1">
+                                                    Risco {technical?.trademarkScreening?.finalRisk || opportunity.preliminaryTrademarkRisk || 'não avaliado'}
+                                                </p>
+                                                <p className="text-[11px] text-zinc-500 mt-1">
+                                                    {technical?.trademarkScreening?.result || opportunity.preliminaryTrademarkResult || 'Sem resultado'}
+                                                    {' · '}{formatConfidence(technical?.trademarkScreening?.finalConfidence)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                                                <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+                                                    <p className="text-xs font-bold text-zinc-900 dark:text-white">
+                                                        Candidatos de canais 2.5A ({businessCandidates.length})
+                                                    </p>
+                                                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                                        Sugestões técnicas — nenhum canal aceito automaticamente
+                                                    </p>
+                                                </div>
+                                                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                                    {businessCandidates.length === 0 ? (
+                                                        <p className="p-4 text-xs text-zinc-400">Nenhum candidato encontrado.</p>
+                                                    ) : businessCandidates.map((candidate: any) => (
+                                                        <div key={candidate.id} className="p-3.5">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-zinc-900 dark:text-white break-all">
+                                                                        {candidate.displayValue}
+                                                                    </p>
+                                                                    <p className="text-[10px] text-zinc-500 uppercase mt-0.5">
+                                                                        {candidate.type} · {formatConfidence(candidate.confidence)}
+                                                                    </p>
+                                                                </div>
+                                                                <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded ${
+                                                                    candidate.acceptedAt
+                                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                                        : 'bg-amber-100 text-amber-700'
+                                                                }`}>
+                                                                    {candidate.acceptedAt ? 'Aceito' : 'Não aceito'}
+                                                                </span>
+                                                            </div>
+                                                            {candidate.evidences?.map((evidence: any, index: number) => (
+                                                                <p key={`${candidate.id}-source-${index}`} className="text-[10px] text-zinc-400 mt-1 break-all">
+                                                                    Fonte: {evidence.url || evidence.source}
+                                                                </p>
+                                                            ))}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+                                                <div className="px-4 py-3 bg-zinc-50 dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800">
+                                                    <p className="text-xs font-bold text-zinc-900 dark:text-white">
+                                                        Possíveis decisores 2.5B ({decisionMakerCandidates.length})
+                                                    </p>
+                                                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-0.5">
+                                                        Sugestões técnicas — nenhum decisor confirmado
+                                                    </p>
+                                                </div>
+                                                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                                                    {decisionMakerCandidates.length === 0 ? (
+                                                        <p className="p-4 text-xs text-zinc-400">Nenhum possível decisor encontrado.</p>
+                                                    ) : decisionMakerCandidates.map((candidate: any) => (
+                                                        <div key={candidate.id} className="p-3.5">
+                                                            <div className="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <p className="text-xs font-bold text-zinc-900 dark:text-white">
+                                                                        {candidate.fullName || 'Identidade pendente'}
+                                                                    </p>
+                                                                    <p className="text-[10px] text-zinc-500 mt-0.5">
+                                                                        {candidate.roleTitle || candidate.roleCategory} · {formatConfidence(candidate.confidence)}
+                                                                    </p>
+                                                                </div>
+                                                                <span className={`text-[9px] font-bold uppercase px-2 py-1 rounded ${
+                                                                    candidate.acceptedAt
+                                                                        ? 'bg-emerald-100 text-emerald-700'
+                                                                        : 'bg-amber-100 text-amber-700'
+                                                                }`}>
+                                                                    {candidate.acceptedAt ? 'Confirmado' : 'Não confirmado'}
+                                                                </span>
+                                                            </div>
+                                                            {candidate.evidences?.map((evidence: any, index: number) => (
+                                                                <p key={`${candidate.id}-source-${index}`} className="text-[10px] text-zinc-400 mt-1 break-all">
+                                                                    Fonte: {evidence.url || evidence.source}
+                                                                </p>
+                                                            ))}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 

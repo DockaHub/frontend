@@ -4,15 +4,16 @@ import api from '../../../../../services/api';
 
 interface Props {
     isOpen: boolean;
+    organizationId?: string;
     onClose: () => void;
     onCreated: (newOpp: any) => void;
 }
 
 
 
-export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, onClose, onCreated }) => {
+export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organizationId, onClose, onCreated }) => {
     const [loading, setLoading] = useState(false);
-    const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+    const [, setCheckingDuplicate] = useState(false);
     const [duplicateWarning, setDuplicateWarning] = useState<any>(null);
 
     const [brandName, setBrandName] = useState('');
@@ -25,19 +26,21 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, onClose,
     const [state, setState] = useState('');
     const [priority, setPriority] = useState('medium');
     const [summary, setSummary] = useState('');
-    const [internalNotes, setInternalNotes] = useState('');
+    const [internalNotes] = useState('');
     const [sourceType, setSourceType] = useState('manual');
 
     if (!isOpen) return null;
 
     const handleCheckDuplicate = async () => {
-        if (!brandName.trim() && !cnpj.trim() && !website.trim()) return;
+        if (!organizationId || (!brandName.trim() && !cnpj.trim() && !website.trim())) return;
         setCheckingDuplicate(true);
         try {
             const { data } = await api.post('/asterysko/opportunities/check-duplicate', {
                 brandName,
                 cnpj,
                 website
+            }, {
+                headers: { 'x-organization-id': organizationId }
             });
             if (data?.hasDuplicates) {
                 setDuplicateWarning(data);
@@ -57,6 +60,10 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, onClose,
             alert('Por favor, informe o nome da marca.');
             return;
         }
+        if (!organizationId) {
+            alert('Selecione a organização antes de criar uma oportunidade.');
+            return;
+        }
 
         setLoading(true);
         try {
@@ -73,6 +80,8 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, onClose,
                 summary: summary.trim() || undefined,
                 internalNotes: internalNotes.trim() || undefined,
                 sourceType
+            }, {
+                headers: { 'x-organization-id': organizationId }
             });
 
             alert(`Oportunidade ${data.code} criada com sucesso em "Para analisar"!`);

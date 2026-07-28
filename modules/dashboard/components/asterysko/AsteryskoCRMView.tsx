@@ -49,6 +49,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
     const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
     const [selectedCard, setSelectedCard] = useState<DealCard | null>(null);
     const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const [opportunityCount, setOpportunityCount] = useState(0);
 
     // Initial active tab from URL query param (?view=... or ?tab=...)
     const [activeTab, setActiveTab] = useState<CrmPhaseId>(() => {
@@ -113,8 +114,9 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
             }
         });
 
+        counts.opportunities = opportunityCount;
         return counts;
-    }, [allColumns]);
+    }, [allColumns, opportunityCount]);
 
     // Filter columns for current active tab
     const currentBoardColumns = useMemo(() => {
@@ -286,7 +288,10 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                 {/* Operational View for Opportunities Tab */}
                 {activeTab === 'opportunities' && (
                     <div className="w-full p-6 md:p-8">
-                        <AsteryskoOpportunitiesTab />
+                        <AsteryskoOpportunitiesTab
+                            organizationId={organization?.id}
+                            onTotalChange={setOpportunityCount}
+                        />
                     </div>
                 )}
 

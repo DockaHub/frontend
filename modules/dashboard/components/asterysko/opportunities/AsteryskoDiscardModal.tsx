@@ -5,6 +5,7 @@ import api from '../../../../../services/api';
 interface Props {
     isOpen: boolean;
     opportunityId: string | null;
+    organizationId?: string;
     brandName?: string;
     onClose: () => void;
     onDiscarded: () => void;
@@ -25,7 +26,7 @@ const DISCARD_REASONS = [
     { id: 'outro', label: 'Outro motivo' }
 ];
 
-export const AsteryskoDiscardModal: React.FC<Props> = ({ isOpen, opportunityId, brandName, onClose, onDiscarded }) => {
+export const AsteryskoDiscardModal: React.FC<Props> = ({ isOpen, opportunityId, organizationId, brandName, onClose, onDiscarded }) => {
     const [reason, setReason] = useState(DISCARD_REASONS[0].id);
     const [notes, setNotes] = useState('');
     const [setDoNotContact, setSetDoNotContact] = useState(false);
@@ -35,12 +36,15 @@ export const AsteryskoDiscardModal: React.FC<Props> = ({ isOpen, opportunityId, 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!organizationId) return;
         setLoading(true);
         try {
             await api.post(`/asterysko/opportunities/${opportunityId}/discard`, {
                 reason,
                 notes: notes.trim() || undefined,
                 setDoNotContact
+            }, {
+                headers: { 'x-organization-id': organizationId }
             });
             alert('Oportunidade descartada com sucesso.');
             onDiscarded();

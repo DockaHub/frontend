@@ -5,20 +5,26 @@ import api from '../../../../../services/api';
 interface Props {
     isOpen: boolean;
     opportunity: any;
+    organizationId?: string;
     onClose: () => void;
     onSentToCrm: (deal: any) => void;
 }
 
-export const AsteryskoSendToCrmModal: React.FC<Props> = ({ isOpen, opportunity, onClose, onSentToCrm }) => {
+export const AsteryskoSendToCrmModal: React.FC<Props> = ({ isOpen, opportunity, organizationId, onClose, onSentToCrm }) => {
     const [loading, setLoading] = useState(false);
     const [createdDeal, setCreatedDeal] = useState<any>(null);
 
     if (!isOpen || !opportunity) return null;
 
     const handleSend = async () => {
+        if (!organizationId) return;
         setLoading(true);
         try {
-            const { data } = await api.post(`/asterysko/opportunities/${opportunity.id}/send-to-crm`);
+            const { data } = await api.post(
+                `/asterysko/opportunities/${opportunity.id}/send-to-crm`,
+                {},
+                { headers: { 'x-organization-id': organizationId } },
+            );
             setCreatedDeal(data.deal);
             onSentToCrm(data.deal);
         } catch (error: any) {

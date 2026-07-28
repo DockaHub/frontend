@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": [
+      "vite/client"
+    ]
+  },
+  "include": [
+    "vite-env.d.ts",
+    "modules/dashboard/components/asterysko/opportunities/**/*.ts",
+    "modules/dashboard/components/asterysko/opportunities/**/*.tsx",
+    "services/api.ts",
+    "types.ts"
+  ]
+}
