@@ -1,14 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { 
     X, CheckCircle2, AlertOctagon, Send, RotateCcw, Archive, ShieldOff, ShieldCheck, 
     Building2, Plus, Trash2, ExternalLink, Loader2, Mail, Phone
 } from 'lucide-react';
 import api from '../../../../../services/api';
 
+const DETAIL_CACHE_TTL_MS = 30_000;
+const summaryCache = new Map<string, { data: any; expiresAt: number }>();
+const technicalCache = new Map<string, { data: any; expiresAt: number }>();
+const pendingSummaries = new Map<string, Promise<any>>();
+
+const detailCacheKey = (organizationId: string, opportunityId: string) =>
+    `${organizationId}:${opportunityId}`;
+
+const requestOpportunitySummary = async (opportunityId: string, organizationId: string) => {
+    const key = detailCacheKey(organizationId, opportunityId);
+    const cached = summaryCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+    const pending = pendingSummaries.get(key);
+    if (pending) return pending;
+
+    const request = api.get(`/asterysko/opportunities/${opportunityId}/summary`, {
+        headers: { 'x-organization-id': organizationId }
+    }).then(({ data }) => {
+        summaryCache.set(key, { data, expiresAt: Date.now() + DETAIL_CACHE_TTL_MS });
+        return data;
+    }).finally(() => pendingSummaries.delete(key));
+
+    pendingSummaries.set(key, request);
+    return request;
+};
+
+export const prefetchOpportunitySummary = (opportunityId: string, organizationId?: string) => {
+    if (!organizationId) return;
+    void requestOpportunitySummary(opportunityId, organizationId).catch(() => undefined);
+};
+
 interface Props {
     isOpen: boolean;
     opportunityId: string | null;
     organizationId?: string;
+    initialOpportunity?: any;
     onClose: () => void;
     onUpdate: () => void;
     onOpenSendToCrm: (opp: any) => void;
@@ -19,6 +53,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     isOpen,
     opportunityId,
     organizationId,
+    initialOpportunity,
     onClose,
     onUpdate,
     onOpenSendToCrm,
@@ -26,7 +61,9 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'contacts' | 'evidences' | 'history'>('overview');
     const [loading, setLoading] = useState(false);
-    const [opportunity, setOpportunity] = useState<any>(null);
+    const [technicalLoading, setTechnicalLoading] = useState(false);
+    const [sectionLoading, setSectionLoading] = useState(false);
+    const [opportunity, setOpportunity] = useState<any>(initialOpportunity || null);
 
     // Contatos Form State
     const [showContactForm, setShowContactForm] = useState(false);
@@ -46,27 +83,97 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
     const [eSummary, setESummary] = useState('');
     const [savingEvidence, setSavingEvidence] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && opportunityId) {
-            fetchOpportunity();
-        }
-    }, [isOpen, opportunityId, organizationId]);
-
-    const fetchOpportunity = async () => {
+    const fetchSummary = useCallback(async (force = false) => {
         if (!opportunityId || !organizationId) return;
-        setLoading(true);
+        const key = detailCacheKey(organizationId, opportunityId);
+        if (force) summaryCache.delete(key);
+        setLoading(!initialOpportunity);
         try {
-            const { data } = await api.get(`/asterysko/opportunities/${opportunityId}`, {
-                headers: { 'x-organization-id': organizationId }
-            });
-            setOpportunity(data);
+            const data = await requestOpportunitySummary(opportunityId, organizationId);
+            setOpportunity((current: any) => ({ ...(current || {}), ...data }));
         } catch (error) {
             console.error('Failed to fetch opportunity detail', error);
             alert('Falha ao carregar detalhes da oportunidade.');
         } finally {
             setLoading(false);
         }
-    };
+    }, [opportunityId, organizationId, initialOpportunity]);
+
+    const fetchTechnical = useCallback(async (force = false) => {
+        if (!opportunityId || !organizationId) return;
+        const key = detailCacheKey(organizationId, opportunityId);
+        const cached = technicalCache.get(key);
+        if (!force && cached && cached.expiresAt > Date.now()) {
+            setOpportunity((current: any) => ({ ...(current || {}), ...cached.data }));
+            return;
+        }
+        setTechnicalLoading(true);
+        try {
+            const { data } = await api.get(`/asterysko/opportunities/${opportunityId}/technical`, {
+                headers: { 'x-organization-id': organizationId }
+            });
+            technicalCache.set(key, { data, expiresAt: Date.now() + DETAIL_CACHE_TTL_MS });
+            setOpportunity((current: any) => ({ ...(current || {}), ...data }));
+        } catch (error) {
+            console.error('Failed to fetch technical opportunity detail', error);
+        } finally {
+            setTechnicalLoading(false);
+        }
+    }, [opportunityId, organizationId]);
+
+    const fetchSection = useCallback(async (section: 'contacts' | 'evidences' | 'history', force = false) => {
+        if (!opportunityId || !organizationId) return;
+        const stateKey = section === 'history' ? 'histories' : section;
+        if (!force && opportunity?.[stateKey] !== undefined) return;
+        setSectionLoading(true);
+        try {
+            const suffix = section === 'history' ? 'history?limit=20' : section;
+            const { data } = await api.get(`/asterysko/opportunities/${opportunityId}/${suffix}`, {
+                headers: { 'x-organization-id': organizationId }
+            });
+            setOpportunity((current: any) => ({
+                ...(current || {}),
+                [stateKey]: data.items || [],
+                counts: {
+                    ...(current?.counts || {}),
+                    [stateKey]: section === 'history'
+                        ? (data.pagination?.total || data.items?.length || 0)
+                        : (data.items?.length || 0),
+                },
+            }));
+        } catch (error) {
+            console.error(`Failed to fetch opportunity ${section}`, error);
+        } finally {
+            setSectionLoading(false);
+        }
+    }, [opportunityId, organizationId, opportunity]);
+
+    useEffect(() => {
+        if (!isOpen || !opportunityId) return;
+        setActiveTab('overview');
+        setOpportunity(initialOpportunity || null);
+        void fetchSummary();
+        void fetchTechnical();
+    }, [isOpen, opportunityId, initialOpportunity, fetchSummary, fetchTechnical]);
+
+    useEffect(() => {
+        if (!isOpen || activeTab === 'overview') return;
+        void fetchSection(activeTab);
+    }, [isOpen, activeTab, fetchSection]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const previousOverflow = document.body.style.overflow;
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') onClose();
+        };
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isOpen, onClose]);
 
     if (!isOpen || !opportunityId) return null;
 
@@ -79,7 +186,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                 { headers: { 'x-organization-id': organizationId } },
             );
             alert('Oportunidade qualificada com sucesso!');
-            fetchOpportunity();
+            void fetchSummary(true);
             onUpdate();
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao qualificar oportunidade.');
@@ -95,7 +202,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                 { headers: { 'x-organization-id': organizationId } },
             );
             alert('Oportunidade restaurada para análise.');
-            fetchOpportunity();
+            void fetchSummary(true);
             onUpdate();
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao restaurar oportunidade.');
@@ -129,7 +236,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                 headers: { 'x-organization-id': organizationId }
             });
             alert(newDoNotContact ? 'Marcação de Não Contatar ativada.' : 'Restrição de Não Contatar removida.');
-            fetchOpportunity();
+            void fetchSummary(true);
             onUpdate();
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao alterar restrição.');
@@ -157,7 +264,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
             setCPhone('');
             setCIsPrimary(false);
             setShowContactForm(false);
-            fetchOpportunity();
+            await Promise.all([fetchSection('contacts', true), fetchSummary(true)]);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao adicionar contato.');
         } finally {
@@ -172,7 +279,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
             await api.delete(`/asterysko/opportunities/${opportunityId}/contacts/${contactId}`, {
                 headers: { 'x-organization-id': organizationId }
             });
-            fetchOpportunity();
+            await Promise.all([fetchSection('contacts', true), fetchSummary(true)]);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao remover contato.');
         }
@@ -195,7 +302,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
             setEUrl('');
             setESummary('');
             setShowEvidenceForm(false);
-            fetchOpportunity();
+            await Promise.all([fetchSection('evidences', true), fetchSummary(true)]);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao adicionar evidência.');
         } finally {
@@ -210,7 +317,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
             await api.delete(`/asterysko/opportunities/${opportunityId}/evidences/${evidenceId}`, {
                 headers: { 'x-organization-id': organizationId }
             });
-            fetchOpportunity();
+            await Promise.all([fetchSection('evidences', true), fetchSummary(true)]);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Falha ao remover evidência.');
         }
@@ -245,9 +352,21 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
         value === null || value === undefined ? '—' : `${Number(value).toLocaleString('pt-BR')}%`
     );
 
-    return (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end">
-            <div className="bg-white dark:bg-zinc-950 w-full max-w-3xl h-full shadow-2xl flex flex-col border-l border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-right duration-200">
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[200] h-[100dvh] bg-black/60 backdrop-blur-sm flex justify-end overscroll-none"
+            role="presentation"
+            onMouseDown={(event) => {
+                if (event.target === event.currentTarget) onClose();
+            }}
+        >
+            <div
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Detalhes da oportunidade ${opportunity?.code || ''}`}
+                className="bg-white dark:bg-zinc-950 w-full max-w-3xl h-[100dvh] shadow-2xl flex flex-col border-l border-zinc-200 dark:border-zinc-800 animate-in slide-in-from-right duration-200"
+                onMouseDown={(event) => event.stopPropagation()}
+            >
                 {/* Header Panel */}
                 <div className="p-6 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-start justify-between shrink-0">
                     <div>
@@ -279,9 +398,9 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                 <div className="px-6 border-b border-zinc-100 dark:border-zinc-800 flex gap-4 bg-white dark:bg-zinc-950 shrink-0">
                     {[
                         { id: 'overview', label: 'Visão Geral' },
-                        { id: 'contacts', label: `Contatos (${opportunity?.contacts?.length || 0})` },
-                        { id: 'evidences', label: `Evidências (${opportunity?.evidences?.length || 0})` },
-                        { id: 'history', label: 'Histórico' },
+                        { id: 'contacts', label: `Contatos (${opportunity?.counts?.contacts ?? opportunity?.contacts?.length ?? 0})` },
+                        { id: 'evidences', label: `Evidências (${opportunity?.counts?.evidences ?? opportunity?.evidences?.length ?? 0})` },
+                        { id: 'history', label: `Histórico (${opportunity?.counts?.histories ?? opportunity?.histories?.length ?? 0})` },
                     ].map((tab) => (
                         <button
                             key={tab.id}
@@ -299,6 +418,12 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
 
                 {/* Body Content */}
                 <div className="flex-1 overflow-y-auto p-6">
+                    {sectionLoading && activeTab !== 'overview' && (
+                        <div className="mb-4 flex items-center gap-2 text-xs font-medium text-zinc-400">
+                            <Loader2 size={14} className="animate-spin text-[#0412dd]" />
+                            Carregando esta seção...
+                        </div>
+                    )}
                     {loading ? (
                         <div className="py-20 text-center text-zinc-400 flex flex-col items-center gap-2">
                             <Loader2 size={24} className="animate-spin text-[#0412dd]" />
@@ -315,7 +440,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                                             Ações disponíveis para este registro:
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2">
-                                            {opportunity.status === 'review' && (
+                                            {['captured', 'review'].includes(opportunity.status) && (
                                                 <>
                                                     <button
                                                         onClick={() => onOpenDiscard(opportunity)}
@@ -393,8 +518,9 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
 
                                     {/* Pré-enriquecimento técnico — candidatos permanecem sem aceite automático */}
                                     <div className="space-y-3">
-                                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
+                                        <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
                                             Scout AI & Pré-enriquecimento
+                                            {technicalLoading && <Loader2 size={13} className="animate-spin text-[#0412dd]" />}
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                                             <div className="p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 bg-blue-50/60 dark:bg-blue-950/20">
@@ -798,6 +924,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };

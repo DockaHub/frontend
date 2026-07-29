@@ -5,7 +5,10 @@ import {
 } from 'lucide-react';
 import api from '../../../../../services/api';
 import { AsteryskoNewOpportunityModal } from './AsteryskoNewOpportunityModal';
-import { AsteryskoOpportunityDetailsModal } from './AsteryskoOpportunityDetailsModal';
+import {
+    AsteryskoOpportunityDetailsModal,
+    prefetchOpportunitySummary,
+} from './AsteryskoOpportunityDetailsModal';
 import { AsteryskoDiscardModal } from './AsteryskoDiscardModal';
 import { AsteryskoSendToCrmModal } from './AsteryskoSendToCrmModal';
 
@@ -13,6 +16,11 @@ interface Props {
     organizationId?: string;
     onTotalChange?: (total: number) => void;
 }
+
+const LIST_CACHE_TTL_MS = 15_000;
+const COUNTS_CACHE_TTL_MS = 30_000;
+const opportunitiesCache = new Map<string, { data: any; expiresAt: number }>();
+const opportunityCountsCache = new Map<string, { data: any; expiresAt: number }>();
 
 export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onTotalChange }) => {
     const [loading, setLoading] = useState(false);
@@ -31,6 +39,7 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
     // Filtros e Paginação
     const [activeStatus, setActiveStatus] = useState<string>('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const [appliedSearch, setAppliedSearch] = useState('');
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const limit = 15;
@@ -38,58 +47,99 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
     // Modais Modos de Ação
     const [isNewModalOpen, setIsNewModalOpen] = useState(false);
     const [selectedOppId, setSelectedOppId] = useState<string | null>(null);
+    const [selectedOpportunity, setSelectedOpportunity] = useState<any>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isDiscardOpen, setIsDiscardOpen] = useState(false);
     const [isSendToCrmOpen, setIsSendToCrmOpen] = useState(false);
     const [actionTargetOpp, setActionTargetOpp] = useState<any>(null);
 
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (force = false) => {
         if (!organizationId) {
             setItems([]);
             setCounts(current => ({ ...current, total: 0 }));
             onTotalChange?.(0);
             return;
         }
-        setLoading(true);
+        const cacheKey = JSON.stringify([organizationId, page, activeStatus, appliedSearch]);
+        const cached = opportunitiesCache.get(cacheKey);
+        if (!force && cached && cached.expiresAt > Date.now()) {
+            setItems(cached.data.items);
+            setTotalPages(cached.data.totalPages);
+            setCounts(cached.data.counts);
+            onTotalChange?.(cached.data.counts.total || 0);
+            return;
+        }
+
+        setLoading(!cached);
         try {
-            const [listRes, countsRes] = await Promise.all([
+            const cachedCounts = opportunityCountsCache.get(organizationId);
+            const countsRequest = !force && cachedCounts && cachedCounts.expiresAt > Date.now()
+                ? Promise.resolve(cachedCounts.data)
+                : api.get('/asterysko/opportunities/counts', {
+                    headers: { 'x-organization-id': organizationId }
+                }).then(({ data }) => {
+                    opportunityCountsCache.set(organizationId, {
+                        data,
+                        expiresAt: Date.now() + COUNTS_CACHE_TTL_MS,
+                    });
+                    return data;
+                });
+
+            const [listRes, nextCounts] = await Promise.all([
                 api.get('/asterysko/opportunities', {
                     headers: { 'x-organization-id': organizationId },
                     params: {
                         page,
                         limit,
                         status: activeStatus,
-                        search: searchQuery.trim() || undefined
+                        search: appliedSearch || undefined,
+                        compact: true,
                     }
                 }),
-                api.get('/asterysko/opportunities/counts', {
-                    headers: { 'x-organization-id': organizationId }
-                })
+                countsRequest,
             ]);
 
-            setItems(listRes.data.items || []);
-            setTotalPages(listRes.data.pagination?.totalPages || 1);
-            setCounts(countsRes.data);
-            onTotalChange?.(countsRes.data.total || 0);
+            const nextData = {
+                items: listRes.data.items || [],
+                totalPages: listRes.data.pagination?.totalPages || 1,
+                counts: nextCounts,
+            };
+            opportunitiesCache.set(cacheKey, {
+                data: nextData,
+                expiresAt: Date.now() + LIST_CACHE_TTL_MS,
+            });
+            setItems(nextData.items);
+            setTotalPages(nextData.totalPages);
+            setCounts(nextData.counts);
+            onTotalChange?.(nextCounts.total || 0);
         } catch (error) {
             console.error('Failed to load opportunities data', error);
         } finally {
             setLoading(false);
         }
-    }, [page, activeStatus, searchQuery, organizationId, onTotalChange]);
+    }, [page, activeStatus, appliedSearch, organizationId, onTotalChange]);
 
     useEffect(() => {
-        loadData();
+        void loadData();
     }, [loadData]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => {
+            setPage(1);
+            setAppliedSearch(searchQuery.trim());
+        }, 350);
+        return () => window.clearTimeout(timer);
+    }, [searchQuery]);
 
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setPage(1);
-        loadData();
+        setAppliedSearch(searchQuery.trim());
     };
 
-    const openDetails = (oppId: string) => {
-        setSelectedOppId(oppId);
+    const openDetails = (opp: any) => {
+        setSelectedOppId(opp.id);
+        setSelectedOpportunity(opp);
         setIsDetailsOpen(true);
     };
 
@@ -138,7 +188,7 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                 </div>
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={loadData}
+                        onClick={() => void loadData(true)}
                         className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                         title="Atualizar lista"
                     >
@@ -290,7 +340,8 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                                 items.map((opp) => (
                                     <tr 
                                         key={opp.id} 
-                                        onClick={() => openDetails(opp.id)}
+                                        onClick={() => openDetails(opp)}
+                                        onMouseEnter={() => prefetchOpportunitySummary(opp.id, organizationId)}
                                         className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors cursor-pointer"
                                     >
                                         {/* Marca & Empresa */}
@@ -356,7 +407,8 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                                                     </button>
                                                 )}
                                                 <button
-                                                    onClick={() => openDetails(opp.id)}
+                                                    onClick={() => openDetails(opp)}
+                                                    onFocus={() => prefetchOpportunitySummary(opp.id, organizationId)}
                                                     className="p-1.5 text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"
                                                     title="Ver Detalhes"
                                                 >
@@ -400,15 +452,17 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                 isOpen={isNewModalOpen}
                 organizationId={organizationId}
                 onClose={() => setIsNewModalOpen(false)}
-                onCreated={loadData}
+                onCreated={() => void loadData(true)}
             />
 
             <AsteryskoOpportunityDetailsModal
+                key={selectedOppId || 'closed-opportunity'}
                 isOpen={isDetailsOpen}
                 opportunityId={selectedOppId}
                 organizationId={organizationId}
+                initialOpportunity={selectedOpportunity}
                 onClose={() => setIsDetailsOpen(false)}
-                onUpdate={loadData}
+                onUpdate={() => void loadData(true)}
                 onOpenSendToCrm={(opp) => { setIsDetailsOpen(false); openSendToCrm(opp); }}
                 onOpenDiscard={(opp) => { setIsDetailsOpen(false); openDiscard(opp); }}
             />
@@ -419,7 +473,7 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                 organizationId={organizationId}
                 brandName={actionTargetOpp?.brandName}
                 onClose={() => setIsDiscardOpen(false)}
-                onDiscarded={loadData}
+                onDiscarded={() => void loadData(true)}
             />
 
             <AsteryskoSendToCrmModal
@@ -427,7 +481,7 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                 opportunity={actionTargetOpp}
                 organizationId={organizationId}
                 onClose={() => setIsSendToCrmOpen(false)}
-                onSentToCrm={loadData}
+                onSentToCrm={() => void loadData(true)}
             />
         </div>
     );
