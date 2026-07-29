@@ -262,16 +262,19 @@
 }
 
 .orbit-ring--outer {
+  --orbit-diameter: var(--outer-size);
   width: 100%;
   height: 100%;
 }
 
 .orbit-ring--middle {
+  --orbit-diameter: calc(var(--outer-size) * 0.684);
   width: 68.4%;
   height: 68.4%;
 }
 
 .orbit-ring--inner {
+  --orbit-diameter: calc(var(--outer-size) * 0.295);
   width: 29.5%;
   height: 29.5%;
 }
@@ -287,13 +290,21 @@
   animation: orbit-clockwise 44s linear infinite;
 }
 
+.orbit-track--middle {
+  animation: orbit-counterclockwise 52s linear infinite;
+}
+
+.orbit-track--inner {
+  animation: orbit-clockwise 36s linear infinite;
+}
+
 .orbit-node {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 0;
   height: 0;
-  transform: rotate(var(--orbit-angle)) translateX(calc(var(--outer-size) / 2));
+  transform: rotate(var(--orbit-angle)) translateX(calc(var(--orbit-diameter) / 2));
   transform-origin: center;
 }
 
@@ -311,8 +322,17 @@
   transform: rotate(var(--orbit-counter-angle));
 }
 
-.orbit-track--outer .brand-tile {
+.orbit-track--outer .brand-tile,
+.orbit-track--inner .brand-tile {
   animation: tile-counterspin 44s linear infinite;
+}
+
+.orbit-track--inner .brand-tile {
+  animation-duration: 36s;
+}
+
+.orbit-track--middle .brand-tile {
+  animation: tile-counterspin-reverse 52s linear infinite;
 }
 
 .brand-tile--asset img {
@@ -350,8 +370,16 @@
   to { transform: rotate(360deg); }
 }
 
+@keyframes orbit-counterclockwise {
+  to { transform: rotate(-360deg); }
+}
+
 @keyframes tile-counterspin {
   to { transform: rotate(calc(var(--orbit-counter-angle) - 360deg)); }
+}
+
+@keyframes tile-counterspin-reverse {
+  to { transform: rotate(calc(var(--orbit-counter-angle) + 360deg)); }
 }
 
 @media (max-width: 760px) {

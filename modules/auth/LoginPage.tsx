@@ -40,32 +40,84 @@ const OrbitItem: React.FC<OrbitItemProps> = ({ angle, label, children, className
   </div>
 );
 
-const OrbitScene: React.FC = () => (
-  <div className="orbit-scene" aria-hidden="true">
-    <div className="orbit-ring orbit-ring--outer">
-      <div className="orbit-track orbit-track--outer">
-        <OrbitItem angle={204} label="Niva" className="brand-tile--asset">
-          <img src="/brands/niva.svg" alt="" />
-        </OrbitItem>
-        <OrbitItem angle={237} label="Tokyon" className="brand-tile--asset">
-          <img src="/brands/tokyon.svg" alt="" />
-        </OrbitItem>
-        <OrbitItem angle={270} label="Asterysko" className="brand-tile--asterysko">
-          <AsteryskoMark />
-        </OrbitItem>
-        <OrbitItem angle={302} label="Fauves" className="brand-tile--asset">
-          <img src="/brands/fauves.svg" alt="" />
-        </OrbitItem>
-        <OrbitItem angle={331} label="Allyo" className="brand-tile--asset">
-          <img src="/brands/allyo.svg" alt="" />
-        </OrbitItem>
-      </div>
-    </div>
+type OrbitRing = 'outer' | 'middle' | 'inner';
 
-    <div className="orbit-ring orbit-ring--middle" />
-    <div className="orbit-ring orbit-ring--inner" />
-  </div>
-);
+interface OrbitBrand {
+  id: string;
+  label: string;
+  src?: string;
+  className: string;
+}
+
+interface OrbitPlacement extends OrbitBrand {
+  angle: number;
+  ring: OrbitRing;
+}
+
+const ORBIT_BRANDS: OrbitBrand[] = [
+  { id: 'niva', label: 'Niva', src: '/brands/niva.svg', className: 'brand-tile--asset' },
+  { id: 'tokyon', label: 'Tokyon', src: '/brands/tokyon.svg', className: 'brand-tile--asset' },
+  { id: 'asterysko', label: 'Asterysko', className: 'brand-tile--asterysko' },
+  { id: 'fauves', label: 'Fauves', src: '/brands/fauves.svg', className: 'brand-tile--asset' },
+  { id: 'allyo', label: 'Allyo', src: '/brands/allyo.svg', className: 'brand-tile--asset' },
+];
+
+const RING_PATTERNS: OrbitRing[][] = [
+  ['outer', 'middle', 'inner', 'outer', 'middle'],
+  ['middle', 'outer', 'middle', 'inner', 'outer'],
+  ['inner', 'middle', 'outer', 'middle', 'outer'],
+];
+
+const shuffled = <T,>(items: T[]) => {
+  const result = [...items];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [result[index], result[swapIndex]] = [result[swapIndex], result[index]];
+  }
+  return result;
+};
+
+const createOrbitLayout = (): OrbitPlacement[] => {
+  const brands = shuffled(ORBIT_BRANDS);
+  const ringPattern = RING_PATTERNS[Math.floor(Math.random() * RING_PATTERNS.length)];
+  const initialAngle = Math.random() * 72;
+
+  return brands.map((brand, index) => ({
+    ...brand,
+    ring: ringPattern[index],
+    // Mantém os itens espalhados por toda a circunferência, com variação visual
+    // suficiente para cada acesso parecer diferente sem criar grandes áreas vazias.
+    angle: (initialAngle + (index * 72) + ((Math.random() - 0.5) * 14)) % 360,
+  }));
+};
+
+const OrbitScene: React.FC = () => {
+  const [placements] = useState<OrbitPlacement[]>(createOrbitLayout);
+  const rings: OrbitRing[] = ['outer', 'middle', 'inner'];
+
+  return (
+    <div className="orbit-scene" aria-hidden="true">
+      {rings.map((ring) => (
+        <div key={ring} className={`orbit-ring orbit-ring--${ring}`}>
+          <div className={`orbit-track orbit-track--${ring}`}>
+            {placements.filter((placement) => placement.ring === ring).map((placement) => (
+              <OrbitItem
+                key={placement.id}
+                angle={placement.angle}
+                label={placement.label}
+                className={placement.className}
+              >
+                {placement.src
+                  ? <img src={placement.src} alt="" />
+                  : <AsteryskoMark />}
+              </OrbitItem>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
