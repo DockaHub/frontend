@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { socketService } from '../services/socketService';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
@@ -19,6 +19,9 @@ export interface Notification {
 interface NotificationContextType {
     notifications: Notification[];
     unreadCount: number;
+    loading: boolean;
+    error: string | null;
+    refreshNotifications: () => Promise<void>;
     markAsRead: (id: string) => Promise<void>;
     markAllAsRead: () => Promise<void>;
     markAsReadByLink: (link: string) => Promise<void>;
@@ -26,6 +29,8 @@ interface NotificationContextType {
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const isInternalNotification = (notification: Notification) =>
+    notification.type?.toUpperCase() !== 'CHAT';
 
 export const useNotifications = () => {
     const context = useContext(NotificationContext);
@@ -35,12 +40,18 @@ export const useNotifications = () => {
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const { user } = useAuth();
     const { addToast } = useToast();
-    const notificationAudio = useRef<HTMLAudioElement>(new Audio('https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'));
 
     const fetchNotifications = useCallback(async () => {
-        if (!user) return;
+        if (!user) {
+            setNotifications([]);
+            return;
+        }
+        setLoading(true);
+        setError(null);
         try {
             const response = await fetch(`${getApiBaseUrl()}/notifications`, {
                 headers: {
@@ -49,10 +60,15 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
             });
             if (response.ok) {
                 const data = await response.json();
-                setNotifications(data);
+                setNotifications(Array.isArray(data) ? data.filter(isInternalNotification) : []);
+            } else {
+                setError('Não foi possível carregar as notificações.');
             }
         } catch (error) {
             console.error('Failed to fetch notifications', error);
+            setError('Não foi possível carregar as notificações.');
+        } finally {
+            setLoading(false);
         }
     }, [user]);
 
@@ -62,23 +78,29 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     useEffect(() => {
         if (!user) return;
+        const refreshInterval = window.setInterval(fetchNotifications, 60_000);
+        window.addEventListener('focus', fetchNotifications);
+        return () => {
+            window.clearInterval(refreshInterval);
+            window.removeEventListener('focus', fetchNotifications);
+        };
+    }, [user, fetchNotifications]);
+
+    useEffect(() => {
+        if (!user) return;
 
         const handleNewNotification = (notification: Notification) => {
-            setNotifications(prev => [notification, ...prev]);
-            
-            // If it's NOT a chat notification (since chat already has its own toasts), show toast
-            // Or maybe show toast for everything that happens while not on that specific page
-            if (notification.type !== 'CHAT') {
-                addToast({
-                    type: 'info',
-                    title: notification.title,
-                    message: notification.message
-                });
-            }
-
-            // Always play sound for notification if it belongs to current user
-            notificationAudio.current.volume = 0.5;
-            notificationAudio.current.play().catch(e => console.log('Audio play failed:', e));
+            if (!isInternalNotification(notification)) return;
+            setNotifications(previous => (
+                previous.some(item => item.id === notification.id)
+                    ? previous
+                    : [notification, ...previous]
+            ));
+            addToast({
+                type: 'info',
+                title: notification.title,
+                message: notification.message
+            });
         };
 
         socketService.on('new_notification', handleNewNotification);
@@ -138,13 +160,28 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     };
 
     const addLocalNotification = (notification: Notification) => {
-        setNotifications(prev => [notification, ...prev]);
+        if (!isInternalNotification(notification)) return;
+        setNotifications(previous => (
+            previous.some(item => item.id === notification.id)
+                ? previous
+                : [notification, ...previous]
+        ));
     };
 
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
-        <NotificationContext.Provider value={{ notifications, unreadCount, markAsRead, markAllAsRead, markAsReadByLink, addLocalNotification }}>
+        <NotificationContext.Provider value={{
+            notifications,
+            unreadCount,
+            loading,
+            error,
+            refreshNotifications: fetchNotifications,
+            markAsRead,
+            markAllAsRead,
+            markAsReadByLink,
+            addLocalNotification,
+        }}>
             {children}
         </NotificationContext.Provider>
     );

@@ -1,13 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-    ChevronDown, Mail, MessageSquare, Users, PanelLeftClose, PanelLeftOpen, X, Building2, Palette, Smile, Bell, User as UserIcon, Settings, Sun, Moon, LogOut,
-    CheckSquare, Calendar, Phone, HardDrive, Home
+    ChevronDown, X, Building2, Palette, Bell,
+    User as UserIcon, Settings, Sun, Moon, LogOut
 } from 'lucide-react';
 import { Organization, User } from '../types';
 import Modal from './common/Modal';
-import ManySpaceLogo from './common/ManySpaceLogo';
 import UserAvatar from './common/UserAvatar';
-import Tooltip from './common/Tooltip';
 import { useSidebarNavigation } from '../hooks/useSidebarNavigation';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
@@ -25,28 +23,6 @@ const AsteryskoBrandMark: React.FC<{ className?: string; style?: React.CSSProper
         <path d="M14.5109 5.16058C14.5109 5.33071 14.5368 5.50083 14.5833 5.6555L15.7206 13.3061C15.7206 13.5845 15.9481 13.8062 16.2221 13.8062C16.4961 13.8062 16.7235 13.5794 16.7235 13.3061L17.8608 5.6555C17.9074 5.50083 17.9332 5.33071 17.9332 5.16058C17.9332 4.21713 17.1629 3.44898 16.2169 3.44898C15.2709 3.44898 14.5006 4.21713 14.5006 5.16058H14.5109Z" fill="currentColor" />
     </svg>
 );
-
-const cleanSvg = (svg: string) => {
-    if (!svg) return '';
-    // Remove XML declaration, DOCTYPE, comments, style blocks and defs
-    let cleaned = svg
-        .replace(/<\?xml.*?\?>/gi, '')
-        .replace(/<!DOCTYPE.*?>/gi, '')
-        .replace(/<!--.*?-->/gs, '')
-        .replace(/<style.*?>.*?<\/style>/gs, '')
-        .replace(/<defs.*?>.*?<\/defs>/gs, '');
-
-    // Remove hardcoded fill/stroke attributes (including hex, rgb, named colors) 
-    // to force inheritance of 'currentColor'
-    cleaned = cleaned
-        .replace(/\s+(fill|stroke)=["'][^"']*["']/gi, ' ')
-        // Remove width and height attributes from the <svg> tag to let CSS control it
-        .replace(/<svg([^>]*?)\s+(width|height)=["'][^"']*["']/gi, '<svg$1')
-        .replace(/<svg([^>]*?)\s+(width|height)=["'][^"']*["']/gi, '<svg$1')
-        .trim();
-
-    return cleaned;
-};
 
 const getBgColorForSlug = (slug: string) => {
     switch (slug?.toLowerCase()) {
@@ -89,7 +65,6 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     onClose
 }) => {
     // State
-    const [isCollapsed, setIsCollapsed] = useState(false);
     const [isAddOrgModalOpen, setIsAddOrgModalOpen] = useState(false);
     const [isOrgMenuOpen, setIsOrgMenuOpen] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -136,15 +111,13 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [userOrgs]);
 
-    const { unreadCount, notifications } = useNotifications();
-    const unreadChatCount = notifications.filter(n => n.type === 'CHAT' && !n.read).length;
+    const { unreadCount } = useNotifications();
 
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
     const handleSelectOrg = (org: Organization) => {
         onOrgChange(org);
         setIsOrgMenuOpen(false);
-        if (isCollapsed) setIsCollapsed(false);
     };
 
     if (!currentOrg) return null;
@@ -173,9 +146,10 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     const getInactiveColor = () => {
         return theme === 'dark' ? '#a1a1aa' : '#000000'; // zinc-400 on dark mode, black on light mode
     };
+    const firstName = user.name?.trim().split(/\s+/)[0] || 'Usuário';
 
     return (
-        <div className={`flex flex-col bg-white dark:bg-zinc-950 pt-[15px] pb-[15px] h-full border-r border-[#e5e5e5] dark:border-zinc-800 shrink-0 transition-all duration-300 ease-in-out relative group/sidebar ${isCollapsed ? 'w-[68px]' : 'w-[180px]'} ${className}`}>
+        <div className={`flex flex-col bg-white dark:bg-zinc-950 pt-[15px] pb-[15px] h-full border-r border-[#e5e5e5] dark:border-zinc-800 shrink-0 relative w-[180px] ${className}`}>
 
             {/* Logo container at top left */}
             <div className="px-6 mb-6 flex items-center justify-between relative">
@@ -263,40 +237,11 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                     </>
                 )}
 
-                {/* Right Header Panel icons */}
-                <div className="flex items-center gap-1" ref={notificationRef}>
-                    <div className="relative">
-                        <button
-                            onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                            className="text-[#9f9f9f] hover:text-black dark:hover:text-white p-1 rounded transition-colors"
-                            title="Notificações"
-                        >
-                            <div className="relative">
-                                <Bell size={14} />
-                                {unreadCount > 0 && (
-                                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-red-500 text-white text-[8px] items-center justify-center flex font-bold rounded-full">
-                                        {unreadCount > 9 ? '9+' : unreadCount}
-                                    </span>
-                                )}
-                            </div>
-                        </button>
-                        {isNotificationOpen && <NotificationPanel onClose={() => setIsNotificationOpen(false)} />}
-                    </div>
-
-                    {onClose && (
-                        <button onClick={onClose} className="lg:hidden p-1 text-[#9f9f9f] hover:text-black rounded transition-colors">
-                            <X size={14} />
-                        </button>
-                    )}
-
-                    <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        className={`text-[#9f9f9f] hover:text-black dark:hover:text-white p-1 rounded transition-colors ${onClose ? 'hidden lg:block' : ''}`}
-                        title={isCollapsed ? 'Expandir' : 'Reduzir'}
-                    >
-                        {isCollapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+                {onClose && (
+                    <button onClick={onClose} className="lg:hidden p-1 text-[#9f9f9f] hover:text-black rounded transition-colors">
+                        <X size={16} />
                     </button>
-                </div>
+                )}
             </div>
 
             {/* MAIN CONTENT SCROLLABLE AREA */}
@@ -323,31 +268,28 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                         if (onClose) onClose();
                                     }
                                 }}
-                                className={`w-full flex items-center gap-[8px] py-1 transition-all duration-150 group ${isCollapsed ? 'justify-center px-2' : 'px-0'}`}
-                                title={isCollapsed ? item.label : undefined}
+                                className="w-full flex items-center gap-[8px] py-1 px-0 transition-all duration-150 group"
                             >
                                 <item.icon
                                     size={16}
                                     className="shrink-0"
                                     style={{ color: isSelected ? getAccentColor(currentOrg.slug) : getInactiveColor() }}
                                 />
-                                {!isCollapsed && (
-                                    <span
-                                        className="flex-1 text-left truncate"
-                                        style={{
-                                            fontFamily: '"Plus Jakarta Sans", sans-serif',
-                                            fontSize: 12,
-                                            fontWeight: 600,
-                                            color: isSelected ? getAccentColor(currentOrg.slug) : getInactiveColor(),
-                                        }}
-                                    >
-                                        {item.label}
-                                    </span>
-                                )}
-                                {!isCollapsed && hasChildren && (
+                                <span
+                                    className="flex-1 text-left truncate"
+                                    style={{
+                                        fontFamily: '"Plus Jakarta Sans", sans-serif',
+                                        fontSize: 12,
+                                        fontWeight: 600,
+                                        color: isSelected ? getAccentColor(currentOrg.slug) : getInactiveColor(),
+                                    }}
+                                >
+                                    {item.label}
+                                </span>
+                                {hasChildren && (
                                     <ChevronDown size={14} style={{ color: '#9f9f9f' }} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                                 )}
-                                {!isCollapsed && item.badgeCount && item.badgeCount > 0 && (
+                                {item.badgeCount && item.badgeCount > 0 && (
                                     <span className={`ml-auto px-1.5 py-0.5 text-[9px] font-bold text-white rounded-full ${item.badgeColor || 'bg-gray-400'}`}>
                                         {item.badgeCount}
                                     </span>
@@ -357,16 +299,10 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
 
                         return (
                             <div key={item.id} className="space-y-[15px]">
-                                {isCollapsed ? (
-                                    <Tooltip content={item.label} side="right">
-                                        {ButtonContent}
-                                    </Tooltip>
-                                ) : (
-                                    ButtonContent
-                                )}
+                                {ButtonContent}
 
                                 {/* Sub-items rendering */}
-                                {!isCollapsed && isExpanded && hasChildren && (
+                                {isExpanded && hasChildren && (
                                     <div className="ml-9 border-l border-[#e5e5e5] dark:border-zinc-800 pl-3 space-y-1 my-1">
                                         {item.children?.map(child => {
                                             const isChildSelected = currentView === child.id;
@@ -450,8 +386,37 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                 </div>
             </Modal>
 
-            {/* 3. Bottom User Profile (Figma Style) */}
-            <div className="border-t border-[#e5e5e5] dark:border-zinc-800 mx-6 pt-3" ref={menuRef}>
+            {/* Notificações internas, próximas do contexto do usuário */}
+            <div className="mx-6 border-y border-[#e5e5e5] dark:border-zinc-800" ref={notificationRef}>
+                <div className="relative">
+                    <button
+                        type="button"
+                        onClick={() => setIsNotificationOpen(current => !current)}
+                        className="w-full flex items-center justify-between py-3 text-black dark:text-white hover:text-[#fd6b32] dark:hover:text-[#ff7a45] transition-colors"
+                        aria-expanded={isNotificationOpen}
+                        aria-label={`Notificações${unreadCount > 0 ? `, ${unreadCount} não lidas` : ''}`}
+                    >
+                        <span className="flex items-center gap-3 min-w-0">
+                            <Bell size={17} strokeWidth={1.8} className="shrink-0" />
+                            <span
+                                style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }}
+                                className="text-xs font-semibold truncate"
+                            >
+                                Notificações
+                            </span>
+                        </span>
+                        {unreadCount > 0 && (
+                            <span className="min-w-6 h-6 px-1.5 rounded-full bg-[#fff0eb] dark:bg-[#3b2018] text-[#fd6b32] dark:text-[#ff8b5e] text-[10px] font-bold flex items-center justify-center">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
+                    {isNotificationOpen && <NotificationPanel onClose={() => setIsNotificationOpen(false)} />}
+                </div>
+            </div>
+
+            {/* Perfil do usuário */}
+            <div className="mx-6 pt-3" ref={menuRef}>
                 <div className="relative">
                     {/* Popover Menu */}
                     {isUserMenuOpen && (
@@ -469,16 +434,6 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
 
                             {/* Menu Items */}
                             <div className="p-2 space-y-1">
-                                <button className="w-full text-left px-3 py-2 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-3 transition-colors group">
-                                    <Smile size={16} className="text-docka-400 dark:text-zinc-500 group-hover:text-docka-600 dark:group-hover:text-zinc-200" />
-                                    Atualizar status
-                                </button>
-                                <button className="w-full text-left px-3 py-2 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-3 transition-colors group">
-                                    <Bell size={16} className="text-docka-400 dark:text-zinc-500 group-hover:text-docka-600 dark:group-hover:text-zinc-200" />
-                                    Pausar notificações
-                                </button>
-                                <div className="h-px bg-docka-100 dark:bg-zinc-800 my-1 mx-2" />
-
                                 <button
                                     onClick={() => { setIsUserMenuOpen(false); onOpenProfile?.(); }}
                                     className="w-full text-left px-3 py-2 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-3 transition-colors group"
@@ -518,33 +473,21 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                     )}
 
                     {/* Trigger Button */}
-                    <div className="w-full">
-                        {isCollapsed ? (
-                            <Tooltip content={user.name} side="right">
-                                <button
-                                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                    className="w-full flex items-center justify-center p-1.5 hover:bg-[#f5f5f5] dark:hover:bg-zinc-800 rounded-lg transition-colors"
-                                >
-                                    <UserAvatar src={user.avatar} name={user.name} size="sm" />
-                                </button>
-                            </Tooltip>
-                        ) : (
-                            <button
-                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                className="w-full flex items-center justify-between py-1.5 hover:bg-[#f5f5f5] dark:hover:bg-zinc-800 rounded-lg transition-colors px-2 -mx-2"
-                            >
-                                <div className="flex items-center gap-3">
-                                    <UserAvatar src={user.avatar} name={user.name} size="sm" />
-                                    <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }} className="text-xs font-semibold text-black dark:text-white truncate">
-                                        {user.name}
-                                    </span>
-                                </div>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9f9f9f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                                    <path d="M9 18l6-6-6-6" />
-                                </svg>
-                            </button>
-                        )}
-                    </div>
+                    <button
+                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                        className="w-full flex items-center justify-between py-1.5 hover:bg-[#f5f5f5] dark:hover:bg-zinc-800 rounded-lg transition-colors px-2 -mx-2"
+                        aria-expanded={isUserMenuOpen}
+                    >
+                        <div className="flex items-center gap-3 min-w-0">
+                            <UserAvatar src={user.avatar} name={user.name} size="sm" />
+                            <span style={{ fontFamily: '"Plus Jakarta Sans", sans-serif' }} className="text-xs font-semibold text-black dark:text-white truncate">
+                                {firstName}
+                            </span>
+                        </div>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9f9f9f" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                            <path d="M9 18l6-6-6-6" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
