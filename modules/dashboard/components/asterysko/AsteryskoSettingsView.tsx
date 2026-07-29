@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Save, Check, X, Bell, Mail, CheckSquare, Clock } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Save, Check, X, Bell, Mail, CheckSquare, Clock, Bot } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
 import DashboardPage from '../../../../components/DashboardPage';
+import { AsteryskoScoutAutomationSettings } from './AsteryskoScoutAutomationSettings';
 
 interface AsteryskoSettingsViewProps {
     onOpenClientPortal?: () => void;
@@ -24,7 +25,7 @@ interface Plan {
 }
 
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenClientPortal, organization }) => {
-    const [activeSettingsTab, setActiveSettingsTab] = useState<'notifications' | 'crm_inpi' | 'plans' | 'portal'>('notifications');
+    const [activeSettingsTab, setActiveSettingsTab] = useState<'notifications' | 'crm_inpi' | 'scout_ai' | 'plans' | 'portal'>('notifications');
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -1489,6 +1490,17 @@ const WhatsAppCard: React.FC = () => {
                     </button>
 
                     <button
+                        onClick={() => setActiveSettingsTab('scout_ai')}
+                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                            activeSettingsTab === 'scout_ai'
+                                ? 'bg-[#0412dd] text-white shadow-md'
+                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
+                        }`}
+                    >
+                        <Bot size={16} /> Scout AI
+                    </button>
+
+                    <button
                         onClick={() => setActiveSettingsTab('plans')}
                         className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                             activeSettingsTab === 'plans'
@@ -1522,6 +1534,10 @@ const WhatsAppCard: React.FC = () => {
                             {/* WhatsApp Templates Section */}
                             <NotificationTemplatesManager />
                         </div>
+                    )}
+
+                    {activeSettingsTab === 'scout_ai' && (
+                        <AsteryskoScoutAutomationSettings organizationId={organization?.id} />
                     )}
 
                     {/* TAB 2: CRM RULES & INPI MOTOR */}
