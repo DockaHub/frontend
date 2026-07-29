@@ -217,7 +217,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-950 min-h-full font-sans transition-colors duration-300 flex flex-col relative">
+        <div className="bg-white dark:bg-zinc-950 h-full min-h-0 overflow-hidden font-sans transition-colors duration-300 flex flex-col relative">
             {/* Toast Notification */}
             {toastMessage && (
                 <div className="fixed top-5 right-5 z-50 flex items-center gap-3 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-4 py-3 rounded-xl shadow-xl border border-zinc-700 dark:border-zinc-300 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -278,7 +278,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
             </div>
 
             {/* Board View / Tab Content */}
-            <div className="flex-1 w-full overflow-x-auto flex custom-scrollbar relative items-stretch">
+            <div className="flex-1 min-h-0 w-full overflow-auto overscroll-contain flex custom-scrollbar relative items-stretch">
                 {isLoading && (
                     <div className="absolute inset-0 z-10 flex justify-center pt-12 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm">
                         <Loader2 className="animate-spin text-[#0412dd] dark:text-[#3b48ff]" size={24} />
@@ -287,7 +287,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
                 {/* Operational View for Opportunities Tab */}
                 {activeTab === 'opportunities' && (
-                    <div className="w-full p-6 md:p-8">
+                    <div className="w-full min-w-0 p-6 md:p-8">
                         <AsteryskoOpportunitiesTab
                             organizationId={organization?.id}
                             onTotalChange={setOpportunityCount}
@@ -300,7 +300,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                     return (
                         <div 
                             key={col.id} 
-                            className={`shrink-0 w-[300px] flex flex-col ${idx !== currentBoardColumns.length - 1 ? 'border-r border-[#e5e5e5] dark:border-zinc-800' : ''}`}
+                            className={`shrink-0 w-[300px] h-full min-h-0 flex flex-col ${idx !== currentBoardColumns.length - 1 ? 'border-r border-[#e5e5e5] dark:border-zinc-800' : ''}`}
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, col.id)}
                         >
@@ -316,7 +316,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                             </div>
                             
                             {/* Column Content */}
-                            <div className="flex-1 p-4 flex flex-col gap-4 overflow-y-auto">
+                            <div className="flex-1 min-h-0 p-4 flex flex-col gap-4 overflow-y-auto overscroll-contain custom-scrollbar">
                                 {col.cards.map((card) => {
                                     const sourceTag = card.tags?.find((t: any) => typeof t === 'string' ? t.toLowerCase().includes('site') : t.label?.toLowerCase().includes('site')) ? 'Site' : 'Manual';
                                     const formattedValue = formatDisplayValue(card.value);
