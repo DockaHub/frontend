@@ -141,9 +141,24 @@ const formatDuration = (milliseconds: number) => {
     return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}min ${seconds % 60}s`;
 };
 
+const friendlyScoutError = (value?: string | null): string | null => {
+    if (!value) return null;
+    if (/^structuring_failed:.*(?:unterminated string in json|unexpected end of json)/i.test(value)) {
+        return 'A OpenAI devolveu uma resposta truncada durante a estruturação. Nenhum dado foi criado e o ciclo foi encerrado com segurança.';
+    }
+    if (/^structuring_(?:failed|incomplete)/i.test(value)) {
+        return 'A etapa de estruturação da OpenAI não foi concluída. Nenhum dado parcial foi persistido.';
+    }
+    if (/^search_(?:failed|incomplete|empty)/i.test(value)) {
+        return 'A pesquisa web não foi concluída. Nenhum resultado parcial foi persistido.';
+    }
+    return value;
+};
+
 const runFeedback = (run: ScoutRunLog): string => {
     if (run.errorSummary || run.automation.interruptionReason) {
-        return run.errorSummary || run.automation.interruptionReason || 'A execução terminou com uma interrupção.';
+        return friendlyScoutError(run.errorSummary || run.automation.interruptionReason)
+            || 'A execução terminou com uma interrupção.';
     }
     if (run.status === 'running') return 'Pesquisa em andamento. Os números serão atualizados automaticamente.';
     if (run.discovery.uniqueCandidates > 0 && run.discovery.websitesConfirmed === 0) {
@@ -334,7 +349,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         icon={status.automation.circuitOpen ? <XCircle size={16} /> : <ShieldCheck size={16} />}
                         label="Circuit breaker"
                         value={status.automation.circuitOpen ? 'Aberto' : 'Fechado'}
-                        detail={status.automation.interruptionReason || 'sem bloqueios técnicos'}
+                        detail={friendlyScoutError(status.automation.interruptionReason) || 'sem bloqueios técnicos'}
                         danger={status.automation.circuitOpen}
                     />
                     <StatusCard
