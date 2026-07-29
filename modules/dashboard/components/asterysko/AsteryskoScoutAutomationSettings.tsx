@@ -18,8 +18,11 @@ import { useToast } from '../../../../context/ToastContext';
 
 interface ScoutAutomationSettings {
     enabled: boolean;
+    mode: 'scheduled' | 'continuous';
     time: string;
     weekdays: number[];
+    intervalMinutes: number;
+    maxRunsPerDay: number;
     segments: string[];
     timezone: 'America/Fortaleza';
 }
@@ -78,6 +81,7 @@ interface ScoutStatus {
         sourceStatus?: string | null;
         circuitOpen: boolean;
         lastAutomaticRunAt?: string | null;
+        automaticRunsToday: number;
         lastTriggerSource?: string | null;
         lastScheduledSlot?: string | null;
         nextRunAt?: string | null;
@@ -199,8 +203,11 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         try {
             await api.patch('/asterysko/scout-ai/automation/settings', {
                 enabled: settings.enabled,
+                mode: settings.mode,
                 time: settings.time,
                 weekdays: settings.weekdays,
+                intervalMinutes: settings.intervalMinutes,
+                maxRunsPerDay: settings.maxRunsPerDay,
                 segments: settings.segments,
             }, { headers });
             addToast({
@@ -261,7 +268,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
     const lastRun = status.recentRuns[0];
     const environmentAllowsAutomation = status.enabled && status.autoRun;
     const automationLabel = status.automation.schedulerEnabled
-        ? 'Ativo'
+        ? settings.mode === 'continuous' ? 'Ativo continuamente' : 'Ativo por agenda'
         : status.automation.circuitOpen
             ? 'Circuito aberto'
             : !settings.enabled
@@ -313,8 +320,15 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                     <StatusCard
                         icon={<CalendarClock size={16} />}
                         label="Próxima execução"
-                        value={settings.enabled ? formatDateTime(status.automation.nextRunAt) : 'Pausada'}
-                        detail={`${settings.time} · ${settings.timezone}`}
+                        value={!settings.enabled
+                            ? 'Pausada'
+                            : settings.mode === 'continuous'
+                                && status.automation.automaticRunsToday >= settings.maxRunsPerDay
+                                ? 'Retoma amanhã'
+                                : formatDateTime(status.automation.nextRunAt)}
+                        detail={settings.mode === 'continuous'
+                            ? `a cada ${settings.intervalMinutes} min · ${status.automation.automaticRunsToday}/${settings.maxRunsPerDay} ciclos hoje`
+                            : `${settings.time} · ${settings.timezone}`}
                     />
                     <StatusCard
                         icon={status.automation.circuitOpen ? <XCircle size={16} /> : <ShieldCheck size={16} />}
@@ -367,41 +381,108 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         </button>
                     </label>
 
-                    <div className="grid gap-5 md:grid-cols-[180px_1fr]">
-                        <label>
-                            <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Horário</span>
-                            <input
-                                type="time"
-                                value={settings.time}
-                                onChange={event => setSettings({ ...settings, time: event.target.value })}
-                                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
-                            />
-                            <span className="mt-1 block text-[10px] text-zinc-400">America/Fortaleza</span>
-                        </label>
-                        <div>
-                            <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Dias da semana</span>
-                            <div className="flex flex-wrap gap-2">
-                                {WEEKDAYS.map(day => {
-                                    const selected = settings.weekdays.includes(day.value);
-                                    return (
-                                        <button
-                                            key={day.value}
-                                            type="button"
-                                            title={day.label}
-                                            onClick={() => toggleWeekday(day.value)}
-                                            className={`min-w-11 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
-                                                selected
-                                                    ? 'bg-[#0412dd] text-white'
-                                                    : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-                                            }`}
-                                        >
-                                            {day.short}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                    <div>
+                        <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Modo de execução</span>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <button
+                                type="button"
+                                onClick={() => setSettings({ ...settings, mode: 'scheduled' })}
+                                className={`rounded-xl border p-4 text-left transition-colors ${
+                                    settings.mode === 'scheduled'
+                                        ? 'border-blue-300 bg-blue-50 ring-2 ring-blue-500/10 dark:border-blue-800 dark:bg-blue-950/20'
+                                        : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-950'
+                                }`}
+                            >
+                                <span className="block text-sm font-bold text-zinc-900 dark:text-white">Agendado</span>
+                                <span className="mt-1 block text-xs text-zinc-500">Executa nos dias e horário escolhidos.</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSettings({ ...settings, mode: 'continuous' })}
+                                className={`rounded-xl border p-4 text-left transition-colors ${
+                                    settings.mode === 'continuous'
+                                        ? 'border-emerald-300 bg-emerald-50 ring-2 ring-emerald-500/10 dark:border-emerald-800 dark:bg-emerald-950/20'
+                                        : 'border-zinc-200 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-950'
+                                }`}
+                            >
+                                <span className="block text-sm font-bold text-zinc-900 dark:text-white">Contínuo</span>
+                                <span className="mt-1 block text-xs text-zinc-500">Repete ciclos controlados até você desativar.</span>
+                            </button>
                         </div>
                     </div>
+
+                    {settings.mode === 'scheduled' ? (
+                        <div className="grid gap-5 md:grid-cols-[180px_1fr]">
+                            <label>
+                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Horário</span>
+                                <input
+                                    type="time"
+                                    value={settings.time}
+                                    onChange={event => setSettings({ ...settings, time: event.target.value })}
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                />
+                                <span className="mt-1 block text-[10px] text-zinc-400">America/Fortaleza</span>
+                            </label>
+                            <div>
+                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Dias da semana</span>
+                                <div className="flex flex-wrap gap-2">
+                                    {WEEKDAYS.map(day => {
+                                        const selected = settings.weekdays.includes(day.value);
+                                        return (
+                                            <button
+                                                key={day.value}
+                                                type="button"
+                                                title={day.label}
+                                                onClick={() => toggleWeekday(day.value)}
+                                                className={`min-w-11 rounded-lg px-3 py-2 text-xs font-bold transition-colors ${
+                                                    selected
+                                                        ? 'bg-[#0412dd] text-white'
+                                                        : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                                }`}
+                                            >
+                                                {day.short}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="grid gap-5 md:grid-cols-2">
+                            <label>
+                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Intervalo entre ciclos</span>
+                                <select
+                                    value={settings.intervalMinutes}
+                                    onChange={event => setSettings({ ...settings, intervalMinutes: Number(event.target.value) })}
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                >
+                                    <option value={30}>A cada 30 minutos</option>
+                                    <option value={60}>A cada 1 hora</option>
+                                    <option value={120}>A cada 2 horas</option>
+                                    <option value={240}>A cada 4 horas</option>
+                                    <option value={480}>A cada 8 horas</option>
+                                </select>
+                                <span className="mt-1 block text-[10px] text-zinc-400">O próximo ciclo só começa depois que o anterior terminar.</span>
+                            </label>
+                            <label>
+                                <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Máximo de ciclos por dia</span>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={24}
+                                    value={settings.maxRunsPerDay}
+                                    onChange={event => setSettings({
+                                        ...settings,
+                                        maxRunsPerDay: Math.min(24, Math.max(1, Number(event.target.value))),
+                                    })}
+                                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                />
+                                <span className="mt-1 block text-[10px] text-zinc-400">
+                                    Hoje: {status.automation.automaticRunsToday} ciclo(s). O limite reinicia à meia-noite.
+                                </span>
+                            </label>
+                        </div>
+                    )}
 
                     <div>
                         <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Rotação de segmentos</span>
@@ -440,7 +521,11 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         <button
                             type="button"
                             onClick={() => void save()}
-                            disabled={saving || settings.weekdays.length === 0 || settings.segments.length === 0}
+                            disabled={
+                                saving
+                                || (settings.mode === 'scheduled' && settings.weekdays.length === 0)
+                                || settings.segments.length === 0
+                            }
                             className="inline-flex items-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
