@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
-import { Smartphone, Mail, ArrowRight, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { Smartphone, Mail, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const AsteryskoLogoSVG = () => (
     <svg width="160" height="28" viewBox="0 0 200 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -164,104 +164,206 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                 )}
             </div>
 
-
-                            {/* Figma Option: Registrar minha marca */}
-                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
-                                <a
-                                    href="https://asterysko.com"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="inline-flex items-center justify-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-[#1A1FD3] dark:hover:text-blue-400 transition-colors py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
-                                >
-                                    <span className="w-5 h-5 rounded-full bg-[#181A80] text-white flex items-center justify-center text-[10px] font-bold">®</span>
-                                    Registrar minha marca
-                                </a>
-                            </div>
+            {/* MAIN CONTENT AREA */}
+            <main className="w-full max-w-sm my-auto space-y-6">
+                
+                {/* STEP 1: Selection Cards (Figma Frame 17:3) */}
+                {loginStep === 'selection' && (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Portal do Cliente</h1>
+                            <p className="text-xs text-[#797979] mt-1">Escolha como quer acessar sua conta</p>
                         </div>
-                    ) : (
-                        /* STEP 2: Code Entry */
-                        <form onSubmit={handleVerifyOtp} className="space-y-5">
-                            <div className="p-3 bg-slate-950 rounded-2xl border border-slate-800 text-xs text-slate-300 flex justify-between items-center">
-                                <span className="truncate pr-2">Enviado para: <strong>{activeIdentifier}</strong></span>
-                                <button
-                                    type="button"
-                                    onClick={() => setOtpStep('identifier')}
-                                    className="text-blue-400 hover:underline font-bold shrink-0 cursor-pointer"
-                                >
-                                    Alterar
-                                </button>
-                            </div>
 
-                            {infoMessage && (
-                                <div className="p-3 bg-emerald-950/40 border border-emerald-900/50 text-emerald-300 text-xs rounded-xl flex items-center gap-2">
-                                    <MessageCircle size={15} className="shrink-0 text-emerald-400" />
-                                    <span>{infoMessage}</span>
+                        <div className="space-y-3">
+                            {/* Card 1: com WhatsApp */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setLoginType('phone');
+                                    setError('');
+                                    setLoginStep('identifier');
+                                }}
+                                className="w-full bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all flex items-center gap-4 group cursor-pointer text-left"
+                            >
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-[#1D8800] flex items-center justify-center shrink-0">
+                                    <Smartphone size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <span className="block text-xs text-slate-400 font-medium">com</span>
+                                    <span className="text-base font-bold text-slate-900">WhatsApp</span>
+                                </div>
+                            </button>
+
+                            {/* Card 2: com Email */}
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setLoginType('email');
+                                    setError('');
+                                    setLoginStep('identifier');
+                                }}
+                                className="w-full bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all flex items-center gap-4 group cursor-pointer text-left"
+                            >
+                                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#1A1FD3] flex items-center justify-center shrink-0">
+                                    <Mail size={24} />
+                                </div>
+                                <div className="flex-1">
+                                    <span className="block text-xs text-slate-400 font-medium">com</span>
+                                    <span className="text-base font-bold text-slate-900">Email</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* Card 3: Registrar minha marca */}
+                        <a
+                            href="https://asterysko.com/nova-marca"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="w-full bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#181A80] transition-all flex items-center gap-4 group cursor-pointer text-left"
+                        >
+                            <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#181A80] flex items-center justify-center shrink-0 font-bold text-xl">
+                                ®
+                            </div>
+                            <div className="flex-1">
+                                <span className="text-base font-bold text-slate-900 block leading-tight">Registrar minha marca</span>
+                            </div>
+                        </a>
+                    </div>
+                )}
+
+                {/* STEP 2: Input Identifier (Figma Frames 40:83 & 40:136) */}
+                {loginStep === 'identifier' && (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                                {loginType === 'phone' ? 'Acessar com Whatsapp' : 'Acessar com Email'}
+                            </h1>
+                            <p className="text-xs text-[#797979] mt-1">
+                                {loginType === 'phone' ? 'Digite o número cadastrado na Asterysko' : 'Digite o email cadastrado na Asterysko'}
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleRequestOtp} className="space-y-4">
+                            {loginType === 'phone' ? (
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3">
+                                    <div className="text-[#1D8800]">
+                                        <Smartphone size={22} />
+                                    </div>
+                                    <input
+                                        type="tel"
+                                        inputMode="tel"
+                                        value={phoneInput}
+                                        onChange={handlePhoneChange}
+                                        placeholder="(00) 00000-0000"
+                                        className="w-full bg-transparent outline-none text-slate-900 placeholder:text-[#C7C7C7] text-base font-bold"
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                            ) : (
+                                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs flex items-center gap-3">
+                                    <div className="text-[#1A1FD3]">
+                                        <Mail size={22} />
+                                    </div>
+                                    <input
+                                        type="email"
+                                        inputMode="email"
+                                        value={emailInput}
+                                        onChange={(e) => setEmailInput(e.target.value)}
+                                        placeholder="email@email.com"
+                                        className="w-full bg-transparent outline-none text-slate-900 placeholder:text-[#C7C7C7] text-base font-bold"
+                                        required
+                                        autoFocus
+                                    />
                                 </div>
                             )}
 
-                            <div className="space-y-1.5">
-                                <label className="block text-xs font-bold text-slate-300 text-center uppercase tracking-wider">
-                                    Código de 6 Dígitos
-                                </label>
-                                <input
-                                    type="text"
-                                    maxLength={6}
-                                    pattern="[0-9]*"
-                                    inputMode="numeric"
-                                    value={otpCode}
-                                    onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                                    className="w-full text-center tracking-[10px] font-mono text-2xl py-4 bg-slate-950 border border-slate-700 focus:border-emerald-500 rounded-2xl outline-none text-white placeholder:text-slate-700"
-                                    style={{ fontSize: '24px' }}
-                                    placeholder="000000"
-                                    required
-                                    autoFocus
-                                />
-                            </div>
-
                             {error && (
-                                <div className="p-3.5 bg-red-950/50 border border-red-900/60 text-red-300 text-xs rounded-xl flex items-center gap-2">
-                                    <AlertCircle size={16} className="shrink-0 text-red-400" />
+                                <div className="p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-center gap-2">
+                                    <AlertCircle size={16} className="shrink-0 text-red-500" />
                                     <span>{error}</span>
                                 </div>
                             )}
 
-                            <div className="space-y-2.5">
-                                <button
-                                    type="submit"
-                                    disabled={loading || otpCode.length !== 6}
-                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3.5 rounded-2xl font-bold text-sm shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={18} />
-                                            Verificando...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 size={16} />
-                                            Entrar no Portal
-                                        </>
-                                    )}
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={handleRequestOtp}
-                                    disabled={loading}
-                                    className="w-full py-2 text-xs font-bold text-slate-400 hover:text-white transition-all cursor-pointer"
-                                >
-                                    Reenviar código
-                                </button>
-                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading || !activeIdentifier.trim()}
+                                className="w-full py-4 rounded-2xl font-bold text-sm text-white bg-[#1A1FD3] hover:bg-[#1418ab] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={18} />
+                                        Enviando código...
+                                    </>
+                                ) : (
+                                    'Receber código de acesso'
+                                )}
+                            </button>
                         </form>
-                    )}
-                </div>
+                    </div>
+                )}
+
+                {/* STEP 3: OTP 6-Digit Code (Figma Frames 40:159 & 40:198) */}
+                {loginStep === 'otp' && (
+                    <div className="space-y-6 animate-in fade-in duration-300">
+                        <div>
+                            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Código de acesso</h1>
+                            <p className="text-xs text-[#797979] mt-1">
+                                Insira o código que você recebeu no <span className="font-bold text-slate-900">{sentIdentifier}</span>
+                            </p>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* 6 Digit Box Grid */}
+                            <div className="grid grid-cols-6 gap-2">
+                                {otpDigits.map((digit, idx) => (
+                                    <input
+                                        key={idx}
+                                        id={`otp-input-${idx}`}
+                                        type="text"
+                                        inputMode="numeric"
+                                        maxLength={1}
+                                        value={digit}
+                                        onChange={(e) => handleOtpDigitChange(idx, e.target.value)}
+                                        onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                                        className="w-full h-14 bg-white rounded-2xl border border-slate-200/80 text-center font-bold text-xl text-slate-900 outline-none focus:border-[#1A1FD3] shadow-xs"
+                                        autoFocus={idx === 0}
+                                    />
+                                ))}
+                            </div>
+
+                            {error && (
+                                <div className="p-3.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-center gap-2">
+                                    <AlertCircle size={16} className="shrink-0 text-red-500" />
+                                    <span>{error}</span>
+                                </div>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => submitOtpCode(otpDigits.join(''))}
+                                disabled={loading || otpDigits.some(d => d === '')}
+                                className={`w-full py-4 rounded-2xl font-bold text-sm text-white ${loginType === 'phone' ? 'bg-[#1D8800] hover:bg-[#156700]' : 'bg-[#1A1FD3] hover:bg-[#1418ab]'} shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50`}
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="animate-spin" size={18} />
+                                        Verificando...
+                                    </>
+                                ) : (
+                                    'Entrar no Portal'
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </main>
 
             {/* Footer */}
-            <footer className="mt-8 text-center text-[11px] text-slate-600 font-medium">
-                Asterysko Propriedade Intelectual &copy; 2026
-            </footer>
+            <div className="w-full max-w-sm text-center py-4">
+                <p className="text-[11px] text-slate-400">Asterysko Propriedade Intelectual © 2026</p>
+            </div>
         </div>
     );
 };
