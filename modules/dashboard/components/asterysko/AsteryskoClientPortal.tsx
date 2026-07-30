@@ -1560,7 +1560,6 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         </div>
                     </div>
                 </div>
-            </div>
 
             {/* PAYMENT MODAL */}
             <Modal
