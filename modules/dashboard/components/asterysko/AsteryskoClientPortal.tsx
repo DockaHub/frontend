@@ -289,15 +289,13 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
     };
 
     // Fetch Real Data
-    // Ingest token from URL SYNCHRONOUSLY before any render or effect
-    // This must run before the useEffect to ensure API calls use the right token
-    const urlToken = new URLSearchParams(window.location.search).get('token');
-    if (urlToken) {
-        localStorage.setItem('token', urlToken);
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
     useEffect(() => {
+        const urlToken = new URLSearchParams(window.location.search).get('token');
+        if (urlToken) {
+            localStorage.setItem('token', urlToken);
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         const fetchData = async () => {
             try {
                 setLoading(true);
@@ -307,15 +305,20 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                     api.get('/asterysko/portal/financials')
                 ]);
 
-                const { client, notifications } = dashboardRes.data;
-                const { invoices, contracts } = financialsRes.data;
+                const { client, notifications } = dashboardRes.data || {};
+                const { invoices, contracts } = financialsRes.data || {};
 
-                setClientData(client);
-                setEditName(client.name || '');
-                setEditRg(client.rg || '');
-                setEditAddress(client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.state ? `-${client.state}` : ''}` : '');
-                setNotifications(notifications);
-                setFinancials({ invoices, contracts });
+                if (client) {
+                    setClientData(client);
+                    setEditName(client.name || '');
+                    setEditRg(client.rg || '');
+                    setEditAddress(client.address ? `${client.address}${client.city ? `, ${client.city}` : ''}${client.state ? `-${client.state}` : ''}` : '');
+                }
+                setNotifications(Array.isArray(notifications) ? notifications : []);
+                setFinancials({ 
+                    invoices: Array.isArray(invoices) ? invoices : [], 
+                    contracts: Array.isArray(contracts) ? contracts : [] 
+                });
 
                 // Flatten brands -> processes for the UI
                 const allProcessesMap = new Map();
@@ -537,7 +540,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
-            if (!target.closest('.dropdown-container')) {
+            if (target && typeof target.closest === 'function' && !target.closest('.dropdown-container')) {
                 setIsNotificationsOpen(false);
                 setIsMenuOpen(false);
             }
