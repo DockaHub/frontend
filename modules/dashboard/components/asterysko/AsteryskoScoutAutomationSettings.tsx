@@ -240,6 +240,30 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         }
     };
 
+    const [resettingCircuit, setResettingCircuit] = useState(false);
+
+    const handleResetCircuit = async () => {
+        try {
+            setResettingCircuit(true);
+            setError(null);
+            await api.post('/asterysko/scout-ai/reset-circuit', {}, {
+                headers: { 'x-organization-id': organizationId },
+            });
+            addToast({
+                type: 'success',
+                title: 'Circuit Breaker',
+                message: 'O circuito foi resetado com sucesso.',
+            });
+            await load(true);
+        } catch (requestError: any) {
+            const message = getRequestError(requestError, 'Falha ao resetar o circuit breaker.');
+            setError(message);
+            addToast({ type: 'error', title: 'Circuit Breaker', message });
+        } finally {
+            setResettingCircuit(false);
+        }
+    };
+
     const toggleWeekday = (day: number) => {
         if (!settings) return;
         const selected = settings.weekdays.includes(day);
@@ -360,7 +384,24 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                     />
                 </div>
 
-                {lastRun && (
+                {status.automation.circuitOpen && (
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300">
+                        <div>
+                            <strong>Circuito aberto:</strong> {friendlyScoutError(status.automation.interruptionReason) || status.automation.interruptionReason}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => void handleResetCircuit()}
+                            disabled={resettingCircuit}
+                            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 font-semibold text-white transition-colors hover:bg-rose-700 disabled:opacity-50"
+                        >
+                            {resettingCircuit ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                            Resetar Circuito
+                        </button>
+                    </div>
+                )}
+
+                {lastRun && !status.automation.circuitOpen && (
                     <div className={`mt-4 rounded-xl border p-3 text-xs ${
                         lastRun.errorSummary
                             ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300'
