@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
-import { Smartphone, Mail, ArrowRight, Loader2, AlertCircle, CheckCircle2, MessageCircle, Sun, Moon } from 'lucide-react';
+import { Smartphone, Mail, ArrowRight, Loader2, AlertCircle, CheckCircle2, ArrowLeft } from 'lucide-react';
 
 const AsteryskoLogoSVG = () => (
-    <svg width="180" height="30" viewBox="0 0 200 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg width="160" height="28" viewBox="0 0 200 34" fill="none" xmlns="http://www.w3.org/2000/svg">
         <g clipPath="url(#clip0_1209_2)">
             <path d="M29.208 0.974374C28.9702 1.21152 28.779 1.47445 28.6239 1.758L19.6547 13.8217C19.2721 14.2032 19.2721 14.8218 19.6547 15.1982C20.0372 15.5745 20.6576 15.5797 21.035 15.1982L33.1317 6.25352C33.416 6.10402 33.6797 5.90811 33.9175 5.67096C35.2202 4.3718 35.2202 2.26838 33.9175 0.969219C32.6148 -0.329947 30.5056 -0.329947 29.2029 0.969219L29.208 0.974374Z" fill="currentColor" />
             <path d="M35.2461 15.9457C34.9669 15.9457 34.6929 15.987 34.4396 16.0643L21.9758 17.8893C21.5261 17.8893 21.159 18.2553 21.159 18.7039C21.159 19.1524 21.5261 19.5184 21.9758 19.5184L34.4345 21.3847C34.6878 21.462 34.9618 21.5033 35.2409 21.5033C36.7814 21.5033 38.0325 20.2608 38.0325 18.7296C38.0325 17.1985 36.7866 15.9457 35.2513 15.9457H35.2461Z" fill="currentColor" />
@@ -21,7 +21,7 @@ const AsteryskoLogoSVG = () => (
             <path d="M102.554 17.8171C102.874 20.9207 104.983 22.9519 108.344 22.9519C110.918 22.9519 112.381 21.7404 113.136 20.7403L115.064 22.4879C113.493 24.5553 110.991 25.5915 108.096 25.5915C102.699 25.5915 99.3021 22.1322 99.3021 16.9974C99.3021 11.8626 102.554 8.33632 107.666 8.33632C112.779 8.33632 115.354 11.7956 115.354 16.2138C115.354 17.214 115.209 17.8171 115.209 17.8171H102.554ZM102.626 15.5694H112.133C112.097 12.7906 110.344 10.9707 107.666 10.9707C104.989 10.9707 103.091 12.8628 102.626 15.5694Z" fill="currentColor" />
             <path d="M128.825 8.61986L128.04 11.7904C127.683 11.5739 127.182 11.3986 126.468 11.3986C124.571 11.3986 122.431 13.0741 122.431 16.5695V25.375H119.288V8.54769L121.505 8.43942C121.79 9.72312 121.934 11.61 121.934 12.3627H122.079C122.725 10.151 124.152 8.33632 126.654 8.33632C127.404 8.33632 128.19 8.44458 128.836 8.61986H128.825Z" fill="currentColor" />
             <path d="M133.437 32.8246C131.829 32.8246 130.826 32.2884 130.826 32.2884L131.4 29.6849C131.4 29.6849 132.186 30.1128 133.225 30.1128C134.977 30.1128 135.727 28.9735 136.301 27.4732L136.947 25.7977L129.797 8.54253H133.339L137.986 20.3072C138.343 21.163 138.415 21.4466 138.56 22.1632H138.596C138.741 21.3795 138.88 21.0599 139.17 20.3072L143.89 8.54253H147.105L139.097 28.3651C138.131 30.8604 136.559 32.8194 133.447 32.8194L133.437 32.8246Z" fill="currentColor" />
-            <path d="M159.248 13.7495C159.248 12.0018 157.713 10.9707 155.495 10.9707C153.278 10.9707 152.171 11.9348 152.171 13.3216C152.171 17.281 162.324 14.4249 162.433 20.8073C162.469 23.8387 159.574 25.5864 155.459 25.5864C151.344 25.5864 149.132 23.8387 148.165 23.055L150.093 20.9155C150.806 21.5909 152.916 22.9468 155.49 22.9468C158.065 22.9468 159.207 22.0549 159.207 20.7712C159.207 17.3119 148.945 19.5236 148.945 13.2855C148.945 10.5067 151.592 8.33632 155.557 8.33632C159.522 8.33632 162.169 10.3985 162.169 13.1773C162.169 13.8526 162.024 14.3527 162.024 14.3527L159.129 14.5692C159.202 14.3218 159.238 13.997 159.238 13.7495H159.248Z" fill="currentColor" />
+            <path d="M159.248 13.7495C159.248 12.0018 157.713 10.9707 155.495 10.9707C153.278 10.9707 152.171 11.9348 152.171 13.3216C152.171 17.281 162.324 14.4249 162.433 20.8073C162.469 23.8387 159.574 25.5864 155.459 25.5864C151.344 25.5864 149.132 23.8387 148.165 23.055L150.093 20.9155C150.806 21.5909 152.916 22.9468 155.49 22.9468C158.065 22.9468 159.207 22.0549 159.207 20.7712C159.207 17.3119 148.945 19.5236 148.945 13.2855C148.945 10.5067 151.592 8.33116 155.557 8.33116C159.522 8.33116 162.169 10.3985 162.169 13.1773C162.169 13.8526 162.024 14.3527 162.024 14.3527L159.129 14.5692C159.202 14.3218 159.238 13.997 159.238 13.7495H159.248Z" fill="currentColor" />
             <path d="M171.438 17.6367H169.613V25.375H166.47V0.206217H169.613V15.1105H171.94L177.73 8.55284H181.338L174.188 16.4303L182.051 25.3801H178.081L171.433 17.6418L171.438 17.6367Z" fill="currentColor" />
             <path d="M200 17.0335C200 22.1322 196.531 25.5915 191.315 25.5915C186.099 25.5915 182.63 22.1322 182.63 17.0335C182.63 11.9348 186.099 8.33632 191.315 8.33632C196.531 8.33632 200 11.9348 200 17.0335ZM196.785 17.0335C196.785 13.5381 194.603 10.9707 191.315 10.9707C188.027 10.9707 185.846 13.5381 185.846 17.0335C185.846 20.5289 188.027 22.9519 191.315 22.9519C194.603 22.9519 196.785 20.5289 196.785 17.0335Z" fill="currentColor" />
         </g>
@@ -45,20 +45,22 @@ interface AsteryskoLoginPageProps {
     onToggleTheme?: () => void;
 }
 
-export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, onToggleTheme }) => {
+export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     const navigate = useNavigate();
     const { refreshUser } = useAuth();
     
+    const [loginStep, setLoginStep] = useState<'selection' | 'identifier' | 'otp'>('selection');
     const [loginType, setLoginType] = useState<'phone' | 'email'>('phone');
-    const [otpStep, setOtpStep] = useState<'identifier' | 'code'>('identifier');
+    
     const [phoneInput, setPhoneInput] = useState('');
     const [emailInput, setEmailInput] = useState('');
-    const [otpCode, setOtpCode] = useState('');
+    const [sentIdentifier, setSentIdentifier] = useState('');
+    
+    // 6 individual OTP digits matching Figma Frames 40:159 & 40:198
+    const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
+    
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [infoMessage, setInfoMessage] = useState('');
-    // Identifier exato usado no request — garante que o verify usa o mesmo valor
-    const [sentIdentifier, setSentIdentifier] = useState('');
 
     const activeIdentifier = loginType === 'phone' ? phoneInput : emailInput;
 
@@ -69,7 +71,6 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
     const handleRequestOtp = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-        setInfoMessage('');
 
         if (!activeIdentifier.trim()) {
             setError(loginType === 'phone' ? 'Informe o número do celular.' : 'Informe seu e-mail.');
@@ -79,11 +80,10 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         setLoading(true);
 
         try {
-            const response = await api.post('/auth/request-otp', { identifier: activeIdentifier });
-            setInfoMessage(response.data?.message || 'Código enviado com sucesso!');
-            setSentIdentifier(activeIdentifier); // salva o identifier exato
-            setOtpStep('code');
-            setOtpCode('');
+            await api.post('/auth/request-otp', { identifier: activeIdentifier });
+            setSentIdentifier(activeIdentifier);
+            setLoginStep('otp');
+            setOtpDigits(['', '', '', '', '', '']);
         } catch (err: any) {
             setError(err.response?.data?.error || 'Não encontramos este cadastro. Verifique os dados digitados.');
         } finally {
@@ -91,15 +91,37 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         }
     };
 
-    const handleVerifyOtp = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleOtpDigitChange = (index: number, value: string) => {
+        const char = value.slice(-1);
+        const next = [...otpDigits];
+        next[index] = char;
+        setOtpDigits(next);
+
+        // Auto-advance focus to next field
+        if (char && index < 5) {
+            const nextEl = document.getElementById(`otp-input-${index + 1}`);
+            if (nextEl) nextEl.focus();
+        }
+
+        // Auto submit if all 6 digits entered
+        if (char && index === 5 && next.every(d => d !== '')) {
+            submitOtpCode(next.join(''));
+        }
+    };
+
+    const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+            const prevEl = document.getElementById(`otp-input-${index - 1}`);
+            if (prevEl) prevEl.focus();
+        }
+    };
+
+    const submitOtpCode = async (code: string) => {
         setError('');
         setLoading(true);
 
         try {
-            // Usa o identifier salvo no momento do request — nunca o activeIdentifier que pode ter mudado
-            const response = await api.post('/auth/verify-otp', { identifier: sentIdentifier, code: otpCode });
-
+            const response = await api.post('/auth/verify-otp', { identifier: sentIdentifier, code });
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
             
@@ -112,160 +134,36 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
         }
     };
 
+    // Background color per Figma step:
+    // Frame 17:3, 40:83, 40:136 -> #F3F3F3
+    // Frame 40:159 (Email OTP) -> #EAEAFF
+    // Frame 40:198 (WhatsApp OTP) -> #EAFFE4
+    const pageBgColor = loginStep === 'otp'
+        ? (loginType === 'phone' ? 'bg-[#EAFFE4]' : 'bg-[#EAEAFF]')
+        : 'bg-[#F3F3F3]';
+
     return (
-        <div className="min-h-screen bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-6 font-sans text-slate-100 relative">
+        <div className={`min-h-screen ${pageBgColor} flex flex-col items-center justify-between p-6 font-sans text-slate-900 transition-colors duration-300`}>
             
-            {/* Header / Theme Toggle */}
-            <div className="w-full max-w-sm flex items-center justify-between mb-8 z-10">
-                <div className="text-white scale-90 origin-left">
+            {/* Header: Logo Asterysko (Figma Group 2) */}
+            <div className="w-full max-w-sm flex items-center justify-between pt-4">
+                <div className="text-[#1A1FD3]">
                     <AsteryskoLogoSVG />
                 </div>
-                {onToggleTheme && (
+                {loginStep !== 'selection' && (
                     <button
-                        onClick={onToggleTheme}
-                        className="p-2 bg-white/10 hover:bg-white/20 transition-all rounded-full text-slate-300 cursor-pointer"
-                        title={theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+                        onClick={() => {
+                            setError('');
+                            if (loginStep === 'otp') setLoginStep('identifier');
+                            else setLoginStep('selection');
+                        }}
+                        className="p-2 rounded-xl text-slate-600 hover:bg-black/5 transition-colors flex items-center gap-1.5 text-xs font-bold"
                     >
-                        {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+                        <ArrowLeft size={16} /> Voltar
                     </button>
                 )}
             </div>
 
-            {/* Clean Minimalist Card */}
-            <main className="w-full max-w-sm z-10">
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl transition-all">
-                    
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
-                        Portal do Cliente
-                    </h1>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
-                        {otpStep === 'identifier' ? 'Escolha como quer acessar sua conta' : 'Digite o código recebido para continuar'}
-                    </p>
-
-                    {otpStep === 'identifier' ? (
-                        <div className="space-y-5">
-                            {/* Figma Step 1: Selection between WhatsApp and Email */}
-                            <div className="grid grid-cols-1 gap-3">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setLoginType('phone');
-                                        setError('');
-                                    }}
-                                    className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                                        loginType === 'phone'
-                                            ? 'bg-slate-50 dark:bg-slate-800/80 border-[#1A1FD3] dark:border-[#3B48FF] shadow-sm ring-1 ring-[#1A1FD3]'
-                                            : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                            <Smartphone size={20} />
-                                        </div>
-                                        <div className="text-left">
-                                            <span className="block text-xs font-semibold text-slate-400">com</span>
-                                            <span className="text-sm font-bold text-slate-900 dark:text-white">WhatsApp</span>
-                                        </div>
-                                    </div>
-                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${loginType === 'phone' ? 'border-[#1A1FD3] bg-[#1A1FD3]' : 'border-slate-300 dark:border-slate-700'}`}>
-                                        {loginType === 'phone' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                                    </div>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setLoginType('email');
-                                        setError('');
-                                    }}
-                                    className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                                        loginType === 'email'
-                                            ? 'bg-slate-50 dark:bg-slate-800/80 border-[#1A1FD3] dark:border-[#3B48FF] shadow-sm ring-1 ring-[#1A1FD3]'
-                                            : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
-                                    }`}
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                            <Mail size={20} />
-                                        </div>
-                                        <div className="text-left">
-                                            <span className="block text-xs font-semibold text-slate-400">com</span>
-                                            <span className="text-sm font-bold text-slate-900 dark:text-white">Email</span>
-                                        </div>
-                                    </div>
-                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${loginType === 'email' ? 'border-[#1A1FD3] bg-[#1A1FD3]' : 'border-slate-300 dark:border-slate-700'}`}>
-                                        {loginType === 'email' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                                    </div>
-                                </button>
-                            </div>
-
-                            {/* Figma Input Form */}
-                            <form onSubmit={handleRequestOtp} className="space-y-4 pt-2">
-                                {loginType === 'phone' ? (
-                                    <div className="space-y-1.5">
-                                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                            Digite o número cadastrado na Asterysko
-                                        </label>
-                                        <div className="relative">
-                                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="tel"
-                                                inputMode="tel"
-                                                value={phoneInput}
-                                                onChange={handlePhoneChange}
-                                                placeholder="(00) 00000-0000"
-                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:border-[#1A1FD3] text-slate-900 dark:text-white placeholder:text-slate-400 text-base font-medium transition-all"
-                                                required
-                                                autoFocus
-                                            />
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-1.5">
-                                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
-                                            Digite o e-mail cadastrado na Asterysko
-                                        </label>
-                                        <div className="relative">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                                            <input
-                                                type="email"
-                                                inputMode="email"
-                                                value={emailInput}
-                                                onChange={(e) => setEmailInput(e.target.value)}
-                                                placeholder="email@email.com"
-                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:border-[#1A1FD3] text-slate-900 dark:text-white placeholder:text-slate-400 text-base font-medium transition-all"
-                                                required
-                                                autoFocus
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                {error && (
-                                    <div className="p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-300 text-xs rounded-xl flex items-center gap-2">
-                                        <AlertCircle size={16} className="shrink-0 text-red-500" />
-                                        <span>{error}</span>
-                                    </div>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={loading || !activeIdentifier.trim()}
-                                    className="w-full py-3.5 rounded-2xl font-bold text-sm text-white bg-[#1A1FD3] hover:bg-[#1418ab] dark:bg-[#3B48FF] dark:hover:bg-[#2532e8] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="animate-spin" size={18} />
-                                            Enviando código...
-                                        </>
-                                    ) : (
-                                        <>
-                                            Acessar com {loginType === 'phone' ? 'WhatsApp' : 'E-mail'}
-                                            <ArrowRight size={16} />
-                                        </>
-                                    )}
-                                </button>
-                            </form>
 
                             {/* Figma Option: Registrar minha marca */}
                             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">

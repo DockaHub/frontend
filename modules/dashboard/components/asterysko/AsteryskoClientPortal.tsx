@@ -615,103 +615,110 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
             {/* MAIN SCROLLABLE AREA */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
 
-                {/* HEADER BACKGROUND & CONTENT */}
-                <div className="bg-[#1A1FD3] dark:bg-blue-950 pb-28 pt-6 px-6 relative transition-colors">
-                    {/* Background Decor */}
-                    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                {/* FIGMA HEADER (Frame 41:222) */}
+                <div className="bg-[#F3F3F3] dark:bg-slate-950 pt-6 px-6 pb-4 max-w-4xl mx-auto w-full">
+                    {/* Top Navbar */}
+                    <div className="flex justify-between items-center mb-6">
+                        <div
+                            className="text-[#1A1FD3] dark:text-blue-400 cursor-pointer flex items-center gap-3"
+                            onClick={() => setCurrentView('home')}
+                            title="Voltar ao Início"
+                        >
+                            <AsteryskoLogoSVG />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {/* Notification Bell */}
+                            <div className="relative dropdown-container">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsNotificationsOpen(!isNotificationsOpen); setIsMenuOpen(false); }}
+                                    className={`p-2.5 rounded-full transition-colors relative ${isNotificationsOpen ? 'bg-white text-[#1A1FD3]' : 'hover:bg-black/5 dark:hover:bg-white/10 text-slate-800 dark:text-white'}`}
+                                >
+                                    <Bell size={20} />
+                                    {notifications && notifications.some(n => !n.read) && (
+                                        <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                                    )}
+                                </button>
+
+                                {/* Notification Dropdown */}
+                                {isNotificationsOpen && (
+                                    <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 overflow-hidden animate-in fade-in slide-in-from-top-2 origin-top-right z-50">
+                                        <div className="px-4 py-3 border-b border-slate-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900">
+                                            <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-sm">Notificações</h3>
+                                            {notifications.some(n => !n.read) && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleMarkAllRead(); }}
+                                                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                                                >
+                                                    Marcar lidas
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="max-h-[300px] overflow-y-auto bg-white dark:bg-zinc-900">
+                                            {notifications.length === 0 ? (
+                                                <div className="p-8 text-center text-slate-400 dark:text-zinc-500 text-xs">
+                                                    Nenhuma notificação recente.
+                                                </div>
+                                            ) : notifications.map(notif => (
+                                                <div
+                                                    key={notif.id}
+                                                    onClick={() => { if (!notif.read) handleMarkAsRead(notif.id); if (notif.link) { setCurrentView('home'); } }}
+                                                    className={`p-4 border-b border-slate-50 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${!notif.read ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''}`}
+                                                >
+                                                    <div className="flex justify-between items-start mb-1">
+                                                        <h4 className={`text-sm ${!notif.read ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>{notif.title}</h4>
+                                                        {!notif.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5" />}
+                                                    </div>
+                                                    <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
+                                                        {notif.message}
+                                                    </p>
+                                                    <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-2">
+                                                        {new Date(notif.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Theme Toggle */}
+                            {onToggleTheme && (
+                                <button
+                                    onClick={onToggleTheme}
+                                    className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-slate-800 dark:text-white transition-colors"
+                                    title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+                                >
+                                    {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+                                </button>
+                            )}
+
+                            {/* Slide-out Menu Trigger Button (Figma jam:menu) */}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); setIsMenuOpen(true); setIsNotificationsOpen(false); }}
+                                className="p-2.5 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-slate-900 dark:text-white transition-colors cursor-pointer"
+                                title="Abrir Menu"
+                            >
+                                <Menu size={24} />
+                            </button>
+                        </div>
                     </div>
 
-                    <div className="max-w-4xl mx-auto">
-                        {/* Navbar */}
-                        <div className="flex justify-between items-center mb-8 relative z-50">
-                            <div
-                                className="text-white opacity-95 cursor-pointer hover:opacity-100 transition-opacity flex items-center gap-3"
-                                onClick={() => setCurrentView('home')}
-                                title="Voltar ao Início"
-                            >
-                                <AsteryskoLogoSVG />
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                {/* Notification Bell */}
-                                <div className="relative dropdown-container">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setIsNotificationsOpen(!isNotificationsOpen); setIsMenuOpen(false); }}
-                                        className={`p-2.5 rounded-full transition-colors relative ${isNotificationsOpen ? 'bg-white text-[#1A1FD3]' : 'hover:bg-white/10 text-white'}`}
-                                    >
-                                        <Bell size={20} />
-                                        {notifications.some(n => !n.read) && (
-                                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-400 rounded-full border border-[#1A1FD3]"></span>
-                                        )}
-                                    </button>
-
-                                    {/* Notification Dropdown */}
-                                    {isNotificationsOpen && (
-                                        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 overflow-hidden animate-in fade-in slide-in-from-top-2 origin-top-right z-50">
-                                            <div className="px-4 py-3 border-b border-slate-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900">
-                                                <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-sm">Notificações</h3>
-                                                {notifications.some(n => !n.read) && (
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleMarkAllRead(); }}
-                                                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-                                                    >
-                                                        Marcar lidas
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <div className="max-h-[300px] overflow-y-auto bg-white dark:bg-zinc-900">
-                                                {notifications.length === 0 ? (
-                                                    <div className="p-8 text-center text-slate-400 dark:text-zinc-500 text-xs">
-                                                        Nenhuma notificação recente.
-                                                    </div>
-                                                ) : notifications.map(notif => (
-                                                    <div
-                                                        key={notif.id}
-                                                        onClick={() => { if (!notif.read) handleMarkAsRead(notif.id); if (notif.link) { setCurrentView('home'); } }}
-                                                        className={`p-4 border-b border-slate-50 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${!notif.read ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''}`}
-                                                    >
-                                                        <div className="flex justify-between items-start mb-1">
-                                                            <h4 className={`text-sm ${!notif.read ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>{notif.title}</h4>
-                                                            {!notif.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5" />}
-                                                        </div>
-                                                        <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
-                                                            {notif.message}
-                                                        </p>
-                                                        <p className="text-[10px] text-slate-400 dark:text-zinc-500 mt-2">
-                                                            {new Date(notif.createdAt).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                        </p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <div className="p-2 bg-slate-50 dark:bg-zinc-900 text-center border-t border-slate-100 dark:border-zinc-800">
-                                                <button className="text-xs font-medium text-slate-500 dark:text-zinc-400 hover:text-slate-800 dark:hover:text-zinc-200">Ver todas</button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Theme Toggle */}
-                                {onToggleTheme && (
-                                    <button
-                                        onClick={onToggleTheme}
-                                        className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors"
-                                        title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-                                    >
-                                        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-                                    </button>
-                                )}
-
-                                {/* Slide-out Menu Trigger Button (Figma jam:menu) */}
-                                <button
-                                    onClick={(e) => { e.stopPropagation(); setIsMenuOpen(true); setIsNotificationsOpen(false); }}
-                                    className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer"
-                                    title="Abrir Menu"
-                                >
-                                    <Menu size={22} />
-                                </button>
-                            </div>
+                    {/* Greeting Header (Figma Group 3 / 53:659) */}
+                    {currentView === 'home' && (
+                        <div className="space-y-0.5 mb-2">
+                            <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                                Olá, {clientData?.name ? clientData.name.split(' ')[0] : 'Levy'}
+                            </h1>
+                            <p className="text-xs text-[#797979] dark:text-zinc-400">
+                                Acompanhe seus processos
+                            </p>
                         </div>
+                    )}
+                </div>
+
+                {/* MAIN CONTENT CONTAINER */}
+                <div className="max-w-4xl mx-auto px-6 pb-12">
 
                         {/* Slide-out Menu Drawer (Figma Frame 59:1496) */}
                         {isMenuOpen && (
