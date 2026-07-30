@@ -165,19 +165,19 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     {/* FRAME 41:222 - HOME VIEW                                */}
                     {/* ======================================================== */}
                     {currentView === 'home' && (
-                        <div className="space-y-6 animate-in fade-in duration-300">
-                            {/* Greeting Header */}
+                        <div className="space-y-6 animate-in fade-in duration-300 relative">
+                            {/* Greeting Header (Figma Group 3 / 53:659) */}
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                                <h1 className="font-season text-[26px] font-medium text-slate-900 leading-tight">
                                     Olá, {clientData?.name ? clientData.name.split(' ')[0] : 'Levy'}
                                 </h1>
-                                <p className="text-xs text-[#797979] mt-0.5">
+                                <p className="font-sans text-[14px] text-slate-600 mt-0.5">
                                     Acompanhe seus processos
                                 </p>
                             </div>
 
-                            {/* Process Cards Grid / Horizontal Stack (Figma 41:222) */}
-                            <div className="space-y-3">
+                            {/* 1. HORIZONTALLY SWIPABLE PROCESS CARDS CAROUSEL (Figma Frames 2, 5, 4 - 170x250px) */}
+                            <div className="flex gap-4 overflow-x-auto snap-x scrollbar-none py-2 -mx-6 px-6 cursor-grab active:cursor-grabbing">
                                 {processes.length > 0 ? (
                                     processes.map((proc, idx) => (
                                         <div
@@ -186,117 +186,148 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                                 setSelectedProcess(proc);
                                                 setCurrentView('details');
                                             }}
-                                            className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all cursor-pointer flex flex-col justify-between h-40"
+                                            className="w-[170px] h-[250px] bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all cursor-pointer flex flex-col justify-between overflow-hidden shrink-0 snap-start relative"
                                         >
-                                            <div className="flex justify-between items-start">
-                                                <span className={`px-3 py-1 rounded-full text-[11px] font-bold text-white ${idx % 2 === 0 ? 'bg-[#1A1FD3]' : 'bg-[#797979]'}`}>
-                                                    {proc.status === 'EXAM_MERIT' || idx % 2 === 0 ? 'Aguardando exame de mérito' : 'Processo iniciado'}
-                                                </span>
+                                            {/* Top Pill Header (Figma Frame 1410119740) */}
+                                            <div className={`w-full py-2.5 px-2 text-center text-white text-[10px] font-medium tracking-tight ${idx % 2 === 0 ? 'bg-[#1A1FD3]' : 'bg-[#797979]'}`}>
+                                                {proc.status === 'EXAM_MERIT' || idx % 2 === 0 ? 'Aguardando exame de mérito' : 'Processo iniciado'}
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-500 text-sm">
+
+                                            {/* Card Body (Figma Frame 1410119739) */}
+                                            <div className="p-4 flex flex-col justify-between flex-1">
+                                                <div className="w-10 h-10 rounded-xl bg-[#D9D9D9] flex items-center justify-center font-bold text-slate-600 text-sm">
                                                     {proc.brandName ? proc.brandName[0] : 'L'}
                                                 </div>
-                                                <span className="text-base font-bold text-slate-900">{proc.brandName || 'Litorânea Tendas'}</span>
+                                                <h3 className="font-season text-[18px] font-medium text-slate-900 leading-tight">
+                                                    {proc.brandName || 'Litorânea Tendas'}
+                                                </h3>
                                             </div>
                                         </div>
                                     ))
                                 ) : (
-                                    /* Default Figma Preview Cards if no backend process */
+                                    /* Figma Frame 2 & Frame 5 Default Preview Cards */
                                     <>
+                                        {/* Card 1 (Frame 2 - 41:241) */}
                                         <div
                                             onClick={() => setCurrentView('details')}
-                                            className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all cursor-pointer flex flex-col justify-between h-40"
+                                            className="w-[170px] h-[250px] bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all cursor-pointer flex flex-col justify-between overflow-hidden shrink-0 snap-start relative"
                                         >
-                                            <div>
-                                                <span className="px-3.5 py-1.5 rounded-full text-[11px] font-bold text-white bg-[#1A1FD3]">
-                                                    Aguardando exame de mérito
-                                                </span>
+                                            <div className="w-full py-2.5 px-2 text-center text-white text-[10px] font-medium tracking-tight bg-[#1A1FD3]">
+                                                Aguardando exame de mérito
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-sm">LT</div>
-                                                <span className="text-base font-bold text-slate-900">Litorânea Tendas</span>
+                                            <div className="p-4 flex flex-col justify-between flex-1">
+                                                <div className="w-10 h-10 rounded-xl bg-[#D9D9D9] flex items-center justify-center font-bold text-slate-600 text-sm">LT</div>
+                                                <h3 className="font-season text-[18px] font-medium text-slate-900 leading-tight">Litorânea Tendas</h3>
                                             </div>
                                         </div>
 
+                                        {/* Card 2 (Frame 5 - 41:316) */}
                                         <div
                                             onClick={() => setCurrentView('details')}
-                                            className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all cursor-pointer flex flex-col justify-between h-40"
+                                            className="w-[170px] h-[250px] bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:border-[#797979] transition-all cursor-pointer flex flex-col justify-between overflow-hidden shrink-0 snap-start relative"
                                         >
-                                            <div>
-                                                <span className="px-3.5 py-1.5 rounded-full text-[11px] font-bold text-white bg-[#797979]">
-                                                    Processo iniciado
-                                                </span>
+                                            <div className="w-full py-2.5 px-2 text-center text-white text-[10px] font-medium tracking-tight bg-[#797979]">
+                                                Processo iniciado
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-200 flex items-center justify-center font-bold text-slate-600 text-sm">LT</div>
-                                                <span className="text-base font-bold text-slate-900">Litorânea Tendas</span>
+                                            <div className="p-4 flex flex-col justify-between flex-1">
+                                                <div className="w-10 h-10 rounded-xl bg-[#D9D9D9] flex items-center justify-center font-bold text-slate-600 text-sm">LT</div>
+                                                <h3 className="font-season text-[18px] font-medium text-slate-900 leading-tight">Litorânea Tendas</h3>
                                             </div>
                                         </div>
                                     </>
                                 )}
 
-                                {/* Card: Registrar uma nova marca (Figma 41:262) */}
+                                {/* Card 3: Registrar uma nova marca (Frame 4 - 41:262) */}
                                 <a
                                     href="https://asterysko.com/nova-marca"
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all flex items-center justify-between group cursor-pointer"
+                                    className="w-[170px] h-[250px] bg-white rounded-3xl border border-slate-200/80 shadow-xs hover:border-[#1A1FD3] transition-all cursor-pointer flex flex-col justify-between p-5 shrink-0 snap-start"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#1A1FD3] flex items-center justify-center shrink-0">
-                                            <Plus size={22} />
-                                        </div>
-                                        <span className="text-sm font-bold text-slate-900">Registrar uma nova marca</span>
+                                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-100 flex items-center justify-center text-[#1A1FD3] shadow-2xs">
+                                        <Plus size={24} />
                                     </div>
-                                    <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
+                                    <span className="font-sans text-[12px] font-normal text-slate-900 leading-tight">
+                                        Registrar uma nova marca
+                                    </span>
                                 </a>
+                            </div>
 
-                                {/* Banner: Proteção não termina no registro (Figma 53:660) */}
-                                <div className="bg-[#1A1FD3] p-6 rounded-2xl text-white relative overflow-hidden shadow-md">
-                                    <div className="flex items-start gap-4 relative z-10">
-                                        <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0 text-white font-bold text-xl">
-                                            ®
+                            {/* 2. BANNER CARD (Frame 13 / 53:660 - 350x86px) */}
+                            <div className="w-full bg-[#1A1FD3] rounded-2xl p-5 text-white flex items-start gap-4 shadow-md relative overflow-hidden">
+                                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0 text-white font-bold text-xl">
+                                    ®
+                                </div>
+                                <div>
+                                    <h3 className="font-sans text-[16px] font-normal text-white leading-snug">
+                                        Proteção não termina no registro
+                                    </h3>
+                                    <p className="font-sans text-[12px] text-[#588DFF] mt-1 leading-relaxed">
+                                        Monitore, renove e expanda sua marca.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* 3. SECTION "MAIS BENEFÍCIOS" (Figma 41:322 & Frames 6, 7, 8 - 170x120px) */}
+                            <div className="space-y-3 pt-2">
+                                <h3 className="font-sans text-[14px] font-normal text-slate-900">Mais benefícios</h3>
+                                
+                                {/* Horizontally Swipable Benefits Carousel (Figma Frames 6, 7, 8) */}
+                                <div className="flex gap-4 overflow-x-auto snap-x scrollbar-none py-1 -mx-6 px-6 cursor-grab active:cursor-grabbing">
+                                    {/* Benefit Card 1 (Frame 6 - 41:323) */}
+                                    <div className="w-[170px] h-[120px] bg-[#0D1E1D] rounded-2xl p-4 text-white flex flex-col justify-between shrink-0 snap-start relative overflow-hidden border border-teal-900/50 shadow-xs">
+                                        <div className="flex justify-between items-start">
+                                            <span className="px-2 py-0.5 bg-white text-[#0D1E1D] text-[6px] font-bold rounded-full uppercase tracking-wider">
+                                                Teste grátis
+                                            </span>
                                         </div>
                                         <div>
-                                            <h3 className="text-base font-bold text-white">Proteção não termina no registro</h3>
-                                            <p className="text-xs text-[#588DFF] mt-1 leading-relaxed">
-                                                Monitore, renove e expanda sua marca.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Section: Mais benefícios (Figma 41:323) */}
-                                <div className="space-y-3 pt-2">
-                                    <h3 className="text-sm font-bold text-slate-900">Mais benefícios</h3>
-                                    
-                                    <div className="space-y-3">
-                                        <div className="bg-[#0D1E1D] p-5 rounded-2xl text-white flex flex-col justify-between h-36 relative overflow-hidden">
-                                            <div className="flex justify-between items-start">
-                                                <h4 className="text-lg font-bold text-white">Allyo</h4>
-                                                <span className="px-3 py-1 bg-white/20 text-[10px] font-bold rounded-full text-white">
-                                                    Teste grátis
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-teal-200/80">
+                                            <h4 className="font-season text-[18px] text-white leading-tight">Allyo</h4>
+                                            <p className="font-sans text-[9px] text-teal-100/70 mt-0.5 leading-tight">
                                                 Time criativo do seu time criativo
                                             </p>
                                         </div>
+                                    </div>
 
-                                        <div className="bg-[#0D1E1D] p-5 rounded-2xl text-white flex flex-col justify-between h-36 relative overflow-hidden">
-                                            <div className="flex justify-between items-start">
-                                                <h4 className="text-lg font-bold text-white">Scout AI</h4>
-                                                <span className="px-3 py-1 bg-white/20 text-[10px] font-bold rounded-full text-white">
-                                                    Exclusivo
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-teal-200/80">
-                                                Vigilância ativa contra imitações de marca
+                                    {/* Benefit Card 2 (Frame 7 - 41:358) */}
+                                    <div className="w-[170px] h-[120px] bg-[#0D1E1D] rounded-2xl p-4 text-white flex flex-col justify-between shrink-0 snap-start relative overflow-hidden border border-teal-900/50 shadow-xs">
+                                        <div className="flex justify-between items-start">
+                                            <span className="px-2 py-0.5 bg-white text-[#0D1E1D] text-[6px] font-bold rounded-full uppercase tracking-wider">
+                                                Teste grátis
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-season text-[18px] text-white leading-tight">Allyo</h4>
+                                            <p className="font-sans text-[9px] text-teal-100/70 mt-0.5 leading-tight">
+                                                Time criativo do seu time criativo
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Benefit Card 3 (Frame 8 - 41:365) */}
+                                    <div className="w-[170px] h-[120px] bg-[#0D1E1D] rounded-2xl p-4 text-white flex flex-col justify-between shrink-0 snap-start relative overflow-hidden border border-teal-900/50 shadow-xs">
+                                        <div className="flex justify-between items-start">
+                                            <span className="px-2 py-0.5 bg-white text-[#0D1E1D] text-[6px] font-bold rounded-full uppercase tracking-wider">
+                                                Teste grátis
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h4 className="font-season text-[18px] text-white leading-tight">Allyo</h4>
+                                            <p className="font-sans text-[9px] text-teal-100/70 mt-0.5 leading-tight">
+                                                Time criativo do seu time criativo
                                             </p>
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            {/* Bottom Starburst Decor Vector (Figma Group 2 / 59:1486) */}
+                            <div className="absolute -bottom-10 -right-10 w-48 h-48 pointer-events-none opacity-20 z-0">
+                                <svg viewBox="0 0 400 400" fill="none" className="w-full h-full">
+                                    {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => (
+                                        <rect key={i} x="186" y="10" width="28" height="140" rx="14" fill="#D4D4D4" transform={`rotate(${angle} 200 200)`} />
+                                    ))}
+                                </svg>
                             </div>
                         </div>
                     )}
