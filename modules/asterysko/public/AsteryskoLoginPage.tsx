@@ -133,33 +133,43 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
 
             {/* Clean Minimalist Card */}
             <main className="w-full max-w-sm z-10">
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl transition-all">
                     
-                    <h1 className="text-xl font-bold text-white mb-1">
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-1">
                         Portal do Cliente
                     </h1>
-                    <p className="text-xs text-slate-400 mb-6">
-                        Acesse seu processo com o código sem senha.
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-6">
+                        {otpStep === 'identifier' ? 'Escolha como quer acessar sua conta' : 'Digite o código recebido para continuar'}
                     </p>
 
                     {otpStep === 'identifier' ? (
-                        <div className="space-y-6">
-                            {/* Type Choice Tabs */}
-                            <div className="grid grid-cols-2 p-1 bg-slate-950 border border-slate-800 rounded-2xl">
+                        <div className="space-y-5">
+                            {/* Figma Step 1: Selection between WhatsApp and Email */}
+                            <div className="grid grid-cols-1 gap-3">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setLoginType('phone');
                                         setError('');
                                     }}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                    className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                                         loginType === 'phone'
-                                            ? 'bg-emerald-600 text-white shadow-sm'
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-slate-50 dark:bg-slate-800/80 border-[#1A1FD3] dark:border-[#3B48FF] shadow-sm ring-1 ring-[#1A1FD3]'
+                                            : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                                     }`}
                                 >
-                                    <Smartphone size={15} />
-                                    WhatsApp
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                            <Smartphone size={20} />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="block text-xs font-semibold text-slate-400">com</span>
+                                            <span className="text-sm font-bold text-slate-900 dark:text-white">WhatsApp</span>
+                                        </div>
+                                    </div>
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${loginType === 'phone' ? 'border-[#1A1FD3] bg-[#1A1FD3]' : 'border-slate-300 dark:border-slate-700'}`}>
+                                        {loginType === 'phone' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </div>
                                 </button>
 
                                 <button
@@ -168,32 +178,43 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                         setLoginType('email');
                                         setError('');
                                     }}
-                                    className={`py-2.5 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                                    className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
                                         loginType === 'email'
-                                            ? 'bg-blue-600 text-white shadow-sm'
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-slate-50 dark:bg-slate-800/80 border-[#1A1FD3] dark:border-[#3B48FF] shadow-sm ring-1 ring-[#1A1FD3]'
+                                            : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                                     }`}
                                 >
-                                    <Mail size={15} />
-                                    E-mail
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                            <Mail size={20} />
+                                        </div>
+                                        <div className="text-left">
+                                            <span className="block text-xs font-semibold text-slate-400">com</span>
+                                            <span className="text-sm font-bold text-slate-900 dark:text-white">Email</span>
+                                        </div>
+                                    </div>
+                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${loginType === 'email' ? 'border-[#1A1FD3] bg-[#1A1FD3]' : 'border-slate-300 dark:border-slate-700'}`}>
+                                        {loginType === 'email' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                                    </div>
                                 </button>
                             </div>
 
-                            <form onSubmit={handleRequestOtp} className="space-y-5">
+                            {/* Figma Input Form */}
+                            <form onSubmit={handleRequestOtp} className="space-y-4 pt-2">
                                 {loginType === 'phone' ? (
                                     <div className="space-y-1.5">
-                                        <label className="block text-xs font-bold text-slate-300">
-                                            Celular / WhatsApp
+                                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                            Digite o número cadastrado na Asterysko
                                         </label>
                                         <div className="relative">
-                                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                            <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                             <input
                                                 type="tel"
                                                 inputMode="tel"
                                                 value={phoneInput}
                                                 onChange={handlePhoneChange}
-                                                placeholder="(98) 99110-2121"
-                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-emerald-500 text-white placeholder:text-slate-600 text-base font-medium"
+                                                placeholder="(00) 00000-0000"
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:border-[#1A1FD3] text-slate-900 dark:text-white placeholder:text-slate-400 text-base font-medium transition-all"
                                                 required
                                                 autoFocus
                                             />
@@ -201,18 +222,18 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                     </div>
                                 ) : (
                                     <div className="space-y-1.5">
-                                        <label className="block text-xs font-bold text-slate-300">
-                                            Endereço de E-mail
+                                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300">
+                                            Digite o e-mail cadastrado na Asterysko
                                         </label>
                                         <div className="relative">
-                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                                             <input
                                                 type="email"
                                                 inputMode="email"
                                                 value={emailInput}
                                                 onChange={(e) => setEmailInput(e.target.value)}
-                                                placeholder="seu@email.com"
-                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-950 border border-slate-800 rounded-2xl outline-none focus:border-blue-500 text-white placeholder:text-slate-600 text-base font-medium"
+                                                placeholder="email@email.com"
+                                                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl outline-none focus:border-[#1A1FD3] text-slate-900 dark:text-white placeholder:text-slate-400 text-base font-medium transition-all"
                                                 required
                                                 autoFocus
                                             />
@@ -221,8 +242,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                 )}
 
                                 {error && (
-                                    <div className="p-3.5 bg-red-950/50 border border-red-900/60 text-red-300 text-xs rounded-xl flex items-center gap-2">
-                                        <AlertCircle size={16} className="shrink-0 text-red-400" />
+                                    <div className="p-3.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-300 text-xs rounded-xl flex items-center gap-2">
+                                        <AlertCircle size={16} className="shrink-0 text-red-500" />
                                         <span>{error}</span>
                                     </div>
                                 )}
@@ -230,9 +251,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                 <button
                                     type="submit"
                                     disabled={loading || !activeIdentifier.trim()}
-                                    className={`w-full py-3.5 rounded-2xl font-bold text-sm text-white shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 ${
-                                        loginType === 'phone' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'
-                                    }`}
+                                    className="w-full py-3.5 rounded-2xl font-bold text-sm text-white bg-[#1A1FD3] hover:bg-[#1418ab] dark:bg-[#3B48FF] dark:hover:bg-[#2532e8] shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                                 >
                                     {loading ? (
                                         <>
@@ -241,12 +260,25 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = ({ theme, o
                                         </>
                                     ) : (
                                         <>
-                                            Receber Código
+                                            Acessar com {loginType === 'phone' ? 'WhatsApp' : 'E-mail'}
                                             <ArrowRight size={16} />
                                         </>
                                     )}
                                 </button>
                             </form>
+
+                            {/* Figma Option: Registrar minha marca */}
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-center">
+                                <a
+                                    href="https://asterysko.com"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-[#1A1FD3] dark:hover:text-blue-400 transition-colors py-2 px-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800"
+                                >
+                                    <span className="w-5 h-5 rounded-full bg-[#181A80] text-white flex items-center justify-center text-[10px] font-bold">®</span>
+                                    Registrar minha marca
+                                </a>
+                            </div>
                         </div>
                     ) : (
                         /* STEP 2: Code Entry */

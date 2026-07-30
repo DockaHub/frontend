@@ -607,46 +607,45 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
     }
 
     return (
-        <div className="fixed inset-0 bg-slate-50 dark:bg-slate-950 flex flex-col font-sans z-[100] overflow-hidden transition-colors">
-
+        <div className="fixed inset-0 bg-[#F3F3F3] dark:bg-slate-950 flex flex-col font-sans z-[100] overflow-hidden transition-colors">
 
             {/* MAIN SCROLLABLE AREA */}
             <div className="flex-1 overflow-y-auto overflow-x-hidden relative custom-scrollbar">
 
                 {/* HEADER BACKGROUND & CONTENT */}
-                {/* Removing Z-Index from parent container to allow children to stack properly against the next sibling (Cards) */}
-                <div className="bg-blue-700 dark:bg-blue-900 pb-32 pt-8 px-6 relative transition-colors">
+                <div className="bg-[#1A1FD3] dark:bg-blue-950 pb-28 pt-6 px-6 relative transition-colors">
                     {/* Background Decor */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
                         <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl transform translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
                     </div>
 
                     <div className="max-w-4xl mx-auto">
-                        {/* Navbar-Increased Z-Index to stay above cards */}
-                        <div className="flex justify-between items-center mb-10 relative z-50">
+                        {/* Navbar */}
+                        <div className="flex justify-between items-center mb-8 relative z-50">
                             <div
-                                className="text-white opacity-95 cursor-pointer hover:opacity-100 transition-opacity"
+                                className="text-white opacity-95 cursor-pointer hover:opacity-100 transition-opacity flex items-center gap-3"
                                 onClick={() => setCurrentView('home')}
                                 title="Voltar ao Início"
                             >
                                 <AsteryskoLogoSVG />
                             </div>
-                            <div className="flex gap-3">
+
+                            <div className="flex items-center gap-2">
                                 {/* Notification Bell */}
                                 <div className="relative dropdown-container">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); setIsNotificationsOpen(!isNotificationsOpen); setIsMenuOpen(false); }}
-                                        className={`p-2.5 rounded-full transition-colors relative ${isNotificationsOpen ? 'bg-white text-blue-700' : 'hover:bg-white/10 text-white'} `}
+                                        className={`p-2.5 rounded-full transition-colors relative ${isNotificationsOpen ? 'bg-white text-[#1A1FD3]' : 'hover:bg-white/10 text-white'}`}
                                     >
                                         <Bell size={20} />
                                         {notifications.some(n => !n.read) && (
-                                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-400 rounded-full border border-blue-700"></span>
+                                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-400 rounded-full border border-[#1A1FD3]"></span>
                                         )}
                                     </button>
 
                                     {/* Notification Dropdown */}
                                     {isNotificationsOpen && (
-                                        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 overflow-hidden animate-in fade-in slide-in-from-top-2 origin-top-right">
+                                        <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 overflow-hidden animate-in fade-in slide-in-from-top-2 origin-top-right z-50">
                                             <div className="px-4 py-3 border-b border-slate-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900">
                                                 <h3 className="font-bold text-slate-900 dark:text-zinc-100 text-sm">Notificações</h3>
                                                 {notifications.some(n => !n.read) && (
@@ -666,11 +665,11 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                 ) : notifications.map(notif => (
                                                     <div
                                                         key={notif.id}
-                                                        onClick={() => { if (!notif.read) handleMarkAsRead(notif.id); if (notif.link) { setCurrentView('home'); /* Simplified: handle links later */ } }}
-                                                        className={`p-4 border-b border-slate-50 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${!notif.read ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''} `}
+                                                        onClick={() => { if (!notif.read) handleMarkAsRead(notif.id); if (notif.link) { setCurrentView('home'); } }}
+                                                        className={`p-4 border-b border-slate-50 dark:border-zinc-800 hover:bg-slate-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer ${!notif.read ? 'bg-blue-50/20 dark:bg-blue-900/10' : ''}`}
                                                     >
                                                         <div className="flex justify-between items-start mb-1">
-                                                            <h4 className={`text-sm ${!notif.read ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'} `}>{notif.title}</h4>
+                                                            <h4 className={`text-sm ${!notif.read ? 'font-bold text-slate-900 dark:text-zinc-100' : 'font-medium text-slate-700 dark:text-zinc-300'}`}>{notif.title}</h4>
                                                             {!notif.read && <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5" />}
                                                         </div>
                                                         <p className="text-xs text-slate-500 dark:text-zinc-400 line-clamp-2 leading-relaxed">
@@ -689,7 +688,7 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                     )}
                                 </div>
 
-                                {/* Theme Toggle shortcut */}
+                                {/* Theme Toggle */}
                                 {onToggleTheme && (
                                     <button
                                         onClick={onToggleTheme}
@@ -700,64 +699,124 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                     </button>
                                 )}
 
-                                {/* User Menu */}
-                                <div className="relative dropdown-container">
-                                    <button
-                                        onClick={(e) => { e.stopPropagation(); setIsMenuOpen(!isMenuOpen); setIsNotificationsOpen(false); }}
-                                        className={`p-2.5 rounded-full transition-colors ${isMenuOpen ? 'bg-white text-blue-700' : 'hover:bg-white/10 text-white'} `}
-                                    >
-                                        <Menu size={20} />
-                                    </button>
-
-                                    {/* Menu Dropdown */}
-                                    {isMenuOpen && (
-                                        <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-zinc-900 rounded-xl shadow-xl border border-slate-100 dark:border-zinc-800 overflow-hidden animate-in fade-in slide-in-from-top-2 origin-top-right">
-                                            <div className="px-4 py-3 border-b border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-800/50">
-                                                <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{clientData?.name}</p>
-                                                <p className="text-xs text-slate-500 dark:text-zinc-400">{clientData?.email}</p>
-                                            </div>
-                                            <div className="py-1 bg-white dark:bg-zinc-900">
-                                                <button
-                                                    onClick={() => { setCurrentView('profile'); setIsMenuOpen(false); }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-3 transition-colors"
-                                                >
-                                                    <User size={16} className="text-slate-400 dark:text-zinc-500" /> Meus Dados
-                                                </button>
-                                                <button
-                                                    onClick={() => { setCurrentView('contracts'); setIsMenuOpen(false); }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-3 transition-colors"
-                                                >
-                                                    <Shield size={16} className="text-slate-400 dark:text-zinc-500" /> Contratos
-                                                </button>
-                                                <button
-                                                    onClick={() => { setCurrentView('financial'); setIsMenuOpen(false); }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-3 transition-colors"
-                                                >
-                                                    <FileText size={16} className="text-slate-400 dark:text-zinc-500" /> Minhas Faturas
-                                                </button>
-                                                <button
-                                                    onClick={() => { setCurrentView('support'); setIsMenuOpen(false); }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-zinc-300 hover:bg-slate-50 dark:hover:bg-zinc-800 flex items-center gap-3 transition-colors"
-                                                >
-                                                    <HelpCircle size={16} className="text-slate-400 dark:text-zinc-500" /> Suporte
-                                                </button>
-                                            </div>
-                                            <div className="border-t border-slate-100 dark:border-zinc-800 py-1 bg-white dark:bg-zinc-900">
-                                                <button
-                                                    onClick={() => {
-                                                        logout();
-                                                        window.location.replace('/portal/login');
-                                                    }}
-                                                    className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-3 font-medium transition-colors"
-                                                >
-                                                    <LogOut size={16} /> Sair
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Slide-out Menu Trigger Button (Figma jam:menu) */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setIsMenuOpen(true); setIsNotificationsOpen(false); }}
+                                    className="p-2.5 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer"
+                                    title="Abrir Menu"
+                                >
+                                    <Menu size={22} />
+                                </button>
                             </div>
                         </div>
+
+                        {/* Slide-out Menu Drawer (Figma Frame 59:1496) */}
+                        {isMenuOpen && (
+                            <div className="fixed inset-0 z-[150] flex justify-end bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+                                <div 
+                                    className="w-full max-w-sm bg-[#F3F3F3] dark:bg-zinc-900 h-full p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 shadow-2xl"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-zinc-800">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-[#1A1FD3] text-white flex items-center justify-center font-bold text-sm">
+                                                    {clientData?.name ? clientData.name[0] : 'U'}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{clientData?.name}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-zinc-400">{clientData?.email}</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => setIsMenuOpen(false)}
+                                                className="p-2 rounded-full text-slate-500 hover:text-slate-800 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-800 transition-colors"
+                                            >
+                                                <X size={20} />
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <button
+                                                onClick={() => { setCurrentView('profile'); setIsMenuOpen(false); }}
+                                                className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-700 dark:text-zinc-300">
+                                                        <User size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Sua conta</h4>
+                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Mantenha seus dados atualizados.</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setCurrentView('contracts'); setIsMenuOpen(false); }}
+                                                className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-700 dark:text-zinc-300">
+                                                        <Shield size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Meus Contratos</h4>
+                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Termos e contratos de serviços.</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setCurrentView('financial'); setIsMenuOpen(false); }}
+                                                className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-700 dark:text-zinc-300">
+                                                        <FileText size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Minhas Faturas</h4>
+                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Pagamentos e mensalidades.</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                                            </button>
+
+                                            <button
+                                                onClick={() => { setCurrentView('support'); setIsMenuOpen(false); }}
+                                                className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-700 dark:text-zinc-300">
+                                                        <HelpCircle size={18} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Central de atendimento</h4>
+                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Suporte e dúvidas frequentes.</p>
+                                                    </div>
+                                                </div>
+                                                <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="pt-6 border-t border-slate-200 dark:border-zinc-800">
+                                        <button
+                                            onClick={() => {
+                                                logout();
+                                                window.location.replace('/portal/login');
+                                            }}
+                                            className="w-full py-3.5 px-4 bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-2xl text-red-600 font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                                        >
+                                            <LogOut size={18} /> Sair
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Greeting & Context Header-Changes based on View */}
                         <div className="relative z-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
@@ -832,122 +891,233 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         {/* VIEW: HOME (Processes) */}
                         {currentView === 'home' && (
                             <div className="space-y-6">
+                                {/* Registered Process Cards */}
                                 {processes?.length === 0 ? (
-                                    <div className="bg-white dark:bg-zinc-900 p-12 text-center rounded-xl border border-slate-200 dark:border-zinc-800">
-                                        <Briefcase size={48} className="mx-auto text-slate-200 mb-4" />
+                                    <div className="bg-white dark:bg-zinc-900 p-12 text-center rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-sm">
+                                        <Briefcase size={48} className="mx-auto text-slate-300 dark:text-zinc-600 mb-4" />
                                         <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Nenhum processo ativo</h3>
-                                        <p className="text-slate-500 dark:text-zinc-400 max-w-xs mx-auto mt-2">Você ainda não possui processos de marca registrados em nossa plataforma.</p>
+                                        <p className="text-slate-500 dark:text-zinc-400 max-w-xs mx-auto mt-2 text-xs">Você ainda não possui processos de marca registrados em nossa plataforma.</p>
                                     </div>
-                                ) : processes?.map((proc) => (
-                                    <div key={proc.id} className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg shadow-slate-900/5 border border-slate-100 dark:border-zinc-800 overflow-hidden transition-all duration-300">
+                                ) : (
+                                    processes?.map((proc) => (
+                                        <div key={proc.id} className="bg-white dark:bg-zinc-900 rounded-2xl shadow-xs border border-slate-200/80 dark:border-zinc-800 overflow-hidden transition-all duration-300">
+                                            {/* Card Header (Always Visible) */}
+                                            <div
+                                                onClick={() => setExpandedId(expandedId === proc.id ? null : proc.id)}
+                                                className="p-5 cursor-pointer hover:bg-slate-50/60 dark:hover:bg-zinc-800/40 transition-colors"
+                                            >
+                                                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                                    <div className="flex gap-4 items-center">
+                                                        {proc.brandLogo ? (
+                                                            <div className="w-14 h-14 bg-slate-50 dark:bg-zinc-800 rounded-2xl flex items-center justify-center border border-slate-200/80 dark:border-zinc-700 shadow-xs shrink-0 overflow-hidden">
+                                                                <img 
+                                                                    src={proc.brandLogo.startsWith('http') ? proc.brandLogo : `${getBackendUrl()}${proc.brandLogo}`} 
+                                                                    className="w-full h-full object-contain p-1.5" 
+                                                                    alt="Logo da Marca" 
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-14 h-14 bg-[#1A1FD3] rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-xs shrink-0">
+                                                                {proc.brandName ? proc.brandName[0] : 'M'}
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <h2 className="text-lg font-bold text-slate-900 dark:text-white">{proc.brandName}</h2>
+                                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                                <span className="text-xs bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-zinc-700 font-mono">{proc.inpiProcessNumber || 'Em autuação'}</span>
+                                                                <span className="text-xs bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-zinc-700">{proc.classes || 'Classe 35'}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
-                                        {/* Card Header (Always Visible) */}
-                                        <div
-                                            onClick={() => setExpandedId(expandedId === proc.id ? null : proc.id)}
-                                            className="p-6 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-zinc-800/50 transition-colors"
-                                        >
-                                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                                <div className="flex gap-4 items-center">
-                                                    {proc.brandLogo ? (
-                                                        <div className="w-14 h-14 bg-slate-50 dark:bg-zinc-800 rounded-xl flex items-center justify-center border border-slate-100 dark:border-zinc-700 shadow-sm shrink-0 overflow-hidden">
-                                                            <img 
-                                                                src={proc.brandLogo.startsWith('http') ? proc.brandLogo : `${getBackendUrl()}${proc.brandLogo}`} 
-                                                                className="w-full h-full object-contain p-1" 
-                                                                alt="Logo da Marca" 
-                                                            />
-                                                        </div>
-                                                    ) : (
-                                                        <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0">
-                                                            {proc.brandName ? proc.brandName[0] : 'M'}
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">{proc.brandName}</h2>
-                                                        <div className="flex flex-wrap gap-2 mt-1.5">
-                                                            <span className="text-xs bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700 font-mono">{proc.inpiProcessNumber || 'N/A'}</span>
-                                                            <span className="text-xs bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700">{proc.classes}</span>
-                                                        </div>
+                                                    <div className="w-full sm:w-auto flex items-center justify-between sm:justify-end gap-3">
+                                                        {/* Figma Status Badge */}
+                                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                                                            proc.status === 'EXAM_MERIT' || proc.status === 'REGISTERED' || proc.status === 'ACTIVE'
+                                                                ? 'bg-[#1A1FD3] text-white'
+                                                                : 'bg-[#797979] text-white'
+                                                        }`}>
+                                                            {formatStatus(proc.status)}
+                                                        </span>
+                                                        <ChevronDown size={20} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-300 ${expandedId === proc.id ? 'rotate-180' : ''}`} />
                                                     </div>
-                                                </div>
-                                                <div className="w-full sm:w-auto text-right flex items-center justify-between sm:justify-end gap-3">
-                                                    <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border ${getStatusColor(proc.status)} `}>
-                                                        {formatStatus(proc.status)}
-                                                    </div>
-                                                    <ChevronDown size={20} className={`text-slate-400 dark:text-zinc-500 transition-transform duration-300 ${expandedId === proc.id ? 'rotate-180' : ''} `} />
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        {/* Expanded Content */}
-                                        {expandedId === proc.id && (
-                                            <div className="border-t border-slate-100 dark:border-zinc-800 bg-slate-50/30 dark:bg-zinc-950/30 animate-in slide-in-from-top-2 duration-300">
-
-                                                {/* Tabs Navigation */}
-                                                <div className="px-6 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
-                                                    <div className="flex gap-8 overflow-x-auto">
-                                                        <button
-                                                            onClick={() => setActiveTab('timeline')}
-                                                            className={`py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'timeline' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-zinc-500 hover:text-slate-800 dark:hover:text-zinc-300'} `}
-                                                        >
-                                                            Andamento
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setActiveTab('data')}
-                                                            className={`py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'data' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-zinc-500 hover:text-slate-800 dark:hover:text-zinc-300'} `}
-                                                        >
-                                                            Dados do Processo
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setActiveTab('docs')}
-                                                            className={`py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${activeTab === 'docs' ? 'border-blue-600 text-blue-700 dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-zinc-500 hover:text-slate-800 dark:hover:text-zinc-300'} `}
-                                                        >
-                                                            Documentos
-                                                        </button>
+                                            {/* Expanded Content */}
+                                            {expandedId === proc.id && (
+                                                <div className="border-t border-slate-100 dark:border-zinc-800 bg-slate-50/50 dark:bg-zinc-950/40 animate-in slide-in-from-top-2 duration-300">
+                                                    {/* Tabs Navigation */}
+                                                    <div className="px-6 border-b border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 sticky top-0 z-10">
+                                                        <div className="flex gap-6 overflow-x-auto">
+                                                            <button
+                                                                onClick={() => setActiveTab('timeline')}
+                                                                className={`py-3.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'timeline' ? 'border-[#1A1FD3] text-[#1A1FD3] dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800'}`}
+                                                            >
+                                                                Detalhes & Timeline
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setActiveTab('data')}
+                                                                className={`py-3.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'data' ? 'border-[#1A1FD3] text-[#1A1FD3] dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800'}`}
+                                                            >
+                                                                Informações Gerais
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setActiveTab('docs')}
+                                                                className={`py-3.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${activeTab === 'docs' ? 'border-[#1A1FD3] text-[#1A1FD3] dark:text-blue-400' : 'border-transparent text-slate-500 dark:text-zinc-400 hover:text-slate-800'}`}
+                                                            >
+                                                                Documentos do Processo
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                </div>
 
-                                                <div className="p-6 md:p-8 min-h-[300px]">
-                                                    {/* TAB: TIMELINE */}
-                                                    {activeTab === 'timeline' && (
-                                                        <div className="relative pl-2 animate-in fade-in duration-300">
-                                                            {proc.certificateUrl && (
-                                                                <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-amber-500/5 border border-amber-400/40 dark:border-amber-600/40 shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                                                    <div className="flex items-center gap-3.5 min-w-0">
-                                                                        <div className="w-11 h-11 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 text-xl shadow-inner">
-                                                                            🏆
+                                                    <div className="p-5 md:p-6 min-h-[250px]">
+                                                        {/* TAB: TIMELINE */}
+                                                        {activeTab === 'timeline' && (
+                                                            <div className="relative pl-2 animate-in fade-in duration-300">
+                                                                {proc.certificateUrl && (
+                                                                    <div className="mb-6 p-4 rounded-2xl bg-gradient-to-br from-amber-500/15 via-yellow-500/10 to-amber-500/5 border border-amber-400/40 dark:border-amber-600/40 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                                                        <div className="flex items-center gap-3 min-w-0">
+                                                                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-amber-600 dark:text-amber-400 shrink-0 text-lg shadow-inner">
+                                                                                🏆
+                                                                            </div>
+                                                                            <div>
+                                                                                <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1.5">
+                                                                                    Certificado de Registro Emitido! 🏆🛡️
+                                                                                </h4>
+                                                                                <p className="text-xs text-slate-600 dark:text-zinc-300 mt-0.5">
+                                                                                    Sua marca está registrada e protegida pelo INPI em todo o Brasil.
+                                                                                </p>
+                                                                            </div>
                                                                         </div>
-                                                                        <div>
-                                                                            <h4 className="text-sm font-black text-amber-900 dark:text-amber-200 uppercase tracking-wider flex items-center gap-1.5">
-                                                                                Certificado de Registro Emitido! 🏆🛡️
-                                                                            </h4>
-                                                                            <p className="text-xs text-slate-600 dark:text-zinc-300 font-medium mt-0.5">
-                                                                                Sua marca está registrada e protegida pelo INPI em todo o Brasil.
-                                                                            </p>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                const token = localStorage.getItem('token');
+                                                                                const baseUrl = proc.certificateUrl.startsWith('http') ? proc.certificateUrl : `${getBackendUrl()}${proc.certificateUrl.startsWith('/') ? '' : '/'}${proc.certificateUrl}`;
+                                                                                const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
+                                                                                window.open(url, '_blank');
+                                                                            }}
+                                                                            className="w-full sm:w-auto px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 tracking-wide uppercase shrink-0 cursor-pointer"
+                                                                        >
+                                                                            <Download size={14} /> Baixar Certificado 🏆
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                                {getTimelineEvents(proc, financials.invoices).map((step: any, idx: number, arr: any[]) => (
+                                                                    <div key={step.id || idx} className="relative flex gap-5 pb-6 last:pb-0">
+                                                                        {idx !== arr.length - 1 && (
+                                                                            <div className={`absolute left-[11px] top-7 bottom-0 w-0.5 ${step.isCompleted ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-zinc-800'}`} />
+                                                                        )}
+                                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 text-white shadow-xs ${step.isCompleted ? 'border-emerald-600 bg-emerald-600' : 'border-slate-300 bg-slate-100 text-slate-400'}`}>
+                                                                            {step.isCompleted ? <CheckCircle2 size={14} /> : <div className="w-2 h-2 rounded-full bg-slate-400" />}
+                                                                        </div>
+                                                                        <div className="flex-1 min-w-0">
+                                                                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                                                                <h4 className="text-xs font-bold text-slate-900 dark:text-zinc-100">{step.title}</h4>
+                                                                                <span className="text-[10px] font-mono text-slate-400 dark:text-zinc-500 bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded">{step.date || 'Em andamento'}</span>
+                                                                            </div>
+                                                                            <p className="text-xs text-slate-500 dark:text-zinc-400 mt-1">{step.description}</p>
                                                                         </div>
                                                                     </div>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            const token = localStorage.getItem('token');
-                                                                            const baseUrl = proc.certificateUrl.startsWith('http') ? proc.certificateUrl : `${getBackendUrl()}${proc.certificateUrl.startsWith('/') ? '' : '/'}${proc.certificateUrl}`;
-                                                                            const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                                            window.open(url, '_blank');
-                                                                        }}
-                                                                        className="w-full sm:w-auto px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 tracking-wide uppercase shrink-0"
-                                                                    >
-                                                                        <Download size={16} strokeWidth={2.5} /> Baixar Certificado 🏆
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                            {getTimelineEvents(proc, financials.invoices).map((step: any, idx: number, arr: any[]) => (
-                                                                <div key={step.id || idx} className="relative flex gap-6 pb-8 last:pb-0">
-                                                                    {/* Connector Line */}
-                                                                    {idx !== arr.length - 1 && (
-                                                                        <div className={`absolute left-[11px] top-8 bottom-0 w-0.5 ${step.isCompleted ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-zinc-800'}`} />
-                                                                    )}
+                                                                ))}
+                                                            </div>
+                                                        )}
 
-                                                                    {/* Status Icon */}
-                                                                    {step.isCompleted ? (
-                                                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 shrink-0 border-2 text-white shadow-md ${step.type === 'certificate' ? 'bg-gradient-to-r from-amber-500 to-yellow-500 border-amber-500' : 'border-emerald-600 bg-emerald-600'}`}>
+                                                        {/* TAB: DATA */}
+                                                        {activeTab === 'data' && (
+                                                            <div className="space-y-4 animate-in fade-in duration-300">
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-slate-200/80 dark:border-zinc-800">
+                                                                        <span className="block text-[11px] font-semibold text-slate-400 uppercase">Apresentação</span>
+                                                                        <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 mt-0.5 block">{proc.presentation || 'Mista'}</span>
+                                                                    </div>
+                                                                    <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-slate-200/80 dark:border-zinc-800">
+                                                                        <span className="block text-[11px] font-semibold text-slate-400 uppercase">Classificação NCL</span>
+                                                                        <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 mt-0.5 block">{proc.classes || 'Classe 35'}</span>
+                                                                    </div>
+                                                                    <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-slate-200/80 dark:border-zinc-800">
+                                                                        <span className="block text-[11px] font-semibold text-slate-400 uppercase">Número do Protocolo</span>
+                                                                        <span className="text-sm font-mono font-bold text-slate-800 dark:text-zinc-200 mt-0.5 block">{proc.inpiProcessNumber || 'Aguardando publicação'}</span>
+                                                                    </div>
+                                                                    <div className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-slate-200/80 dark:border-zinc-800">
+                                                                        <span className="block text-[11px] font-semibold text-slate-400 uppercase">Data de Depósito</span>
+                                                                        <span className="text-sm font-bold text-slate-800 dark:text-zinc-200 mt-0.5 block">{proc.depositDate ? new Date(proc.depositDate).toLocaleDateString('pt-BR') : '13/01/2026'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+
+                                {/* Figma Card: Registrar uma nova marca (Frame 41:262) */}
+                                <a
+                                    href="https://asterysko.com/nova-marca"
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-xs hover:border-[#1A1FD3] dark:hover:border-blue-500 transition-all flex items-center gap-4 group cursor-pointer"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#1A1FD3] dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                                        <Plus size={24} />
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Registrar uma nova marca</h4>
+                                        <p className="text-xs text-slate-400 dark:text-zinc-400 mt-0.5">Proteja mais um nome ou logomarca em minutos.</p>
+                                    </div>
+                                    <ChevronRight size={18} className="text-slate-400 group-hover:translate-x-1 transition-transform" />
+                                </a>
+
+                                {/* Figma Banner: Proteção não termina no registro (Frame 53:660) */}
+                                <div className="bg-[#1A1FD3] dark:bg-blue-950 p-6 rounded-2xl text-white relative overflow-hidden shadow-md">
+                                    <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                                    <div className="relative z-10 flex items-start gap-4">
+                                        <div className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-xs flex items-center justify-center shrink-0 text-white font-bold text-lg">
+                                            ®
+                                        </div>
+                                        <div>
+                                            <h3 className="text-base font-bold text-white">Proteção não termina no registro</h3>
+                                            <p className="text-xs text-[#588DFF] dark:text-blue-300 mt-1 leading-relaxed">
+                                                Monitore, renove e expanda sua marca constantemente com os serviços de inteligência da Asterysko.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Figma Section: Mais benefícios (Frame 41:323) */}
+                                <div className="space-y-3 pt-2">
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">Mais benefícios</h3>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <div className="bg-[#0D1E1D] p-5 rounded-2xl text-white relative overflow-hidden flex flex-col justify-between h-36 border border-teal-900/50 shadow-sm">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="text-lg font-bold text-white">Allyo</h4>
+                                                <span className="px-2.5 py-1 bg-white/20 backdrop-blur-xs text-[10px] font-bold rounded-full text-white">
+                                                    Teste grátis
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-teal-200/80 leading-snug">
+                                                Time criativo do seu time criativo
+                                            </p>
+                                        </div>
+
+                                        <div className="bg-[#0D1E1D] p-5 rounded-2xl text-white relative overflow-hidden flex flex-col justify-between h-36 border border-teal-900/50 shadow-sm">
+                                            <div className="flex justify-between items-start">
+                                                <h4 className="text-lg font-bold text-white">Scout AI</h4>
+                                                <span className="px-2.5 py-1 bg-white/20 backdrop-blur-xs text-[10px] font-bold rounded-full text-white">
+                                                    Exclusivo
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-teal-200/80 leading-snug">
+                                                Vigilância ativa contra imitações de marca
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                                                                             {step.type === 'contract' ? <FileSignature size={11} strokeWidth={2.8} /> : step.type === 'proxy' ? <Shield size={11} strokeWidth={2.8} /> : step.type === 'gru' ? <CreditCard size={11} strokeWidth={2.8} /> : step.type === 'certificate' ? <ShieldCheck size={13} strokeWidth={2.8} /> : <CheckCircle2 size={13} strokeWidth={2.8} />}
                                                                         </div>
                                                                     ) : step.isActiveAction ? (
@@ -1372,125 +1542,195 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                             </div>
                         )}
 
-                        {/* VIEW: PROFILE (Meus Dados) */}
-                        {
-                            currentView === 'profile' && (
-                                <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-lg shadow-slate-900/5 border border-slate-100 dark:border-zinc-800 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
-                                    <div className="p-6">
-                                        <div className="space-y-8">
-                                            {/* Company Data Section */}
-                                            <div className="space-y-5">
-                                                <div className="pb-2 border-b border-slate-100 dark:border-zinc-800">
-                                                    <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                                                        <Building2 size={16} className="text-slate-400 dark:text-zinc-500" />
-                                                        Dados da Empresa
-                                                    </h3>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="md:col-span-2">
-                                                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">Razão Social/Nome</label>
-                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" value={editName} onChange={(e) => setEditName(e.target.value)} />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">CPF/CNPJ</label>
-                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-500 dark:text-zinc-500 cursor-not-allowed" defaultValue={clientData?.cpfCnpj} disabled />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">RG/IE</label>
-                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" value={editRg} onChange={(e) => setEditRg(e.target.value)} />
-                                                    </div>
-                                                    <div className="md:col-span-2">
-                                                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">Endereço</label>
-                                                        <input className="w-full px-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-700 dark:text-zinc-300 outline-none focus:border-blue-400 transition-colors" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
-                                                    </div>
-                                                </div>
-                                            </div>
+                        {/* VIEW: PROFILE (Meus Dados - Figma Frame 53:672) */}
+                        {currentView === 'profile' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <button 
+                                        onClick={() => setCurrentView('home')}
+                                        className="p-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 transition-colors"
+                                    >
+                                        <ArrowLeft size={18} />
+                                    </button>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Meus dados</h2>
+                                        <p className="text-xs text-slate-500 dark:text-zinc-400">Gerencie as informações cadastrais e de segurança da sua conta.</p>
+                                    </div>
+                                </div>
 
-                                            {/* User Data Section */}
-                                            <div className="space-y-5">
-                                                <div className="pb-2 border-b border-slate-100 dark:border-zinc-800">
-                                                    <h3 className="text-sm font-bold text-slate-900 dark:text-zinc-100 flex items-center gap-2">
-                                                        <User size={16} className="text-slate-400 dark:text-zinc-500" />
-                                                        Dados do Usuário
-                                                    </h3>
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                    <div className="md:col-span-2">
-                                                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1">E-mail de Acesso</label>
-                                                        <div className="relative">
-                                                            <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
-                                                            <input className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-500 dark:text-zinc-500 cursor-not-allowed" defaultValue={clientData?.email} disabled />
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                {/* Section 1: Dados da empresa */}
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-800 overflow-hidden shadow-xs">
+                                    <div className="bg-[#F8F8F8] dark:bg-zinc-800/80 px-6 py-3 border-b border-slate-200/60 dark:border-zinc-800">
+                                        <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider">Dados da empresa</h3>
+                                    </div>
+                                    <div className="p-6 space-y-4 divide-y divide-slate-100 dark:divide-zinc-800">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">Razão social</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{editName || clientData?.name || 'Fauves LTDA'}</span>
                                             </div>
-                                        </div>
-
-                                        <div className="mt-8 pt-6 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between">
-                                            <button className="text-slate-500 dark:text-zinc-400 hover:text-slate-700 dark:hover:text-zinc-200 text-sm font-medium flex items-center gap-2">
-                                                <Lock size={16} /> Alterar Senha
-                                            </button>
-                                            <button
-                                                onClick={handleUpdateProfile}
-                                                disabled={isSavingProfile}
-                                                className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold shadow-md shadow-blue-900/10 transition-colors flex items-center gap-2 ${isSavingProfile ? 'opacity-70 cursor-not-allowed' : ''}`}
+                                            <button 
+                                                onClick={() => handleUpdateProfile()}
+                                                className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto"
                                             >
-                                                {isSavingProfile ? <Loader2 size={16} className="animate-spin" /> : null}
-                                                {isSavingProfile ? 'Salvando...' : 'Salvar Alterações'}
+                                                Editar
+                                            </button>
+                                        </div>
+
+                                        <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">CNPJ</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{clientData?.cpfCnpj || '00.000.000/0000-00'}</span>
+                                            </div>
+                                            <button className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto">
+                                                Editar
+                                            </button>
+                                        </div>
+
+                                        <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">Endereço</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{editAddress || clientData?.address || 'Rua 1, bairro 2, cidade 3, UF'}</span>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleUpdateProfile()}
+                                                className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto"
+                                            >
+                                                Editar
                                             </button>
                                         </div>
                                     </div>
                                 </div>
-                            )
-                        }
 
-                        {/* VIEW: CONTRACTS */}
-                        {
-                            currentView === 'contracts' && (
-                                <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                {/* Section 2: Dados pessoais */}
+                                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-800 overflow-hidden shadow-xs">
+                                    <div className="bg-[#F8F8F8] dark:bg-zinc-800/80 px-6 py-3 border-b border-slate-200/60 dark:border-zinc-800">
+                                        <h3 className="text-xs font-bold text-slate-900 dark:text-zinc-100 uppercase tracking-wider">Dados pessoais</h3>
+                                    </div>
+                                    <div className="p-6 space-y-4 divide-y divide-slate-100 dark:divide-zinc-800">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">Nome completo</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{clientData?.name || 'Levy Câmara Soares'}</span>
+                                            </div>
+                                            <button className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto">
+                                                Editar
+                                            </button>
+                                        </div>
 
-                                    <div className="grid grid-cols-1 gap-4">
-                                        {financials.contracts?.length === 0 ? (
-                                            <div className="bg-white dark:bg-zinc-900 p-12 text-center rounded-xl border border-slate-200 dark:border-zinc-800">
-                                                <Shield size={48} className="mx-auto text-slate-200 mb-4" />
-                                                <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Nenhum contrato assinado</h3>
-                                                <p className="text-slate-500 dark:text-zinc-400 max-w-xs mx-auto mt-2">Seus contratos de prestação de serviços aparecerão aqui após a formalização.</p>
+                                        <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">CPF</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{clientData?.cpfCnpj || '000.000.000-00'}</span>
                                             </div>
-                                        ) : financials.contracts?.map((contract) => (
-                                            <div key={contract.id} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-slate-200 dark:border-zinc-800 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 hover:border-blue-300 dark:hover:border-blue-700 transition-colors group">
-                                                <div className="flex items-center gap-4 w-full sm:w-auto">
-                                                    <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center border border-indigo-100 dark:indigo-900/30 shrink-0">
-                                                        <FileText size={24} />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="font-bold text-slate-900 dark:text-zinc-100 text-sm">Contrato de Prestação de Serviços-{contract.brandName}</h4>
-                                                        <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 dark:text-zinc-400">
-                                                            <span className="bg-slate-100 dark:bg-zinc-800 px-2 py-0.5 rounded border border-slate-200 dark:border-zinc-700">MARCAS</span>
-                                                            <span>{contract.inpiProcessNumber}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                                                    <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 rounded-full text-xs font-bold uppercase tracking-wide">
-                                                        {contract.contractSignStatus}
-                                                    </span>
-                                                    <button 
-                                                        onClick={() => {
-                                                            const token = localStorage.getItem('token');
-                                                            const url = contract.contractUrl.startsWith('http') ? contract.contractUrl : `${getBackendUrl()}${contract.contractUrl.startsWith('/') ? '' : '/'}${contract.contractUrl}${contract.contractUrl.includes('?') ? '&' : '?'}token=${token}`;
-                                                            window.open(url, '_blank');
-                                                        }} 
-                                                        className="p-2 text-slate-400 dark:text-zinc-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors border"
-                                                    >
-                                                        <ExternalLink size={20} />
-                                                    </button>
-                                                </div>
+                                            <button className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto">
+                                                Editar
+                                            </button>
+                                        </div>
+
+                                        <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">Email</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{clientData?.email || 'email@email.com'}</span>
                                             </div>
-                                        ))}
+                                            <button className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto">
+                                                Editar
+                                            </button>
+                                        </div>
+
+                                        <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">Whatsapp</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{clientData?.phone || '(00) 00000-0000'}</span>
+                                            </div>
+                                            <button className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto">
+                                                Editar
+                                            </button>
+                                        </div>
+
+                                        <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                            <div>
+                                                <span className="block text-xs font-semibold text-slate-900 dark:text-zinc-100">Endereço residencial</span>
+                                                <span className="text-xs text-[#797979] dark:text-zinc-400 mt-0.5 block">{clientData?.address || 'Mesmo endereço da empresa'}</span>
+                                            </div>
+                                            <button className="text-xs font-bold text-slate-900 dark:text-zinc-200 hover:text-[#1A1FD3] cursor-pointer self-start sm:self-auto">
+                                                Editar
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            )
-                        }
+                            </div>
+                        )}
+
+                        {/* VIEW: CONTRACTS (Meus Contratos - Figma Frame 58:863) */}
+                        {currentView === 'contracts' && (
+                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <button 
+                                        onClick={() => setCurrentView('home')}
+                                        className="p-2 rounded-xl bg-white dark:bg-zinc-800 border border-slate-200 dark:border-zinc-700 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 transition-colors"
+                                    >
+                                        <ArrowLeft size={18} />
+                                    </button>
+                                    <div>
+                                        <h2 className="text-xl font-bold text-slate-900 dark:text-white">Contratos</h2>
+                                        <p className="text-xs text-slate-500 dark:text-zinc-400">Acesse e baixe todos os contratos de prestação de serviços e termos legais.</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                    {financials.contracts?.length === 0 ? (
+                                        <div className="bg-white dark:bg-zinc-900 p-12 text-center rounded-2xl border border-slate-200 dark:border-zinc-800 shadow-xs">
+                                            <Shield size={48} className="mx-auto text-slate-300 dark:text-zinc-600 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-900 dark:text-zinc-100">Nenhum contrato assinado</h3>
+                                            <p className="text-slate-500 dark:text-zinc-400 max-w-xs mx-auto mt-2 text-xs">Seus contratos de prestação de serviços aparecerão aqui após a formalização.</p>
+                                        </div>
+                                    ) : (
+                                        financials.contracts?.map((contract) => {
+                                            const isSigned = contract.contractSignStatus === 'SIGNED' || contract.status === 'SIGNED';
+                                            return (
+                                                <div key={contract.id} className="bg-white dark:bg-zinc-900 p-5 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:border-[#1A1FD3] dark:hover:border-blue-700 transition-all">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-[#1A1FD3] dark:text-blue-400 rounded-xl flex items-center justify-center shrink-0">
+                                                            <FileText size={22} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-bold text-slate-900 dark:text-white text-sm">Contrato - Registro de Marca</h4>
+                                                            <p className="text-xs text-[#8F8F8F] dark:text-zinc-400 mt-0.5">{clientData?.name || 'Asterysko Client'}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                                                        {/* Figma Status Pills */}
+                                                        {isSigned ? (
+                                                            <span className="px-3 py-1 bg-[#D5F7CB] text-[#1D8800] rounded-full text-xs font-bold flex items-center gap-1.5">
+                                                                <CheckCircle2 size={13} /> Assinado
+                                                            </span>
+                                                        ) : (
+                                                            <span className="px-3 py-1 bg-[#F7F1CB] text-amber-800 rounded-full text-xs font-bold flex items-center gap-1.5">
+                                                                <Clock size={13} /> Aguardando assinatura
+                                                            </span>
+                                                        )}
+
+                                                        <button 
+                                                            onClick={() => {
+                                                                const token = localStorage.getItem('token');
+                                                                const url = contract.contractUrl?.startsWith('http') ? contract.contractUrl : `${getBackendUrl()}${contract.contractUrl?.startsWith('/') ? '' : '/'}${contract.contractUrl}${contract.contractUrl?.includes('?') ? '&' : '?'}token=${token}`;
+                                                                window.open(url, '_blank');
+                                                            }} 
+                                                            className="p-2 text-slate-600 dark:text-zinc-400 hover:text-[#1A1FD3] dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-xl transition-colors border border-slate-200 dark:border-zinc-700"
+                                                            title="Abrir Contrato"
+                                                        >
+                                                            <ExternalLink size={18} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        )}
 
                         {/* VIEW: FINANCIAL */}
                         {
