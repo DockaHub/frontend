@@ -724,18 +724,27 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                         {isMenuOpen && (
                             <div className="fixed inset-0 z-[150] flex justify-end bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
                                 <div 
-                                    className="w-full max-w-sm bg-[#F3F3F3] dark:bg-zinc-900 h-full p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 shadow-2xl"
+                                    className="w-full max-w-sm bg-[#F3F3F3] dark:bg-zinc-900 h-full p-6 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 shadow-2xl relative overflow-hidden"
                                     onClick={(e) => e.stopPropagation()}
                                 >
-                                    <div className="space-y-6">
+                                    {/* Gray Burst Decoration */}
+                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/3 w-[500px] h-[500px] pointer-events-none opacity-10">
+                                        <svg viewBox="0 0 400 400" fill="none" className="w-full h-full">
+                                            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((angle, i) => (
+                                                <rect key={i} x="186" y="10" width="28" height="140" rx="14" fill="#000000" transform={`rotate(${angle} 200 200)`} />
+                                            ))}
+                                        </svg>
+                                    </div>
+
+                                    <div className="space-y-6 relative z-10">
                                         <div className="flex justify-between items-center pb-4 border-b border-slate-200 dark:border-zinc-800">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-[#1A1FD3] text-white flex items-center justify-center font-bold text-sm">
-                                                    {clientData?.name ? clientData.name[0] : 'U'}
+                                                    {clientData?.name ? clientData.name[0] : 'L'}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{clientData?.name}</p>
-                                                    <p className="text-xs text-slate-500 dark:text-zinc-400">{clientData?.email}</p>
+                                                    <p className="text-sm font-bold text-slate-900 dark:text-zinc-100">{clientData?.name || 'Levy'}</p>
+                                                    <p className="text-xs text-slate-500 dark:text-zinc-400">{clientData?.email || 'email@email.com'}</p>
                                                 </div>
                                             </div>
                                             <button 
@@ -746,7 +755,8 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                             </button>
                                         </div>
 
-                                        <div className="space-y-2">
+                                        <div className="space-y-3">
+                                            {/* Card 1: Sua conta (Figma 59:1496) */}
                                             <button
                                                 onClick={() => { setCurrentView('profile'); setIsMenuOpen(false); }}
                                                 className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
@@ -757,63 +767,61 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                                     </div>
                                                     <div>
                                                         <h4 className="text-sm font-bold text-slate-900 dark:text-white">Sua conta</h4>
-                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Mantenha seus dados atualizados.</p>
+                                                        <p className="text-[11px] text-slate-400 dark:text-zinc-400">Mantenha seus dados atualizados.</p>
                                                     </div>
                                                 </div>
                                                 <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
 
+                                            {/* Card 2: Indique a Asterysko (Figma 59:1496) */}
                                             <button
-                                                onClick={() => { setCurrentView('contracts'); setIsMenuOpen(false); }}
+                                                onClick={() => { alert('Link de indicação copiado!'); setIsMenuOpen(false); }}
                                                 className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-700 dark:text-zinc-300">
-                                                        <Shield size={18} />
+                                                    <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-[#1A1FD3]">
+                                                        <Share2 size={18} />
                                                     </div>
                                                     <div>
-                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Meus Contratos</h4>
-                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Termos e contratos de serviços.</p>
+                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Indique a Asterysko</h4>
+                                                        <p className="text-[11px] text-slate-400 dark:text-zinc-400">Ganhe bônus por indicação.</p>
                                                     </div>
                                                 </div>
                                                 <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
 
-                                            <button
-                                                onClick={() => { setCurrentView('financial'); setIsMenuOpen(false); }}
-                                                className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-700 dark:text-zinc-300">
-                                                        <FileText size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Minhas Faturas</h4>
-                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Pagamentos e mensalidades.</p>
-                                                    </div>
-                                                </div>
-                                                <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                                            </button>
+                                            {/* Grid 3 Cards (Figma 59:1496) */}
+                                            <div className="grid grid-cols-3 gap-2 pt-1">
+                                                <button
+                                                    onClick={() => { setCurrentView('support'); setIsMenuOpen(false); }}
+                                                    className="bg-white dark:bg-zinc-800 p-3 rounded-xl border border-slate-200 dark:border-zinc-700 text-center flex flex-col items-center gap-2 hover:border-[#1A1FD3] transition-all cursor-pointer"
+                                                >
+                                                    <HelpCircle size={18} className="text-slate-600 dark:text-zinc-300" />
+                                                    <span className="text-[10px] font-bold text-slate-900 dark:text-white leading-tight">Central de atendimento</span>
+                                                </button>
 
-                                            <button
-                                                onClick={() => { setCurrentView('support'); setIsMenuOpen(false); }}
-                                                className="w-full bg-white dark:bg-zinc-800/80 p-4 rounded-2xl border border-slate-200 dark:border-zinc-700/60 text-left flex items-center justify-between group hover:border-[#1A1FD3] transition-all cursor-pointer shadow-xs"
-                                            >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-zinc-700 flex items-center justify-center text-slate-700 dark:text-zinc-300">
-                                                        <HelpCircle size={18} />
-                                                    </div>
-                                                    <div>
-                                                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Central de atendimento</h4>
-                                                        <p className="text-xs text-slate-400 dark:text-zinc-400">Suporte e dúvidas frequentes.</p>
-                                                    </div>
-                                                </div>
-                                                <ChevronRight size={16} className="text-slate-400 group-hover:translate-x-0.5 transition-transform" />
-                                            </button>
+                                                <button
+                                                    onClick={() => { setCurrentView('contracts'); setIsMenuOpen(false); }}
+                                                    className="bg-white dark:bg-zinc-800 p-3 rounded-xl border border-slate-200 dark:border-zinc-700 text-center flex flex-col items-center gap-2 hover:border-[#1A1FD3] transition-all cursor-pointer"
+                                                >
+                                                    <Shield size={18} className="text-slate-600 dark:text-zinc-300" />
+                                                    <span className="text-[10px] font-bold text-slate-900 dark:text-white leading-tight">Central de clientes</span>
+                                                </button>
+
+                                                <a
+                                                    href="https://asterysko.com/transparencia"
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="bg-white dark:bg-zinc-800 p-3 rounded-xl border border-slate-200 dark:border-zinc-700 text-center flex flex-col items-center gap-2 hover:border-[#1A1FD3] transition-all cursor-pointer"
+                                                >
+                                                    <Lock size={18} className="text-slate-600 dark:text-zinc-300" />
+                                                    <span className="text-[10px] font-bold text-slate-900 dark:text-white leading-tight">Portal de transparência</span>
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="pt-6 border-t border-slate-200 dark:border-zinc-800">
+                                    <div className="pt-6 border-t border-slate-200 dark:border-zinc-800 relative z-10">
                                         <button
                                             onClick={() => {
                                                 logout();
@@ -827,55 +835,10 @@ const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, t
                                 </div>
                             </div>
                         )}
-
-                        {/* Greeting & Context Header-Changes based on View */}
-                        <div className="relative z-10 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            {currentView === 'home' && (
-                                <>
-                                    <h1 className="text-3xl font-bold text-white mb-2">Olá, {clientData?.name?.split(' ')[0]}</h1>
-                                    <p className="text-blue-100 text-base max-w-lg leading-relaxed">
-                                        Aqui você acompanha o progresso dos seus registros de marca e acessa documentos importantes em tempo real.
-                                    </p>
-                                </>
-                            )}
-                            {currentView === 'profile' && (
-                                <>
-                                    <h1 className="text-3xl font-bold text-white mb-2">Meus Dados</h1>
-                                    <p className="text-blue-100 text-base max-w-lg leading-relaxed">
-                                        Gerencie as informações cadastrais e de segurança da sua conta.
-                                    </p>
-                                </>
-                            )}
-                            {currentView === 'contracts' && (
-                                <>
-                                    <h1 className="text-3xl font-bold text-white mb-2">Meus Contratos</h1>
-                                    <p className="text-blue-100 text-base max-w-lg leading-relaxed">
-                                        Acesse e baixe todos os contratos de prestação de serviços e termos legais.
-                                    </p>
-                                </>
-                            )}
-                            {currentView === 'financial' && (
-                                <>
-                                    <h1 className="text-3xl font-bold text-white mb-2">Minhas Faturas</h1>
-                                    <p className="text-blue-100 text-base max-w-lg leading-relaxed">
-                                        Consulte suas faturas, status de pagamento e histórico de honorários.
-                                    </p>
-                                </>
-                            )}
-                            {currentView === 'support' && (
-                                <>
-                                    <h1 className="text-3xl font-bold text-white mb-2">Central de Ajuda</h1>
-                                    <p className="text-blue-100 text-base max-w-lg leading-relaxed">
-                                        Precisa de auxílio? Abra um chamado ou entre em contato direto com nossa equipe.
-                                    </p>
-                                </>
-                            )}
-                        </div>
-                    </div>
                 </div>
 
-                <div className="px-6 -mt-20 pb-12 relative z-20">
-                    <div className="max-w-4xl mx-auto">
+                {/* MAIN CONTENT SPECIFIC TO CURRENT VIEW */}
+                <div className="max-w-4xl mx-auto px-6 pb-12 relative z-10">
 
                         {/* ALERT BANNER: UNPAID INVOICES */}
                         {currentView === 'home' && financials.invoices?.some((i: any) => i.status === 'pending') && (
