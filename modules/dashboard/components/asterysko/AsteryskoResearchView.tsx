@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Loader2, AlertTriangle, CheckCircle, Info, ChevronLeft } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Info, ChevronLeft } from 'lucide-react';
 import api from '../../../../services/api';
+import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
 
 interface NclClass {
     number: number;
@@ -74,6 +75,7 @@ interface AnalysisResult {
     score: number;
     summary: string;
     conflicts: Conflict[];
+    warnings?: string[];
 }
 
 const AsteryskoResearchView: React.FC = () => {
@@ -94,7 +96,7 @@ const AsteryskoResearchView: React.FC = () => {
         setIsLoading(true);
         setResults(null);
         try {
-            const params: any = { name: searchName, ncl: selectedNcl.number };
+            const params: { name: string; ncl: number } = { name: searchName, ncl: selectedNcl.number };
             const response = await api.get('/asterysko/analysis/instant', { params });
             setResults(response.data);
         } catch (error) {
@@ -305,6 +307,11 @@ const AsteryskoResearchView: React.FC = () => {
                         
                     </div>
                 )}
+
+                {/* Área Administrativa de Governança da Base Marcária */}
+                <div className="w-full max-w-5xl mx-auto mt-8 pb-12">
+                    <AsteryskoTrademarkGovernanceArea />
+                </div>
             </div>
             
         </div>

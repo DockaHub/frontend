@@ -93,7 +93,7 @@ interface AsteryskoHomeViewProps { userName?: string; }
 
 const AsteryskoHomeView: React.FC<AsteryskoHomeViewProps> = ({ userName = 'Usuário' }) => {
   const [stats, setStats] = useState<any>(null);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [, setSearchParams] = useSearchParams();
 
   useEffect(() => {
     api.get('/asterysko/stats').then(r => setStats(r.data)).catch(() => {});
@@ -169,7 +169,7 @@ const AsteryskoHomeView: React.FC<AsteryskoHomeViewProps> = ({ userName = 'Usuá
     </svg>
   );
 
-  const filaItems = dispatches.length > 0
+  const filaItems: FilaItemProps[] = dispatches.length > 0
     ? dispatches.slice(0, 3).map((d: any) => ({
         icon: renderDispatchIcon(d.type),
         client: d.brand,

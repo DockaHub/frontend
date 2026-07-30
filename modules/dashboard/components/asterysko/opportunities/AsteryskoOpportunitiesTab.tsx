@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Plus, Search, RefreshCw, Send, AlertOctagon,
-    ChevronLeft, ChevronRight, Eye, Loader2
+    ChevronLeft, ChevronRight, Eye, Loader2, Zap
 } from 'lucide-react';
 import api from '../../../../../services/api';
 import { AsteryskoNewOpportunityModal } from './AsteryskoNewOpportunityModal';
@@ -11,6 +11,12 @@ import {
 } from './AsteryskoOpportunityDetailsModal';
 import { AsteryskoDiscardModal } from './AsteryskoDiscardModal';
 import { AsteryskoSendToCrmModal } from './AsteryskoSendToCrmModal';
+import { AsteryskoEngineModal } from './AsteryskoEngineModal';
+import {
+    AsteryskoOpportunity,
+    OpportunityCounts,
+    OpportunityListResponse
+} from './asteryskoApiTypes';
 
 interface Props {
     organizationId?: string;
@@ -24,8 +30,8 @@ const opportunityCountsCache = new Map<string, { data: any; expiresAt: number }>
 
 export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onTotalChange }) => {
     const [loading, setLoading] = useState(false);
-    const [items, setItems] = useState<any[]>([]);
-    const [counts, setCounts] = useState({
+    const [items, setItems] = useState<AsteryskoOpportunity[]>([]);
+    const [counts, setCounts] = useState<OpportunityCounts>({
         total: 0,
         review: 0,
         qualified: 0,
@@ -51,7 +57,8 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isDiscardOpen, setIsDiscardOpen] = useState(false);
     const [isSendToCrmOpen, setIsSendToCrmOpen] = useState(false);
-    const [actionTargetOpp, setActionTargetOpp] = useState<any>(null);
+    const [isEngineModalOpen, setIsEngineModalOpen] = useState(false);
+    const [actionTargetOpp, setActionTargetOpp] = useState<AsteryskoOpportunity | null>(null);
 
     const loadData = useCallback(async (force = false) => {
         if (!organizationId) {
@@ -143,12 +150,12 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
         setIsDetailsOpen(true);
     };
 
-    const openDiscard = (opp: any) => {
+    const openDiscard = (opp: AsteryskoOpportunity) => {
         setActionTargetOpp(opp);
         setIsDiscardOpen(true);
     };
 
-    const openSendToCrm = (opp: any) => {
+    const openSendToCrm = (opp: AsteryskoOpportunity) => {
         setActionTargetOpp(opp);
         setIsSendToCrmOpen(true);
     };
@@ -193,6 +200,13 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                         title="Atualizar lista"
                     >
                         <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                    <button
+                        onClick={() => setIsEngineModalOpen(true)}
+                        className="px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                        title="Motor de Captação"
+                    >
+                        <Zap size={14} /> Motor
                     </button>
                     <button
                         onClick={() => setIsNewModalOpen(true)}
@@ -482,6 +496,11 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                 organizationId={organizationId}
                 onClose={() => setIsSendToCrmOpen(false)}
                 onSentToCrm={() => void loadData(true)}
+            />
+
+            <AsteryskoEngineModal
+                isOpen={isEngineModalOpen}
+                onClose={() => setIsEngineModalOpen(false)}
             />
         </div>
     );

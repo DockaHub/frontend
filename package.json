@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "typecheck:asterysko": "tsc --noEmit -p tsconfig.asterysko.json",
+    "check:asterysko-regression": "node scripts/check-asterysko-regression.mjs",
     "preview": "vite preview",
     "electron:dev": "cross-env NODE_ENV=development electron .",
     "electron:build": "vite build && electron-builder"

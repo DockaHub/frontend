@@ -106,7 +106,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
             const payload = {
                 ...selectedPlan,
                 value: Number(selectedPlan.value),
-                officialTax: selectedPlan.officialTax ? Number(selectedPlan.officialPlan) : null,
+                officialTax: selectedPlan.officialTax ? Number(selectedPlan.officialTax) : null,
                 commissionSales: Number(selectedPlan.commissionSales || 0),
                 commissionOps: Number(selectedPlan.commissionOps || 0)
             };
@@ -1421,7 +1421,7 @@ const WhatsAppCard: React.FC = () => {
                                 <h4 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-1">WhatsApp Desconectado</h4>
                                 <p className="text-xs text-docka-500 mb-6">Conecte seu número para que o Asterysko possa enviar atualizações de processos aos seus clientes via WhatsApp.</p>
                                 <button
-                                    onClick={handleConnect}
+                                    onClick={() => handleConnect()}
                                     disabled={checking}
                                     className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                                 >

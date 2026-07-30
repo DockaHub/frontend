@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Scale, FileText, AlertCircle, Clock, CheckCircle2, TrendingUp, ArrowRight } from 'lucide-react';
+import { Scale, FileText, AlertCircle, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 import api from '../../../../services/api';
 import DashboardPage from '../../../../components/DashboardPage';
 

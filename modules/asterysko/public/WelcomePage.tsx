@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Mail, Lock, ArrowRight, CheckCircle2, AlertCircle, Loader2, Eye, EyeOff, Sun, Moon } from 'lucide-react';
+import { Lock, ArrowRight, CheckCircle2, AlertCircle, Loader2, Eye, EyeOff, Sun, Moon } from 'lucide-react';
 import api from '../../../services/api';
+import { getApiErrorMessage } from '../../dashboard/components/asterysko/opportunities/asteryskoApiTypes';
 
 interface WelcomePageProps {
     theme?: 'light' | 'dark';
@@ -61,7 +62,7 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ theme, onToggleTheme }) => {
             try {
                 await api.get(`/auth/reset-password/validate?token=${token}`);
                 setValidating(false);
-            } catch (err: any) {
+            } catch {
                 setError('Link expirado ou inválido. Solicite um novo acesso ao suporte.');
                 setValidating(false);
             }
@@ -94,8 +95,8 @@ const WelcomePage: React.FC<WelcomePageProps> = ({ theme, onToggleTheme }) => {
                 navigate('/portal');
             }, 3000);
 
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Erro ao definir senha. Tente novamente.');
+        } catch (error: unknown) {
+            setError(getApiErrorMessage(error, 'Erro ao definir senha. Tente novamente.'));
         } finally {
             setLoading(false);
         }

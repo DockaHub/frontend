@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, Lock, Clock, ArrowLeft } from 'lucide-react';
+import { Target, Clock } from 'lucide-react';
 
 interface Props {
     organization?: any;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, Clock, AlertTriangle, Plus, Search, Filter, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, Download, FileText, CheckCircle2, X, Receipt } from 'lucide-react';
+import { DollarSign, CreditCard, Clock, AlertTriangle, Plus, Search, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, X, Receipt } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 

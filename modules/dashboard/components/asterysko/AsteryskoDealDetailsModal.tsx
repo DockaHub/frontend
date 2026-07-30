@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, FileText, Plus, MoreVertical, Clock, Paperclip, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, FileSignature, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon } from 'lucide-react';
+import { X, Check, FileText, Plus, MoreVertical, Clock, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 import { forceDownloadFile } from './utils/fileDownload';
@@ -22,7 +22,6 @@ interface Props {
     onUpdate?: () => void;
 }
 
-const steps = ['Novos Leads', 'Preparação', 'Viabilidade', 'Contrato', 'Pagamento Serviço', 'Procuração/Docs', 'Taxa Federal (GRU)', 'A Protocolar', 'Protocolado (RPI)', 'Exame de Mérito', 'Oposição / Exigência', 'Deferida', 'Concluído'];
 const stepsKeys = ['leads', 'preparation', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
 
 const getStatusLabel = (status: string) => {
@@ -624,7 +623,6 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const sourceTag = currentDeal?.tags?.find((t: any) => typeof t === 'string' ? t.toLowerCase().includes('site') : t.label?.toLowerCase().includes('site')) ? 'Site' : 'Manual';
     const priority = currentDeal?.priority === 'high' ? 'Alta' : currentDeal?.priority === 'low' ? 'Baixa' : 'Normal';
     const assignedUser = currentDeal?.assignedUser?.name || currentDeal?.assignedUserName || 'Sem dono';
-    const currentStepIdx = stepsKeys.indexOf(currentDeal?.status) >= 0 ? stepsKeys.indexOf(currentDeal?.status) : 0;
     const nextActionInfo = getNextAction(currentDeal?.status);
 
     // Financial totals

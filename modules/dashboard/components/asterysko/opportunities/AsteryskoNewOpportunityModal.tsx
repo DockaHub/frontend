@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
 import { X, Loader2, AlertTriangle, Building2, Globe, Tag } from 'lucide-react';
 import api from '../../../../../services/api';
+import {
+    AsteryskoOpportunity,
+    DuplicateWarning,
+    getApiErrorMessage
+} from './asteryskoApiTypes';
 
 interface Props {
     isOpen: boolean;
     organizationId?: string;
     onClose: () => void;
-    onCreated: (newOpp: any) => void;
+    onCreated: (newOpp: AsteryskoOpportunity) => void;
 }
 
 
 
 export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organizationId, onClose, onCreated }) => {
     const [loading, setLoading] = useState(false);
-    const [, setCheckingDuplicate] = useState(false);
+    const [checkingDuplicate, setCheckingDuplicate] = useState(false);
     const [duplicateWarning, setDuplicateWarning] = useState<any>(null);
 
     const [brandName, setBrandName] = useState('');
@@ -35,7 +40,7 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
         if (!organizationId || (!brandName.trim() && !cnpj.trim() && !website.trim())) return;
         setCheckingDuplicate(true);
         try {
-            const { data } = await api.post('/asterysko/opportunities/check-duplicate', {
+            const { data } = await api.post<DuplicateWarning>('/asterysko/opportunities/check-duplicate', {
                 brandName,
                 cnpj,
                 website
@@ -67,7 +72,7 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
 
         setLoading(true);
         try {
-            const { data } = await api.post('/asterysko/opportunities', {
+            const { data } = await api.post<AsteryskoOpportunity>('/asterysko/opportunities', {
                 brandName: brandName.trim(),
                 companyName: companyName.trim() || undefined,
                 tradeName: tradeName.trim() || undefined,
@@ -87,9 +92,8 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
             alert(`Oportunidade ${data.code} criada com sucesso em "Para analisar"!`);
             onCreated(data);
             onClose();
-        } catch (error: any) {
-            console.error('Failed to create opportunity', error);
-            alert(error.response?.data?.error || 'Falha ao criar oportunidade.');
+        } catch (error: unknown) {
+            alert(getApiErrorMessage(error, 'Falha ao criar oportunidade.'));
         } finally {
             setLoading(false);
         }
@@ -125,8 +129,8 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
                             <div>
                                 <p className="font-bold">Possível duplicidade identificada:</p>
                                 <ul className="list-disc list-inside mt-1 space-y-1">
-                                    {duplicateWarning.warnings.map((w: any, idx: number) => (
-                                        <li key={idx}>{w.message}</li>
+                                    {duplicateWarning.warnings.map((warning, idx) => (
+                                        <li key={idx}>{warning.message}</li>
                                     ))}
                                 </ul>
                                 <p className="mt-2 font-medium text-[11px]">Você pode ajustar os dados ou prosseguir caso trate-se de uma oportunidade diferente.</p>
@@ -153,6 +157,11 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
                                 placeholder="Ex: Asterysko, Nexus Tech..."
                                 className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm font-semibold text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0412dd] transition-all"
                             />
+                            {checkingDuplicate && (
+                                <p className="mt-1 text-[11px] text-zinc-500 flex items-center gap-1">
+                                    <Loader2 size={11} className="animate-spin" /> Verificando duplicidade...
+                                </p>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -308,6 +317,18 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
                                 value={summary}
                                 onChange={(e) => setSummary(e.target.value)}
                                 placeholder="Breve contexto explicativo..."
+                                className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0412dd]"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+                                Notas internas
+                            </label>
+                            <textarea
+                                rows={2}
+                                value={internalNotes}
+                                onChange={(e) => setInternalNotes(e.target.value)}
+                                placeholder="Observações restritas à equipe interna..."
                                 className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#0412dd]"
                             />
                         </div>

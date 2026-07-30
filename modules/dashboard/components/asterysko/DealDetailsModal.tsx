@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Tag, User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, Copy, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff, Search as SearchIcon, Edit2, Pencil } from 'lucide-react';
+import { User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff, Search as SearchIcon, Edit2 } from 'lucide-react';
 import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
@@ -63,7 +63,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
     const [comments, setComments] = useState<DealComment[]>([]);
     const [newComment, setNewComment] = useState('');
-    const [loadingComments, setLoadingComments] = useState(false);
+    const [, setLoadingComments] = useState(false);
     const [showConfirmConvert, setShowConfirmConvert] = useState(false);
     const [showProtocolModal, setShowProtocolModal] = useState(false);
     const [protocolFile, setProtocolFile] = useState<File | null>(null);
@@ -76,6 +76,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [tempProcessData, setTempProcessData] = useState<any>({});
 
     const handleSendReminder = async () => {
+        if (!deal) return;
         setSendingReminder(true);
         try {
             await api.post(`/asterysko/crm/deals/${deal.id}/reminder`);
@@ -96,6 +97,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     };
 
     const handleProtocolConfirm = async () => {
+        if (!deal) return;
         console.log('Iniciando confirmação de protocolo...', { protocolFile, processId: processData?.id });
 
         if (!protocolFile) {
@@ -134,7 +136,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     };
 
     const handleUpdateProcess = async () => {
-        if (!processData?.id) return;
+        if (!processData?.id || !deal) return;
         setLoading(true);
         try {
             if (processData.id === 'new') {
@@ -284,9 +286,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         }
     };
 
-    // Permissions logic
-    const isAdmin = user?.role === 'admin' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
-
     // Status Translation Map
     const statusMap: Record<string, string> = {
         leads: 'Novo Lead',
@@ -311,7 +310,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
 
     // Form State
     const [formData, setFormData] = useState<any>({});
-    const [plans, setPlans] = useState<any[]>([]);
     const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
     
     // Linked Data State
@@ -321,8 +319,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [activities, setActivities] = useState<any[]>([]);
 
     useEffect(() => {
-        api.get('/asterysko/plans').then(res => setPlans(res.data)).catch(err => console.error('Error loading plans:', err));
-        
         if (organization?.id) {
             api.get(`/organizations/${organization.id}/members`)
                 .then(res => {
@@ -333,20 +329,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
         }
     }, [organization?.id]);
 
-    const handleFeeSelect = (feeId: string) => {
-        const fee = plans.find(f => f.id === feeId);
-        if (fee) {
-            const formattedValue = Number(fee.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-            setFormData({ ...formData, value: formattedValue });
-            handleAutoSave('value', fee.value);
-            const currentTags = formData.tags || [];
-            if (!currentTags.some((t: any) => t.label === fee.name)) {
-                handleAutoSave('tags', [...currentTags, { label: fee.name, color: 'bg-blue-100 text-blue-700' }]);
-            }
-        }
-    };
-
-    const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         if (deal && isOpen) {
@@ -574,8 +557,6 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
             setLoading(false);
         }
     };
-
-    const getInitials = (name: string) => name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
 
     const copyToClipboard = (text: string, label: string) => {
         navigator.clipboard.writeText(text);

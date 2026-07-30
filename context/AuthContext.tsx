@@ -15,6 +15,26 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const normalizeRole = (role?: string): User['role'] => {
+    switch ((role || 'user').toUpperCase()) {
+        case 'ADMIN':
+            return 'ADMIN';
+        case 'CLIENT':
+            return 'CLIENT';
+        case 'OWNER':
+            return 'OWNER';
+        case 'SUPER_ADMIN':
+            return 'SUPER_ADMIN';
+        default:
+            return 'user';
+    }
+};
+
+const normalizeUser = (source: Omit<User, 'role'> & { role?: string }): User => ({
+    ...source,
+    role: normalizeRole(source.role),
+});
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -45,13 +65,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             if (storedUser && !urlToken) {
                 // 1. Set initial state from storage (fast load)
-                const normalizedStored = { ...storedUser, role: (storedUser.role || 'user').toUpperCase() };
+                const normalizedStored = normalizeUser(storedUser);
                 setUser(normalizedStored);
 
                 // 2. Fetch latest data from API (background refresh)
                 try {
                     const data = await authService.getCurrentUser();
-                    const normalizedUser = { ...data, role: (data.role || 'user').toUpperCase() };
+                    const normalizedUser = normalizeUser(data);
                     setUser(normalizedUser);
                     localStorage.setItem('user', JSON.stringify(normalizedUser)); // Update storage
                 } catch (error) {
@@ -64,7 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 // Handle case where we have a token (either from storage or URL) but no user object
                 try {
                     const data = await authService.getCurrentUser();
-                    const normalizedUser = { ...data, role: (data.role || 'user').toUpperCase() };
+                    const normalizedUser = normalizeUser(data);
                     setUser(normalizedUser);
                     localStorage.setItem('user', JSON.stringify(normalizedUser));
                     socketService.connect();
@@ -82,7 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const refreshUser = async () => {
         try {
             const data = await authService.getCurrentUser();
-            const normalizedUser = { ...data, role: (data.role || 'user').toUpperCase() };
+            const normalizedUser = normalizeUser(data);
             setUser(normalizedUser);
             localStorage.setItem('user', JSON.stringify(normalizedUser));
         } catch (error) {
@@ -94,7 +114,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const response = await authService.login(credentials);
             if (response.user && response.token) {
-                const normalizedUser = { ...response.user, role: (response.user.role || 'user').toUpperCase() };
+                const normalizedUser = normalizeUser(response.user);
                 setUser(normalizedUser);
                 localStorage.setItem('user', JSON.stringify(normalizedUser));
             }
@@ -108,7 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         try {
             const response = await authService.register(data);
             if (response.user && response.token) {
-                const normalizedUser = { ...response.user, role: (response.user.role || 'user').toUpperCase() };
+                const normalizedUser = normalizeUser(response.user);
                 setUser(normalizedUser);
                 localStorage.setItem('user', JSON.stringify(normalizedUser));
             }

@@ -327,6 +327,7 @@ export interface KanbanTag {
 
 export interface KanbanCardData {
   id: string;
+  clientId?: string;
   title: string; // Company Name or Project Name
   subtitle?: string; // Contact person or Next Step
   value?: string; // Deal value

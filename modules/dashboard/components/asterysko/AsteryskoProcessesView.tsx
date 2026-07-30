@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Loader2, X, User, Mail, Phone, MapPin, Calendar, FileText } from 'lucide-react';
+import { Plus, MoreVertical, Loader2, X, Mail, Phone, MapPin, Calendar, FileText } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewProcessModal from './AsteryskoNewProcessModal';
