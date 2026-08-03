@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, Download } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
@@ -27,13 +27,28 @@ const DEFAULT_DOCUMENTS = [
     { name: 'Logomarca', key: 'logo', icon: 'processo_documentos-imgGroup3.svg' },
 ];
 
-const TIMELINE = [
-    { title: 'Aguardando exame de mérito', description: 'Contrato eletrônico assinado com sucesso.', date: '14 jan. 2026', icon: 'processo_detalhes-imgPhHandDeposit.svg' },
-    { title: 'Protocolo realizado', description: 'Contrato eletrônico assinado com sucesso.', date: '13 jan. 2026', icon: 'processo_detalhes-imgGroup2.svg' },
-    { title: 'Procuração assinada', description: 'Recebemos o documento assinado.', date: '12 jan. 2026', icon: 'processo_detalhes-imgMdiSign.svg' },
-    { title: 'Pagamento confirmado', description: 'Identificamos o pagamento com sucesso.', date: '12 jan. 2026', icon: 'processo_detalhes-imgFluentPayment16Regular1.svg' },
-    { title: 'Contrato assinado', description: 'Contrato eletrônico assinado com sucesso.', date: '12 jan. 2026', icon: 'processo_detalhes-imgMdiSign1.svg' },
-];
+const PROCESS_STATUS_LABELS: Record<string, string> = {
+    WAITING_PAYMENT: 'Aguardando pagamento',
+    NEW: 'Processo iniciado',
+    STARTED: 'Processo iniciado',
+    FILED: 'Protocolo realizado',
+    PROTOCOL: 'Protocolo realizado',
+    EXAMINATION: 'Aguardando exame de mérito',
+    EXAM_MERIT: 'Aguardando exame de mérito',
+    OPPOSITION: 'Oposição ou exigência',
+    GRANTED: 'Registro concedido',
+    WON: 'Processo concluído',
+    ARCHIVED: 'Processo arquivado',
+};
+
+const TIMELINE_ICONS: Record<string, string> = {
+    contract_signed: 'processo_detalhes-imgMdiSign1.svg',
+    payment_confirmed: 'processo_detalhes-imgFluentPayment16Regular1.svg',
+    filed: 'processo_detalhes-imgGroup2.svg',
+    certificate: 'processo_detalhes-imgPhHandDeposit.svg',
+    status: 'processo_detalhes-imgPhHandDeposit.svg',
+    created: 'processo_detalhes-imgGroup2.svg',
+};
 
 const getValue = (...values: any[]) => values.find(value => value !== undefined && value !== null && value !== '') ?? '';
 
@@ -49,7 +64,28 @@ const formatDate = (value: unknown, fallback = '09/07/2026') => {
     if (!value) return fallback;
     const date = new Date(String(value));
     if (Number.isNaN(date.getTime())) return String(value);
-    return new Intl.DateTimeFormat('pt-BR').format(date);
+    return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(date);
+};
+
+const formatTimelineDate = (value: unknown) => {
+    if (!value) return 'Data não informada';
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return String(value);
+    const parts = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).formatToParts(date);
+    const part = (type: Intl.DateTimeFormatPartTypes) => parts.find(item => item.type === type)?.value || '';
+    return `${part('day')} ${part('month').replace('.', '')}. ${part('year')}`;
+};
+
+const getProcessStatusLabel = (status: unknown) => PROCESS_STATUS_LABELS[String(status || '').toUpperCase()] || 'Em andamento';
+
+const getTimelineIcon = (item: any) => {
+    const searchable = `${item?.type || ''} ${item?.code || ''} ${item?.title || ''}`.toLowerCase();
+    if (/contract|contrato/.test(searchable)) return TIMELINE_ICONS.contract_signed;
+    if (/payment|pagamento|invoice|fatura/.test(searchable)) return TIMELINE_ICONS.payment_confirmed;
+    if (/proxy|procura/.test(searchable)) return 'processo_detalhes-imgMdiSign.svg';
+    if (/filed|protocol/.test(searchable)) return TIMELINE_ICONS.filed;
+    if (/certificate|certificado|granted|concedido/.test(searchable)) return TIMELINE_ICONS.certificate;
+    return TIMELINE_ICONS[item?.type] || TIMELINE_ICONS.status;
 };
 
 const getInitialView = (): PortalView => {
@@ -133,7 +169,13 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 client?.brands?.forEach((brand: any) => {
                     brand.processes?.forEach((process: any) => {
                         const id = String(process.id || `${brand.id}-${processMap.size}`);
-                        if (!processMap.has(id)) processMap.set(id, { ...process, brandName: brand.name, brandLogo: brand.logoUrl });
+                        if (!processMap.has(id)) processMap.set(id, {
+                            ...process,
+                            brandName: brand.name,
+                            brandLogo: brand.logoUrl,
+                            presentation: process.presentation || brand.presentation,
+                            nclClasses: process.nclClasses?.length ? process.nclClasses : brand.nclClasses,
+                        });
                     });
                 });
                 const loadedProcesses = Array.from(processMap.values());
@@ -147,7 +189,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     window.location.replace('/portal/login');
                     return;
                 }
-                setError('Não foi possível carregar os dados do portal. Exibimos uma prévia enquanto você tenta novamente.');
+                setError('Não foi possível carregar os dados do portal. Tente novamente em alguns instantes.');
             } finally {
                 setLoading(false);
             }
@@ -172,14 +214,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [menuOpen]);
 
-    const displayedProcesses = useMemo(() => processes.length ? processes : [
-        { id: 'preview-one', brandName: 'Litorânea Tendas', status: 'EXAM_MERIT' },
-        { id: 'preview-two', brandName: 'Litorânea Tendas', status: 'STARTED' },
-    ], [processes]);
+    const displayedProcesses = processes;
 
     const clientName = String(getValue(clientData?.name, user?.name, 'Levy'));
     const firstName = clientName.split(/\s+/)[0];
-    const brandName = String(getValue(selectedProcess?.brandName, displayedProcesses[0]?.brandName, 'Litorânea Tendas'));
+    const brandName = String(getValue(selectedProcess?.brandName, displayedProcesses[0]?.brandName, 'Sua marca'));
     const companyName = String(getValue(clientData?.companyName, clientData?.legalName, clientData?.company?.legalName, 'Fauves LTDA'));
     const invoices = financials.invoices as any[];
     const contracts = financials.contracts as any[];
@@ -263,12 +302,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         <div className="ast-home-processes">
                             {displayedProcesses.map((process, index) => {
-                                const processName = String(getValue(process.brandName, 'Litorânea Tendas'));
-                                const status = String(process.status || '').toUpperCase();
+                                const processName = String(getValue(process.brandName, 'Sua marca'));
                                 return (
                                     <button className="ast-process-card" key={process.id || index} type="button" onClick={() => openProcess(process)}>
                                         <span className="ast-process-card__status">
-                                            {status.includes('MERIT') || index === 0 ? 'Aguardando exame de mérito' : 'Processo iniciado'}
+                                            {getProcessStatusLabel(process.status)}
                                         </span>
                                         <span className="ast-process-card__spacer" />
                                         <span className="ast-process-card__body">
@@ -280,6 +318,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     </button>
                                 );
                             })}
+                            {!loading && !displayedProcesses.length && (
+                                <p className="ast-empty-note">Nenhum processo foi vinculado ao seu cadastro ainda.</p>
+                            )}
                             <a className="ast-new-process-card" href="https://asterysko.com/nova-marca" target="_blank" rel="noreferrer">
                                 <img src={`${ASSET_ROOT}/home-imgFormkitAdd.svg`} alt="" />
                                 <span>Registrar uma nova marca</span>
@@ -411,9 +452,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     <h2 className="ast-card-title">Informações gerais</h2>
                                     <div className="ast-info-card__body">
                                         {[
-                                            ['Apresentação', getValue(selectedProcess?.presentation, selectedProcess?.type, 'Mista')],
-                                            ['Classificação NCL', getValue(selectedProcess?.nclClass, selectedProcess?.class, 'Classe 35')],
-                                            ['Data do protocolo', getValue(selectedProcess?.protocolDate, 'Classe 35')],
+                                            ['Apresentação', getValue(selectedProcess?.presentation, 'Não informada')],
+                                            ['Classificação NCL', Array.isArray(selectedProcess?.nclClasses) && selectedProcess.nclClasses.length
+                                                ? selectedProcess.nclClasses.map((item: string) => /^classe/i.test(item) ? item : `Classe ${item}`).join(', ')
+                                                : getValue(selectedProcess?.nclClass, 'Não informada')],
+                                            ['Data do protocolo', formatDate(selectedProcess?.filingDate, 'Não informada')],
                                         ].map(([label, value]) => (
                                             <div className="ast-info-row" key={String(label)}><strong>{label}</strong><small>{String(value)}</small></div>
                                         ))}
@@ -423,13 +466,18 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 <article className="ast-timeline-card">
                                     <h2 className="ast-card-title">Andamento</h2>
                                     <div className="ast-timeline-card__body">
-                                        {TIMELINE.map(item => (
-                                            <div className="ast-timeline-row" key={item.title}>
-                                                <span className="ast-timeline-row__icon"><img src={`${ASSET_ROOT}/${item.icon}`} alt="" /></span>
-                                                <span><strong>{item.title}</strong><small>{item.description}</small></span>
-                                                <time>{item.date}</time>
+                                        {(Array.isArray(selectedProcess?.timeline) ? selectedProcess.timeline : []).map((item: any, index: number) => (
+                                            <div className="ast-timeline-row" key={item.id || `${item.title}-${index}`}>
+                                                <span className="ast-timeline-row__icon"><img src={`${ASSET_ROOT}/${getTimelineIcon(item)}`} alt="" /></span>
+                                                <div className="ast-timeline-row__details">
+                                                    <span className="ast-timeline-row__copy"><strong>{item.title}</strong><small>{item.description}</small></span>
+                                                    <time dateTime={item.date ? new Date(item.date).toISOString() : undefined}>{formatTimelineDate(item.date)}</time>
+                                                </div>
                                             </div>
                                         ))}
+                                        {(!Array.isArray(selectedProcess?.timeline) || !selectedProcess.timeline.length) && (
+                                            <p className="ast-timeline-empty">Nenhum andamento registrado até o momento.</p>
+                                        )}
                                     </div>
                                 </article>
                             </div>
