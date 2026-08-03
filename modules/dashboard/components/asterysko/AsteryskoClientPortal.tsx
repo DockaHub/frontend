@@ -90,7 +90,6 @@ const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab:
 
 export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit }) => {
     const { user, logout } = useAuth();
-    useSystemBarColor('#f3f3f3');
     const [view, setView] = useState<PortalView>(getInitialView);
     const [processTab, setProcessTab] = useState<ProcessTab>('details');
     const [clientData, setClientData] = useState<any>(null);
@@ -104,6 +103,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [viewLeaving, setViewLeaving] = useState(false);
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
+
+    useSystemBarColor(view === 'details' ? '#ffffff' : '#f3f3f3');
 
     useEffect(() => {
         const urlToken = new URLSearchParams(window.location.search).get('token');

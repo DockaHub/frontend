@@ -487,8 +487,11 @@
   margin: 28px -26px 0;
   padding: 0 26px 14px;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 26px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ast-home-processes::-webkit-scrollbar,
@@ -596,8 +599,14 @@
   display: flex;
   gap: 10px;
   margin-right: -26px;
+  margin-left: -26px;
+  padding: 0 26px 8px;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-padding-inline: 26px;
+  scroll-snap-type: x proximity;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .ast-benefit-card {
@@ -608,6 +617,7 @@
   border-radius: 10px;
   background: #0d1e1d;
   color: #fff;
+  scroll-snap-align: start;
   overflow: hidden;
 }
 
@@ -723,9 +733,9 @@
 .ast-process-page { max-width: 920px; margin: -54px auto 0; }
 
 .ast-process-hero {
-  min-height: 179px;
+  min-height: 168px;
   margin: 0 -26px;
-  padding: 68px 27px 20px;
+  padding: max(24px, calc(env(safe-area-inset-top) + 14px)) 27px 22px;
   background: #fff;
 }
 
@@ -1060,6 +1070,107 @@
   to { opacity: 1; transform: rotate(0) scale(1); }
 }
 
+@media (max-width: 719px) {
+  .ast-portal__stage,
+  .ast-menu-overlay {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  .ast-portal__intro h1,
+  .ast-section-heading h1,
+  .ast-process-hero h1 {
+    font-size: 32px;
+    line-height: 1.08;
+  }
+
+  .ast-portal__intro p,
+  .ast-section-heading p {
+    font-size: 16px;
+    line-height: 1.4;
+  }
+
+  .ast-process-card__status { font-size: 12px; }
+  .ast-process-card__logo { font-size: 13px; }
+  .ast-process-card__name { font-size: 22px; }
+  .ast-new-process-card span { width: 110px; font-size: 16px; line-height: 1.2; }
+
+  .ast-protection-banner strong { font-size: 16px; line-height: 1.25; }
+  .ast-protection-banner span { color: #b8c6ff; font-size: 14px; line-height: 1.3; }
+  .ast-benefits > h2 { font-size: 18px; font-weight: 500; }
+  .ast-benefit-card { height: 145px; }
+  .ast-benefit-card__image { height: 105px; }
+  .ast-benefit-card__shade { inset: 55px 0 0; }
+  .ast-benefit-card__tag { font-size: 9px; }
+  .ast-benefit-card h3 { font-size: 22px; }
+  .ast-benefit-card p { font-size: 12px; line-height: 1.2; }
+
+  .ast-card-title {
+    min-height: 42px;
+    padding-top: 11px;
+    padding-bottom: 11px;
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  .ast-data-row { min-height: 72px; }
+  .ast-data-row strong,
+  .ast-contract-card__body strong,
+  .ast-info-row strong,
+  .ast-payment-card__account strong,
+  .ast-history-row strong,
+  .ast-document-card strong { font-size: 15px; line-height: 1.25; }
+
+  .ast-data-row small,
+  .ast-contract-card__body small,
+  .ast-info-row small,
+  .ast-payment-card__account small,
+  .ast-history-row small,
+  .ast-document-card small { font-size: 14px; line-height: 1.3; }
+
+  .ast-data-row button,
+  .ast-contract-card__status,
+  .ast-payment-card__copy p,
+  .ast-payment-card__action { font-size: 14px; }
+
+  .ast-contract-card { min-height: 116px; }
+  .ast-contract-card__status { height: 42px; }
+  .ast-contract-card__body { min-height: 74px; }
+
+  .ast-status-pill { min-width: 56px; height: 28px; font-size: 12px; }
+  .ast-process-tab { height: 46px; font-size: 15px; }
+  .ast-info-row { min-height: 72px; }
+
+  .ast-timeline-row {
+    min-height: 66px;
+    grid-template-columns: 30px minmax(0, 1fr);
+  }
+
+  .ast-timeline-row strong { font-size: 14px; line-height: 1.22; }
+  .ast-timeline-row small { font-size: 12px; line-height: 1.25; }
+  .ast-timeline-row time {
+    grid-column: 2;
+    width: max-content;
+    margin-top: 4px;
+    font-size: 11px;
+  }
+
+  .ast-payment-card__copy { padding-top: 16px; padding-bottom: 16px; }
+  .ast-payment-card__copy p { line-height: 1.45; }
+  .ast-history-row { min-height: 98px; }
+  .ast-history-row__status { font-size: 11px; }
+  .ast-document-card { min-height: 76px; }
+  .ast-empty-note { font-size: 15px; line-height: 1.4; }
+
+  .ast-menu-account { height: 76px; }
+  .ast-menu-account strong { font-size: 16px; }
+  .ast-menu-account small { font-size: 13px; }
+  .ast-menu-referral,
+  .ast-menu-logout { height: 52px; font-size: 15px; }
+  .ast-menu-link { height: 108px; }
+  .ast-menu-link span { max-width: 90px; font-size: 14px; line-height: 1.15; }
+}
+
 @media (min-width: 720px) {
   .ast-auth__stage {
     display: block;
@@ -1091,12 +1202,12 @@
   .ast-home-processes { margin-right: 0; margin-left: 0; padding: 0 0 16px; }
   .ast-process-card, .ast-new-process-card { width: 220px; flex-basis: 220px; }
   .ast-protection-banner { max-width: 760px; }
-  .ast-benefit-row { margin-right: 0; }
+  .ast-benefit-row { margin-right: 0; margin-left: 0; padding-right: 0; padding-left: 0; }
   .ast-benefit-card { width: 220px; flex-basis: 220px; }
   .ast-home-burst { margin-bottom: -155px; }
   .ast-section-page { margin-top: 0; padding-top: 10px; }
   .ast-process-page { margin-top: -56px; }
-  .ast-process-hero { margin: 0 -40px; padding-right: 40px; padding-left: 40px; }
+  .ast-process-hero { margin: 0 -40px; padding: 68px 40px 20px; }
   .ast-process-tabs { margin-right: 0; margin-left: 0; padding-right: 0; padding-left: 0; }
   .ast-process-content--details { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); align-items: start; }
   .ast-menu-panel { padding-top: 46px; }
@@ -1112,7 +1223,8 @@
   .ast-otp-fields { gap: 6px; }
   .ast-otp-fields input { border-radius: 17px; }
   .ast-portal__stage { padding-right: 18px; padding-left: 18px; }
-  .ast-home-processes { margin-right: -18px; margin-left: -18px; padding-right: 18px; padding-left: 18px; }
+  .ast-home-processes { margin-right: -18px; margin-left: -18px; padding-right: 18px; padding-left: 18px; scroll-padding-inline: 18px; }
+  .ast-benefit-row { margin-right: -18px; margin-left: -18px; padding-right: 18px; padding-left: 18px; scroll-padding-inline: 18px; }
   .ast-process-hero { margin-right: -18px; margin-left: -18px; }
   .ast-process-tabs { margin-right: -18px; margin-left: -18px; padding-right: 18px; padding-left: 18px; }
   .ast-menu-panel { padding-right: 18px; padding-left: 18px; }
