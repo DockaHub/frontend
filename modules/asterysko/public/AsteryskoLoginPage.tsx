@@ -14,6 +14,9 @@ type LoginStep = 'selection' | 'identifier' | 'otp';
 type LoginType = 'phone' | 'email';
 
 const ASSET_ROOT = '/assets/asterysko';
+const OTP_LENGTH = 6;
+
+const createEmptyOtp = () => Array<string>(OTP_LENGTH).fill('');
 
 const formatPhoneMask = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
@@ -30,7 +33,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [sentIdentifier, setSentIdentifier] = useState('');
-    const [otp, setOtp] = useState(['', '', '', '', '']);
+    const [otp, setOtp] = useState(createEmptyOtp);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
@@ -63,7 +66,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
         try {
             await api.post('/auth/request-otp', { identifier });
             setSentIdentifier(identifier);
-            setOtp(['', '', '', '', '']);
+            setOtp(createEmptyOtp());
             setStep('otp');
             window.setTimeout(() => otpRefs.current[0]?.focus(), 50);
         } catch (requestError: any) {
@@ -74,7 +77,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     };
 
     const submitOtp = async (code: string) => {
-        if (loading || code.length !== 5) return;
+        if (loading || code.length !== OTP_LENGTH) return;
         setError('');
         setLoading(true);
         try {
@@ -95,8 +98,19 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
         const next = [...otp];
         next[index] = value;
         setOtp(next);
-        if (value && index < 4) otpRefs.current[index + 1]?.focus();
-        if (value && index === 4 && next.every(Boolean)) void submitOtp(next.join(''));
+        if (value && index < OTP_LENGTH - 1) otpRefs.current[index + 1]?.focus();
+        if (value && index === OTP_LENGTH - 1 && next.every(Boolean)) void submitOtp(next.join(''));
+    };
+
+    const pasteOtp = (event: React.ClipboardEvent<HTMLInputElement>) => {
+        const digits = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+        if (digits.length <= 1) return;
+        event.preventDefault();
+        const next = createEmptyOtp();
+        digits.split('').forEach((digit, index) => { next[index] = digit; });
+        setOtp(next);
+        otpRefs.current[Math.min(digits.length, OTP_LENGTH) - 1]?.focus();
+        if (digits.length === OTP_LENGTH) void submitOtp(digits);
     };
 
     const handleOtpKeyDown = (index: number, event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -204,7 +218,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                         <h1 className="ast-auth__heading">Código de acesso</h1>
                         <p className="ast-auth__subtitle">Insira o código que você recebeu no {sentIdentifier}</p>
 
-                        <div className="ast-otp-fields" aria-label="Código de acesso de cinco dígitos">
+                        <div className="ast-otp-fields" aria-label="Código de acesso de seis dígitos">
                             {otp.map((digit, index) => (
                                 <input
                                     key={index}
@@ -215,6 +229,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                                     maxLength={1}
                                     value={digit}
                                     onChange={event => changeOtp(index, event.target.value)}
+                                    onPaste={pasteOtp}
                                     onKeyDown={event => handleOtpKeyDown(index, event)}
                                     aria-label={`Dígito ${index + 1}`}
                                     disabled={loading}

@@ -280,8 +280,8 @@
 
 .ast-otp-fields {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 24px;
 }
 
@@ -320,11 +320,12 @@
   transition: width 180ms ease;
 }
 
-.ast-otp-progress[data-filled="1"]::after { width: 20%; }
-.ast-otp-progress[data-filled="2"]::after { width: 40%; }
-.ast-otp-progress[data-filled="3"]::after { width: 60%; }
-.ast-otp-progress[data-filled="4"]::after { width: 80%; }
-.ast-otp-progress[data-filled="5"]::after { width: 100%; }
+.ast-otp-progress[data-filled="1"]::after { width: 16.667%; }
+.ast-otp-progress[data-filled="2"]::after { width: 33.333%; }
+.ast-otp-progress[data-filled="3"]::after { width: 50%; }
+.ast-otp-progress[data-filled="4"]::after { width: 66.667%; }
+.ast-otp-progress[data-filled="5"]::after { width: 83.333%; }
+.ast-otp-progress[data-filled="6"]::after { width: 100%; }
 
 /* Portal */
 .ast-portal__stage {
@@ -869,6 +870,8 @@
   .ast-login-choice { height: 156px; padding: 19px; }
   .ast-auth__heading { font-size: 25px; }
   .ast-identifier-field input { font-size: 21px; }
+  .ast-otp-fields { gap: 6px; }
+  .ast-otp-fields input { border-radius: 17px; }
   .ast-portal__stage { padding-right: 18px; padding-left: 18px; }
   .ast-home-processes { margin-right: -18px; margin-left: -18px; padding-right: 18px; padding-left: 18px; }
   .ast-process-hero { margin-right: -18px; margin-left: -18px; }
