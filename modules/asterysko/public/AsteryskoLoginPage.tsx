@@ -64,7 +64,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
 
         setLoading(true);
         try {
-            await api.post('/auth/request-otp', { identifier });
+            await api.post('/auth/portal/request-otp', { identifier });
             setSentIdentifier(identifier);
             setOtp(createEmptyOtp());
             setStep('otp');
@@ -81,11 +81,14 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
         setError('');
         setLoading(true);
         try {
-            const response = await api.post('/auth/verify-otp', { identifier: sentIdentifier, code });
+            const response = await api.post('/auth/portal/verify-otp', { identifier: sentIdentifier, code });
+            if (response.data.user?.role !== 'CLIENT') {
+                throw new Error('A sessão recebida não pertence ao Portal do Cliente.');
+            }
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
             await refreshUser();
-            navigate('/portal');
+            navigate('/portal', { replace: true });
         } catch (verifyError: any) {
             setError(verifyError.response?.data?.error || 'Código de acesso inválido ou expirado.');
         } finally {
