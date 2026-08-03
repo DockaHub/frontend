@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
 import AsteryskoAnimatedMark from './AsteryskoAnimatedMark';
+import { useSystemBarColor } from './useSystemBarColor';
 import './AsteryskoPortal.css';
 
 interface AsteryskoLoginPageProps {
@@ -47,6 +48,13 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     const identifier = loginType === 'phone' ? phone : email;
     const isPhone = loginType === 'phone';
     const filledDigits = otp.filter(Boolean).length;
+    const systemBarColor = portalLoading
+        ? '#f3f3f3'
+        : step === 'otp'
+            ? (isPhone ? '#eaffe5' : '#eaebff')
+            : '#f3f3f3';
+
+    useSystemBarColor(systemBarColor);
 
     useEffect(() => () => {
         if (transitionTimer.current) window.clearTimeout(transitionTimer.current);

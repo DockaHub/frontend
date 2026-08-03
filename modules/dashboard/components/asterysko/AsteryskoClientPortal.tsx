@@ -4,6 +4,7 @@ import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { forceDownloadFile } from './utils/fileDownload';
 import AsteryskoAnimatedMark from '../../../asterysko/public/AsteryskoAnimatedMark';
+import { useSystemBarColor } from '../../../asterysko/public/useSystemBarColor';
 import '../../../asterysko/public/AsteryskoPortal.css';
 
 interface AsteryskoClientPortalProps {
@@ -89,6 +90,7 @@ const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab:
 
 export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit }) => {
     const { user, logout } = useAuth();
+    useSystemBarColor('#f3f3f3');
     const [view, setView] = useState<PortalView>(getInitialView);
     const [processTab, setProcessTab] = useState<ProcessTab>('details');
     const [clientData, setClientData] = useState<any>(null);

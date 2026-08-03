@@ -286,10 +286,14 @@
 
 .ast-otp-burst {
   position: absolute;
-  top: -167px;
-  left: -144px;
-  width: 765px;
-  height: 684px;
+  top: clamp(-165px, -23svh, -130px);
+  left: 50%;
+  width: min(100vw, 420px);
+  max-width: none;
+  height: auto;
+  aspect-ratio: 765.048 / 684;
+  object-fit: contain;
+  transform: translateX(-50%);
   pointer-events: none;
 }
 
@@ -1077,7 +1081,7 @@
   .ast-auth__content--otp { width: 430px; }
 
   .ast-auth__back { top: 40px; }
-  .ast-otp-burst { top: -250px; left: -420px; width: 820px; height: 735px; opacity: 0.9; }
+  .ast-otp-burst { top: -245px; left: 50%; width: 600px; max-width: none; height: auto; transform: translateX(-62%); opacity: 0.9; }
   .ast-login-actions { grid-template-columns: repeat(2, 205px); }
   .ast-register-choice { width: 420px; }
 
