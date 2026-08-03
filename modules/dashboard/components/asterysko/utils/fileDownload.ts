@@ -20,12 +20,21 @@ export const forceDownloadFile = async (rawUrl: string, defaultFileName: string 
     const url = resolveFileUrl(rawUrl);
     if (!url) return;
 
-    try {
+    const appendTokenForTrustedOrigin = (targetUrl: string) => {
         const token = localStorage.getItem('token');
-        let fetchUrl = url;
-        if (token && !url.includes('token=')) {
-            fetchUrl = `${url}${url.includes('?') ? '&' : '?'}token=${token}`;
+        if (!token || targetUrl.includes('token=')) return targetUrl;
+        try {
+            const targetOrigin = new URL(targetUrl, window.location.origin).origin;
+            const backendOrigin = new URL(getBackendUrl(), window.location.origin).origin;
+            if (targetOrigin !== window.location.origin && targetOrigin !== backendOrigin) return targetUrl;
+        } catch {
+            return targetUrl;
         }
+        return `${targetUrl}${targetUrl.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+    };
+
+    try {
+        const fetchUrl = appendTokenForTrustedOrigin(url);
 
         const response = await fetch(fetchUrl);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -48,11 +57,7 @@ export const forceDownloadFile = async (rawUrl: string, defaultFileName: string 
         }, 300);
     } catch (error) {
         console.warn('Direct blob fetch failed, falling back to standard anchor trigger:', error);
-        const token = localStorage.getItem('token');
-        let downloadUrl = url;
-        if (token && !url.includes('token=')) {
-            downloadUrl = `${url}${url.includes('?') ? '&' : '?'}token=${token}`;
-        }
+        const downloadUrl = appendTokenForTrustedOrigin(url);
 
         const link = document.createElement('a');
         link.href = downloadUrl;

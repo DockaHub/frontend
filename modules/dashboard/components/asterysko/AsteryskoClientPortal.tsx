@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight, Download } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Download, ExternalLink, FileText, X } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
-import { forceDownloadFile } from './utils/fileDownload';
+import { forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
 import AsteryskoAnimatedMark from '../../../asterysko/public/AsteryskoAnimatedMark';
 import { useSystemBarColor } from '../../../asterysko/public/useSystemBarColor';
 import '../../../asterysko/public/AsteryskoPortal.css';
@@ -15,16 +15,40 @@ interface AsteryskoClientPortalProps {
 
 type PortalView = 'home' | 'details' | 'profile' | 'contracts';
 type ProcessTab = 'details' | 'payments' | 'documents';
+type ProfileFieldKey = 'identity' | 'document' | 'rg' | 'email' | 'phone' | 'address';
+
+interface ProfileFieldConfig {
+    key: ProfileFieldKey;
+    label: string;
+    value: string;
+    description: string;
+    inputs: Array<{
+        key: string;
+        label: string;
+        type?: string;
+        autoComplete?: string;
+        inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+        required?: boolean;
+        maxLength?: number;
+    }>;
+}
+
+interface PreviewDocument {
+    name: string;
+    url: string;
+}
 
 const ASSET_ROOT = '/assets/asterysko';
 
 const DEFAULT_DOCUMENTS = [
-    { name: 'Proposta', key: 'proposal', icon: 'processo_documentos-imgGroup2.svg' },
-    { name: 'Contrato', key: 'contract', icon: 'processo_documentos-imgGroup2.svg' },
-    { name: 'Procuração', key: 'powerOfAttorney', icon: 'processo_documentos-imgGroup2.svg' },
-    { name: 'Protocolo INPI', key: 'inpiProtocol', icon: 'processo_documentos-imgGroup2.svg' },
-    { name: 'Guia e comprovante GRU', key: 'gru', icon: 'processo_documentos-imgGroup2.svg' },
-    { name: 'Logomarca', key: 'logo', icon: 'processo_documentos-imgGroup3.svg' },
+    { name: 'Proposta', key: 'proposal', fields: ['proposalUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Contrato', key: 'contract', fields: ['contractUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Procuração', key: 'powerOfAttorney', fields: ['proxySignedUrl', 'proxyUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Protocolo INPI', key: 'inpiProtocol', fields: ['protocolReceiptUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Guia GRU', key: 'gru', fields: ['gruUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Comprovante GRU', key: 'gruReceipt', fields: ['gruReceiptUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Certificado de registro', key: 'certificate', fields: ['certificateUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Logomarca', key: 'logo', fields: ['brandLogo'], icon: 'processo_documentos-imgGroup3.svg' },
 ];
 
 const PROCESS_STATUS_LABELS: Record<string, string> = {
@@ -51,6 +75,27 @@ const TIMELINE_ICONS: Record<string, string> = {
 };
 
 const getValue = (...values: any[]) => values.find(value => value !== undefined && value !== null && value !== '') ?? '';
+
+const getProfileValue = (value: unknown) => {
+    const normalized = String(value ?? '').trim();
+    if (!normalized || /^(pending|pendente|não informado|n\/a)$/i.test(normalized)) return '';
+    if (/^0+$/.test(normalized.replace(/\D/g, '')) && normalized.replace(/\D/g, '').length >= 11) return '';
+    if (/^endereço pendente$/i.test(normalized)) return '';
+    return normalized;
+};
+
+const addAuthToken = (url: string) => {
+    const token = localStorage.getItem('token');
+    if (!token || url.includes('token=')) return url;
+    try {
+        const targetOrigin = new URL(url, window.location.origin).origin;
+        const backendOrigin = new URL(resolveFileUrl('/'), window.location.origin).origin;
+        if (targetOrigin !== window.location.origin && targetOrigin !== backendOrigin) return url;
+    } catch {
+        return url;
+    }
+    return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`;
+};
 
 const getInitials = (value: string) => value.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
 
@@ -125,7 +170,7 @@ const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab:
 };
 
 export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit }) => {
-    const { user, logout } = useAuth();
+    const { user, logout, refreshUser } = useAuth();
     const [view, setView] = useState<PortalView>(getInitialView);
     const [processTab, setProcessTab] = useState<ProcessTab>('details');
     const [clientData, setClientData] = useState<any>(null);
@@ -137,6 +182,12 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuClosing, setMenuClosing] = useState(false);
     const [viewLeaving, setViewLeaving] = useState(false);
+    const [editingProfileField, setEditingProfileField] = useState<ProfileFieldKey | null>(null);
+    const [profileDraft, setProfileDraft] = useState<Record<string, string>>({});
+    const [profileSaving, setProfileSaving] = useState(false);
+    const [profileFeedback, setProfileFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [previewDocument, setPreviewDocument] = useState<PreviewDocument | null>(null);
+    const [previewClosing, setPreviewClosing] = useState(false);
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
 
@@ -204,6 +255,20 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     }, []);
 
     useEffect(() => {
+        if (!previewDocument) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeDocumentPreview();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [previewDocument]);
+
+    useEffect(() => {
         if (!menuOpen) return;
 
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -219,9 +284,81 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const clientName = String(getValue(clientData?.name, user?.name, 'Levy'));
     const firstName = clientName.split(/\s+/)[0];
     const brandName = String(getValue(selectedProcess?.brandName, displayedProcesses[0]?.brandName, 'Sua marca'));
-    const companyName = String(getValue(clientData?.companyName, clientData?.legalName, clientData?.company?.legalName, 'Fauves LTDA'));
     const invoices = financials.invoices as any[];
     const contracts = financials.contracts as any[];
+
+    const profileValues: Record<string, string> = {
+        name: getProfileValue(getValue(clientData?.name, user?.name)),
+        cpfCnpj: getProfileValue(clientData?.cpfCnpj),
+        rg: getProfileValue(clientData?.rg),
+        email: getProfileValue(getValue(clientData?.email, user?.email)),
+        phone: getProfileValue(getValue(clientData?.phone, user?.phone)),
+        address: getProfileValue(clientData?.address),
+        city: getProfileValue(clientData?.city),
+        state: getProfileValue(clientData?.state),
+        postalCode: getProfileValue(clientData?.postalCode),
+    };
+    const addressDisplay = [profileValues.address, [profileValues.city, profileValues.state].filter(Boolean).join(' - '), profileValues.postalCode && `CEP ${profileValues.postalCode}`].filter(Boolean).join(', ');
+    const isCompanyProfile = String(clientData?.type || '').toUpperCase() === 'PJ';
+    const profileGroups: Array<{ title: string; fields: ProfileFieldConfig[] }> = [
+        {
+            title: 'Identificação',
+            fields: [
+                {
+                    key: 'identity',
+                    label: isCompanyProfile ? 'Razão social' : 'Nome completo',
+                    value: profileValues.name,
+                    description: isCompanyProfile ? 'Informe a razão social exatamente como consta no documento da empresa.' : 'Informe seu nome completo como consta no documento de identificação.',
+                    inputs: [{ key: 'name', label: isCompanyProfile ? 'Razão social' : 'Nome completo', autoComplete: 'name', required: true }]
+                },
+                {
+                    key: 'document',
+                    label: isCompanyProfile ? 'CNPJ' : 'CPF',
+                    value: profileValues.cpfCnpj,
+                    description: `Informe o ${isCompanyProfile ? 'CNPJ' : 'CPF'} vinculado ao seu cadastro.`,
+                    inputs: [{ key: 'cpfCnpj', label: isCompanyProfile ? 'CNPJ' : 'CPF', inputMode: 'numeric' }]
+                },
+                {
+                    key: 'rg',
+                    label: 'RG',
+                    value: profileValues.rg,
+                    description: 'Informe o número do seu documento de identidade.',
+                    inputs: [{ key: 'rg', label: 'RG' }]
+                }
+            ]
+        },
+        {
+            title: 'Contato',
+            fields: [
+                {
+                    key: 'email',
+                    label: 'E-mail',
+                    value: profileValues.email,
+                    description: 'Este e-mail também poderá ser usado para receber códigos e atualizações do portal.',
+                    inputs: [{ key: 'email', label: 'E-mail', type: 'email', autoComplete: 'email', required: true }]
+                },
+                {
+                    key: 'phone',
+                    label: 'WhatsApp',
+                    value: profileValues.phone,
+                    description: 'Use um número com DDD para receber códigos e atualizações pelo WhatsApp.',
+                    inputs: [{ key: 'phone', label: 'Número com DDD', type: 'tel', autoComplete: 'tel', maxLength: 20 }]
+                },
+                {
+                    key: 'address',
+                    label: 'Endereço',
+                    value: addressDisplay,
+                    description: 'Mantenha seu endereço completo atualizado.',
+                    inputs: [
+                        { key: 'address', label: 'Logradouro e número', autoComplete: 'street-address' },
+                        { key: 'city', label: 'Cidade', autoComplete: 'address-level2' },
+                        { key: 'state', label: 'UF', autoComplete: 'address-level1', maxLength: 2 },
+                        { key: 'postalCode', label: 'CEP', autoComplete: 'postal-code', maxLength: 10 }
+                    ]
+                }
+            ]
+        }
+    ];
 
     const navigateView = (nextView: PortalView) => {
         if (view === nextView || viewLeaving) return;
@@ -264,6 +401,79 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const download = (url: unknown, fileName: string) => {
         if (typeof url === 'string' && url) void forceDownloadFile(url, fileName);
     };
+
+    const beginProfileEdit = (field: ProfileFieldConfig) => {
+        if (editingProfileField || profileSaving) return;
+        setProfileDraft({ ...profileValues });
+        setProfileFeedback(null);
+        setEditingProfileField(field.key);
+    };
+
+    const cancelProfileEdit = () => {
+        if (profileSaving) return;
+        setEditingProfileField(null);
+        setProfileDraft({});
+        setProfileFeedback(null);
+    };
+
+    const saveProfileField = async (field: ProfileFieldConfig) => {
+        if (profileSaving) return;
+        try {
+            setProfileSaving(true);
+            setProfileFeedback(null);
+            const payload = Object.fromEntries(field.inputs.map(input => [input.key, profileDraft[input.key] ?? '']));
+            const response = await api.put('/asterysko/portal/profile', payload);
+            const updatedProfile = response.data?.profile;
+            if (updatedProfile) {
+                setClientData((current: any) => ({ ...current, ...updatedProfile }));
+            }
+            await refreshUser();
+            setEditingProfileField(null);
+            setProfileDraft({});
+            setProfileFeedback({ type: 'success', message: 'Dados atualizados com sucesso.' });
+        } catch (saveError: any) {
+            setProfileFeedback({
+                type: 'error',
+                message: saveError.response?.data?.message || 'Não foi possível salvar. Revise os dados e tente novamente.'
+            });
+        } finally {
+            setProfileSaving(false);
+        }
+    };
+
+    const getDocumentUrl = (document: typeof DEFAULT_DOCUMENTS[number]) => getValue(
+        selectedProcess?.documents?.[document.key],
+        ...document.fields.map(field => selectedProcess?.[field])
+    );
+
+    const getDocumentFileName = (name: string, url: string, isLogo = false) => {
+        const cleanUrl = url.split('?')[0];
+        const extension = cleanUrl.match(/\.([a-z0-9]{2,5})$/i)?.[1] || (isLogo ? 'png' : 'pdf');
+        return `${name}.${extension}`;
+    };
+
+    const openDocumentPreview = (name: string, url: string) => {
+        if (!url) return;
+        setPreviewClosing(false);
+        setPreviewDocument({ name, url });
+    };
+
+    const closeDocumentPreview = () => {
+        if (!previewDocument || previewClosing) return;
+        setPreviewClosing(true);
+        window.setTimeout(() => {
+            setPreviewDocument(null);
+            setPreviewClosing(false);
+        }, 220);
+    };
+
+    const resolvedPreviewUrl = previewDocument
+        ? addAuthToken(previewDocument.url.startsWith('/sign/')
+            ? `${window.location.origin}${previewDocument.url}`
+            : resolveFileUrl(previewDocument.url))
+        : '';
+    const previewUrlWithoutQuery = resolvedPreviewUrl.split('?')[0].toLowerCase();
+    const previewIsImage = /^data:image\//.test(resolvedPreviewUrl) || /\.(png|jpe?g|webp|gif|svg)$/.test(previewUrlWithoutQuery);
 
     const signOut = () => {
         logout();
@@ -363,39 +573,67 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             <p>Gerencie as informações cadastrais e de segurança da sua conta.</p>
                         </header>
 
-                        <div className="ast-data-card">
-                            <h2 className="ast-card-title">Dados da empresa</h2>
-                            <div className="ast-data-card__body">
-                                {[
-                                    ['Razão social', companyName],
-                                    ['CNPJ', getValue(clientData?.cnpj, clientData?.company?.cnpj, '00.000.000/0000-00')],
-                                    ['Endereço', getValue(clientData?.companyAddress, clientData?.company?.address, 'Rua 1, bairro 2, cidade 3, uf')],
-                                ].map(([label, value]) => (
-                                    <div className="ast-data-row" key={String(label)}>
-                                        <div><strong>{label}</strong><small>{String(value)}</small></div>
-                                        <button type="button">Editar</button>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        {profileFeedback && (
+                            <p className={`ast-profile-feedback ast-profile-feedback--${profileFeedback.type}`} role="status">
+                                {profileFeedback.message}
+                            </p>
+                        )}
 
-                        <div className="ast-data-card">
-                            <h2 className="ast-card-title">Dados pessoais</h2>
-                            <div className="ast-data-card__body">
-                                {[
-                                    ['Nome completo', clientName],
-                                    ['CPF', getValue(clientData?.cpf, (user as any)?.cpf, '000.000.000-00')],
-                                    ['Email', getValue(clientData?.email, user?.email, 'email@email.com')],
-                                    ['Whatsapp', getValue(clientData?.phone, user?.phone, '(00) 00000-0000')],
-                                    ['Endereço residencial', getValue(clientData?.address, 'email@email.com')],
-                                ].map(([label, value]) => (
-                                    <div className="ast-data-row" key={String(label)}>
-                                        <div><strong>{label}</strong><small>{String(value)}</small></div>
-                                        <button type="button">Editar</button>
-                                    </div>
-                                ))}
+                        {profileGroups.map(group => (
+                            <div className="ast-data-card" key={group.title}>
+                                <h2 className="ast-card-title">{group.title}</h2>
+                                <div className="ast-data-card__body">
+                                    {group.fields.map(field => {
+                                        const isEditing = editingProfileField === field.key;
+                                        const anotherFieldIsEditing = editingProfileField !== null && !isEditing;
+                                        return (
+                                            <div className={`ast-data-row ${isEditing ? 'ast-data-row--editing' : ''}`} key={field.key}>
+                                                <div className="ast-data-row__summary">
+                                                    <div className="ast-data-row__copy">
+                                                        <strong>{field.label}</strong>
+                                                        <small className={!field.value ? 'ast-data-row__empty' : undefined}>{field.value || 'Não fornecido'}</small>
+                                                    </div>
+                                                    <button
+                                                        className="ast-data-row__action"
+                                                        type="button"
+                                                        disabled={anotherFieldIsEditing || profileSaving}
+                                                        onClick={() => isEditing ? cancelProfileEdit() : beginProfileEdit(field)}
+                                                    >
+                                                        {isEditing ? 'Cancelar' : field.value ? 'Editar' : 'Adicionar'}
+                                                    </button>
+                                                </div>
+
+                                                {isEditing && (
+                                                    <form className="ast-data-editor" onSubmit={event => { event.preventDefault(); void saveProfileField(field); }}>
+                                                        <p>{field.description}</p>
+                                                        <div className={`ast-data-editor__fields ${field.inputs.length > 1 ? 'ast-data-editor__fields--address' : ''}`}>
+                                                            {field.inputs.map(input => (
+                                                                <label className="ast-data-input" key={input.key}>
+                                                                    <span>{input.label}</span>
+                                                                    <input
+                                                                        autoFocus={input === field.inputs[0]}
+                                                                        type={input.type || 'text'}
+                                                                        autoComplete={input.autoComplete}
+                                                                        required={input.required}
+                                                                        maxLength={input.maxLength}
+                                                                        inputMode={input.inputMode}
+                                                                        value={profileDraft[input.key] ?? ''}
+                                                                        onChange={event => setProfileDraft(current => ({ ...current, [input.key]: event.target.value }))}
+                                                                    />
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                        <button className="ast-data-editor__save" type="submit" disabled={profileSaving}>
+                                                            {profileSaving ? 'Salvando...' : 'Salvar alterações'}
+                                                        </button>
+                                                    </form>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
+                        ))}
                     </section>
                 )}
 
@@ -522,11 +760,22 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         {processTab === 'documents' && (
                             <div key="documents" className="ast-document-list ast-tab-transition">
                                 {DEFAULT_DOCUMENTS.map(document => {
-                                    const url = getValue(selectedProcess?.documents?.[document.key], selectedProcess?.[`${document.key}Url`]);
+                                    const url = String(getDocumentUrl(document) || '');
+                                    const fileName = getDocumentFileName(document.name, url, document.key === 'logo');
                                     return (
-                                        <button className="ast-document-card" key={document.key} type="button" onClick={() => download(url, `${document.name}.pdf`)}>
+                                        <button
+                                            className={`ast-document-card ${url ? '' : 'ast-document-card--unavailable'}`}
+                                            key={document.key}
+                                            type="button"
+                                            disabled={!url}
+                                            onClick={() => openDocumentPreview(fileName, url)}
+                                        >
                                             <span className="ast-document-icon"><img src={`${ASSET_ROOT}/${document.icon}`} alt="" /></span>
-                                            <span><strong>{document.name}</strong><small>Clique para baixar</small></span>
+                                            <span className="ast-document-card__copy">
+                                                <strong>{document.name}</strong>
+                                                <small>{url ? 'Toque para visualizar' : 'Ainda não disponível'}</small>
+                                            </span>
+                                            {url && <ChevronRight className="ast-document-card__chevron" size={19} aria-hidden="true" />}
                                         </button>
                                     );
                                 })}
@@ -536,6 +785,48 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 )}
                 </div>
             </main>
+
+            {previewDocument && (
+                <div
+                    className={`ast-document-preview ${previewClosing ? 'ast-document-preview--closing' : 'ast-document-preview--open'}`}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="ast-document-preview-title"
+                    onClick={closeDocumentPreview}
+                >
+                    <section className="ast-document-preview__panel" onClick={event => event.stopPropagation()}>
+                        <header className="ast-document-preview__header">
+                            <div className="ast-document-preview__title">
+                                <span className="ast-document-preview__icon"><FileText size={21} aria-hidden="true" /></span>
+                                <span>
+                                    <small>Visualização do documento</small>
+                                    <strong id="ast-document-preview-title">{previewDocument.name}</strong>
+                                </span>
+                            </div>
+                            <div className="ast-document-preview__actions">
+                                <button type="button" onClick={() => download(previewDocument.url, previewDocument.name)} aria-label="Baixar documento">
+                                    <Download size={19} aria-hidden="true" />
+                                    <span>Baixar</span>
+                                </button>
+                                <a href={resolvedPreviewUrl} target="_blank" rel="noreferrer" aria-label="Abrir documento em outra aba">
+                                    <ExternalLink size={19} aria-hidden="true" />
+                                    <span>Abrir</span>
+                                </a>
+                                <button className="ast-document-preview__close" type="button" onClick={closeDocumentPreview} aria-label="Fechar visualização">
+                                    <X size={22} aria-hidden="true" />
+                                </button>
+                            </div>
+                        </header>
+                        <div className="ast-document-preview__body">
+                            {previewIsImage ? (
+                                <img src={resolvedPreviewUrl} alt={previewDocument.name} />
+                            ) : (
+                                <iframe src={resolvedPreviewUrl} title={previewDocument.name} />
+                            )}
+                        </div>
+                    </section>
+                </div>
+            )}
 
             {menuOpen && (
                 <div className={`ast-menu-overlay ${menuClosing ? 'ast-menu-overlay--closing' : 'ast-menu-overlay--open'}`} role="dialog" aria-modal="true" aria-label="Menu do portal" onClick={() => closeMenu()}>
