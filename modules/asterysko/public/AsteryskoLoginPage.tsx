@@ -1,8 +1,9 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
+import AsteryskoAnimatedMark from './AsteryskoAnimatedMark';
 import './AsteryskoPortal.css';
 
 interface AsteryskoLoginPageProps {
@@ -12,6 +13,7 @@ interface AsteryskoLoginPageProps {
 
 type LoginStep = 'selection' | 'identifier' | 'otp';
 type LoginType = 'phone' | 'email';
+type TransitionDirection = 'forward' | 'backward';
 
 const ASSET_ROOT = '/assets/asterysko';
 const OTP_LENGTH = 6;
@@ -35,23 +37,42 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     const [sentIdentifier, setSentIdentifier] = useState('');
     const [otp, setOtp] = useState(createEmptyOtp);
     const [loading, setLoading] = useState(false);
+    const [portalLoading, setPortalLoading] = useState(false);
     const [error, setError] = useState('');
+    const [transitioning, setTransitioning] = useState(false);
+    const [transitionDirection, setTransitionDirection] = useState<TransitionDirection>('forward');
     const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
+    const transitionTimer = useRef<number | null>(null);
 
     const identifier = loginType === 'phone' ? phone : email;
     const isPhone = loginType === 'phone';
     const filledDigits = otp.filter(Boolean).length;
 
+    useEffect(() => () => {
+        if (transitionTimer.current) window.clearTimeout(transitionTimer.current);
+    }, []);
+
+    const transitionTo = (nextStep: LoginStep, direction: TransitionDirection) => {
+        if (transitioning || nextStep === step) return;
+        setTransitionDirection(direction);
+        setTransitioning(true);
+        if (transitionTimer.current) window.clearTimeout(transitionTimer.current);
+        transitionTimer.current = window.setTimeout(() => {
+            setStep(nextStep);
+            setTransitioning(false);
+        }, 220);
+    };
+
     const selectLoginType = (type: LoginType) => {
         setLoginType(type);
         setError('');
-        setStep('identifier');
+        transitionTo('identifier', 'forward');
     };
 
     const goBack = () => {
         setError('');
-        if (step === 'otp') setStep('identifier');
-        else setStep('selection');
+        if (step === 'otp') transitionTo('identifier', 'backward');
+        else transitionTo('selection', 'backward');
     };
 
     const requestOtp = async (event: React.FormEvent) => {
@@ -67,8 +88,8 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
             await api.post('/auth/portal/request-otp', { identifier });
             setSentIdentifier(identifier);
             setOtp(createEmptyOtp());
-            setStep('otp');
-            window.setTimeout(() => otpRefs.current[0]?.focus(), 50);
+            transitionTo('otp', 'forward');
+            window.setTimeout(() => otpRefs.current[0]?.focus(), 280);
         } catch (requestError: any) {
             setError(requestError.response?.data?.error || 'Não encontramos este cadastro. Verifique os dados digitados.');
         } finally {
@@ -87,9 +108,14 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
             }
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
-            await refreshUser();
+            setPortalLoading(true);
+            await Promise.all([
+                refreshUser(),
+                new Promise(resolve => window.setTimeout(resolve, 1050)),
+            ]);
             navigate('/portal', { replace: true });
         } catch (verifyError: any) {
+            setPortalLoading(false);
             setError(verifyError.response?.data?.error || 'Código de acesso inválido ou expirado.');
         } finally {
             setLoading(false);
@@ -121,9 +147,19 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
         if (event.key === 'Enter' && otp.every(Boolean)) void submitOtp(otp.join(''));
     };
 
+    if (portalLoading) {
+        return (
+            <div className="ast-page ast-portal-loader" role="status" aria-live="polite">
+                <AsteryskoAnimatedMark className="ast-portal-loader__mark" />
+                <p>Preparando seu portal...</p>
+            </div>
+        );
+    }
+
     const authClass = step === 'otp'
         ? `ast-page ast-auth ${isPhone ? 'ast-auth--phone-otp' : 'ast-auth--email-otp'}`
         : 'ast-page ast-auth';
+    const stepClass = `ast-auth-step ast-auth-step--${transitioning ? 'leaving' : 'entering'} ast-auth-step--${transitionDirection}`;
 
     return (
         <div className={authClass}>
@@ -144,7 +180,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                 )}
 
                 {step === 'selection' && (
-                    <main className="ast-auth__content ast-auth__content--selection">
+                    <main className={`ast-auth__content ast-auth__content--selection ${stepClass}`}>
                         <img className="ast-brand-mark" src={`${ASSET_ROOT}/login-imgGroup2.svg`} alt="Asterysko" />
                         <h1 className="ast-auth__heading">Portal do Cliente</h1>
                         <p className="ast-auth__subtitle">Escolha como quer acessar sua conta</p>
@@ -174,7 +210,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                 )}
 
                 {step === 'identifier' && (
-                    <main className="ast-auth__content ast-auth__content--identifier">
+                    <main className={`ast-auth__content ast-auth__content--identifier ${stepClass}`}>
                         <img className="ast-brand-mark" src={`${ASSET_ROOT}/${isPhone ? 'whatsapp-imgGroup2.svg' : 'email-imgGroup2.svg'}`} alt="Asterysko" />
                         <h1 className="ast-auth__heading">
                             Acessar com <span className="ast-season">{isPhone ? 'Whatsapp' : 'Email'}</span>
@@ -212,7 +248,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                 )}
 
                 {step === 'otp' && (
-                    <main className="ast-auth__content ast-auth__content--otp">
+                    <main className={`ast-auth__content ast-auth__content--otp ${stepClass}`}>
                         <img
                             className="ast-auth__channel-icon"
                             src={`${ASSET_ROOT}/${isPhone ? 'otp_whatsapp-imgIcBaselineWhatsapp.svg' : 'otp_email-imgGroup.svg'}`}

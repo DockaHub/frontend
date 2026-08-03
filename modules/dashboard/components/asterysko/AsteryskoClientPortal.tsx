@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronRight, Download } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { forceDownloadFile } from './utils/fileDownload';
+import AsteryskoAnimatedMark from '../../../asterysko/public/AsteryskoAnimatedMark';
 import '../../../asterysko/public/AsteryskoPortal.css';
 
 interface AsteryskoClientPortalProps {
@@ -97,6 +98,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [menuOpen, setMenuOpen] = useState(false);
+    const [menuClosing, setMenuClosing] = useState(false);
+    const [viewLeaving, setViewLeaving] = useState(false);
+    const viewTimer = useRef<number | null>(null);
+    const menuTimer = useRef<number | null>(null);
 
     useEffect(() => {
         const urlToken = new URLSearchParams(window.location.search).get('token');
@@ -148,6 +153,22 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         void fetchData();
     }, [logout]);
 
+    useEffect(() => () => {
+        if (viewTimer.current) window.clearTimeout(viewTimer.current);
+        if (menuTimer.current) window.clearTimeout(menuTimer.current);
+    }, []);
+
+    useEffect(() => {
+        if (!menuOpen) return;
+
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeMenu();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [menuOpen]);
+
     const displayedProcesses = useMemo(() => processes.length ? processes : [
         { id: 'preview-one', brandName: 'Litorânea Tendas', status: 'EXAM_MERIT' },
         { id: 'preview-two', brandName: 'Litorânea Tendas', status: 'STARTED' },
@@ -160,17 +181,42 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const invoices = financials.invoices as any[];
     const contracts = financials.contracts as any[];
 
+    const navigateView = (nextView: PortalView) => {
+        if (view === nextView || viewLeaving) return;
+        setViewLeaving(true);
+        if (viewTimer.current) window.clearTimeout(viewTimer.current);
+        viewTimer.current = window.setTimeout(() => {
+            setView(nextView);
+            setViewLeaving(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }, 210);
+    };
+
+    const openMenu = () => {
+        if (menuTimer.current) window.clearTimeout(menuTimer.current);
+        setMenuClosing(false);
+        setMenuOpen(true);
+    };
+
+    const closeMenu = (afterClose?: () => void) => {
+        if (!menuOpen || menuClosing) return;
+        setMenuClosing(true);
+        if (menuTimer.current) window.clearTimeout(menuTimer.current);
+        menuTimer.current = window.setTimeout(() => {
+            setMenuOpen(false);
+            setMenuClosing(false);
+            afterClose?.();
+        }, 300);
+    };
+
     const openProcess = (process: any) => {
         setSelectedProcess(process);
         setProcessTab('details');
-        setView('details');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        navigateView('details');
     };
 
     const goHome = () => {
-        setView('home');
-        setMenuOpen(false);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        navigateView('home');
     };
 
     const download = (url: unknown, fileName: string) => {
@@ -187,7 +233,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         return (
             <div className="ast-page">
                 <div className="ast-loading">
-                    <span className="ast-spinner" aria-hidden="true" />
+                    <AsteryskoAnimatedMark className="ast-loading__mark" />
                     <p>Carregando seu portal...</p>
                 </div>
             </div>
@@ -197,6 +243,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     return (
         <div className="ast-page">
             <main className="ast-portal__stage">
+                <div key={view} className={`ast-view-shell ${viewLeaving ? 'ast-view-shell--leaving' : 'ast-view-shell--entering'}`}>
                 {view === 'home' && (
                     <section aria-labelledby="ast-home-title">
                         <div className="ast-portal__topbar">
@@ -204,7 +251,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 <h1 id="ast-home-title">Olá, {firstName}</h1>
                                 <p>Acompanhe seus processos</p>
                             </div>
-                            <button className="ast-round-button ast-menu-button" type="button" onClick={() => setMenuOpen(true)} aria-label="Abrir menu">
+                            <button className="ast-round-button ast-menu-button" type="button" onClick={openMenu} aria-label="Abrir menu">
                                 <img src={`${ASSET_ROOT}/home-imgJamMenu.svg`} alt="" />
                             </button>
                         </div>
@@ -356,7 +403,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         <ProcessTabs active={processTab} onChange={setProcessTab} />
 
                         {processTab === 'details' && (
-                            <div className="ast-process-content ast-process-content--details">
+                            <div key="details" className="ast-process-content ast-process-content--details ast-tab-transition">
                                 <article className="ast-info-card">
                                     <h2 className="ast-card-title">Informações gerais</h2>
                                     <div className="ast-info-card__body">
@@ -386,7 +433,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         )}
 
                         {processTab === 'payments' && (
-                            <div className="ast-process-content">
+                            <div key="payments" className="ast-process-content ast-tab-transition">
                                 <article className="ast-payment-card">
                                     <h2 className="ast-card-title">Cartão de crédito</h2>
                                     <div className="ast-payment-card__account">
@@ -422,7 +469,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         )}
 
                         {processTab === 'documents' && (
-                            <div className="ast-document-list">
+                            <div key="documents" className="ast-document-list ast-tab-transition">
                                 {DEFAULT_DOCUMENTS.map(document => {
                                     const url = getValue(selectedProcess?.documents?.[document.key], selectedProcess?.[`${document.key}Url`]);
                                     return (
@@ -436,45 +483,48 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         )}
                     </section>
                 )}
+                </div>
             </main>
 
             {menuOpen && (
-                <div className="ast-menu-overlay" role="dialog" aria-modal="true" aria-label="Menu do portal" onClick={() => setMenuOpen(false)}>
+                <div className={`ast-menu-overlay ${menuClosing ? 'ast-menu-overlay--closing' : 'ast-menu-overlay--open'}`} role="dialog" aria-modal="true" aria-label="Menu do portal" onClick={() => closeMenu()}>
                     <aside className="ast-menu-panel" onClick={event => event.stopPropagation()}>
-                        <button className="ast-round-button ast-menu-panel__close" type="button" onClick={() => setMenuOpen(false)} aria-label="Fechar menu">
-                            <img src={`${ASSET_ROOT}/menu-imgMaterialSymbolsCloseRounded.svg`} alt="" />
-                        </button>
-
-                        <div className="ast-menu-panel__content">
-                            <button className="ast-menu-account" type="button" onClick={() => { setView('profile'); setMenuOpen(false); }}>
-                                <img src={`${ASSET_ROOT}/menu-imgTablerUser.svg`} alt="" />
-                                <span><strong>Sua conta</strong><small>Mantenha seus dados atualizados.</small></span>
+                        <div className="ast-menu-panel__frame">
+                            <button className="ast-round-button ast-menu-panel__close" type="button" onClick={() => closeMenu()} aria-label="Fechar menu">
+                                <img src={`${ASSET_ROOT}/menu-imgMaterialSymbolsCloseRounded.svg`} alt="" />
                             </button>
 
-                            <button className="ast-menu-referral" type="button" onClick={() => void navigator.clipboard?.writeText('https://asterysko.com')}>
-                                <img src={`${ASSET_ROOT}/menu-imgVector.svg`} alt="" />
-                                <span>Indique a Asterysko</span>
-                            </button>
+                            <div className="ast-menu-panel__content">
+                                <button className="ast-menu-account" type="button" onClick={() => closeMenu(() => navigateView('profile'))}>
+                                    <img src={`${ASSET_ROOT}/menu-imgTablerUser.svg`} alt="" />
+                                    <span><strong>Sua conta</strong><small>Mantenha seus dados atualizados.</small></span>
+                                </button>
 
-                            <div className="ast-menu-links">
-                                <button className="ast-menu-link" type="button">
-                                    <img src={`${ASSET_ROOT}/menu-imgSimpleLineIconsEarphonesAlt.svg`} alt="" />
-                                    <span>Central de atendimento</span>
+                                <button className="ast-menu-referral" type="button" onClick={() => void navigator.clipboard?.writeText('https://asterysko.com')}>
+                                    <img src={`${ASSET_ROOT}/menu-imgVector.svg`} alt="" />
+                                    <span>Indique a Asterysko</span>
                                 </button>
-                                <button className="ast-menu-link" type="button">
-                                    <img src={`${ASSET_ROOT}/menu-imgCiHelp.svg`} alt="" />
-                                    <span>Central de dúvidas</span>
-                                </button>
-                                <button className="ast-menu-link" type="button">
-                                    <img src={`${ASSET_ROOT}/menu-imgGroup.svg`} alt="" />
-                                    <span>Portal da transparência</span>
+
+                                <div className="ast-menu-links">
+                                    <button className="ast-menu-link" type="button">
+                                        <img src={`${ASSET_ROOT}/menu-imgSimpleLineIconsEarphonesAlt.svg`} alt="" />
+                                        <span>Central de atendimento</span>
+                                    </button>
+                                    <button className="ast-menu-link" type="button">
+                                        <img src={`${ASSET_ROOT}/menu-imgCiHelp.svg`} alt="" />
+                                        <span>Central de dúvidas</span>
+                                    </button>
+                                    <button className="ast-menu-link" type="button">
+                                        <img src={`${ASSET_ROOT}/menu-imgGroup.svg`} alt="" />
+                                        <span>Portal da transparência</span>
+                                    </button>
+                                </div>
+
+                                <button className="ast-menu-logout" type="button" onClick={signOut}>
+                                    <img src={`${ASSET_ROOT}/menu-imgGroup1.svg`} alt="" />
+                                    <span>Sair</span>
                                 </button>
                             </div>
-
-                            <button className="ast-menu-logout" type="button" onClick={signOut}>
-                                <img src={`${ASSET_ROOT}/menu-imgGroup1.svg`} alt="" />
-                                <span>Sair</span>
-                            </button>
                         </div>
 
                         <img className="ast-menu-burst" src={`${ASSET_ROOT}/menu-imgGroup2.svg`} alt="" aria-hidden="true" />
