@@ -22,13 +22,16 @@ interface Props {
     onUpdate?: () => void;
 }
 
-const stepsKeys = ['leads', 'preparation', 'viability', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
+const stepsKeys = ['leads', 'contato_iniciado', 'em_conversa', 'preparation', 'viability', 'proposta', 'contract', 'service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'];
 
 const getStatusLabel = (status: string) => {
     const s = status?.toLowerCase() || '';
     if (s === 'leads') return 'Novo Lead';
+    if (s === 'contato_iniciado') return 'Contato Iniciado';
+    if (s === 'em_conversa') return 'Em Conversa';
     if (s === 'preparation') return 'Preparação';
     if (s === 'viability') return 'Viabilidade';
+    if (s === 'proposta') return 'Proposta';
     if (s === 'contract') return 'Contrato';
     if (s === 'service_payment') return 'Pagamento Serviço';
     if (s === 'documentation') return 'Procuração/Docs';
@@ -104,19 +107,37 @@ const getNextAction = (status: string) => {
             return {
                 title: 'Contato Comercial e Qualificação',
                 desc: 'Realizar contato inicial para qualificar o lead e entender as classes de Nice de interesse.',
-                realBehavior: 'Esta ação ajuda o time a coletar as necessidades comerciais do cliente.'
+                realBehavior: 'A próxima etapa registra que o primeiro contato foi iniciado; nenhum contrato será enviado.'
+            };
+        case 'contato_iniciado':
+            return {
+                title: 'Registrar retorno do cliente',
+                desc: 'Acompanhar o primeiro contato e registrar o interesse, as dúvidas e o melhor canal de atendimento.',
+                realBehavior: 'A próxima etapa move o lead para Em conversa; nenhum contrato será enviado.'
+            };
+        case 'em_conversa':
+            return {
+                title: 'Concluir diagnóstico comercial',
+                desc: 'Consolidar o contexto do cliente, a marca pretendida e os requisitos para a análise inicial.',
+                realBehavior: 'A próxima etapa inicia o diagnóstico; nenhum contrato será enviado.'
             };
         case 'preparation':
             return {
-                title: 'Gerar Proposta e Contrato',
-                desc: 'Elaborar a proposta comercial detalhada e preparar o contrato de prestação de serviços no portal.',
-                realBehavior: 'Avançar para a próxima etapa enviará automaticamente um WhatsApp ao cliente contendo o contrato.'
+                title: 'Preparar análise inicial',
+                desc: 'Organizar os dados do atendimento antes da análise de viabilidade da marca.',
+                realBehavior: 'A próxima etapa inicia a viabilidade; nenhum contrato será enviado.'
             };
         case 'viability':
             return {
                 title: 'Realizar Análise de Viabilidade',
                 desc: 'Executar busca detalhada de anterioridade no Radar de Marcas para avaliar riscos de colisão.',
                 realBehavior: 'Esta análise serve para dar segurança jurídica ao cliente antes do protocolo.'
+            };
+        case 'proposta':
+            return {
+                title: 'Validar proposta comercial',
+                desc: 'Confirmar com o cliente o plano, os valores e as condições comerciais antes da contratação.',
+                realBehavior: 'Ao avançar para Contrato, o processo será disponibilizado no portal e o link de assinatura será enviado.'
             };
         case 'contract':
             return {
@@ -334,7 +355,28 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     };
 
     const [isAdvancingStage, setIsAdvancingStage] = useState(false);
+    const [isSendingContract, setIsSendingContract] = useState(false);
     const [showExaminationBranchModal, setShowExaminationBranchModal] = useState(false);
+
+    const handleSendContractReminder = async () => {
+        if (!currentDeal?.id) return;
+        try {
+            setIsSendingContract(true);
+            const response = await api.post(`/asterysko/crm/deals/${currentDeal.id}/reminder`);
+            const channels = response.data?.channels;
+            const channelSummary = channels
+                ? ` E-mail: ${channels.email || 'não enviado'}; WhatsApp: ${channels.whatsapp || 'não enviado'}; portal: ${channels.portal || 'publicado'}.`
+                : '';
+            alert(`Contrato disponibilizado no portal e reenviado para assinatura.${channelSummary}`);
+            await fetchDetails();
+            onUpdate?.();
+        } catch (error: any) {
+            console.error('Failed to publish contract', error);
+            alert(error.response?.data?.error || 'Não foi possível disponibilizar e enviar o contrato.');
+        } finally {
+            setIsSendingContract(false);
+        }
+    };
 
     const handleAdvanceStage = async (targetNextStatus?: string) => {
         if (!currentDeal?.id) return;
@@ -1269,10 +1311,14 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 Responsável: <span className="font-bold text-black dark:text-white">{assignedUser}</span>
                                             </p>
                                             <button 
-                                                onClick={() => handleAdvanceStage()}
+                                                onClick={() => currentDeal?.status === 'contract' && !currentDeal?.signedAt ? handleSendContractReminder() : handleAdvanceStage()}
+                                                disabled={isAdvancingStage || isSendingContract}
                                                 className="bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[12px] font-bold px-4 py-2 rounded-full hover:bg-blue-800 transition-colors flex items-center gap-1.5 cursor-pointer"
                                             >
-                                                Concluir e Avançar
+                                                {(isAdvancingStage || isSendingContract) && <Loader2 size={14} className="animate-spin" />}
+                                                {currentDeal?.status === 'contract' && !currentDeal?.signedAt
+                                                    ? (currentDeal?.processId ? 'Cobrar assinatura' : 'Disponibilizar contrato')
+                                                    : 'Concluir e Avançar'}
                                             </button>
                                         </div>
                                     </div>
@@ -2291,12 +2337,14 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         {currentPhase === 'commercial' ? 'Arquivar lead' : currentPhase === 'onboarding' ? 'Cancelar atendimento' : 'Arquivar processo'}
                     </button>
                     <button 
-                        onClick={() => handleAdvanceStage()}
-                        disabled={isAdvancingStage}
+                        onClick={() => currentDeal?.status === 'contract' && !currentDeal?.signedAt ? handleSendContractReminder() : handleAdvanceStage()}
+                        disabled={isAdvancingStage || isSendingContract}
                         className="flex-1 max-w-[400px] ml-4 h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[14px] font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        {isAdvancingStage ? <Loader2 size={18} className="animate-spin" /> : null}
-                        {currentPhase === 'commercial' ? 'Avançar etapa comercial' : currentPhase === 'onboarding' ? 'Concluir pendência e avançar' : 'Atualizar andamento'}
+                        {(isAdvancingStage || isSendingContract) ? <Loader2 size={18} className="animate-spin" /> : null}
+                        {currentDeal?.status === 'contract' && !currentDeal?.signedAt
+                            ? (currentDeal?.processId ? 'Cobrar assinatura' : 'Disponibilizar e enviar contrato')
+                            : currentPhase === 'commercial' ? 'Avançar etapa comercial' : currentPhase === 'onboarding' ? 'Concluir pendência e avançar' : 'Atualizar andamento'}
                     </button>
                 </div>
 
