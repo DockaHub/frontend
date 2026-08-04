@@ -761,21 +761,21 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             <div key="documents" className="ast-document-list ast-tab-transition">
                                 {DEFAULT_DOCUMENTS.map(document => {
                                     const url = String(getDocumentUrl(document) || '');
+                                    if (!url) return null;
                                     const fileName = getDocumentFileName(document.name, url, document.key === 'logo');
                                     return (
                                         <button
-                                            className={`ast-document-card ${url ? '' : 'ast-document-card--unavailable'}`}
+                                            className="ast-document-card"
                                             key={document.key}
                                             type="button"
-                                            disabled={!url}
                                             onClick={() => openDocumentPreview(fileName, url)}
                                         >
                                             <span className="ast-document-icon"><img src={`${ASSET_ROOT}/${document.icon}`} alt="" /></span>
                                             <span className="ast-document-card__copy">
                                                 <strong>{document.name}</strong>
-                                                <small>{url ? 'Toque para visualizar' : 'Ainda não disponível'}</small>
+                                                <small>Toque para visualizar</small>
                                             </span>
-                                            {url && <ChevronRight className="ast-document-card__chevron" size={19} aria-hidden="true" />}
+                                            <ChevronRight className="ast-document-card__chevron" size={19} aria-hidden="true" />
                                         </button>
                                     );
                                 })}
