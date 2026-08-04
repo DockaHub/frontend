@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Copy, CreditCard, Download, ExternalLink, FileText, QrCode, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Copy, CreditCard, Download, ExternalLink, FileText, QrCode, Upload, X } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
@@ -164,6 +164,13 @@ const formatTimelineDate = (value: unknown) => {
 
 const getProcessStatusLabel = (status: unknown) => PROCESS_STATUS_LABELS[String(status || '').toUpperCase()] || 'Em andamento';
 
+const hasConfirmedPayment = (process: any) => ['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(process?.paymentStatus || '').toUpperCase());
+
+const hasSubmittedProxy = (process: any) => {
+    const status = String(process?.proxySignStatus || 'PENDING').toUpperCase();
+    return Boolean(process?.proxySignedUrl) || ['UPLOADED', 'SIGNED', 'VALIDATED', 'APPROVED'].includes(status);
+};
+
 const getTimelineIcon = (item: any) => {
     const searchable = `${item?.type || ''} ${item?.code || ''} ${item?.title || ''}`.toLowerCase();
     if (/contract|contrato/.test(searchable)) return TIMELINE_ICONS.contract_signed;
@@ -243,7 +250,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [subscriptionSubmitting, setSubscriptionSubmitting] = useState(false);
     const [subscriptionFeedback, setSubscriptionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [pixCopied, setPixCopied] = useState(false);
+    const [proxyUploading, setProxyUploading] = useState(false);
+    const [proxyDownloading, setProxyDownloading] = useState(false);
+    const [proxyFeedback, setProxyFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const pageRef = useRef<HTMLDivElement | null>(null);
+    const proxyUploadInputRef = useRef<HTMLInputElement | null>(null);
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
 
@@ -385,6 +396,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         const status = String(contract.status || contract.signatureStatus || contract.contractSignStatus).toUpperCase();
         return status === 'PENDING' || status === 'PENDENTE' || status.includes('AGUARD');
     });
+    const pendingProxyProcesses = displayedProcesses.filter(process => hasConfirmedPayment(process) && !hasSubmittedProxy(process));
+    const selectedProcessPaymentConfirmed = hasConfirmedPayment(selectedProcess);
+    const selectedProcessProxySubmitted = hasSubmittedProxy(selectedProcess);
+    const selectedProcessProxyStatus = String(selectedProcess?.proxySignStatus || 'PENDING').toUpperCase();
     const subscription = subscriptionContext?.subscription;
     const subscriptionInvoices = Array.isArray(subscriptionContext?.invoices) ? subscriptionContext.invoices : [];
     const displayedPaymentHistory = subscription ? subscriptionInvoices : invoices;
@@ -499,6 +514,13 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         navigateView('details');
     };
 
+    const openProcessDocuments = (process: any) => {
+        setSelectedProcess(process);
+        setProcessTab('documents');
+        setProxyFeedback(null);
+        navigateView('details');
+    };
+
     const goHome = () => {
         navigateView('home');
     };
@@ -555,6 +577,80 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         selectedProcess?.documents?.[document.key],
         ...document.fields.map(field => selectedProcess?.[field])
     );
+
+    const downloadProxyTemplate = async () => {
+        const processId = String(selectedProcess?.id || '');
+        if (!processId || !selectedProcessPaymentConfirmed || proxyDownloading) return;
+        try {
+            setProxyDownloading(true);
+            setProxyFeedback(null);
+            const response = await api.get(`/asterysko/processes/${processId}/proxy/download-pdf`, { responseType: 'blob' });
+            const blobUrl = window.URL.createObjectURL(response.data);
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = `Procuracao_${brandName.replace(/\s+/g, '_')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 300);
+        } catch (downloadError: any) {
+            let message = 'Não foi possível gerar a procuração. Confira seus dados e tente novamente.';
+            const errorBody = downloadError.response?.data;
+            if (errorBody instanceof Blob && errorBody.type.includes('json')) {
+                try {
+                    const parsed = JSON.parse(await errorBody.text());
+                    message = parsed.message || parsed.error || message;
+                } catch {
+                    // Mantém a mensagem segura de fallback.
+                }
+            }
+            setProxyFeedback({ type: 'error', message });
+        } finally {
+            setProxyDownloading(false);
+        }
+    };
+
+    const uploadSignedProxy = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        const processId = String(selectedProcess?.id || '');
+        event.target.value = '';
+        if (!file || !processId || proxyUploading) return;
+
+        const acceptedTypes = ['application/pdf', 'image/png', 'image/jpeg'];
+        if (!acceptedTypes.includes(file.type)) {
+            setProxyFeedback({ type: 'error', message: 'Envie o documento assinado em PDF, PNG ou JPG.' });
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            setProxyFeedback({ type: 'error', message: 'O arquivo deve ter no máximo 10 MB.' });
+            return;
+        }
+
+        try {
+            setProxyUploading(true);
+            setProxyFeedback(null);
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData);
+            const patch = {
+                proxySignedUrl: response.data?.proxySignedUrl,
+                proxySignStatus: response.data?.proxySignStatus || 'UPLOADED'
+            };
+            setProcesses(current => current.map(process => String(process.id) === processId ? { ...process, ...patch } : process));
+            setSelectedProcess((current: any) => current && String(current.id) === processId ? { ...current, ...patch } : current);
+            setProxyFeedback({
+                type: 'success',
+                message: response.data?.message || 'Procuração enviada com sucesso e encaminhada para validação.'
+            });
+        } catch (uploadError: any) {
+            setProxyFeedback({
+                type: 'error',
+                message: uploadError.response?.data?.error || uploadError.response?.data?.message || 'Não foi possível enviar a procuração.'
+            });
+        } finally {
+            setProxyUploading(false);
+        }
+    };
 
     const getDocumentFileName = (name: string, url: string, isLogo = false) => {
         const cleanUrl = url.split('?')[0];
@@ -712,6 +808,14 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 <span className="ast-contract-alert__icon"><FileText size={22} /></span>
                                 <span><small>Ação necessária</small><strong>Seu contrato está pronto para assinatura</strong><em>Revise os dados e assine para liberar a próxima etapa do processo.</em></span>
                                 <span className="ast-contract-alert__action">Assinar agora <ChevronRight size={18} /></span>
+                            </button>
+                        )}
+
+                        {pendingProxyProcesses.length > 0 && (
+                            <button className="ast-contract-alert ast-proxy-alert" type="button" onClick={() => openProcessDocuments(pendingProxyProcesses[0])}>
+                                <span className="ast-contract-alert__icon"><FileText size={22} /></span>
+                                <span><small>Ação necessária</small><strong>Assine sua procuração no Gov.br</strong><em>Baixe o documento preenchido e envie a versão assinada para continuarmos seu processo no INPI.</em></span>
+                                <span className="ast-contract-alert__action">Ver documento <ChevronRight size={18} /></span>
                             </button>
                         )}
 
@@ -941,6 +1045,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                                 <div className="ast-timeline-row__details">
                                                     <span className="ast-timeline-row__copy"><strong>{item.title}</strong><small>{item.description}</small></span>
                                                     <time dateTime={item.date ? new Date(item.date).toISOString() : undefined}>{formatTimelineDate(item.date)}</time>
+                                                    {item.actionType === 'proxy_signature' && (
+                                                        <button className="ast-timeline-row__action" type="button" onClick={() => setProcessTab('documents')}>
+                                                            Assinar e enviar <ChevronRight size={15} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))}
@@ -1086,7 +1195,51 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         {processTab === 'documents' && (
                             <div key="documents" className="ast-document-list ast-process-content--documents ast-tab-transition">
+                                {selectedProcessPaymentConfirmed && !selectedProcessProxySubmitted && (
+                                    <article className="ast-proxy-task">
+                                        <div className="ast-proxy-task__heading">
+                                            <span className="ast-proxy-task__icon"><FileText size={24} /></span>
+                                            <span><small>Documento pendente</small><h2>Procuração para o INPI</h2></span>
+                                        </div>
+                                        <p>A procuração já será gerada com seus dados. Conclua os três passos abaixo para enviarmos o pedido ao INPI.</p>
+                                        <ol className="ast-proxy-task__steps">
+                                            <li><span>1</span><strong>Baixe a procuração preenchida</strong></li>
+                                            <li><span>2</span><strong>Assine eletronicamente pelo Gov.br</strong></li>
+                                            <li><span>3</span><strong>Envie aqui o arquivo assinado</strong></li>
+                                        </ol>
+                                        <div className="ast-proxy-task__actions">
+                                            <button type="button" disabled={proxyDownloading} onClick={() => void downloadProxyTemplate()}><Download size={18} /> {proxyDownloading ? 'Gerando...' : 'Baixar procuração'}</button>
+                                            <button className="ast-proxy-task__upload" type="button" disabled={proxyUploading} onClick={() => proxyUploadInputRef.current?.click()}>
+                                                <Upload size={18} /> {proxyUploading ? 'Enviando...' : 'Enviar documento assinado'}
+                                            </button>
+                                        </div>
+                                        <input
+                                            ref={proxyUploadInputRef}
+                                            className="ast-visually-hidden"
+                                            type="file"
+                                            accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                                            onChange={uploadSignedProxy}
+                                        />
+                                    </article>
+                                )}
+
+                                {selectedProcessPaymentConfirmed && selectedProcessProxySubmitted && (
+                                    <article className="ast-proxy-received">
+                                        <span><Check size={19} /></span>
+                                        <div>
+                                            <small>{selectedProcessProxyStatus === 'UPLOADED' ? 'Aguardando validação' : 'Documento validado'}</small>
+                                            <strong>Procuração assinada recebida</strong>
+                                            <p>{selectedProcessProxyStatus === 'UPLOADED' ? 'Nossa equipe verificará o arquivo antes de anexá-lo ao processo do INPI.' : 'A procuração está pronta para uso no processo.'}</p>
+                                        </div>
+                                    </article>
+                                )}
+
+                                {proxyFeedback && (
+                                    <p className={`ast-profile-feedback ast-profile-feedback--${proxyFeedback.type}`} role="status">{proxyFeedback.message}</p>
+                                )}
+
                                 {DEFAULT_DOCUMENTS.map(document => {
+                                    if (document.key === 'powerOfAttorney' && !selectedProcessProxySubmitted) return null;
                                     const url = String(getDocumentUrl(document) || '');
                                     if (!url) return null;
                                     const fileName = getDocumentFileName(document.name, url, document.key === 'logo');
