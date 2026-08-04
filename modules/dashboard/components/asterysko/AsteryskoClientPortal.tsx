@@ -264,7 +264,14 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         if (showLoading) setSubscriptionLoading(true);
         try {
             const response = await api.get(`/asterysko/portal/subscriptions/${processId}`);
-            setSubscriptionContext(response.data);
+            const context = response.data;
+            setSubscriptionContext(context);
+            const paymentConfirmed = [context?.subscription?.lastPaymentStatus, ...(Array.isArray(context?.invoices) ? context.invoices.map((invoice: any) => invoice.status) : [])]
+                .some(status => ['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(status || '').toUpperCase()));
+            if (paymentConfirmed) {
+                setProcesses(current => current.map(process => String(process.id) === processId ? { ...process, paymentStatus: 'PAID' } : process));
+                setSelectedProcess((current: any) => current && String(current.id) === processId ? { ...current, paymentStatus: 'PAID' } : current);
+            }
         } catch (fetchError: any) {
             setSubscriptionFeedback({
                 type: 'error',
