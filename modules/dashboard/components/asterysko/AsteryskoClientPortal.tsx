@@ -83,6 +83,7 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
     RECEIVED: 'Recebida',
     CONFIRMED: 'Confirmada',
     PENDING: 'Pendente',
+    AWAITING_PAYMENT_METHOD: 'Aguardando forma de pagamento',
     OVERDUE: 'Vencida',
     FAILED: 'Falhou',
     REFUSED: 'Recusada',
@@ -98,7 +99,9 @@ const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
     PAYMENT_RECOVERY_PENDING: 'Regularização em processamento',
     PAYMENT_FAILED: 'Pagamento pendente',
     SETUP_FAILED: 'Configuração incompleta',
-    CANCELLED: 'Cancelada'
+    CANCELLED: 'Cancelada',
+    COMPLETED: 'Encerrada após deferimento',
+    INITIAL_PAYMENT_PENDING: 'Primeira cobrança em processamento'
 };
 
 const TIMELINE_ICONS: Record<string, string> = {
@@ -932,19 +935,35 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                                 {subscriptionLoading && <p className="ast-empty-note">Carregando sua assinatura...</p>}
 
-                                {!subscriptionLoading && !subscription && (
+                                {!subscriptionLoading && !subscription && subscriptionContext?.eligible && (
                                     <article className="ast-payment-card ast-subscription-start">
                                         <div className="ast-subscription-start__icon"><CreditCard size={25} aria-hidden="true" /></div>
                                         <span className="ast-subscription-start__eyebrow">Proteção recorrente</span>
                                         <h2>Ative sua assinatura Asterysko</h2>
-                                        <p>Escolha cartão de crédito ou Pix Automático e acompanhe todas as cobranças sem sair do portal.</p>
+                                        <p>Configure a forma de pagamento e acompanhe todas as cobranças sem sair do portal.</p>
+                                        {subscriptionContext?.firstPaymentAmount && (
+                                            <div className="ast-payment-card__copy">
+                                                <p>Primeira cobrança: <strong>{formatCurrency(subscriptionContext.firstPaymentAmount)}</strong></p>
+                                                {subscriptionContext.initialFeeAmount > 0 && <p>Inclui <strong>{formatCurrency(subscriptionContext.initialFeeAmount)}</strong> da taxa GRU.</p>}
+                                            </div>
+                                        )}
                                         {subscriptionContext?.planAmount && (
                                             <strong>{formatCurrency(subscriptionContext.planAmount)} <small>/ mês</small></strong>
                                         )}
                                         <button type="button" disabled={!subscriptionContext?.configured} onClick={() => openPaymentSheet('setup')}>
-                                            {subscriptionContext?.configured ? 'Configurar assinatura' : 'Pagamento em configuração'}
+                                            {subscriptionContext?.configured ? 'Configurar assinatura' : subscriptionContext?.contractSigned ? 'Pagamento em configuração' : 'Disponível após assinar o contrato'}
                                             <ChevronRight size={18} aria-hidden="true" />
                                         </button>
+                                    </article>
+                                )}
+
+                                {!subscriptionLoading && !subscription && subscriptionContext && !subscriptionContext.eligible && (
+                                    <article className="ast-payment-card">
+                                        <div className="ast-payment-card__heading">
+                                            <h2 className="ast-card-title">Pagamento do processo</h2>
+                                            <span>Pagamento único</span>
+                                        </div>
+                                        <p className="ast-history-empty">Este processo não possui mensalidade. Aqui você acompanha apenas as cobranças previstas no contrato original.</p>
                                     </article>
                                 )}
 
@@ -1102,12 +1121,15 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                             <span><strong>Cartão</strong><small>Cobrança automática mensal</small></span>
                                             <i>{subscriptionMethod === 'CREDIT_CARD' && <Check size={14} />}</i>
                                         </button>
-                                        <button className={subscriptionMethod === 'PIX_AUTOMATIC' ? 'ast-payment-method--active' : ''} type="button" onClick={() => setSubscriptionMethod('PIX_AUTOMATIC')}>
+                                        <button className={subscriptionMethod === 'PIX_AUTOMATIC' ? 'ast-payment-method--active' : ''} type="button" disabled={!subscriptionContext?.availablePaymentMethods?.includes('PIX_AUTOMATIC')} onClick={() => setSubscriptionMethod('PIX_AUTOMATIC')}>
                                             <QrCode size={21} />
                                             <span><strong>Pix Automático</strong><small>Autorize uma única vez</small></span>
                                             <i>{subscriptionMethod === 'PIX_AUTOMATIC' && <Check size={14} />}</i>
                                         </button>
                                     </div>
+                                    {!subscriptionContext?.availablePaymentMethods?.includes('PIX_AUTOMATIC') && subscriptionContext?.pixAutomaticUnavailableReason && (
+                                        <p className="ast-payment-form__error">{subscriptionContext.pixAutomaticUnavailableReason}</p>
+                                    )}
 
                                     {paymentSheet === 'setup' && (
                                         <label className="ast-payment-field">

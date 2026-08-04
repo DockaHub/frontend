@@ -22,6 +22,10 @@ interface Plan {
     commissionSales: number | string;
     commissionOps: number | string;
     category: string;
+    billingMode: 'ONE_TIME' | 'SUBSCRIPTION';
+    taxChargeTiming: 'SEPARATE' | 'FIRST_PAYMENT' | 'NOT_INCLUDED';
+    recurrenceEndEvent: string | null;
+    active: boolean;
 }
 
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenClientPortal, organization }) => {
@@ -1675,7 +1679,7 @@ const WhatsAppCard: React.FC = () => {
                                         <CreditCard size={16} /> Tabela de Planos Asterysko
                                     </h3>
                                     <button
-                                        onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0 }); setIsModalOpen(true); }}
+                                        onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0, billingMode: 'ONE_TIME', taxChargeTiming: 'SEPARATE', active: true }); setIsModalOpen(true); }}
                                         className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
                                     >
                                         <Plus size={14} /> Novo Plano
@@ -1690,6 +1694,7 @@ const WhatsAppCard: React.FC = () => {
                                                 <thead className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-semibold border-b border-docka-100 dark:border-zinc-800 tracking-wider">
                                                     <tr>
                                                         <th className="pb-3 text-left">Plano / Serviço</th>
+                                                        <th className="pb-3 text-left">Cobrança</th>
                                                         <th className="pb-3 text-right">Valor</th>
                                                         <th className="pb-3 text-right">Com. Vendas</th>
                                                         <th className="pb-3 text-right">Com. Op.</th>
@@ -1702,6 +1707,11 @@ const WhatsAppCard: React.FC = () => {
                                                             <td className="py-3">
                                                                 <p className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{plan.name}</p>
                                                                 {plan.description && <p className="text-xs text-docka-500 dark:text-zinc-500">{plan.description}</p>}
+                                                            </td>
+                                                            <td className="py-3 text-left">
+                                                                <span className={`inline-flex rounded-full px-2 py-1 text-[10px] font-bold uppercase ${plan.billingMode === 'SUBSCRIPTION' ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-slate-100 text-slate-600 dark:bg-zinc-800 dark:text-zinc-300'}`}>
+                                                                    {plan.billingMode === 'SUBSCRIPTION' ? 'Mensal' : 'Pagamento único'}
+                                                                </span>
                                                             </td>
                                                             <td className="py-3 text-right font-mono font-bold text-docka-900 dark:text-zinc-100">
                                                                 R$ {Number(plan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -1732,7 +1742,7 @@ const WhatsAppCard: React.FC = () => {
                                                     ))}
                                                     {(!Array.isArray(plans) || plans.length === 0) && (
                                                         <tr>
-                                                            <td colSpan={5} className="py-8 text-center text-docka-400 text-xs italic">Nenhum plano cadastrado.</td>
+                                                            <td colSpan={6} className="py-8 text-center text-docka-400 text-xs italic">Nenhum plano cadastrado.</td>
                                                         </tr>
                                                     )}
                                                 </tbody>
@@ -1742,7 +1752,7 @@ const WhatsAppCard: React.FC = () => {
                                     <div className="mt-6 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 flex gap-3">
                                         <Info size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                                         <p className="text-xs text-blue-800/80 dark:text-blue-300/60 leading-relaxed italic">
-                                            Estes valores servem de base para o CRM. Você ainda poderá ajustar o valor individual de cada lead durante o fechamento.
+                                            O plano escolhido no CRM é fotografado no contrato e no processo. Depois da assinatura, valores e modalidade ficam bloqueados para preservar o acordo do cliente.
                                         </p>
                                     </div>
                                 </div>
@@ -1932,6 +1942,18 @@ const WhatsAppCard: React.FC = () => {
                             />
                         </div>
                         <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Modalidade de cobrança</label>
+                            <select
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
+                                value={selectedPlan?.billingMode || 'ONE_TIME'}
+                                onChange={(e) => setSelectedPlan({ ...selectedPlan, billingMode: e.target.value as Plan['billingMode'], recurrenceEndEvent: e.target.value === 'SUBSCRIPTION' ? (selectedPlan?.recurrenceEndEvent || 'INPI_GRANTED') : null })}
+                            >
+                                <option value="ONE_TIME">Pagamento único</option>
+                                <option value="SUBSCRIPTION">Assinatura mensal</option>
+                            </select>
+                            <p className="mt-1.5 text-xs text-slate-500">Contratos antigos devem permanecer como pagamento único.</p>
+                        </div>
+                        <div>
                             <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Descrição (Opcional)</label>
                             <textarea
                                 className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
@@ -1941,6 +1963,37 @@ const WhatsAppCard: React.FC = () => {
                                 onChange={(e) => setSelectedPlan({ ...selectedPlan, description: e.target.value })}
                             />
                         </div>
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Cobrança da taxa GRU</label>
+                                <select
+                                    className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
+                                    value={selectedPlan?.taxChargeTiming || 'SEPARATE'}
+                                    onChange={(e) => setSelectedPlan({ ...selectedPlan, taxChargeTiming: e.target.value as Plan['taxChargeTiming'] })}
+                                >
+                                    <option value="FIRST_PAYMENT">Somar na primeira cobrança</option>
+                                    <option value="SEPARATE">Cobrar separadamente</option>
+                                    <option value="NOT_INCLUDED">Não incluída</option>
+                                </select>
+                            </div>
+                            {selectedPlan?.billingMode === 'SUBSCRIPTION' && (
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Encerrar recorrência</label>
+                                    <select
+                                        className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
+                                        value={selectedPlan?.recurrenceEndEvent || 'INPI_GRANTED'}
+                                        onChange={(e) => setSelectedPlan({ ...selectedPlan, recurrenceEndEvent: e.target.value })}
+                                    >
+                                        <option value="INPI_GRANTED">Ao deferimento no INPI</option>
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+                        {selectedPlan?.billingMode === 'SUBSCRIPTION' && selectedPlan.taxChargeTiming === 'FIRST_PAYMENT' && (
+                            <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-3 text-xs leading-relaxed text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-200">
+                                Primeira cobrança: <strong>R$ {(Number(selectedPlan.value || 0) + Number(selectedPlan.officialTax || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>. Demais mensalidades: <strong>R$ {Number(selectedPlan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>.
+                            </div>
+                        )}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Valor do Plano (R$)</label>

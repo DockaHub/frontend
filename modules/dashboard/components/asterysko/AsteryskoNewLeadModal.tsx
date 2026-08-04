@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { X, ChevronDown } from 'lucide-react';
 import api from '../../../../services/api';
 
@@ -43,9 +43,13 @@ const InputField = ({ label, name, placeholder, value, isSelect = false, options
 
 const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, organizationId }) => {
     const [isLoading, setIsLoading] = useState(false);
+    const [plans, setPlans] = useState<any[]>([]);
     const [formData, setFormData] = useState({
         clientName: '',
+        contactEmail: '',
+        contactPhone: '',
         brandName: '',
+        planId: '',
         serviceInterest: 'Registro de marca',
         commercialRep: 'Pessoa da Asterysko encarregada',
         leadOrigin: 'Instagram',
@@ -55,6 +59,13 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
         priority: 'Normal',
         internalNotes: ''
     });
+
+    useEffect(() => {
+        if (!isOpen) return;
+        api.get('/asterysko/plans')
+            .then(response => setPlans(Array.isArray(response.data) ? response.data.filter((plan: any) => plan.active !== false) : []))
+            .catch(error => console.error('Failed to load Asterysko plans', error));
+    }, [isOpen]);
 
     if (!isOpen) return null;
 
@@ -66,9 +77,12 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
             const payload = {
                 title: formData.brandName || 'Novo Lead',
                 subtitle: formData.clientName,
-                status: 'NEW', // mapped to column
+                status: 'leads',
                 value: formData.estimatedValue,
                 contactName: formData.clientName,
+                contactEmail: formData.contactEmail,
+                contactPhone: formData.contactPhone,
+                planId: formData.planId || null,
                 organizationId
             };
             
@@ -113,6 +127,8 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                         value={formData.clientName} 
                         onChange={handleChange} 
                     />
+                    <InputField label="E-mail" name="contactEmail" type="email" placeholder="cliente@email.com" value={formData.contactEmail} onChange={handleChange} />
+                    <InputField label="WhatsApp" name="contactPhone" placeholder="(00) 00000-0000" value={formData.contactPhone} onChange={handleChange} />
 
                     {/* Processo */}
                     <div className="px-6 py-5">
@@ -145,6 +161,32 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                         ]} 
                         onChange={handleChange} 
                     />
+
+                    <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 py-3 px-6 relative">
+                        <label className="text-[10px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-1">Plano comercial</label>
+                        <div className="relative">
+                            <select
+                                name="planId"
+                                value={formData.planId}
+                                onChange={handleChange}
+                                className="w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white appearance-none cursor-pointer pr-6"
+                            >
+                                <option value="">Pagamento único legado/manual</option>
+                                {plans.map((plan: any) => (
+                                    <option key={plan.id} value={plan.id}>
+                                        {plan.name} — {plan.billingMode === 'SUBSCRIPTION' ? `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9f9f9f] pointer-events-none" />
+                        </div>
+                        {formData.planId && (() => {
+                            const plan = plans.find((item: any) => item.id === formData.planId);
+                            if (!plan || plan.billingMode !== 'SUBSCRIPTION') return null;
+                            const first = Number(plan.value || 0) + (plan.taxChargeTiming === 'FIRST_PAYMENT' ? Number(plan.officialTax || 0) : 0);
+                            return <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-300">Primeira cobrança R$ {first.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}; depois R$ {Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês.</p>;
+                        })()}
+                    </div>
 
                     {/* Informações do lead */}
                     <div className="px-6 py-5">

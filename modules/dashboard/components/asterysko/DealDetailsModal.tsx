@@ -311,6 +311,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     // Form State
     const [formData, setFormData] = useState<any>({});
     const [organizationMembers, setOrganizationMembers] = useState<any[]>([]);
+    const [commercialPlans, setCommercialPlans] = useState<any[]>([]);
     
     // Linked Data State
     const [processData, setProcessData] = useState<any>(null);
@@ -327,7 +328,12 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 })
                 .catch(err => console.error('Error loading members:', err));
         }
-    }, [organization?.id]);
+        if (isOpen) {
+            api.get('/asterysko/plans')
+                .then(res => setCommercialPlans(Array.isArray(res.data) ? res.data.filter((plan: any) => plan.active !== false) : []))
+                .catch(err => console.error('Error loading commercial plans:', err));
+        }
+    }, [organization?.id, isOpen]);
 
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -347,6 +353,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                 signedAt: (deal as any).signedAt || null,
                 assignedUserId: (deal as any).assignedUserId || null,
                 planType: (deal as any).planType || 'ESSENCIAL',
+                planId: (deal as any).planId || '',
+                billingMode: (deal as any).billingMode || 'ONE_TIME',
+                recurringAmount: (deal as any).recurringAmount || null,
+                initialFeeAmount: (deal as any).initialFeeAmount || 0,
+                firstPaymentAmount: (deal as any).firstPaymentAmount || null,
                 tags,
                 cnpj: info.cnpj || '',
                 razaoSocial: info.razaoSocial || '',
@@ -386,6 +397,11 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                     signedAt: response.data.signedAt,
                     assignedUserId: response.data.assignedUserId,
                     planType: response.data.planType,
+                    planId: response.data.planId || '',
+                    billingMode: response.data.billingMode || 'ONE_TIME',
+                    recurringAmount: response.data.recurringAmount,
+                    initialFeeAmount: response.data.initialFeeAmount || 0,
+                    firstPaymentAmount: response.data.firstPaymentAmount,
                     tags,
                     cnpj: info.cnpj || response.data.client?.cnpj || '',
                     razaoSocial: info.razaoSocial || response.data.client?.company || '',
@@ -497,6 +513,29 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
              setSaveStatus('idle');
          }
      };
+
+    const handlePlanSelection = async (planId: string) => {
+        if (!deal || formData.signedAt) return;
+        setSaveStatus('saving');
+        try {
+            const response = await api.put(`/asterysko/crm/deals/${deal.id}`, { planId });
+            setFormData((current: any) => ({
+                ...current,
+                planId: response.data.planId || '',
+                planType: response.data.planType,
+                value: response.data.value,
+                billingMode: response.data.billingMode,
+                recurringAmount: response.data.recurringAmount,
+                initialFeeAmount: response.data.initialFeeAmount || 0,
+                firstPaymentAmount: response.data.firstPaymentAmount
+            }));
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
+        } catch (error: any) {
+            setSaveStatus('idle');
+            addToast({ type: 'error', title: 'Plano não alterado', message: error.response?.data?.error || 'Não foi possível aplicar o plano.' });
+        }
+    };
 
     const handleConvert = async () => {
         if (!formData.contactEmail || !formData.contactName && !formData.subtitle) {
@@ -1136,20 +1175,25 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-docka-400 uppercase tracking-widest ml-1">Plano Selecionado</label>
-                                    <div className="grid grid-cols-3 gap-2">
-                                        {['ESSENCIAL', 'PREMIUM', 'BLINDADO'].map(plan => (
-                                            <button
-                                                key={plan}
-                                                onClick={() => handleAutoSave('planType', plan)}
-                                                className={`py-2 text-xs font-bold rounded-lg border transition-all ${formData.planType === plan
-                                                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
-                                                    : 'bg-white dark:bg-zinc-800 border-docka-100 dark:border-zinc-700 text-docka-600 dark:text-zinc-400 hover:bg-docka-50'
-                                                }`}
-                                            >
-                                                {plan}
-                                            </button>
+                                    <select
+                                        className="w-full text-xs font-bold bg-docka-50/50 dark:bg-zinc-800 border border-docka-100 dark:border-zinc-700 rounded-lg px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-60"
+                                        value={formData.planId || ''}
+                                        disabled={Boolean(formData.signedAt)}
+                                        onChange={event => void handlePlanSelection(event.target.value)}
+                                    >
+                                        <option value="">Pagamento único legado/manual</option>
+                                        {commercialPlans.map((plan: any) => (
+                                            <option key={plan.id} value={plan.id}>
+                                                {plan.name} — {plan.billingMode === 'SUBSCRIPTION' ? `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                                            </option>
                                         ))}
-                                    </div>
+                                    </select>
+                                    {formData.billingMode === 'SUBSCRIPTION' && (
+                                        <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs leading-relaxed text-indigo-800 dark:border-indigo-900/30 dark:bg-indigo-950/20 dark:text-indigo-200">
+                                            Primeira cobrança: <strong>R$ {Number(formData.firstPaymentAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>. Depois: <strong>R$ {Number(formData.recurringAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</strong> até o deferimento.
+                                        </div>
+                                    )}
+                                    {formData.signedAt && <p className="text-[11px] text-docka-400">O plano fica bloqueado após a assinatura do contrato.</p>}
                                 </div>
 
                                 <div className="space-y-2">
