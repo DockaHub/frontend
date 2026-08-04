@@ -234,6 +234,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [subscriptionSubmitting, setSubscriptionSubmitting] = useState(false);
     const [subscriptionFeedback, setSubscriptionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [pixCopied, setPixCopied] = useState(false);
+    const pageRef = useRef<HTMLDivElement | null>(null);
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
 
@@ -457,7 +458,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         viewTimer.current = window.setTimeout(() => {
             setView(nextView);
             setViewLeaving(false);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
         }, 210);
     };
 
@@ -646,15 +647,34 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     }
 
     return (
-        <div className="ast-page">
+        <div className="ast-page" ref={pageRef}>
             <main className="ast-portal__stage">
+                <header className="ast-desktop-nav" aria-label="Navegação principal do portal">
+                    <button className="ast-desktop-nav__brand" type="button" onClick={goHome} aria-label="Ir para o início">
+                        <img src={`${ASSET_ROOT}/brand-mark.svg`} alt="" />
+                        <span><strong>Asterysko</strong><small>Portal do cliente</small></span>
+                    </button>
+
+                    <nav className="ast-desktop-nav__links" aria-label="Áreas do portal">
+                        <button className={view === 'home' ? 'ast-desktop-nav__link--active' : ''} type="button" onClick={goHome} aria-current={view === 'home' ? 'page' : undefined}>Início</button>
+                        <button className={view === 'profile' ? 'ast-desktop-nav__link--active' : ''} type="button" onClick={() => navigateView('profile')} aria-current={view === 'profile' ? 'page' : undefined}>Meus dados</button>
+                        <button className={view === 'contracts' ? 'ast-desktop-nav__link--active' : ''} type="button" onClick={() => navigateView('contracts')} aria-current={view === 'contracts' ? 'page' : undefined}>Contratos</button>
+                    </nav>
+
+                    <button className="ast-desktop-nav__account" type="button" onClick={openMenu} aria-label="Abrir menu e opções da conta">
+                        <span className="ast-desktop-nav__avatar">{getInitials(clientName)}</span>
+                        <span><strong>{firstName}</strong><small>Menu e suporte</small></span>
+                        <img src={`${ASSET_ROOT}/home-imgJamMenu.svg`} alt="" />
+                    </button>
+                </header>
+
                 <div key={view} className={`ast-view-shell ${viewLeaving ? 'ast-view-shell--leaving' : 'ast-view-shell--entering'}`}>
                 {view === 'home' && (
-                    <section aria-labelledby="ast-home-title">
+                    <section className="ast-home-page" aria-labelledby="ast-home-title">
                         <div className="ast-portal__topbar">
                             <div className="ast-portal__intro">
                                 <h1 id="ast-home-title">Olá, {firstName}</h1>
-                                <p>Acompanhe seus processos</p>
+                                <p>Acompanhe seus processos e mantenha suas marcas protegidas.</p>
                             </div>
                             <button className="ast-round-button ast-menu-button" type="button" onClick={openMenu} aria-label="Abrir menu">
                                 <img src={`${ASSET_ROOT}/home-imgJamMenu.svg`} alt="" />
@@ -663,43 +683,66 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         {error && <p className="ast-empty-note" role="status">{error}</p>}
 
-                        <div className="ast-home-processes">
-                            {displayedProcesses.map((process, index) => {
-                                const processName = String(getValue(process.brandName, 'Sua marca'));
-                                return (
-                                    <button className="ast-process-card" key={process.id || index} type="button" onClick={() => openProcess(process)}>
-                                        <span className="ast-process-card__status">
-                                            {getProcessStatusLabel(process.status)}
-                                        </span>
-                                        <span className="ast-process-card__spacer" />
-                                        <span className="ast-process-card__body">
-                                            <span className="ast-process-card__logo">
-                                                {process.brandLogo ? <img src={process.brandLogo} alt="" /> : getInitials(processName)}
-                                            </span>
-                                            <strong className="ast-process-card__name">{processName}</strong>
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                            {!loading && !displayedProcesses.length && (
-                                <p className="ast-empty-note">Nenhum processo foi vinculado ao seu cadastro ainda.</p>
-                            )}
-                            <a className="ast-new-process-card" href="https://asterysko.com/nova-marca" target="_blank" rel="noreferrer">
-                                <img src={`${ASSET_ROOT}/home-imgFormkitAdd.svg`} alt="" />
-                                <span>Registrar uma nova marca</span>
-                            </a>
-                        </div>
+                        <div className="ast-home-dashboard">
+                            <div className="ast-home-primary">
+                                <div className="ast-home-section-title">
+                                    <div><span>Visão geral</span><h2>Seus processos</h2></div>
+                                    <small>{displayedProcesses.length} {displayedProcesses.length === 1 ? 'processo' : 'processos'}</small>
+                                </div>
 
-                        <div className="ast-protection-banner">
-                            <img src={`${ASSET_ROOT}/home-imgBoxiconsRegistered.svg`} alt="" />
-                            <div>
-                                <strong>Proteção não termina no registro</strong>
-                                <span>Monitore, renove e expanda sua marca.</span>
+                                <div className="ast-home-processes">
+                                    {displayedProcesses.map((process, index) => {
+                                        const processName = String(getValue(process.brandName, 'Sua marca'));
+                                        return (
+                                            <button className="ast-process-card" key={process.id || index} type="button" onClick={() => openProcess(process)}>
+                                                <span className="ast-process-card__status">
+                                                    {getProcessStatusLabel(process.status)}
+                                                </span>
+                                                <span className="ast-process-card__spacer" />
+                                                <span className="ast-process-card__body">
+                                                    <span className="ast-process-card__logo">
+                                                        {process.brandLogo ? <img src={process.brandLogo} alt="" /> : getInitials(processName)}
+                                                    </span>
+                                                    <strong className="ast-process-card__name">{processName}</strong>
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                    {!loading && !displayedProcesses.length && (
+                                        <p className="ast-empty-note">Nenhum processo foi vinculado ao seu cadastro ainda.</p>
+                                    )}
+                                    <a className="ast-new-process-card" href="https://asterysko.com/nova-marca" target="_blank" rel="noreferrer">
+                                        <img src={`${ASSET_ROOT}/home-imgFormkitAdd.svg`} alt="" />
+                                        <span>Registrar uma nova marca</span>
+                                    </a>
+                                </div>
                             </div>
+
+                            <aside className="ast-home-aside" aria-label="Proteção e atalhos">
+                                <div className="ast-protection-banner">
+                                    <img src={`${ASSET_ROOT}/home-imgBoxiconsRegistered.svg`} alt="" />
+                                    <div>
+                                        <strong>Proteção não termina no registro</strong>
+                                        <span>Monitore, renove e expanda sua marca.</span>
+                                    </div>
+                                </div>
+
+                                <div className="ast-quick-actions">
+                                    <div><span>Atalhos</span><strong>Acesso rápido</strong></div>
+                                    <button type="button" onClick={() => navigateView('profile')}>
+                                        <span><img src={`${ASSET_ROOT}/menu-imgTablerUser.svg`} alt="" />Meus dados</span><ChevronRight size={18} />
+                                    </button>
+                                    <button type="button" onClick={() => navigateView('contracts')}>
+                                        <span><FileText size={20} />Contratos</span><ChevronRight size={18} />
+                                    </button>
+                                </div>
+                            </aside>
                         </div>
 
                         <section className="ast-benefits" aria-labelledby="ast-benefits-title">
-                            <h2 id="ast-benefits-title">Mais benefícios</h2>
+                            <div className="ast-home-section-title">
+                                <div><span>Ecossistema Asterysko</span><h2 id="ast-benefits-title">Mais benefícios</h2></div>
+                            </div>
                             <div className="ast-benefit-row">
                                 {[0, 1, 2].map(index => (
                                     <article className="ast-benefit-card" key={index}>
@@ -732,10 +775,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             </p>
                         )}
 
-                        {profileGroups.map(group => (
-                            <div className="ast-data-card" key={group.title}>
-                                <h2 className="ast-card-title">{group.title}</h2>
-                                <div className="ast-data-card__body">
+                        <div className="ast-profile-grid">
+                            {profileGroups.map(group => (
+                                <div className="ast-data-card" key={group.title}>
+                                    <h2 className="ast-card-title">{group.title}</h2>
+                                    <div className="ast-data-card__body">
                                     {group.fields.map(field => {
                                         const isEditing = editingProfileField === field.key;
                                         const anotherFieldIsEditing = editingProfileField !== null && !isEditing;
@@ -784,9 +828,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                             </div>
                                         );
                                     })}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </section>
                 )}
 
@@ -831,7 +876,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     <section className="ast-process-page" aria-labelledby="ast-process-title">
                         <header className="ast-process-hero">
                             <div className="ast-process-hero__back"><BackButton onClick={goHome} /></div>
-                            <span className="ast-status-pill">Ativo</span>
+                            <div className="ast-process-hero__meta">
+                                <span className="ast-status-pill">{getProcessStatusLabel(selectedProcess?.status)}</span>
+                                {selectedProcess?.inpiProcessNumber && <span className="ast-process-number">Processo INPI {selectedProcess.inpiProcessNumber}</span>}
+                            </div>
                             <h1 id="ast-process-title">{brandName}</h1>
                         </header>
 
@@ -875,7 +923,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         )}
 
                         {processTab === 'payments' && (
-                            <div key="payments" className="ast-process-content ast-tab-transition">
+                            <div key="payments" className="ast-process-content ast-process-content--payments ast-tab-transition">
                                 {subscriptionFeedback && (
                                     <p className={`ast-profile-feedback ast-profile-feedback--${subscriptionFeedback.type}`} role="status">
                                         {subscriptionFeedback.message}
@@ -991,7 +1039,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         )}
 
                         {processTab === 'documents' && (
-                            <div key="documents" className="ast-document-list ast-tab-transition">
+                            <div key="documents" className="ast-document-list ast-process-content--documents ast-tab-transition">
                                 {DEFAULT_DOCUMENTS.map(document => {
                                     const url = String(getDocumentUrl(document) || '');
                                     if (!url) return null;
