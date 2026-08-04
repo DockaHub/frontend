@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, ChevronRight, Download, ExternalLink, FileText, X } from 'lucide-react';
+import { ArrowLeft, Check, ChevronRight, Copy, CreditCard, Download, ExternalLink, FileText, QrCode, X } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
@@ -38,6 +38,19 @@ interface PreviewDocument {
     url: string;
 }
 
+type PaymentSheet = 'setup' | 'due-date' | 'payment-method' | null;
+type SubscriptionPaymentMethod = 'CREDIT_CARD' | 'PIX_AUTOMATIC';
+
+interface CardDraft {
+    holderName: string;
+    number: string;
+    expiryMonth: string;
+    expiryYear: string;
+    ccv: string;
+}
+
+const EMPTY_CARD: CardDraft = { holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '' };
+
 const ASSET_ROOT = '/assets/asterysko';
 
 const DEFAULT_DOCUMENTS = [
@@ -63,6 +76,29 @@ const PROCESS_STATUS_LABELS: Record<string, string> = {
     GRANTED: 'Registro concedido',
     WON: 'Processo concluído',
     ARCHIVED: 'Processo arquivado',
+};
+
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+    PAID: 'Paga',
+    RECEIVED: 'Recebida',
+    CONFIRMED: 'Confirmada',
+    PENDING: 'Pendente',
+    OVERDUE: 'Vencida',
+    FAILED: 'Falhou',
+    REFUSED: 'Recusada',
+    CANCELLED: 'Cancelada',
+    REFUNDED: 'Estornada'
+};
+
+const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
+    ACTIVE: 'Ativa',
+    CREATED: 'Aguardando autorização',
+    PENDING_SETUP: 'Em configuração',
+    REAUTHORIZATION_PENDING: 'Aguardando nova autorização',
+    PAYMENT_RECOVERY_PENDING: 'Regularização em processamento',
+    PAYMENT_FAILED: 'Pagamento pendente',
+    SETUP_FAILED: 'Configuração incompleta',
+    CANCELLED: 'Cancelada'
 };
 
 const TIMELINE_ICONS: Record<string, string> = {
@@ -100,12 +136,13 @@ const addAuthToken = (url: string) => {
 const getInitials = (value: string) => value.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase();
 
 const formatCurrency = (value: unknown) => {
+    if (value === null || value === undefined || value === '') return 'Valor não informado';
     const number = Number(value);
-    if (!Number.isFinite(number)) return 'R$ 179,00';
+    if (!Number.isFinite(number)) return 'Valor não informado';
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(number);
 };
 
-const formatDate = (value: unknown, fallback = '09/07/2026') => {
+const formatDate = (value: unknown, fallback = 'Data não informada') => {
     if (!value) return fallback;
     const date = new Date(String(value));
     if (Number.isNaN(date.getTime())) return String(value);
@@ -188,10 +225,34 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [profileFeedback, setProfileFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [previewDocument, setPreviewDocument] = useState<PreviewDocument | null>(null);
     const [previewClosing, setPreviewClosing] = useState(false);
+    const [subscriptionContext, setSubscriptionContext] = useState<any>(null);
+    const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+    const [paymentSheet, setPaymentSheet] = useState<PaymentSheet>(null);
+    const [subscriptionMethod, setSubscriptionMethod] = useState<SubscriptionPaymentMethod>('CREDIT_CARD');
+    const [subscriptionDueDay, setSubscriptionDueDay] = useState(Math.min(new Date().getDate(), 28));
+    const [cardDraft, setCardDraft] = useState<CardDraft>(EMPTY_CARD);
+    const [subscriptionSubmitting, setSubscriptionSubmitting] = useState(false);
+    const [subscriptionFeedback, setSubscriptionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [pixCopied, setPixCopied] = useState(false);
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
 
     useSystemBarColor(view === 'details' ? '#ffffff' : '#f3f3f3');
+
+    const fetchSubscriptionContext = async (processId: string, showLoading = true) => {
+        if (showLoading) setSubscriptionLoading(true);
+        try {
+            const response = await api.get(`/asterysko/portal/subscriptions/${processId}`);
+            setSubscriptionContext(response.data);
+        } catch (fetchError: any) {
+            setSubscriptionFeedback({
+                type: 'error',
+                message: fetchError.response?.data?.message || 'Não foi possível carregar a assinatura.'
+            });
+        } finally {
+            if (showLoading) setSubscriptionLoading(false);
+        }
+    };
 
     useEffect(() => {
         const urlToken = new URLSearchParams(window.location.search).get('token');
@@ -249,6 +310,16 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         void fetchData();
     }, [logout]);
 
+    useEffect(() => {
+        const processId = selectedProcess?.id;
+        if (!processId) {
+            setSubscriptionContext(null);
+            return;
+        }
+        setSubscriptionFeedback(null);
+        void fetchSubscriptionContext(String(processId));
+    }, [selectedProcess?.id]);
+
     useEffect(() => () => {
         if (viewTimer.current) window.clearTimeout(viewTimer.current);
         if (menuTimer.current) window.clearTimeout(menuTimer.current);
@@ -269,6 +340,20 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     }, [previewDocument]);
 
     useEffect(() => {
+        if (!paymentSheet) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && !subscriptionSubmitting) setPaymentSheet(null);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [paymentSheet, subscriptionSubmitting]);
+
+    useEffect(() => {
         if (!menuOpen) return;
 
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -286,6 +371,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const brandName = String(getValue(selectedProcess?.brandName, displayedProcesses[0]?.brandName, 'Sua marca'));
     const invoices = financials.invoices as any[];
     const contracts = financials.contracts as any[];
+    const subscription = subscriptionContext?.subscription;
+    const subscriptionInvoices = Array.isArray(subscriptionContext?.invoices) ? subscriptionContext.invoices : [];
+    const displayedPaymentHistory = subscription ? subscriptionInvoices : invoices;
+    const subscriptionStatus = String(subscription?.status || '').toUpperCase();
+    const subscriptionMethodLabel = subscription?.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix Automático' : 'Cartão de crédito';
 
     const profileValues: Record<string, string> = {
         name: getProfileValue(getValue(clientData?.name, user?.name)),
@@ -474,6 +564,69 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         : '';
     const previewUrlWithoutQuery = resolvedPreviewUrl.split('?')[0].toLowerCase();
     const previewIsImage = /^data:image\//.test(resolvedPreviewUrl) || /\.(png|jpe?g|webp|gif|svg)$/.test(previewUrlWithoutQuery);
+
+    const openPaymentSheet = (sheet: Exclude<PaymentSheet, null>) => {
+        setSubscriptionFeedback(null);
+        setPixCopied(false);
+        setCardDraft(EMPTY_CARD);
+        setSubscriptionDueDay(Number(subscription?.dueDay || Math.min(new Date().getDate(), 28)));
+        setSubscriptionMethod(sheet === 'payment-method'
+            ? (subscription?.paymentMethod === 'CREDIT_CARD' ? 'PIX_AUTOMATIC' : 'CREDIT_CARD')
+            : 'CREDIT_CARD');
+        setPaymentSheet(sheet);
+    };
+
+    const submitSubscriptionAction = async (event: React.FormEvent) => {
+        event.preventDefault();
+        const processId = String(selectedProcess?.id || '');
+        if (!processId || subscriptionSubmitting) return;
+        try {
+            setSubscriptionSubmitting(true);
+            setSubscriptionFeedback(null);
+            if (paymentSheet === 'due-date') {
+                await api.patch(`/asterysko/portal/subscriptions/${processId}/due-date`, { dueDay: subscriptionDueDay });
+            } else {
+                const payload = {
+                    paymentMethod: subscriptionMethod,
+                    dueDay: subscriptionDueDay,
+                    ...(subscriptionMethod === 'CREDIT_CARD' ? { creditCard: cardDraft } : {})
+                };
+                if (paymentSheet === 'payment-method') {
+                    await api.put(`/asterysko/portal/subscriptions/${processId}/payment-method`, payload);
+                } else {
+                    await api.post('/asterysko/portal/subscriptions', { processId, ...payload });
+                }
+            }
+            await fetchSubscriptionContext(processId, false);
+            setCardDraft(EMPTY_CARD);
+            setPaymentSheet(null);
+            setSubscriptionFeedback({
+                type: 'success',
+                message: subscriptionMethod === 'PIX_AUTOMATIC' && paymentSheet !== 'due-date'
+                    ? 'Escaneie o QR Code abaixo para confirmar o Pix Automático.'
+                    : paymentSheet === 'due-date'
+                        ? 'Solicitação de novo vencimento registrada.'
+                        : paymentSheet === 'payment-method'
+                            ? 'Novo cartão registrado. A cobrança pendente está sendo processada.'
+                        : 'Assinatura configurada com sucesso.'
+            });
+        } catch (actionError: any) {
+            setSubscriptionFeedback({
+                type: 'error',
+                message: actionError.response?.data?.message || 'Não foi possível concluir esta alteração.'
+            });
+        } finally {
+            setSubscriptionSubmitting(false);
+        }
+    };
+
+    const copyPixCode = async () => {
+        const payload = subscription?.pixQrCodePayload;
+        if (!payload) return;
+        await navigator.clipboard?.writeText(payload);
+        setPixCopied(true);
+        window.setTimeout(() => setPixCopied(false), 1800);
+    };
 
     const signOut = () => {
         logout();
@@ -723,36 +876,116 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         {processTab === 'payments' && (
                             <div key="payments" className="ast-process-content ast-tab-transition">
-                                <article className="ast-payment-card">
-                                    <h2 className="ast-card-title">Cartão de crédito</h2>
-                                    <div className="ast-payment-card__account">
-                                        <span className="ast-payment-icon"><img src={`${ASSET_ROOT}/processo_pagamentos-imgFluentPayment16Regular1.svg`} alt="" /></span>
-                                        <div><strong>•••• •••• •••• {getValue(financials.cardLastFour, '1234')}</strong><small>Mastercard</small></div>
-                                    </div>
-                                    <div className="ast-payment-card__copy">
-                                        <p>Sua próxima cobrança será no valor de {formatCurrency(getValue(financials.nextAmount, 179))}</p>
-                                        <p>Sua fatura vence no dia {getValue(financials.dueDay, 9)} de todo mês</p>
-                                    </div>
-                                    <a className="ast-payment-card__action" href="#alterar-vencimento" onClick={event => event.preventDefault()}>
-                                        Alterar data de vencimento <ChevronRight size={18} />
-                                    </a>
-                                </article>
+                                {subscriptionFeedback && (
+                                    <p className={`ast-profile-feedback ast-profile-feedback--${subscriptionFeedback.type}`} role="status">
+                                        {subscriptionFeedback.message}
+                                    </p>
+                                )}
+
+                                {subscriptionLoading && <p className="ast-empty-note">Carregando sua assinatura...</p>}
+
+                                {!subscriptionLoading && !subscription && (
+                                    <article className="ast-payment-card ast-subscription-start">
+                                        <div className="ast-subscription-start__icon"><CreditCard size={25} aria-hidden="true" /></div>
+                                        <span className="ast-subscription-start__eyebrow">Proteção recorrente</span>
+                                        <h2>Ative sua assinatura Asterysko</h2>
+                                        <p>Escolha cartão de crédito ou Pix Automático e acompanhe todas as cobranças sem sair do portal.</p>
+                                        {subscriptionContext?.planAmount && (
+                                            <strong>{formatCurrency(subscriptionContext.planAmount)} <small>/ mês</small></strong>
+                                        )}
+                                        <button type="button" disabled={!subscriptionContext?.configured} onClick={() => openPaymentSheet('setup')}>
+                                            {subscriptionContext?.configured ? 'Configurar assinatura' : 'Pagamento em configuração'}
+                                            <ChevronRight size={18} aria-hidden="true" />
+                                        </button>
+                                    </article>
+                                )}
+
+                                {!subscriptionLoading && subscription && (
+                                    <>
+                                        <article className={`ast-payment-card ${subscriptionStatus === 'PAYMENT_FAILED' ? 'ast-payment-card--failed' : ''}`}>
+                                            <div className="ast-payment-card__heading">
+                                                <h2 className="ast-card-title">Assinatura mensal</h2>
+                                                <span>{SUBSCRIPTION_STATUS_LABELS[subscriptionStatus] || subscription.status}</span>
+                                            </div>
+                                            <div className="ast-payment-card__account">
+                                                <span className="ast-payment-icon">
+                                                    {subscription.paymentMethod === 'PIX_AUTOMATIC' ? <QrCode size={18} aria-hidden="true" /> : <CreditCard size={18} aria-hidden="true" />}
+                                                </span>
+                                                <div>
+                                                    <strong>
+                                                        {subscription.paymentMethod === 'CREDIT_CARD' && subscription.cardLastFour
+                                                            ? `•••• •••• •••• ${subscription.cardLastFour}`
+                                                            : subscriptionMethodLabel}
+                                                    </strong>
+                                                    <small>{subscription.cardBrand || subscriptionMethodLabel}</small>
+                                                </div>
+                                            </div>
+                                            <div className="ast-payment-card__copy">
+                                                <p>Próxima cobrança: <strong>{formatCurrency(subscription.amount)}</strong></p>
+                                                <p>Vencimento no dia <strong>{subscription.dueDay}</strong> de cada mês</p>
+                                                {subscription.lastFailureReason && <p className="ast-payment-card__failure">{subscription.lastFailureReason}</p>}
+                                            </div>
+                                            <div className="ast-payment-card__actions">
+                                                {subscription.paymentMethod === 'CREDIT_CARD' && (
+                                                    <button type="button" disabled={!subscription.dueDateChangeAllowed} onClick={() => openPaymentSheet('due-date')}>
+                                                        Alterar vencimento <ChevronRight size={18} />
+                                                    </button>
+                                                )}
+                                                {subscription.paymentMethodChangeAllowed && (
+                                                    <button type="button" onClick={() => openPaymentSheet('payment-method')}>
+                                                        Alterar forma de pagamento <ChevronRight size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {!subscription.dueDateChangeAllowed && subscription.nextDueDateChangeAt && (
+                                                <small className="ast-payment-card__rule">Nova alteração disponível em {formatDate(subscription.nextDueDateChangeAt)}.</small>
+                                            )}
+                                            {subscription.paymentMethod === 'PIX_AUTOMATIC' && (
+                                                <small className="ast-payment-card__rule">O dia de vencimento faz parte da autorização do Pix Automático.</small>
+                                            )}
+                                        </article>
+
+                                        {subscription.pixQrCodePayload && (
+                                            <article className="ast-pix-authorization">
+                                                <span className="ast-pix-authorization__eyebrow">Autorização necessária</span>
+                                                <h2>Confirme o Pix Automático</h2>
+                                                <p>Abra o app do seu banco, pague o primeiro Pix e autorize as próximas cobranças recorrentes.</p>
+                                                {subscription.pixQrCodeEncodedImage && (
+                                                    <img
+                                                        src={subscription.pixQrCodeEncodedImage.startsWith('data:')
+                                                            ? subscription.pixQrCodeEncodedImage
+                                                            : `data:image/png;base64,${subscription.pixQrCodeEncodedImage}`}
+                                                        alt="QR Code para autorizar o Pix Automático"
+                                                    />
+                                                )}
+                                                <button type="button" onClick={() => void copyPixCode()}>
+                                                    {pixCopied ? <Check size={18} /> : <Copy size={18} />}
+                                                    {pixCopied ? 'Código copiado' : 'Copiar código Pix'}
+                                                </button>
+                                            </article>
+                                        )}
+                                    </>
+                                )}
 
                                 <article className="ast-history-card">
                                     <h2 className="ast-card-title">Histórico de pagamento</h2>
-                                    {(invoices.length ? invoices : [
-                                        { id: 'invoice-one', amount: 179, paidAt: '2026-07-09' },
-                                        { id: 'invoice-two', amount: 179, paidAt: '2026-06-09' },
-                                    ]).slice(0, 5).map((invoice: any, index: number) => (
+                                    {displayedPaymentHistory.slice(0, 12).map((invoice: any, index: number) => {
+                                        const paymentStatus = String(invoice.status || invoice.providerStatus || 'PENDING').toUpperCase();
+                                        return (
                                         <div className="ast-history-row" key={invoice.id || index}>
                                             <div>
-                                                <span className="ast-history-row__status">Paga</span>
-                                                <strong>{formatCurrency(getValue(invoice.amount, invoice.total, 179))}</strong>
-                                                <small>Cartão • {formatDate(getValue(invoice.paidAt, invoice.dueDate), index ? '09/06/2026' : '09/07/2026')}</small>
+                                                <span className={`ast-history-row__status ast-history-row__status--${paymentStatus.toLowerCase()}`}>
+                                                    {PAYMENT_STATUS_LABELS[paymentStatus] || invoice.status}
+                                                </span>
+                                                <strong>{formatCurrency(getValue(invoice.amount, invoice.value, invoice.total, 0))}</strong>
+                                                <small>{invoice.paymentMethod === 'PIX' || invoice.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix' : 'Cartão'} • {formatDate(getValue(invoice.paidAt, invoice.dueDate))}</small>
                                             </div>
-                                            <button type="button" aria-label="Ver pagamento"><ChevronRight size={18} /></button>
+                                            {invoice.transactionReceiptUrl && (
+                                                <button type="button" aria-label="Abrir comprovante" onClick={() => openDocumentPreview(`Comprovante-${invoice.id}.pdf`, invoice.transactionReceiptUrl)}><ChevronRight size={18} /></button>
+                                            )}
                                         </div>
-                                    ))}
+                                    );})}
+                                    {!displayedPaymentHistory.length && <p className="ast-history-empty">Nenhuma cobrança registrada até o momento.</p>}
                                 </article>
                             </div>
                         )}
@@ -785,6 +1018,99 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 )}
                 </div>
             </main>
+
+            {paymentSheet && (
+                <div className="ast-payment-sheet" role="dialog" aria-modal="true" aria-labelledby="ast-payment-sheet-title" onClick={() => !subscriptionSubmitting && setPaymentSheet(null)}>
+                    <section className="ast-payment-sheet__panel" onClick={event => event.stopPropagation()}>
+                        <header className="ast-payment-sheet__header">
+                            <div>
+                                <small>Assinatura Asterysko</small>
+                                <h2 id="ast-payment-sheet-title">
+                                    {paymentSheet === 'due-date' ? 'Alterar vencimento' : paymentSheet === 'payment-method' ? 'Regularizar pagamento' : 'Forma de pagamento'}
+                                </h2>
+                            </div>
+                            <button type="button" disabled={subscriptionSubmitting} onClick={() => setPaymentSheet(null)} aria-label="Fechar"><X size={21} /></button>
+                        </header>
+
+                        <form className="ast-payment-form" onSubmit={submitSubscriptionAction}>
+                            {paymentSheet === 'due-date' ? (
+                                <>
+                                    <div className="ast-payment-form__intro">
+                                        <strong>Escolha o novo dia</strong>
+                                        <p>A cobrança atual não será adiada. A mudança vale para os próximos ciclos e só poderá ser feita novamente após 90 dias.</p>
+                                    </div>
+                                    <label className="ast-payment-field">
+                                        <span>Dia do vencimento</span>
+                                        <select value={subscriptionDueDay} onChange={event => setSubscriptionDueDay(Number(event.target.value))}>
+                                            {Array.from({ length: 28 }, (_, index) => index + 1).map(day => <option value={day} key={day}>Dia {day}</option>)}
+                                        </select>
+                                    </label>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="ast-payment-methods" role="radiogroup" aria-label="Forma de pagamento">
+                                        <button className={subscriptionMethod === 'CREDIT_CARD' ? 'ast-payment-method--active' : ''} type="button" onClick={() => setSubscriptionMethod('CREDIT_CARD')}>
+                                            <CreditCard size={21} />
+                                            <span><strong>Cartão</strong><small>Cobrança automática mensal</small></span>
+                                            <i>{subscriptionMethod === 'CREDIT_CARD' && <Check size={14} />}</i>
+                                        </button>
+                                        <button className={subscriptionMethod === 'PIX_AUTOMATIC' ? 'ast-payment-method--active' : ''} type="button" onClick={() => setSubscriptionMethod('PIX_AUTOMATIC')}>
+                                            <QrCode size={21} />
+                                            <span><strong>Pix Automático</strong><small>Autorize uma única vez</small></span>
+                                            <i>{subscriptionMethod === 'PIX_AUTOMATIC' && <Check size={14} />}</i>
+                                        </button>
+                                    </div>
+
+                                    {paymentSheet === 'setup' && (
+                                        <label className="ast-payment-field">
+                                            <span>Dia do vencimento</span>
+                                            <select value={subscriptionDueDay} onChange={event => setSubscriptionDueDay(Number(event.target.value))}>
+                                                {Array.from({ length: 28 }, (_, index) => index + 1).map(day => <option value={day} key={day}>Dia {day}</option>)}
+                                            </select>
+                                        </label>
+                                    )}
+
+                                    {subscriptionMethod === 'CREDIT_CARD' ? (
+                                        <div className="ast-card-fields">
+                                            <label className="ast-payment-field ast-card-fields__wide">
+                                                <span>Nome impresso no cartão</span>
+                                                <input required autoComplete="cc-name" value={cardDraft.holderName} onChange={event => setCardDraft(current => ({ ...current, holderName: event.target.value }))} />
+                                            </label>
+                                            <label className="ast-payment-field ast-card-fields__wide">
+                                                <span>Número do cartão</span>
+                                                <input required inputMode="numeric" autoComplete="cc-number" maxLength={23} value={cardDraft.number} onChange={event => setCardDraft(current => ({ ...current, number: event.target.value }))} />
+                                            </label>
+                                            <label className="ast-payment-field">
+                                                <span>Mês</span>
+                                                <input required inputMode="numeric" autoComplete="cc-exp-month" placeholder="MM" maxLength={2} value={cardDraft.expiryMonth} onChange={event => setCardDraft(current => ({ ...current, expiryMonth: event.target.value }))} />
+                                            </label>
+                                            <label className="ast-payment-field">
+                                                <span>Ano</span>
+                                                <input required inputMode="numeric" autoComplete="cc-exp-year" placeholder="AAAA" maxLength={4} value={cardDraft.expiryYear} onChange={event => setCardDraft(current => ({ ...current, expiryYear: event.target.value }))} />
+                                            </label>
+                                            <label className="ast-payment-field">
+                                                <span>CVV</span>
+                                                <input required inputMode="numeric" autoComplete="cc-csc" maxLength={4} value={cardDraft.ccv} onChange={event => setCardDraft(current => ({ ...current, ccv: event.target.value }))} />
+                                            </label>
+                                        </div>
+                                    ) : (
+                                        <div className="ast-payment-form__pix">
+                                            <QrCode size={30} />
+                                            <div><strong>Você continuará dentro do portal</strong><p>Geraremos o QR Code e o código copia e cola aqui. O primeiro pagamento também concede a autorização para os próximos meses.</p></div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+
+                            {subscriptionFeedback?.type === 'error' && <p className="ast-payment-form__error">{subscriptionFeedback.message}</p>}
+                            <button className="ast-payment-form__submit" type="submit" disabled={subscriptionSubmitting}>
+                                {subscriptionSubmitting ? 'Processando com segurança...' : paymentSheet === 'due-date' ? 'Confirmar novo vencimento' : subscriptionMethod === 'PIX_AUTOMATIC' ? 'Gerar autorização Pix' : 'Confirmar cartão'}
+                            </button>
+                            <p className="ast-payment-form__security">Seus dados de cartão não são armazenados pela Asterysko.</p>
+                        </form>
+                    </section>
+                </div>
+            )}
 
             {previewDocument && (
                 <div
