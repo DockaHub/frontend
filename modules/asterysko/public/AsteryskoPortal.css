@@ -819,19 +819,21 @@
   gap: 14px;
   margin: 0 0 20px;
   padding: 16px;
-  border: 1px solid #e8dca1;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #fffbea 0%, #fff 100%);
-  color: #201f19;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  color: #111;
   text-align: left;
-  box-shadow: 0 10px 28px rgba(92, 75, 14, 0.08);
+  box-shadow: var(--ast-shadow);
   cursor: pointer;
+  transition: transform 200ms ease, box-shadow 200ms ease;
 }
-.ast-contract-alert__icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: #f5df75; }
-.ast-contract-alert small { display: block; color: #8b6c00; font-size: 10px; font-style: normal; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.ast-contract-alert:hover { transform: translateY(-2px); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.09); }
+.ast-contract-alert__icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: #eef1ff; color: var(--ast-blue); }
+.ast-contract-alert small { display: block; color: var(--ast-blue); font-size: 10px; font-style: normal; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .ast-contract-alert strong { display: block; margin-top: 3px; font-size: 14px; }
-.ast-contract-alert em { display: block; margin-top: 3px; color: #77705a; font-size: 11px; font-style: normal; }
-.ast-contract-alert__action { display: flex; align-items: center; gap: 4px; color: #5f4b00; font-size: 12px; font-weight: 700; }
+.ast-contract-alert em { display: block; margin-top: 3px; color: #777; font-size: 11px; font-style: normal; }
+.ast-contract-alert__action { display: flex; align-items: center; gap: 4px; border-radius: 999px; background: #1d1d1d; color: #fff; padding: 8px 11px; font-size: 11px; font-weight: 600; }
 
 .ast-contract-card__status {
   display: flex;
@@ -1084,6 +1086,8 @@
 .ast-payment-methods { display: grid; gap: 9px; margin-bottom: 16px; }
 .ast-payment-methods > button { display: grid; min-height: 68px; grid-template-columns: 28px minmax(0, 1fr) 24px; align-items: center; gap: 10px; border: 1px solid #d8d8d8; border-radius: 15px; background: #fff; color: #111; padding: 10px 13px; text-align: left; cursor: pointer; transition: border-color 180ms ease, box-shadow 180ms ease; }
 .ast-payment-methods > button.ast-payment-method--active { border-color: var(--ast-blue); box-shadow: 0 0 0 3px rgba(65, 97, 220, 0.11); }
+.ast-payment-methods > button:disabled { border-color: #e4e4e4; background: #f1f1f1; color: #9a9a9a; box-shadow: none; cursor: not-allowed; opacity: 0.72; }
+.ast-payment-methods > button:disabled svg { color: #a5a5a5; }
 .ast-payment-methods span strong { display: block; font-size: 13px; font-weight: 500; }
 .ast-payment-methods span small { display: block; margin-top: 4px; color: #858585; font-size: 10px; }
 .ast-payment-methods i { display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid #ccc; border-radius: 50%; color: #fff; font-style: normal; }

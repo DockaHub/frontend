@@ -390,6 +390,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const displayedPaymentHistory = subscription ? subscriptionInvoices : invoices;
     const subscriptionStatus = String(subscription?.status || '').toUpperCase();
     const subscriptionMethodLabel = subscription?.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix Automático' : 'Cartão de crédito';
+    const pixAutomaticAvailable = Boolean(subscriptionContext?.availablePaymentMethods?.includes('PIX_AUTOMATIC'));
 
     const profileValues: Record<string, string> = {
         name: getProfileValue(getValue(clientData?.name, user?.name)),
@@ -589,9 +590,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         setPixCopied(false);
         setCardDraft(EMPTY_CARD);
         setSubscriptionDueDay(Number(subscription?.dueDay || Math.min(new Date().getDate(), 28)));
-        setSubscriptionMethod(sheet === 'payment-method'
-            ? (subscription?.paymentMethod === 'CREDIT_CARD' ? 'PIX_AUTOMATIC' : 'CREDIT_CARD')
-            : 'CREDIT_CARD');
+        const alternativeMethod = subscription?.paymentMethod === 'CREDIT_CARD' && pixAutomaticAvailable
+            ? 'PIX_AUTOMATIC'
+            : 'CREDIT_CARD';
+        setSubscriptionMethod(sheet === 'payment-method' ? alternativeMethod : 'CREDIT_CARD');
         setPaymentSheet(sheet);
     };
 
@@ -599,6 +601,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         event.preventDefault();
         const processId = String(selectedProcess?.id || '');
         if (!processId || subscriptionSubmitting) return;
+        if (subscriptionMethod === 'PIX_AUTOMATIC' && !pixAutomaticAvailable) {
+            setSubscriptionMethod('CREDIT_CARD');
+            return;
+        }
         try {
             setSubscriptionSubmitting(true);
             setSubscriptionFeedback(null);
@@ -1142,15 +1148,12 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                             <span><strong>Cartão</strong><small>Cobrança automática mensal</small></span>
                                             <i>{subscriptionMethod === 'CREDIT_CARD' && <Check size={14} />}</i>
                                         </button>
-                                        <button className={subscriptionMethod === 'PIX_AUTOMATIC' ? 'ast-payment-method--active' : ''} type="button" disabled={!subscriptionContext?.availablePaymentMethods?.includes('PIX_AUTOMATIC')} onClick={() => setSubscriptionMethod('PIX_AUTOMATIC')}>
+                                        <button className={subscriptionMethod === 'PIX_AUTOMATIC' ? 'ast-payment-method--active' : ''} type="button" disabled={!pixAutomaticAvailable} onClick={() => setSubscriptionMethod('PIX_AUTOMATIC')}>
                                             <QrCode size={21} />
-                                            <span><strong>Pix Automático</strong><small>Autorize uma única vez</small></span>
+                                            <span><strong>Pix Automático</strong><small>{pixAutomaticAvailable ? 'Autorize uma única vez' : 'Disponível após a 1ª parcela'}</small></span>
                                             <i>{subscriptionMethod === 'PIX_AUTOMATIC' && <Check size={14} />}</i>
                                         </button>
                                     </div>
-                                    {!subscriptionContext?.availablePaymentMethods?.includes('PIX_AUTOMATIC') && subscriptionContext?.pixAutomaticUnavailableReason && (
-                                        <p className="ast-payment-form__error">{subscriptionContext.pixAutomaticUnavailableReason}</p>
-                                    )}
 
                                     {paymentSheet === 'setup' && (
                                         <label className="ast-payment-field">
