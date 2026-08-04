@@ -29,8 +29,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             const response = await api.get(`/asterysko/public/deals/${dealId}/contract`);
             setDeal(response.data.deal);
             setContractHtml(response.data.html);
-            // Check signedAt OR status. 'preparation' is set after signing in backend.
-            if (response.data.deal.signedAt || response.data.deal.status === 'contract_signed' || response.data.deal.status === 'preparation') {
+            if (response.data.deal.signedAt || response.data.deal.status === 'contract_signed') {
                 setSigned(true);
             }
         } catch (error) {
@@ -104,7 +103,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             <main className="flex-1 pt-8 pb-40 px-4 print:pt-0 print:pb-0 print:px-0">
                 <div className="max-w-5xl mx-auto space-y-6 print:space-y-0">
                     {signed && (
-                        <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-4 shadow-sm print:hidden">
+                        <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl flex flex-wrap items-center gap-4 animate-in fade-in slide-in-from-top-4 shadow-sm print:hidden">
                             <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
                                 <CheckCircle className="h-6 w-6 text-emerald-600" />
                             </div>
@@ -112,6 +111,9 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                                 <h3 className="font-bold text-emerald-900 text-sm">Contrato Assinado Digitalmente</h3>
                                 <p className="text-xs text-emerald-700 mt-1">Este documento possui validade jurídica equivalente e foi formalizado eletronicamente em nosso sistema.</p>
                             </div>
+                            <button type="button" onClick={() => window.location.assign('/portal?view=details&tab=payments')} className="ml-auto shrink-0 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-800">
+                                Continuar para pagamento
+                            </button>
                         </div>
                     )}
 

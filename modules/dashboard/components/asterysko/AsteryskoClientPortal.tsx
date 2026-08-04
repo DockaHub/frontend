@@ -65,6 +65,7 @@ const DEFAULT_DOCUMENTS = [
 ];
 
 const PROCESS_STATUS_LABELS: Record<string, string> = {
+    WAITING_CONTRACT: 'Aguardando assinatura do contrato',
     WAITING_PAYMENT: 'Aguardando pagamento',
     NEW: 'Processo iniciado',
     STARTED: 'Processo iniciado',
@@ -178,6 +179,11 @@ const getInitialView = (): PortalView => {
     return requestedView === 'details' || requestedView === 'profile' || requestedView === 'contracts' ? requestedView : 'home';
 };
 
+const getInitialProcessTab = (): ProcessTab => {
+    const requestedTab = new URLSearchParams(window.location.search).get('tab');
+    return requestedTab === 'payments' || requestedTab === 'documents' ? requestedTab : 'details';
+};
+
 const BackButton = ({ onClick }: { onClick: () => void }) => (
     <button className="ast-round-button" type="button" onClick={onClick} aria-label="Voltar">
         <ArrowLeft size={20} strokeWidth={1.8} />
@@ -212,7 +218,7 @@ const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab:
 export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit }) => {
     const { user, logout, refreshUser } = useAuth();
     const [view, setView] = useState<PortalView>(getInitialView);
-    const [processTab, setProcessTab] = useState<ProcessTab>('details');
+    const [processTab, setProcessTab] = useState<ProcessTab>(getInitialProcessTab);
     const [clientData, setClientData] = useState<any>(null);
     const [processes, setProcesses] = useState<any[]>([]);
     const [financials, setFinancials] = useState<any>({ invoices: [], contracts: [] });
@@ -375,6 +381,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const brandName = String(getValue(selectedProcess?.brandName, displayedProcesses[0]?.brandName, 'Sua marca'));
     const invoices = financials.invoices as any[];
     const contracts = financials.contracts as any[];
+    const pendingContracts = contracts.filter(contract => {
+        const status = String(contract.status || contract.signatureStatus || contract.contractSignStatus).toUpperCase();
+        return status === 'PENDING' || status === 'PENDENTE' || status.includes('AGUARD');
+    });
     const subscription = subscriptionContext?.subscription;
     const subscriptionInvoices = Array.isArray(subscriptionContext?.invoices) ? subscriptionContext.invoices : [];
     const displayedPaymentHistory = subscription ? subscriptionInvoices : invoices;
@@ -494,6 +504,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
     const download = (url: unknown, fileName: string) => {
         if (typeof url === 'string' && url) void forceDownloadFile(url, fileName);
+    };
+
+    const openContractForSignature = (contract: any) => {
+        const url = String(getValue(contract.url, contract.contractUrl, contract.fileUrl));
+        if (url) window.location.assign(url);
     };
 
     const beginProfileEdit = (field: ProfileFieldConfig) => {
@@ -686,6 +701,14 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         {error && <p className="ast-empty-note" role="status">{error}</p>}
 
+                        {pendingContracts.length > 0 && (
+                            <button className="ast-contract-alert" type="button" onClick={() => openContractForSignature(pendingContracts[0])}>
+                                <span className="ast-contract-alert__icon"><FileText size={22} /></span>
+                                <span><small>Ação necessária</small><strong>Seu contrato está pronto para assinatura</strong><em>Revise os dados e assine para liberar a próxima etapa do processo.</em></span>
+                                <span className="ast-contract-alert__action">Assinar agora <ChevronRight size={18} /></span>
+                            </button>
+                        )}
+
                         <div className="ast-home-dashboard">
                             <div className="ast-home-primary">
                                 <div className="ast-home-section-title">
@@ -847,10 +870,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         </header>
 
                         <div className="ast-contract-list">
-                            {(contracts.length ? contracts : [
-                                { id: 'signed-preview', title: 'Contrato - Registro de Marca', organizationName: 'Fauves', status: 'SIGNED' },
-                                { id: 'pending-preview', title: 'Contrato - Registro de Marca', organizationName: 'Fauves', status: 'PENDING' },
-                            ]).map((contract: any, index: number) => {
+                            {contracts.map((contract: any, index: number) => {
                                 const contractStatus = String(contract.status || contract.signatureStatus).toUpperCase();
                                 const signed = contractStatus === 'SIGNED' || contractStatus.includes('COMPLETED');
                                 return (
@@ -862,15 +882,16 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                         <div className="ast-contract-card__body">
                                             <div>
                                                 <strong>{getValue(contract.title, contract.name, 'Contrato - Registro de Marca')}</strong>
-                                                <small>{getValue(contract.organizationName, contract.companyName, 'Fauves')}</small>
+                                                <small>{getValue(contract.organizationName, contract.companyName, 'Asterysko')}</small>
                                             </div>
-                                            <button type="button" onClick={() => download(getValue(contract.fileUrl, contract.url, contract.documentUrl), `contrato-${index + 1}.pdf`)} aria-label="Baixar contrato">
-                                                <Download size={21} strokeWidth={2} />
+                                            <button className={signed ? '' : 'ast-contract-card__sign'} type="button" onClick={() => openContractForSignature(contract)} aria-label={signed ? 'Visualizar contrato' : 'Revisar e assinar contrato'}>
+                                                {signed ? <ExternalLink size={20} strokeWidth={2} /> : <><span>Assinar agora</span><ChevronRight size={18} /></>}
                                             </button>
                                         </div>
                                     </article>
                                 );
                             })}
+                            {!contracts.length && <p className="ast-empty-note">Nenhum contrato foi disponibilizado até o momento.</p>}
                         </div>
                     </section>
                 )}

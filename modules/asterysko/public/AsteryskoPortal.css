@@ -811,6 +811,28 @@
 .ast-contract-list { display: grid; gap: 10px; }
 .ast-contract-card { min-height: 103px; }
 
+.ast-contract-alert {
+  display: grid;
+  width: 100%;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 20px;
+  padding: 16px;
+  border: 1px solid #e8dca1;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fffbea 0%, #fff 100%);
+  color: #201f19;
+  text-align: left;
+  box-shadow: 0 10px 28px rgba(92, 75, 14, 0.08);
+  cursor: pointer;
+}
+.ast-contract-alert__icon { display: grid; width: 44px; height: 44px; place-items: center; border-radius: 14px; background: #f5df75; }
+.ast-contract-alert small { display: block; color: #8b6c00; font-size: 10px; font-style: normal; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.ast-contract-alert strong { display: block; margin-top: 3px; font-size: 14px; }
+.ast-contract-alert em { display: block; margin-top: 3px; color: #77705a; font-size: 11px; font-style: normal; }
+.ast-contract-alert__action { display: flex; align-items: center; gap: 4px; color: #5f4b00; font-size: 12px; font-weight: 700; }
+
 .ast-contract-card__status {
   display: flex;
   height: 36px;
@@ -835,6 +857,12 @@
 .ast-contract-card__body strong { display: block; font-size: 12px; font-weight: 400; }
 .ast-contract-card__body small { display: block; margin-top: 5px; color: #909090; font-size: 11px; }
 .ast-contract-card__body button { border: 0; background: transparent; cursor: pointer; }
+.ast-contract-card__body .ast-contract-card__sign { display: flex; align-items: center; gap: 4px; border-radius: 999px; background: #1f1f1f; color: #fff; padding: 8px 11px; font-size: 11px; font-weight: 700; }
+
+@media (max-width: 560px) {
+  .ast-contract-alert { grid-template-columns: auto 1fr; }
+  .ast-contract-alert__action { grid-column: 2; justify-self: start; }
+}
 
 .ast-process-page { max-width: 920px; margin: -54px auto 0; }
 

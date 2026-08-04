@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { X, ChevronDown } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Check, ChevronDown, LockKeyhole, Search, UserRound, X } from 'lucide-react';
 import api from '../../../../services/api';
 
 interface Props {
@@ -9,261 +9,206 @@ interface Props {
     organizationId?: string;
 }
 
-const InputField = ({ label, name, placeholder, value, isSelect = false, options = [], type = "text", onChange }: any) => (
-    <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 py-3 px-6 relative">
-        <label className="text-[10px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-1">
-            {label}
+interface ClientOption {
+    id: string;
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    cpfCnpj?: string | null;
+}
+
+const CRM_STAGES = [
+    { id: 'leads', label: 'Novos leads' },
+    { id: 'contato_iniciado', label: 'Contato iniciado' },
+    { id: 'em_conversa', label: 'Em conversa' },
+    { id: 'preparation', label: 'Diagnóstico' },
+    { id: 'viability', label: 'Viabilidade' },
+    { id: 'proposta', label: 'Proposta' },
+    { id: 'contract', label: 'Contrato' }
+];
+
+const INITIAL_FORM = {
+    clientId: '',
+    clientName: '',
+    contactEmail: '',
+    contactPhone: '',
+    brandName: '',
+    planId: '',
+    serviceInterest: 'Registro de marca',
+    assignedUserId: '',
+    leadOrigin: 'Instagram',
+    status: 'leads',
+    priority: 'medium',
+    internalNotes: ''
+};
+
+const Field = ({ label, locked, children }: { label: string; locked?: boolean; children: React.ReactNode }) => (
+    <div className="flex flex-col border-b border-[#e5e5e5] px-6 py-3 dark:border-zinc-800">
+        <label className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9f9f9f]">
+            {locked && <LockKeyhole size={11} />} {label}
         </label>
-        {isSelect ? (
-            <div className="relative">
-                <select
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    className="w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white appearance-none cursor-pointer"
-                >
-                    {options.map((opt: string) => (
-                        <option key={opt} value={opt} className="text-black">{opt}</option>
-                    ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9f9f9f] pointer-events-none" />
-            </div>
-        ) : (
-            <input
-                type={type}
-                name={name}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                className="w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white placeholder:text-[#ccc]"
-            />
-        )}
+        {children}
     </div>
 );
 
+const inputClass = 'w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white placeholder:text-[#ccc] disabled:text-[#8f8f8f] disabled:cursor-not-allowed';
+
 const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, organizationId }) => {
     const [isLoading, setIsLoading] = useState(false);
+    const [loadingOptions, setLoadingOptions] = useState(false);
     const [plans, setPlans] = useState<any[]>([]);
-    const [formData, setFormData] = useState({
-        clientName: '',
-        contactEmail: '',
-        contactPhone: '',
-        brandName: '',
-        planId: '',
-        serviceInterest: 'Registro de marca',
-        commercialRep: 'Pessoa da Asterysko encarregada',
-        leadOrigin: 'Instagram',
-        crmStage: 'Novos leads',
-        estimatedValue: 'R$0,00',
-        closingForecast: '',
-        priority: 'Normal',
-        internalNotes: ''
-    });
+    const [clients, setClients] = useState<ClientOption[]>([]);
+    const [members, setMembers] = useState<any[]>([]);
+    const [clientMenuOpen, setClientMenuOpen] = useState(false);
+    const [formData, setFormData] = useState(INITIAL_FORM);
+    const [feedback, setFeedback] = useState('');
 
     useEffect(() => {
         if (!isOpen) return;
-        api.get('/asterysko/plans')
-            .then(response => setPlans(Array.isArray(response.data) ? response.data.filter((plan: any) => plan.active !== false) : []))
-            .catch(error => console.error('Failed to load Asterysko plans', error));
-    }, [isOpen]);
+        setFormData(INITIAL_FORM);
+        setFeedback('');
+        setClientMenuOpen(false);
+        setLoadingOptions(true);
+        const requests: Promise<any>[] = [
+            api.get('/asterysko/crm/plan-options'),
+            api.get('/asterysko/crm/client-options'),
+            organizationId ? api.get(`/organizations/${organizationId}/members`) : Promise.resolve({ data: [] })
+        ];
+        Promise.all(requests)
+            .then(([planResponse, clientResponse, memberResponse]) => {
+                setPlans(Array.isArray(planResponse.data) ? planResponse.data.filter((plan: any) => plan.active !== false) : []);
+                setClients(Array.isArray(clientResponse.data) ? clientResponse.data : []);
+                setMembers(Array.isArray(memberResponse.data) ? memberResponse.data.filter((member: any) => String(member.user?.role || member.globalRole || '').toUpperCase() !== 'CLIENT') : []);
+            })
+            .catch(error => {
+                console.error('Failed to load lead options', error);
+                setFeedback('Não foi possível carregar clientes, planos ou responsáveis.');
+            })
+            .finally(() => setLoadingOptions(false));
+    }, [isOpen, organizationId]);
+
+    const filteredClients = useMemo(() => {
+        const term = formData.clientName.trim().toLocaleLowerCase('pt-BR');
+        if (!term || formData.clientId) return clients.slice(0, 8);
+        return clients.filter(client => `${client.name} ${client.email || ''} ${client.phone || ''} ${client.cpfCnpj || ''}`.toLocaleLowerCase('pt-BR').includes(term)).slice(0, 8);
+    }, [clients, formData.clientId, formData.clientName]);
+
+    const selectedPlan = plans.find(plan => plan.id === formData.planId);
+    const existingClientSelected = Boolean(formData.clientId);
 
     if (!isOpen) return null;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const selectClient = (client: ClientOption) => {
+        setFormData(current => ({
+            ...current,
+            clientId: client.id,
+            clientName: client.name || '',
+            contactEmail: client.email || '',
+            contactPhone: client.phone || ''
+        }));
+        setClientMenuOpen(false);
+    };
+
+    const clearSelectedClient = () => {
+        setFormData(current => ({ ...current, clientId: '', clientName: '', contactEmail: '', contactPhone: '' }));
+        setClientMenuOpen(true);
+    };
+
+    const handleSubmit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setFeedback('');
+        if (!formData.clientName.trim() || !formData.brandName.trim()) return setFeedback('Informe o cliente e a marca.');
+        if (!formData.contactEmail.trim()) return setFeedback('Informe o e-mail do cliente para criar o acesso ao portal.');
+        if (!formData.planId) return setFeedback('Selecione o plano comercial.');
+        if (!formData.assignedUserId) return setFeedback('Selecione o responsável comercial.');
+
         setIsLoading(true);
         try {
-            // Simulated payload for creating lead, linking/creating client & process
-            const payload = {
-                title: formData.brandName || 'Novo Lead',
-                subtitle: formData.clientName,
-                status: 'leads',
-                value: formData.estimatedValue,
-                contactName: formData.clientName,
-                contactEmail: formData.contactEmail,
-                contactPhone: formData.contactPhone,
-                planId: formData.planId || null,
+            await api.post('/asterysko/crm/deals', {
+                title: formData.brandName.trim(),
+                subtitle: formData.clientName.trim(),
+                status: formData.status,
+                contactName: formData.clientName.trim(),
+                contactEmail: formData.contactEmail.trim() || null,
+                contactPhone: formData.contactPhone.trim() || null,
+                clientId: formData.clientId || null,
+                assignedUserId: formData.assignedUserId,
+                planId: formData.planId,
+                priority: formData.priority,
+                description: formData.internalNotes.trim() || null,
+                tags: [
+                    { label: `Origem: ${formData.leadOrigin}`, color: 'bg-blue-100 text-blue-700' },
+                    { label: `Serviço: ${formData.serviceInterest}`, color: 'bg-violet-100 text-violet-700' }
+                ],
                 organizationId
-            };
-            
-            // Call CRM deal endpoint
-            await api.post('/asterysko/crm/deals', payload);
-            
+            });
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create lead', error);
-            alert('Erro ao criar lead. Verifique os dados e tente novamente.');
+            setFeedback(error.response?.data?.error || 'Erro ao criar o lead. Revise os dados e tente novamente.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
-
     return (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 dark:bg-black/40 backdrop-blur-sm transition-opacity">
-            <div className="w-[420px] bg-white dark:bg-zinc-950 m-4 rounded-[20px] shadow-2xl flex flex-col overflow-hidden animate-slide-left">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
-                    <h2 className="font-season text-[22px] font-[420] text-black dark:text-white">
-                        Novo lead
-                    </h2>
-                    <button onClick={onClose} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-[#9f9f9f]">
-                        <X size={20} />
-                    </button>
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm dark:bg-black/40">
+            <div className="m-4 flex w-[440px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl animate-slide-left dark:bg-zinc-950">
+                <div className="flex shrink-0 items-center justify-between border-b border-[#e5e5e5] px-6 py-5 dark:border-zinc-800">
+                    <div><h2 className="font-season text-[22px] font-[420] text-black dark:text-white">Novo lead</h2><p className="mt-1 text-xs text-[#8f8f8f]">Cliente, plano e responsável serão vinculados ao processo.</p></div>
+                    <button onClick={onClose} className="rounded-full p-1 text-[#9f9f9f] transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"><X size={20} /></button>
                 </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-6">
-                    
-                    {/* Cliente */}
-                    <InputField 
-                        label="Cliente" 
-                        name="clientName" 
-                        placeholder="Pesquise por um cliente cadastrado" 
-                        value={formData.clientName} 
-                        onChange={handleChange} 
-                    />
-                    <InputField label="E-mail" name="contactEmail" type="email" placeholder="cliente@email.com" value={formData.contactEmail} onChange={handleChange} />
-                    <InputField label="WhatsApp" name="contactPhone" placeholder="(00) 00000-0000" value={formData.contactPhone} onChange={handleChange} />
-
-                    {/* Processo */}
-                    <div className="px-6 py-5">
-                        <h3 className="font-season text-[18px] font-[420] text-black dark:text-white">
-                            Processo
-                        </h3>
-                    </div>
-
-                    <InputField 
-                        label="Marca" 
-                        name="brandName" 
-                        placeholder="Nome da marca" 
-                        value={formData.brandName} 
-                        onChange={handleChange} 
-                    />
-                    
-                    <InputField 
-                        label="Serviço de interesse" 
-                        name="serviceInterest" 
-                        value={formData.serviceInterest} 
-                        isSelect 
-                        options={[
-                            'Registro de marca', 
-                            'Renovação', 
-                            'Recurso', 
-                            'Oposição', 
-                            'Transferência', 
-                            'Acompanhamento', 
-                            'Outro'
-                        ]} 
-                        onChange={handleChange} 
-                    />
-
-                    <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 py-3 px-6 relative">
-                        <label className="text-[10px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-1">Plano comercial</label>
-                        <div className="relative">
-                            <select
-                                name="planId"
-                                value={formData.planId}
-                                onChange={handleChange}
-                                className="w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white appearance-none cursor-pointer pr-6"
-                            >
-                                <option value="">Pagamento único legado/manual</option>
-                                {plans.map((plan: any) => (
-                                    <option key={plan.id} value={plan.id}>
-                                        {plan.name} — {plan.billingMode === 'SUBSCRIPTION' ? `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                                    </option>
-                                ))}
-                            </select>
-                            <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-[#9f9f9f] pointer-events-none" />
+                <form id="asterysko-new-lead-form" onSubmit={handleSubmit} className="custom-scrollbar flex flex-1 flex-col overflow-y-auto pb-6">
+                    <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Cliente</h3></div>
+                    <div className="relative border-b border-[#e5e5e5] px-6 py-3 dark:border-zinc-800">
+                        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9f9f9f]">Pesquisar ou criar cliente</label>
+                        <div className="flex items-center gap-2">
+                            {existingClientSelected ? <Check size={16} className="text-emerald-600" /> : <Search size={16} className="text-[#9f9f9f]" />}
+                            <input className={inputClass} value={formData.clientName} placeholder="Nome, e-mail, telefone ou CPF/CNPJ" onFocus={() => setClientMenuOpen(true)} onChange={event => { setFormData(current => ({ ...current, clientId: '', clientName: event.target.value, contactEmail: '', contactPhone: '' })); setClientMenuOpen(true); }} />
+                            {existingClientSelected && <button type="button" onClick={clearSelectedClient} className="text-[11px] font-bold text-[#0412dd]">Trocar</button>}
                         </div>
-                        {formData.planId && (() => {
-                            const plan = plans.find((item: any) => item.id === formData.planId);
-                            if (!plan || plan.billingMode !== 'SUBSCRIPTION') return null;
-                            const first = Number(plan.value || 0) + (plan.taxChargeTiming === 'FIRST_PAYMENT' ? Number(plan.officialTax || 0) : 0);
-                            return <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-300">Primeira cobrança R$ {first.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}; depois R$ {Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês.</p>;
-                        })()}
+                        {clientMenuOpen && !existingClientSelected && (
+                            <div className="absolute left-4 right-4 top-[58px] z-20 max-h-56 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-1 shadow-xl dark:border-zinc-700 dark:bg-zinc-900">
+                                {filteredClients.map(client => (
+                                    <button key={client.id} type="button" onClick={() => selectClient(client)} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800">
+                                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950"><UserRound size={15} /></span>
+                                        <span className="min-w-0"><strong className="block truncate text-xs text-black dark:text-white">{client.name}</strong><small className="block truncate text-[11px] text-[#8f8f8f]">{client.email || client.phone || client.cpfCnpj}</small></span>
+                                    </button>
+                                ))}
+                                {formData.clientName.trim() && (
+                                    <button type="button" onClick={() => setClientMenuOpen(false)} className="mt-1 w-full rounded-lg border border-dashed border-zinc-300 px-3 py-2.5 text-left text-xs font-semibold text-[#0412dd] hover:bg-indigo-50 dark:border-zinc-700 dark:hover:bg-indigo-950/30">
+                                        {filteredClients.length ? 'Não é nenhum destes? ' : 'Nenhum cliente encontrado. '}Continuar com “{formData.clientName.trim()}” como novo cliente
+                                    </button>
+                                )}
+                            </div>
+                        )}
                     </div>
+                    {existingClientSelected && <p className="mx-6 mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">Cliente existente selecionado. Os dados abaixo vêm do cadastro e não podem ser alterados neste lead.</p>}
+                    <Field label="E-mail" locked={existingClientSelected}><input type="email" className={inputClass} disabled={existingClientSelected} value={formData.contactEmail} placeholder="cliente@email.com" onChange={event => setFormData(current => ({ ...current, contactEmail: event.target.value }))} /></Field>
+                    <Field label="WhatsApp" locked={existingClientSelected}><input className={inputClass} disabled={existingClientSelected} value={formData.contactPhone} placeholder="(00) 00000-0000" onChange={event => setFormData(current => ({ ...current, contactPhone: event.target.value }))} /></Field>
 
-                    {/* Informações do lead */}
-                    <div className="px-6 py-5">
-                        <h3 className="font-season text-[18px] font-[420] text-black dark:text-white">
-                            Informações do lead
-                        </h3>
-                    </div>
+                    <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Processo</h3></div>
+                    <Field label="Marca"><input className={inputClass} value={formData.brandName} placeholder="Nome da marca" onChange={event => setFormData(current => ({ ...current, brandName: event.target.value }))} /></Field>
+                    <Field label="Serviço de interesse"><select className={`${inputClass} appearance-none`} value={formData.serviceInterest} onChange={event => setFormData(current => ({ ...current, serviceInterest: event.target.value }))}>{['Registro de marca', 'Renovação', 'Recurso', 'Oposição', 'Transferência', 'Acompanhamento', 'Outro'].map(option => <option key={option}>{option}</option>)}</select></Field>
+                    <Field label="Plano comercial">
+                        <div className="relative"><select className={`${inputClass} appearance-none pr-6`} value={formData.planId} onChange={event => setFormData(current => ({ ...current, planId: event.target.value }))}><option value="">Selecione um plano</option>{plans.map(plan => <option key={plan.id} value={plan.id}>{plan.name} — {plan.billingMode === 'SUBSCRIPTION' ? `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-[#9f9f9f]" /></div>
+                        {selectedPlan?.billingMode === 'SUBSCRIPTION' && <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-300">Primeira cobrança: R$ {(Number(selectedPlan.value || 0) + (selectedPlan.taxChargeTiming === 'FIRST_PAYMENT' ? Number(selectedPlan.officialTax || 0) : 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Depois: R$ {Number(selectedPlan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês.</p>}
+                    </Field>
 
-                    <InputField 
-                        label="Responsável comercial" 
-                        name="commercialRep" 
-                        placeholder="Pesquise por um encarregado" 
-                        value={formData.commercialRep} 
-                        onChange={handleChange} 
-                    />
-                    
-                    <InputField 
-                        label="Origem do lead" 
-                        name="leadOrigin" 
-                        value={formData.leadOrigin} 
-                        isSelect 
-                        options={['Instagram', 'Site', 'Indicação', 'Prospecção ativa', 'Outros']} 
-                        onChange={handleChange} 
-                    />
-                    
-                    <InputField 
-                        label="Etapa inicial do CRM" 
-                        name="crmStage" 
-                        value={formData.crmStage} 
-                        isSelect 
-                        options={['Novos leads', 'Contato inicial', 'Proposta', 'Em negociação']} 
-                        onChange={handleChange} 
-                    />
-                    
-                    <InputField 
-                        label="Valor estimado" 
-                        name="estimatedValue" 
-                        placeholder="R$0,00" 
-                        value={formData.estimatedValue} 
-                        onChange={handleChange} 
-                    />
-                    
-                    <InputField 
-                        label="Previsão de fechamento" 
-                        name="closingForecast" 
-                        type="date"
-                        value={formData.closingForecast} 
-                        onChange={handleChange} 
-                    />
-                    
-                    <InputField 
-                        label="Prioridade" 
-                        name="priority" 
-                        value={formData.priority} 
-                        isSelect
-                        options={['Baixa', 'Normal', 'Alta', 'Urgente']}
-                        onChange={handleChange} 
-                    />
-                    
-                    <InputField 
-                        label="Observações internas" 
-                        name="internalNotes" 
-                        placeholder="Digite aqui alguma observação" 
-                        value={formData.internalNotes} 
-                        onChange={handleChange} 
-                    />
-
+                    <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Organização do atendimento</h3></div>
+                    <Field label="Responsável comercial"><select className={`${inputClass} appearance-none`} value={formData.assignedUserId} onChange={event => setFormData(current => ({ ...current, assignedUserId: event.target.value }))}><option value="">Selecione um usuário interno</option>{members.map(member => <option key={member.userId || member.user?.id} value={member.userId || member.user?.id}>{member.user?.name || member.name} {member.user?.email ? `— ${member.user.email}` : ''}</option>)}</select></Field>
+                    <Field label="Etapa inicial do CRM"><select className={`${inputClass} appearance-none`} value={formData.status} onChange={event => setFormData(current => ({ ...current, status: event.target.value }))}>{CRM_STAGES.map(stage => <option key={stage.id} value={stage.id}>{stage.label}</option>)}</select>{formData.status === 'contract' && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">Ao cadastrar, o cliente e o processo serão provisionados e o contrato será enviado por e-mail, WhatsApp e portal.</p>}</Field>
+                    <Field label="Origem do lead"><select className={`${inputClass} appearance-none`} value={formData.leadOrigin} onChange={event => setFormData(current => ({ ...current, leadOrigin: event.target.value }))}>{['Instagram', 'Site', 'Indicação', 'Prospecção ativa', 'Outros'].map(option => <option key={option}>{option}</option>)}</select></Field>
+                    <Field label="Prioridade"><select className={`${inputClass} appearance-none`} value={formData.priority} onChange={event => setFormData(current => ({ ...current, priority: event.target.value }))}><option value="low">Baixa</option><option value="medium">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></Field>
+                    <Field label="Observações internas"><textarea rows={3} className={`${inputClass} resize-none`} value={formData.internalNotes} placeholder="Contexto comercial e próximos passos" onChange={event => setFormData(current => ({ ...current, internalNotes: event.target.value }))} /></Field>
+                    {feedback && <p className="mx-6 mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/30 dark:text-red-300">{feedback}</p>}
                 </form>
 
-                {/* Footer Action */}
-                <div className="p-6 shrink-0 bg-white dark:bg-zinc-950">
-                    <button 
-                        onClick={handleSubmit}
-                        disabled={isLoading}
-                        className="w-full h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white rounded-lg flex items-center justify-center text-[13px] font-bold transition-colors hover:bg-blue-800 disabled:opacity-50"
-                    >
-                        {isLoading ? 'Cadastrando...' : 'Cadastrar'}
+                <div className="shrink-0 bg-white p-6 dark:bg-zinc-950">
+                    <button form="asterysko-new-lead-form" type="submit" disabled={isLoading || loadingOptions} className="flex h-12 w-full items-center justify-center rounded-lg bg-[#0412dd] text-[13px] font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]">
+                        {isLoading ? (formData.status === 'contract' ? 'Criando acesso e enviando contrato...' : 'Cadastrando...') : loadingOptions ? 'Carregando opções...' : 'Cadastrar lead'}
                     </button>
                 </div>
             </div>
