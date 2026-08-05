@@ -38,6 +38,36 @@ interface PreviewDocument {
     url: string;
 }
 
+interface PaymentReceiptData {
+    id: string;
+    displayId: string;
+    status: string;
+    providerStatus?: string | null;
+    amount: number;
+    dueDate?: string | null;
+    paidAt?: string | null;
+    createdAt?: string | null;
+    paymentMethod?: string | null;
+    description: string;
+    brandName?: string | null;
+    cardBrand?: string | null;
+    cardLastFour?: string | null;
+    payer: { name: string; cpfCnpj: string };
+    recipient: { tradeName: string; legalName: string; cpfCnpj: string };
+    fiscalInvoice?: {
+        id: string;
+        status: string;
+        statusDescription?: string | null;
+        type?: string | null;
+        number?: string | null;
+        validationCode?: string | null;
+        effectiveDate?: string | null;
+        value?: number | null;
+        pdfUrl?: string | null;
+        xmlUrl?: string | null;
+    } | null;
+}
+
 type PaymentSheet = 'setup' | 'due-date' | 'payment-method' | null;
 type SubscriptionPaymentMethod = 'CREDIT_CARD' | 'PIX_AUTOMATIC';
 
@@ -52,6 +82,7 @@ interface CardDraft {
 const EMPTY_CARD: CardDraft = { holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '' };
 
 const ASSET_ROOT = '/assets/asterysko';
+const AsteryskoPdfViewer = React.lazy(() => import('./AsteryskoPdfViewer'));
 
 const DEFAULT_DOCUMENTS = [
     { name: 'Proposta', key: 'proposal', fields: ['proposalUrl'], icon: 'processo_documentos-imgGroup2.svg' },
@@ -162,6 +193,28 @@ const formatTimelineDate = (value: unknown) => {
     return `${part('day')} ${part('month').replace('.', '')}. ${part('year')}`;
 };
 
+const formatDateTime = (value: unknown, fallback = 'Data não informada') => {
+    if (!value) return fallback;
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat('pt-BR', {
+        dateStyle: 'long',
+        timeStyle: 'short',
+        timeZone: 'America/Fortaleza'
+    }).format(date);
+};
+
+const getPaymentMethodLabel = (receipt: PaymentReceiptData) => {
+    const method = String(receipt.paymentMethod || '').toUpperCase();
+    if (method.includes('PIX')) return 'Pix';
+    if (method.includes('CARD')) {
+        const card = [receipt.cardBrand, receipt.cardLastFour ? `final ${receipt.cardLastFour}` : ''].filter(Boolean).join(' · ');
+        return card ? `Cartão de crédito · ${card}` : 'Cartão de crédito';
+    }
+    if (method.includes('BOLETO')) return 'Boleto bancário';
+    return 'Forma de pagamento não informada';
+};
+
 const getProcessStatusLabel = (status: unknown) => PROCESS_STATUS_LABELS[String(status || '').toUpperCase()] || 'Em andamento';
 
 const hasConfirmedPayment = (process: any) => ['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(process?.paymentStatus || '').toUpperCase());
@@ -241,6 +294,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [profileFeedback, setProfileFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [previewDocument, setPreviewDocument] = useState<PreviewDocument | null>(null);
     const [previewClosing, setPreviewClosing] = useState(false);
+    const [paymentReceipt, setPaymentReceipt] = useState<PaymentReceiptData | null>(null);
+    const [paymentReceiptLoading, setPaymentReceiptLoading] = useState<string | null>(null);
+    const [paymentReceiptError, setPaymentReceiptError] = useState('');
     const [subscriptionContext, setSubscriptionContext] = useState<any>(null);
     const [subscriptionLoading, setSubscriptionLoading] = useState(false);
     const [paymentSheet, setPaymentSheet] = useState<PaymentSheet>(null);
@@ -366,6 +422,20 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [previewDocument]);
+
+    useEffect(() => {
+        if (!paymentReceipt) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setPaymentReceipt(null);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [paymentReceipt]);
 
     useEffect(() => {
         if (!paymentSheet) return;
@@ -671,6 +741,43 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         setPreviewDocument({ name, url });
     };
 
+    const openPaymentReceipt = async (invoice: any) => {
+        const receiptId = String(getValue(invoice.invoiceId, invoice.dealId, invoice.id));
+        if (!receiptId || paymentReceiptLoading) return;
+        try {
+            setPaymentReceiptLoading(receiptId);
+            setPaymentReceiptError('');
+            const response = await api.get(`/asterysko/portal/financials/${receiptId}/payment-receipt`);
+            setPaymentReceipt(response.data);
+        } catch (receiptError: any) {
+            setPaymentReceiptError(receiptError.response?.data?.error || 'Não foi possível abrir os detalhes deste pagamento.');
+        } finally {
+            setPaymentReceiptLoading(null);
+        }
+    };
+
+    const downloadOwnPaymentReceipt = (receipt: PaymentReceiptData) => {
+        void forceDownloadFile(
+            `/api/asterysko/portal/financials/${receipt.id}/payment-receipt.pdf`,
+            `Comprovante_Asterysko_${receipt.id.slice(0, 8)}.pdf`
+        );
+    };
+
+    const openFiscalInvoicePdf = (receipt: PaymentReceiptData) => {
+        setPaymentReceipt(null);
+        openDocumentPreview(
+            `NFS-e_Asterysko_${receipt.fiscalInvoice?.number || receipt.id.slice(0, 8)}.pdf`,
+            `/api/asterysko/portal/financials/${receipt.id}/fiscal-invoice/pdf`
+        );
+    };
+
+    const downloadFiscalInvoiceXml = (receipt: PaymentReceiptData) => {
+        void forceDownloadFile(
+            `/api/asterysko/portal/financials/${receipt.id}/fiscal-invoice/xml`,
+            `NFS-e_Asterysko_${receipt.fiscalInvoice?.number || receipt.id.slice(0, 8)}.xml`
+        );
+    };
+
     const closeDocumentPreview = () => {
         if (!previewDocument || previewClosing) return;
         setPreviewClosing(true);
@@ -687,6 +794,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         : '';
     const previewUrlWithoutQuery = resolvedPreviewUrl.split('?')[0].toLowerCase();
     const previewIsImage = /^data:image\//.test(resolvedPreviewUrl) || /\.(png|jpe?g|webp|gif|svg)$/.test(previewUrlWithoutQuery);
+    const previewIsPdf = previewDocument?.name.toLowerCase().endsWith('.pdf') || /\.pdf$/.test(previewUrlWithoutQuery) || /\/fiscal-invoice\/pdf$/.test(previewUrlWithoutQuery);
 
     const openPaymentSheet = (sheet: Exclude<PaymentSheet, null>) => {
         setSubscriptionFeedback(null);
@@ -1179,21 +1287,23 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                                 <article className="ast-history-card">
                                     <h2 className="ast-card-title">Histórico de pagamento</h2>
+                                    {paymentReceiptError && <p className="ast-history-card__error" role="alert">{paymentReceiptError}</p>}
                                     {displayedPaymentHistory.slice(0, 12).map((invoice: any, index: number) => {
                                         const paymentStatus = String(invoice.status || invoice.providerStatus || 'PENDING').toUpperCase();
+                                        const receiptId = String(getValue(invoice.invoiceId, invoice.dealId, invoice.id));
                                         return (
-                                        <div className="ast-history-row" key={invoice.id || index}>
-                                            <div>
+                                        <button className="ast-history-row" type="button" key={invoice.id || index} onClick={() => void openPaymentReceipt(invoice)} aria-label={`Ver detalhes do pagamento de ${formatCurrency(getValue(invoice.amount, invoice.value, invoice.total, 0))}`}>
+                                            <span>
                                                 <span className={`ast-history-row__status ast-history-row__status--${paymentStatus.toLowerCase()}`}>
                                                     {PAYMENT_STATUS_LABELS[paymentStatus] || invoice.status}
                                                 </span>
                                                 <strong>{formatCurrency(getValue(invoice.amount, invoice.value, invoice.total, 0))}</strong>
                                                 <small>{invoice.paymentMethod === 'PIX' || invoice.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix' : 'Cartão'} • {formatDate(getValue(invoice.paidAt, invoice.dueDate))}</small>
-                                            </div>
-                                            {invoice.transactionReceiptUrl && (
-                                                <button type="button" aria-label="Abrir comprovante" onClick={() => openDocumentPreview(`Comprovante-${invoice.id}.pdf`, invoice.transactionReceiptUrl)}><ChevronRight size={18} /></button>
-                                            )}
-                                        </div>
+                                            </span>
+                                            <span className="ast-history-row__open" aria-hidden="true">
+                                                {paymentReceiptLoading === receiptId ? <span className="ast-spinner" /> : <ChevronRight size={19} />}
+                                            </span>
+                                        </button>
                                     );})}
                                     {!displayedPaymentHistory.length && <p className="ast-history-empty">Nenhuma cobrança registrada até o momento.</p>}
                                 </article>
@@ -1400,10 +1510,70 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         <div className="ast-document-preview__body">
                             {previewIsImage ? (
                                 <img src={resolvedPreviewUrl} alt={previewDocument.name} />
+                            ) : previewIsPdf ? (
+                                <React.Suspense fallback={<div className="ast-pdf-viewer__loading"><span className="ast-spinner" /> Carregando visualizador...</div>}>
+                                    <AsteryskoPdfViewer url={resolvedPreviewUrl} title={previewDocument.name} />
+                                </React.Suspense>
                             ) : (
                                 <iframe src={resolvedPreviewUrl} title={previewDocument.name} />
                             )}
                         </div>
+                    </section>
+                </div>
+            )}
+
+            {paymentReceipt && (
+                <div className="ast-receipt-modal" role="dialog" aria-modal="true" aria-labelledby="ast-payment-receipt-title" onClick={() => setPaymentReceipt(null)}>
+                    <section className="ast-receipt-modal__panel" onClick={event => event.stopPropagation()}>
+                        <header className="ast-receipt-modal__header">
+                            <div className="ast-receipt-modal__brand">
+                                <img src={`${ASSET_ROOT}/brand-mark.svg`} alt="" />
+                                <span><strong>Asterysko</strong><small>Comprovante do portal</small></span>
+                            </div>
+                            <button type="button" onClick={() => setPaymentReceipt(null)} aria-label="Fechar comprovante"><X size={21} /></button>
+                        </header>
+
+                        <div className="ast-receipt-modal__content">
+                            <div className="ast-receipt-modal__summary">
+                                <span className={`ast-receipt-modal__status ast-receipt-modal__status--${String(paymentReceipt.status).toLowerCase()}`}>
+                                    {PAYMENT_STATUS_LABELS[String(paymentReceipt.status).toUpperCase()] || paymentReceipt.status}
+                                </span>
+                                <small id="ast-payment-receipt-title">{['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(paymentReceipt.status).toUpperCase()) ? 'Pagamento confirmado' : 'Detalhes da cobrança'}</small>
+                                <strong>{formatCurrency(paymentReceipt.amount)}</strong>
+                                <p>{formatDateTime(getValue(paymentReceipt.paidAt, paymentReceipt.dueDate))}</p>
+                            </div>
+
+                            <dl className="ast-receipt-modal__details">
+                                <div><dt>Pagador</dt><dd>{paymentReceipt.payer.name}<small>{paymentReceipt.payer.cpfCnpj}</small></dd></div>
+                                <div><dt>Recebedor</dt><dd>{paymentReceipt.recipient.tradeName}<small>{paymentReceipt.recipient.legalName} · CNPJ {paymentReceipt.recipient.cpfCnpj}</small></dd></div>
+                                <div><dt>Forma de pagamento</dt><dd>{getPaymentMethodLabel(paymentReceipt)}</dd></div>
+                                <div><dt>Serviço</dt><dd>{paymentReceipt.description}{paymentReceipt.brandName && <small>Marca: {paymentReceipt.brandName}</small>}</dd></div>
+                                <div><dt>Identificador</dt><dd className="ast-receipt-modal__identifier">{paymentReceipt.displayId}</dd></div>
+                            </dl>
+
+                            {paymentReceipt.fiscalInvoice && (
+                                <section className="ast-receipt-modal__fiscal">
+                                    <div>
+                                        <small>Nota fiscal de serviço</small>
+                                        <strong>{paymentReceipt.fiscalInvoice.number ? `NFS-e nº ${paymentReceipt.fiscalInvoice.number}` : 'NFS-e em processamento'}</strong>
+                                        <p>{paymentReceipt.fiscalInvoice.status === 'AUTHORIZED' ? 'Emitida e autorizada pela prefeitura.' : paymentReceipt.fiscalInvoice.statusDescription || 'Aguardando autorização da prefeitura.'}</p>
+                                    </div>
+                                    <span>{paymentReceipt.fiscalInvoice.status === 'AUTHORIZED' ? 'Emitida' : paymentReceipt.fiscalInvoice.status}</span>
+                                </section>
+                            )}
+                        </div>
+
+                        <footer className="ast-receipt-modal__actions">
+                            {['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(paymentReceipt.status).toUpperCase()) && (
+                                <button type="button" onClick={() => downloadOwnPaymentReceipt(paymentReceipt)}><Download size={18} /> Baixar comprovante</button>
+                            )}
+                            {paymentReceipt.fiscalInvoice?.pdfUrl && (
+                                <button type="button" onClick={() => openFiscalInvoicePdf(paymentReceipt)}><FileText size={18} /> Visualizar NFS-e</button>
+                            )}
+                            {paymentReceipt.fiscalInvoice?.xmlUrl && (
+                                <button type="button" onClick={() => downloadFiscalInvoiceXml(paymentReceipt)}><Download size={18} /> Baixar XML</button>
+                            )}
+                        </footer>
                     </section>
                 </div>
             )}
