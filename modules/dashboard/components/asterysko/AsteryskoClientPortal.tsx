@@ -313,14 +313,17 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const proxyUploadInputRef = useRef<HTMLInputElement | null>(null);
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
+    const subscriptionRequestRef = useRef(0);
 
     useSystemBarColor(view === 'details' ? '#ffffff' : '#f3f3f3');
 
     const fetchSubscriptionContext = async (processId: string, showLoading = true) => {
+        const requestId = ++subscriptionRequestRef.current;
         if (showLoading) setSubscriptionLoading(true);
         try {
             const response = await api.get(`/asterysko/portal/subscriptions/${processId}`);
-            const context = response.data;
+            if (requestId !== subscriptionRequestRef.current) return;
+            const context = { ...response.data, processId: response.data?.processId || processId };
             setSubscriptionContext(context);
             const paymentConfirmed = [context?.subscription?.lastPaymentStatus, ...(Array.isArray(context?.invoices) ? context.invoices.map((invoice: any) => invoice.status) : [])]
                 .some(status => ['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(status || '').toUpperCase()));
@@ -329,12 +332,13 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 setSelectedProcess((current: any) => current && String(current.id) === processId ? { ...current, paymentStatus: 'PAID' } : current);
             }
         } catch (fetchError: any) {
+            if (requestId !== subscriptionRequestRef.current) return;
             setSubscriptionFeedback({
                 type: 'error',
                 message: fetchError.response?.data?.message || 'Não foi possível carregar a assinatura.'
             });
         } finally {
-            if (showLoading) setSubscriptionLoading(false);
+            if (showLoading && requestId === subscriptionRequestRef.current) setSubscriptionLoading(false);
         }
     };
 
@@ -397,9 +401,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     useEffect(() => {
         const processId = selectedProcess?.id;
         if (!processId) {
+            subscriptionRequestRef.current += 1;
             setSubscriptionContext(null);
             return;
         }
+        setSubscriptionContext(null);
         setSubscriptionFeedback(null);
         void fetchSubscriptionContext(String(processId));
     }, [selectedProcess?.id]);
@@ -479,7 +485,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const selectedProcessProxyStatus = String(selectedProcess?.proxySignStatus || 'PENDING').toUpperCase();
     const subscription = subscriptionContext?.subscription;
     const subscriptionInvoices = Array.isArray(subscriptionContext?.invoices) ? subscriptionContext.invoices : [];
-    const displayedPaymentHistory = subscription ? subscriptionInvoices : invoices;
+    const selectedProcessId = String(selectedProcess?.id || '');
+    const subscriptionMatchesSelectedProcess = String(subscriptionContext?.processId || subscription?.processId || '') === selectedProcessId;
+    const processInvoices = invoices.filter(invoice => String(invoice.processId || '') === selectedProcessId);
+    const displayedPaymentHistory = subscriptionMatchesSelectedProcess && subscription ? subscriptionInvoices : processInvoices;
     const subscriptionStatus = String(subscription?.status || '').toUpperCase();
     const subscriptionMethodLabel = subscription?.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix Automático' : 'Cartão de crédito';
     const pixAutomaticAvailable = Boolean(subscriptionContext?.availablePaymentMethods?.includes('PIX_AUTOMATIC'));
