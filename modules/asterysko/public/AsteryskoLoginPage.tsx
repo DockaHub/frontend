@@ -93,7 +93,10 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
 
         setLoading(true);
         try {
-            await api.post('/auth/portal/request-otp', { identifier });
+            await api.post('/auth/portal/request-otp', {
+                identifier,
+                channel: isPhone ? 'whatsapp' : 'email'
+            });
             setSentIdentifier(identifier);
             setOtp(createEmptyOtp());
             transitionTo('otp', 'forward');
