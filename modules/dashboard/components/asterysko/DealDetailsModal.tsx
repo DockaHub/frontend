@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, QrCode, FileText, Layout, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff, Search as SearchIcon, Edit2 } from 'lucide-react';
+import { User, DollarSign, CheckCircle, ArrowRight, Clock, Send, AlignLeft, Trash2, Link as LinkIcon, Download, FileText, Layout, ExternalLink, ShieldCheck, Briefcase, Upload, Check, AlertTriangle, Bell, BellOff, Search as SearchIcon, Edit2 } from 'lucide-react';
 import { KanbanCardData, Organization } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import api, { getBackendUrl } from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { useToast } from '../../../../context/ToastContext';
+import { forceDownloadFile } from './utils/fileDownload';
 
 const extractInfoFromTags = (tags: any[]) => {
     const info: { cnpj?: string, address?: string, razaoSocial?: string, city?: string, state?: string, postalCode?: string } = {};
@@ -1018,8 +1019,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     </p>
                                 </div>
                                 {formData.signedAt && (
-                                    <button className="p-2 bg-white dark:bg-zinc-700 rounded-lg border border-docka-100 dark:border-zinc-600 text-indigo-600 dark:text-indigo-400 hover:shadow-md transition-all">
-                                        <QrCode size={18} />
+                                    <button
+                                        type="button"
+                                        title="Baixar contrato assinado"
+                                        aria-label="Baixar contrato assinado em PDF"
+                                        onClick={() => forceDownloadFile(`/api/asterysko/public/deals/${deal.id}/contract-pdf`, `Contrato_Asterysko_${deal.title.replace(/\s+/g, '_')}.pdf`)}
+                                        className="p-2 bg-white dark:bg-zinc-700 rounded-lg border border-docka-100 dark:border-zinc-600 text-indigo-600 dark:text-indigo-400 hover:shadow-md transition-all"
+                                    >
+                                        <Download size={18} />
                                     </button>
                                 )}
                             </div>

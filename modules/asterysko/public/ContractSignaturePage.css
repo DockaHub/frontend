@@ -1,0 +1,660 @@
+.ast-sign,
+.ast-sign * {
+    box-sizing: border-box;
+}
+
+.ast-sign {
+    --ast-sign-blue: #1a1fd3;
+    --ast-sign-pale: #eaebff;
+    --ast-sign-ink: #232323;
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: #f3f3f3;
+    color: var(--ast-sign-ink);
+    font-family: "Inter Tight", Inter, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+}
+
+.ast-sign button,
+.ast-sign input,
+.ast-sign a {
+    font: inherit;
+}
+
+.ast-sign-progress {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 130;
+    height: 3px;
+    background: transparent;
+}
+
+.ast-sign-progress span {
+    display: block;
+    height: 100%;
+    background: var(--ast-sign-blue);
+    transition: width 100ms linear;
+}
+
+.ast-sign-header {
+    position: sticky;
+    top: 0;
+    z-index: 125;
+    border-bottom: 1px solid rgba(21, 22, 31, .08);
+    background: rgba(255, 255, 255, .92);
+    backdrop-filter: blur(18px);
+}
+
+.ast-sign-header__inner {
+    display: flex;
+    width: min(100% - 40px, 1400px);
+    height: 68px;
+    align-items: center;
+    gap: 16px;
+    margin: 0 auto;
+}
+
+.ast-sign-header__logo {
+    width: 108px;
+    height: auto;
+}
+
+.ast-sign-header__status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    color: #6b6d78;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.ast-sign-icon-button {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    place-items: center;
+    border: 1px solid #e5e5ea;
+    border-radius: 50%;
+    background: #fff;
+    color: #24252e;
+    cursor: pointer;
+}
+
+.ast-sign-icon-button:hover {
+    border-color: #c6c7d2;
+}
+
+.ast-sign-mobile-menu {
+    display: none;
+}
+
+.ast-sign-layout {
+    display: grid;
+    grid-template-columns: 190px minmax(560px, 790px) minmax(290px, 330px);
+    gap: 26px;
+    width: min(100% - 40px, 1400px);
+    align-items: start;
+    margin: 0 auto;
+    padding: 32px 0 80px;
+}
+
+.ast-sign-toc,
+.ast-sign-action-column {
+    position: sticky;
+    top: 98px;
+}
+
+.ast-sign-toc {
+    padding: 6px 4px;
+}
+
+.ast-sign-toc > span,
+.ast-sign-form > small,
+.ast-sign-certificate > small {
+    display: block;
+    color: #898a94;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.ast-sign-toc > strong {
+    display: block;
+    margin: 5px 0 18px;
+    color: var(--ast-sign-blue);
+    font-family: "Season Mix", "Playfair Display", serif;
+    font-size: 20px;
+    font-weight: 400;
+}
+
+.ast-sign-toc nav {
+    display: grid;
+    gap: 2px;
+}
+
+.ast-sign-toc nav button {
+    display: flex;
+    min-height: 31px;
+    align-items: center;
+    gap: 9px;
+    padding: 4px 3px;
+    border: 0;
+    background: transparent;
+    color: #777984;
+    font-size: 11px;
+    text-align: left;
+    cursor: pointer;
+    transition: color 150ms ease;
+}
+
+.ast-sign-toc nav button > span {
+    width: 5px;
+    height: 5px;
+    flex: 0 0 5px;
+    border-radius: 50%;
+    background: #c3c4ca;
+}
+
+.ast-sign-toc nav button:hover,
+.ast-sign-toc nav button.is-active {
+    color: var(--ast-sign-blue);
+}
+
+.ast-sign-toc nav button.is-active > span {
+    background: var(--ast-sign-blue);
+    box-shadow: 0 0 0 4px rgba(26, 31, 211, .1);
+}
+
+.ast-sign-document-column {
+    min-width: 0;
+}
+
+.ast-sign-paper {
+    overflow: hidden;
+    border: 1px solid rgba(24, 25, 34, .07);
+    border-radius: 3px;
+    background: #fff;
+    box-shadow: 0 18px 60px rgba(22, 24, 44, .08);
+}
+
+.ast-sign-legal-note {
+    margin: 15px 0 0;
+    color: #8a8b94;
+    font-size: 10px;
+    text-align: center;
+}
+
+.ast-sign-success {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-bottom: 14px;
+    padding: 16px 18px;
+    border: 1px solid #cce7d1;
+    border-radius: 15px;
+    background: #f1fbf3;
+    color: #166326;
+}
+
+.ast-sign-success > svg {
+    flex: 0 0 auto;
+}
+
+.ast-sign-success div {
+    min-width: 0;
+}
+
+.ast-sign-success strong,
+.ast-sign-success p {
+    display: block;
+    margin: 0;
+}
+
+.ast-sign-success strong {
+    font-size: 13px;
+}
+
+.ast-sign-success p {
+    margin-top: 2px;
+    color: #4b7954;
+    font-size: 11px;
+}
+
+.ast-sign-success a {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    color: #166326;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.ast-sign-form,
+.ast-sign-certificate {
+    padding: 25px;
+    border: 1px solid #e2e2e7;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 14px 38px rgba(24, 25, 40, .06);
+}
+
+.ast-sign-form h2,
+.ast-sign-certificate h2 {
+    margin: 7px 0 8px;
+    color: var(--ast-sign-blue);
+    font-family: "Season Mix", "Playfair Display", serif;
+    font-size: 27px;
+    font-weight: 400;
+    line-height: 1.05;
+}
+
+.ast-sign-form > p {
+    margin: 0 0 18px;
+    color: #676974;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+.ast-sign-acknowledgements {
+    display: grid;
+    gap: 8px;
+}
+
+.ast-sign-acknowledgements label {
+    display: grid;
+    grid-template-columns: 20px 1fr;
+    gap: 9px;
+    align-items: start;
+    padding: 10px;
+    border: 1px solid #e6e6eb;
+    border-radius: 11px;
+    color: #565862;
+    cursor: pointer;
+    transition: border-color 150ms ease, background 150ms ease;
+}
+
+.ast-sign-acknowledgements label.is-checked {
+    border-color: #cfd0fa;
+    background: #f7f7ff;
+    color: #252758;
+}
+
+.ast-sign-acknowledgements input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.ast-sign-acknowledgements label > span {
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    border: 1.5px solid #c5c6ce;
+    border-radius: 6px;
+    color: transparent;
+}
+
+.ast-sign-acknowledgements label.is-checked > span {
+    border-color: var(--ast-sign-blue);
+    background: var(--ast-sign-blue);
+    color: #fff;
+}
+
+.ast-sign-acknowledgements em {
+    font-size: 11px;
+    font-style: normal;
+    line-height: 1.35;
+}
+
+.ast-sign-name-field {
+    display: block;
+    margin-top: 17px;
+}
+
+.ast-sign-name-field > span {
+    display: block;
+    margin-bottom: 7px;
+    color: #464852;
+    font-size: 11px;
+    font-weight: 650;
+}
+
+.ast-sign-name-field input {
+    width: 100%;
+    height: 45px;
+    padding: 0 13px;
+    border: 1px solid #dcdce3;
+    border-radius: 10px;
+    outline: 0;
+    color: #22232c;
+    font-size: 12px;
+}
+
+.ast-sign-name-field input:focus {
+    border-color: var(--ast-sign-blue);
+    box-shadow: 0 0 0 3px rgba(26, 31, 211, .1);
+}
+
+.ast-sign-primary,
+.ast-sign-secondary {
+    display: flex;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.ast-sign-primary {
+    border: 1px solid var(--ast-sign-blue);
+    background: var(--ast-sign-blue);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(26, 31, 211, .2);
+}
+
+.ast-sign-primary:disabled {
+    border-color: #d7d7de;
+    background: #e3e3e8;
+    color: #9798a0;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.ast-sign-secondary {
+    border: 1px solid #dcdce3;
+    background: #fff;
+    color: #35363f;
+}
+
+.ast-sign-evidence {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    margin: 12px 0 0 !important;
+    color: #8b8c95 !important;
+    font-size: 9.5px !important;
+}
+
+.ast-sign-evidence svg {
+    flex: 0 0 auto;
+}
+
+.ast-sign-button-spinner,
+.ast-sign-spinner {
+    display: inline-block;
+    width: 17px;
+    height: 17px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: ast-sign-spin .7s linear infinite;
+}
+
+.ast-sign-certificate__icon {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    margin-bottom: 19px;
+    border-radius: 50%;
+    background: #e9f8ec;
+    color: #1b7d2d;
+}
+
+.ast-sign-certificate dl {
+    margin: 20px 0;
+}
+
+.ast-sign-certificate dl > div {
+    padding: 11px 0;
+    border-bottom: 1px solid #ededf0;
+}
+
+.ast-sign-certificate dt {
+    color: #8a8b94;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+.ast-sign-certificate dd {
+    margin: 4px 0 0;
+    color: #2b2c34;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.ast-sign-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 150;
+    display: flex;
+    justify-content: flex-end;
+    background: rgba(10, 11, 18, .32);
+    backdrop-filter: blur(3px);
+}
+
+.ast-sign-mobile-nav {
+    width: min(86vw, 330px);
+    height: 100%;
+    overflow-y: auto;
+    padding: 25px;
+    background: #fff;
+    box-shadow: -12px 0 45px rgba(0, 0, 0, .12);
+}
+
+.ast-sign-mobile-nav > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.ast-sign-mobile-nav > div button {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: #f2f2f5;
+}
+
+.ast-sign-mobile-nav > button {
+    display: block;
+    width: 100%;
+    padding: 11px 2px;
+    border: 0;
+    border-bottom: 1px solid #ededf1;
+    background: transparent;
+    color: #676974;
+    font-size: 12px;
+    text-align: left;
+}
+
+.ast-sign-mobile-nav > button.is-active {
+    color: var(--ast-sign-blue);
+    font-weight: 700;
+}
+
+.ast-sign-state {
+    position: fixed;
+    inset: 0;
+    z-index: 130;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 30px;
+    background: #eaebff;
+    color: #1a1fd3;
+    font-family: "Inter Tight", Inter, sans-serif;
+    text-align: center;
+}
+
+.ast-sign-state img {
+    width: 125px;
+    margin-bottom: 12px;
+}
+
+.ast-sign-state p,
+.ast-sign-state h1 {
+    margin: 0;
+}
+
+.ast-sign-state--error {
+    background: #f3f3f3;
+    color: #25262e;
+}
+
+.ast-sign-state--error h1 {
+    font-family: "Season Mix", "Playfair Display", serif;
+    font-size: 30px;
+    font-weight: 400;
+}
+
+.ast-sign-state--error p {
+    max-width: 440px;
+    color: #72737d;
+}
+
+.ast-sign-state--error button {
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--ast-sign-blue, #1a1fd3);
+    color: #fff;
+    font-weight: 700;
+}
+
+@keyframes ast-sign-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1160px) {
+    .ast-sign-layout {
+        grid-template-columns: minmax(540px, 1fr) 310px;
+        width: min(100% - 32px, 1060px);
+    }
+
+    .ast-sign-toc {
+        display: none;
+    }
+
+    .ast-sign-mobile-menu {
+        display: grid;
+    }
+}
+
+@media (max-width: 820px) {
+    .ast-sign-header__inner {
+        width: calc(100% - 24px);
+        height: 60px;
+    }
+
+    .ast-sign-header__status span {
+        display: none;
+    }
+
+    .ast-sign-layout {
+        display: flex;
+        width: 100%;
+        flex-direction: column;
+        gap: 18px;
+        padding: 14px 0 50px;
+    }
+
+    .ast-sign-document-column {
+        width: 100%;
+    }
+
+    .ast-sign-paper {
+        border-right: 0;
+        border-left: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .ast-sign-success {
+        margin: 0 12px 12px;
+    }
+
+    .ast-sign-success p {
+        display: none;
+    }
+
+    .ast-sign-success a {
+        font-size: 0;
+    }
+
+    .ast-sign-success a svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .ast-sign-action-column {
+        position: static;
+        width: calc(100% - 24px);
+        order: 2;
+        margin: 0 12px;
+    }
+
+    .ast-sign-document-column {
+        order: 1;
+    }
+
+    .ast-sign-form,
+    .ast-sign-certificate {
+        border-radius: 18px;
+        box-shadow: none;
+    }
+}
+
+@media print {
+    .ast-sign {
+        position: static;
+        overflow: visible;
+        background: #fff;
+    }
+
+    .ast-sign-progress,
+    .ast-sign-header,
+    .ast-sign-toc,
+    .ast-sign-action-column,
+    .ast-sign-success,
+    .ast-sign-legal-note {
+        display: none !important;
+    }
+
+    .ast-sign-layout {
+        display: block;
+        width: 100%;
+        padding: 0;
+    }
+
+    .ast-sign-paper {
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+    }
+}

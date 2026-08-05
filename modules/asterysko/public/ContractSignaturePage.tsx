@@ -1,216 +1,247 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Check, CheckCircle2, Download, FileCheck2, LockKeyhole, Menu, ShieldCheck, X } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
-import { FileText, CheckCircle, Smartphone, Shield } from 'lucide-react';
+import './ContractSignaturePage.css';
 
 interface ContractSignaturePageProps {
     dealId: string;
 }
 
+type ContractDeal = {
+    id: string;
+    title: string;
+    contactName?: string;
+    status?: string;
+    signedAt?: string;
+    signedByIP?: string;
+    signedByUserAgent?: string;
+    signatureData?: string;
+    pdfUrl?: string;
+};
+
+const CHAPTERS = [
+    ['contract-summary', 'Resumo'],
+    ['chapter-1', 'Partes e escopo'],
+    ['chapter-2', 'Obrigações do cliente'],
+    ['chapter-3', 'Responsabilidade'],
+    ['chapter-4', 'Pagamento'],
+    ['chapter-5', 'Comunicação'],
+    ['chapter-6', 'Portal'],
+    ['chapter-7', 'LGPD'],
+    ['chapter-8', 'Confidencialidade'],
+    ['chapter-9', 'Propriedade intelectual'],
+    ['chapter-10', 'Rescisão'],
+    ['chapter-11', 'Desistência'],
+    ['chapter-12', 'Força maior'],
+    ['chapter-13', 'Assinatura eletrônica'],
+    ['chapter-14', 'Disposições gerais'],
+    ['chapter-15', 'Foro'],
+    ['annex-1', 'Anexos']
+] as const;
+
+const getSignerName = (deal: ContractDeal | null) => {
+    const value = String(deal?.signatureData || '');
+    return value.replace(/^Assinado digitalmente por\s+/i, '').split('|')[0].trim() || deal?.contactName || 'Cliente';
+};
+
 export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ dealId }) => {
-    const [deal, setDeal] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [deal, setDeal] = useState<ContractDeal | null>(null);
     const [contractHtml, setContractHtml] = useState('');
-    const [signing, setSigning] = useState(false);
+    const [version, setVersion] = useState('');
+    const [acknowledgementLabels, setAcknowledgementLabels] = useState<string[]>([]);
+    const [acknowledgements, setAcknowledgements] = useState<boolean[]>([]);
     const [signatureName, setSignatureName] = useState('');
-    const [agreed, setAgreed] = useState(false);
-    const { addToast } = useToast();
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
+    const [signing, setSigning] = useState(false);
     const [signed, setSigned] = useState(false);
+    const [pdfUrl, setPdfUrl] = useState('');
+    const [readProgress, setReadProgress] = useState(0);
+    const [activeSection, setActiveSection] = useState('contract-summary');
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const pageRef = useRef<HTMLDivElement | null>(null);
+    const { addToast } = useToast();
+
+    const fetchDeal = useCallback(async (showLoading = true) => {
+        if (showLoading) setLoading(true);
+        setLoadError('');
+        try {
+            const response = await api.get(`/asterysko/public/deals/${dealId}/contract`);
+            const nextDeal = response.data.deal as ContractDeal;
+            const labels = Array.isArray(response.data.acknowledgements) ? response.data.acknowledgements : [];
+            setDeal(nextDeal);
+            setContractHtml(response.data.html || '');
+            setVersion(response.data.version || '');
+            setAcknowledgementLabels(labels);
+            setAcknowledgements(current => current.length === labels.length ? current : labels.map(() => false));
+            setPdfUrl(response.data.pdfUrl || nextDeal?.pdfUrl || '');
+            setSigned(Boolean(nextDeal?.signedAt || nextDeal?.status === 'contract_signed'));
+            if (!signatureName && nextDeal?.contactName) setSignatureName(nextDeal.contactName);
+        } catch (error: any) {
+            console.error('Error fetching contract', error);
+            setLoadError(error?.response?.data?.error || 'Não foi possível carregar este contrato.');
+        } finally {
+            if (showLoading) setLoading(false);
+        }
+    }, [dealId, signatureName]);
 
     useEffect(() => {
-        fetchDeal();
+        void fetchDeal();
     }, [dealId]);
 
-    const fetchDeal = async () => {
-        try {
-            // In a real scenario, this endpoint should be public or secured by a token
-            // For MVP, we might need a public endpoint wrapper or use the existing one if auth is bypassed
-            // Let's assume we have a public endpoint for viewing/signing
-            const response = await api.get(`/asterysko/public/deals/${dealId}/contract`);
-            setDeal(response.data.deal);
-            setContractHtml(response.data.html);
-            if (response.data.deal.signedAt || response.data.deal.status === 'contract_signed') {
-                setSigned(true);
-            }
-        } catch (error) {
-            console.error('Error fetching contract', error);
-            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível carregar o contrato.' });
-        } finally {
-            setLoading(false);
-        }
+    useEffect(() => {
+        const page = pageRef.current;
+        if (!page || loading) return;
+        const onScroll = () => {
+            const max = page.scrollHeight - page.clientHeight;
+            setReadProgress(max > 0 ? Math.min(100, Math.round((page.scrollTop / max) * 100)) : 100);
+            const marker = page.scrollTop + 150;
+            let current = 'contract-summary';
+            CHAPTERS.forEach(([id]) => {
+                const element = page.querySelector<HTMLElement>(`#${id}`);
+                if (element && element.offsetTop <= marker) current = id;
+            });
+            setActiveSection(current);
+        };
+        onScroll();
+        page.addEventListener('scroll', onScroll, { passive: true });
+        return () => page.removeEventListener('scroll', onScroll);
+    }, [loading, contractHtml]);
+
+    const allAcknowledged = acknowledgementLabels.length > 0 && acknowledgements.every(Boolean);
+    const canSign = allAcknowledged && signatureName.trim().length >= 3 && !signing;
+    const signedDate = useMemo(() => deal?.signedAt ? new Date(deal.signedAt).toLocaleString('pt-BR') : '', [deal?.signedAt]);
+
+    const goToSection = (id: string) => {
+        pageRef.current?.querySelector<HTMLElement>(`#${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setMobileMenuOpen(false);
+    };
+
+    const toggleAcknowledgement = (index: number) => {
+        setAcknowledgements(current => current.map((value, itemIndex) => itemIndex === index ? !value : value));
     };
 
     const handleSign = async () => {
-        if (!signatureName || !agreed) {
-            addToast({ type: 'warning', title: 'Atenção', message: 'Preencha seu nome e aceite os termos.' });
+        if (!canSign) {
+            addToast({ type: 'warning', title: 'Revise o aceite', message: 'Confirme os quatro pontos e informe seu nome completo.' });
             return;
         }
-
         setSigning(true);
         try {
             const response = await api.post(`/asterysko/public/deals/${dealId}/sign`, {
-                signatureName,
-                agreed: true
+                signatureName: signatureName.trim(),
+                agreed: true,
+                acknowledgements
             });
-            // Tenta obter o deal atualizado do response ou refetch explícito
-            if (response.data && response.data.deal) {
-                setDeal(response.data.deal);
-            } else {
-                await fetchDeal();
-            }
             setSigned(true);
-            addToast({ type: 'success', title: 'Assinado!', message: 'Contrato assinado com sucesso.' });
-        } catch (error) {
-            console.error('Error signing', error);
-            addToast({ type: 'error', title: 'Erro', message: 'Falha ao assinar contrato.' });
+            setDeal(response.data?.deal || deal);
+            setPdfUrl(response.data?.deal?.pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`);
+            await fetchDeal(false);
+            pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+            addToast({ type: 'success', title: 'Contrato assinado', message: 'O PDF foi gerado e anexado ao seu processo.' });
+        } catch (error: any) {
+            console.error('Error signing contract', error);
+            addToast({ type: 'error', title: 'Não foi possível assinar', message: error?.response?.data?.error || 'Tente novamente em alguns instantes.' });
         } finally {
             setSigning(false);
         }
     };
 
-    if (loading) return <div className="flex items-center justify-center h-screen bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
+    if (loading) {
+        return (
+            <div className="ast-sign-state" role="status">
+                <img src="/assets/asterysko/contract-wordmark.svg" alt="Asterysko" />
+                <span className="ast-sign-spinner" />
+                <p>Preparando seu contrato...</p>
+            </div>
+        );
+    }
 
-    const handlePrint = () => {
-        window.print();
-    };
+    if (loadError) {
+        return (
+            <div className="ast-sign-state ast-sign-state--error">
+                <FileCheck2 size={34} />
+                <h1>Não conseguimos abrir o contrato</h1>
+                <p>{loadError}</p>
+                <button type="button" onClick={() => void fetchDeal()}>Tentar novamente</button>
+            </div>
+        );
+    }
 
     return (
-        <div className="h-full w-full overflow-y-auto overflow-x-hidden custom-scrollbar bg-slate-50 flex flex-col relative print:bg-white print:overflow-visible">
-            {/* Header */}
-            <header className="bg-white border-b border-gray-200 py-4 px-6 sticky top-0 z-10 shadow-sm print:hidden">
-                <div className="max-w-5xl mx-auto flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-indigo-200 shadow-lg">
-                            <FileText className="text-white h-5 w-5" />
-                        </div>
-                        <span className="font-bold text-xl tracking-tight text-gray-900">Asterysko Sign</span>
-                    </div>
-                    {signed && (
-                        <button
-                            onClick={handlePrint}
-                            className="flex items-center gap-2 bg-indigo-50 text-indigo-700 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-indigo-100 transition-colors"
-                        >
-                            <Smartphone size={16} /> Salvar PDF
-                        </button>
-                    )}
-                    <div className="hidden sm:block text-sm font-medium text-gray-500">
-                        {signed ? 'Documento Assinado e Validado' : 'Ambiente Seguro de Assinatura'}
-                    </div>
+        <div className={`ast-sign ${signed ? 'ast-sign--signed' : ''}`} ref={pageRef}>
+            <div className="ast-sign-progress" aria-hidden="true"><span style={{ width: `${readProgress}%` }} /></div>
+            <header className="ast-sign-header">
+                <div className="ast-sign-header__inner">
+                    <button className="ast-sign-icon-button" type="button" onClick={() => window.location.assign('/portal?view=contracts')} aria-label="Voltar aos contratos"><ArrowLeft size={19} /></button>
+                    <img className="ast-sign-header__logo" src="/assets/asterysko/contract-wordmark.svg" alt="Asterysko" />
+                    <div className="ast-sign-header__status"><LockKeyhole size={15} /><span>{signed ? 'Assinado e arquivado' : 'Ambiente seguro'}</span></div>
+                    <button className="ast-sign-icon-button ast-sign-mobile-menu" type="button" onClick={() => setMobileMenuOpen(true)} aria-label="Abrir índice"><Menu size={20} /></button>
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="flex-1 pt-8 pb-40 px-4 print:pt-0 print:pb-0 print:px-0">
-                <div className="max-w-5xl mx-auto space-y-6 print:space-y-0">
-                    {signed && (
-                        <div className="bg-emerald-50 border border-emerald-100 p-5 rounded-2xl flex flex-wrap items-center gap-4 animate-in fade-in slide-in-from-top-4 shadow-sm print:hidden">
-                            <div className="h-12 w-12 bg-emerald-100 rounded-full flex items-center justify-center shrink-0">
-                                <CheckCircle className="h-6 w-6 text-emerald-600" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-emerald-900 text-sm">Contrato Assinado Digitalmente</h3>
-                                <p className="text-xs text-emerald-700 mt-1">Este documento possui validade jurídica equivalente e foi formalizado eletronicamente em nosso sistema.</p>
-                            </div>
-                            <button type="button" onClick={() => window.location.assign('/portal?view=details&tab=payments')} className="ml-auto shrink-0 rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-800">
-                                Continuar para pagamento
-                            </button>
-                        </div>
-                    )}
-
-                    {/* CONTRACT PAPER */}
-                    <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-2xl overflow-hidden min-h-[800px] border border-gray-100 print:shadow-none print:border-none print:rounded-none">
-                        <div className="text-gray-900" dangerouslySetInnerHTML={{ __html: contractHtml }} />
-
-                        {signed && deal && (
-                            <div className="mt-8 border-t-2 border-dashed border-gray-200 p-8 md:p-12 bg-gray-50 print:bg-white">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <Shield className="text-indigo-600 h-6 w-6" />
-                                    <h3 className="text-lg font-bold text-gray-900 uppercase tracking-wider">Certificado de Assinatura Digital</h3>
-                                </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                                    <div className="space-y-1">
-                                        <p className="text-gray-500 font-medium">Assinante</p>
-                                        <p className="text-gray-900 font-bold text-base">{deal.signatureData?.replace('Assinado digitalmente por ', '') || deal.contactName}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-gray-500 font-medium">Data e Hora</p>
-                                        <p className="text-gray-900 font-bold text-base">
-                                            {deal.signedAt ? new Date(deal.signedAt).toLocaleString('pt-BR') : 'Não disponível'}
-                                        </p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-gray-500 font-medium">Endereço IP</p>
-                                        <p className="text-gray-900 font-mono tracking-tight">{deal.signedByIP || '0.0.0.0'}</p>
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-gray-500 font-medium">Dispositivo / Navegador</p>
-                                        <p className="text-gray-900 text-xs break-all leading-tight">{deal.signedByUserAgent || 'Identidade Verificada'}</p>
-                                    </div>
-                                </div>
-                                <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-                                    <p className="text-[10px] text-gray-400 uppercase tracking-[0.2em]">Autenticado por Asterysko Propriamente Intelectual via Plataforma Segura</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </main>
-
-            {/* Floating Signature Pill */}
-            {!signed && (
-                <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[95%] max-w-2xl z-50 animate-in slide-in-from-bottom-8 duration-500">
-                    <div className="bg-white/90 backdrop-blur-xl border border-gray-200/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] rounded-[2rem] p-4 flex flex-col sm:flex-row items-center gap-4 transition-all">
-                        <div className="flex-1 w-full flex flex-col gap-3 px-2">
-                            <label className="flex items-center gap-3 cursor-pointer group">
-                                <div className="relative flex items-center justify-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={agreed}
-                                        onChange={(e) => setAgreed(e.target.checked)}
-                                        className="peer sr-only"
-                                    />
-                                    <div className="w-5 h-5 rounded-md border-2 border-gray-300 peer-checked:bg-indigo-600 peer-checked:border-indigo-600 transition-all"></div>
-                                    <CheckCircle className="absolute w-3.5 h-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" />
-                                </div>
-                                <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
-                                    Li e concordo com os Termos
-                                </span>
-                            </label>
-
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Digite seu nome completo para assinar eletronicamente"
-                                    value={signatureName}
-                                    onChange={(e) => setSignatureName(e.target.value)}
-                                    className="w-full bg-gray-50/80 placeholder:text-gray-400 border border-gray-200 text-gray-900 rounded-xl px-4 py-3 focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:border-transparent outline-none transition-all font-medium text-sm"
-                                />
-                            </div>
-                        </div>
-
-                        <button
-                            onClick={handleSign}
-                            disabled={signing || !agreed || !signatureName}
-                            className={`w-full sm:w-auto px-8 py-4 sm:py-8 rounded-2xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2 ${signing || !agreed || !signatureName
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none'
-                                : 'bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-500/25 transform hover:-translate-y-0.5'
-                                }`}
-                        >
-                            {signing ? (
-                                <>
-                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    <span>Processando...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <FileText size={18} />
-                                    <span>Assinar Contrato</span>
-                                </>
-                            )}
-                        </button>
-                    </div>
+            {mobileMenuOpen && (
+                <div className="ast-sign-menu-backdrop" role="presentation" onClick={() => setMobileMenuOpen(false)}>
+                    <nav className="ast-sign-mobile-nav" aria-label="Índice do contrato" onClick={event => event.stopPropagation()}>
+                        <div><strong>Índice do contrato</strong><button type="button" onClick={() => setMobileMenuOpen(false)} aria-label="Fechar índice"><X size={20} /></button></div>
+                        {CHAPTERS.map(([id, label]) => <button key={id} type="button" className={activeSection === id ? 'is-active' : ''} onClick={() => goToSection(id)}>{label}</button>)}
+                    </nav>
                 </div>
             )}
+
+            <main className="ast-sign-layout">
+                <aside className="ast-sign-toc" aria-label="Índice do contrato">
+                    <span>Leitura</span>
+                    <strong>{readProgress}% revisado</strong>
+                    <nav>{CHAPTERS.map(([id, label]) => <button key={id} type="button" className={activeSection === id ? 'is-active' : ''} onClick={() => goToSection(id)}><span />{label}</button>)}</nav>
+                </aside>
+
+                <div className="ast-sign-document-column">
+                    {signed && (
+                        <section className="ast-sign-success" aria-live="polite">
+                            <CheckCircle2 size={26} />
+                            <div><strong>Contrato assinado e anexado ao processo</strong><p>O documento foi congelado em PDF com os dados e as evidências deste aceite.</p></div>
+                            <a href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={17} />Baixar PDF</a>
+                        </section>
+                    )}
+                    <div className="ast-sign-paper" dangerouslySetInnerHTML={{ __html: contractHtml }} />
+                    <p className="ast-sign-legal-note">Versão do documento: {version}. Recomendamos guardar uma cópia do PDF assinado.</p>
+                </div>
+
+                <aside className="ast-sign-action-column">
+                    {signed ? (
+                        <section className="ast-sign-certificate">
+                            <div className="ast-sign-certificate__icon"><ShieldCheck size={26} /></div>
+                            <small>Concluído</small>
+                            <h2>Assinatura confirmada</h2>
+                            <dl><div><dt>Assinante</dt><dd>{getSignerName(deal)}</dd></div><div><dt>Data e hora</dt><dd>{signedDate}</dd></div><div><dt>Versão</dt><dd>{version}</dd></div></dl>
+                            <a className="ast-sign-primary" href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={18} />Baixar contrato em PDF</a>
+                            <button className="ast-sign-secondary" type="button" onClick={() => window.location.assign('/portal?view=details&tab=payments')}>Continuar no portal</button>
+                        </section>
+                    ) : (
+                        <section className="ast-sign-form" aria-labelledby="ast-sign-form-title">
+                            <small>Etapa final</small>
+                            <h2 id="ast-sign-form-title">Revise e confirme</h2>
+                            <p>Marque cada item para registrar seu aceite consciente.</p>
+                            <div className="ast-sign-acknowledgements">
+                                {acknowledgementLabels.map((label, index) => (
+                                    <label key={label} className={acknowledgements[index] ? 'is-checked' : ''}>
+                                        <input type="checkbox" checked={Boolean(acknowledgements[index])} onChange={() => toggleAcknowledgement(index)} />
+                                        <span aria-hidden="true"><Check size={13} /></span>
+                                        <em>{label}</em>
+                                    </label>
+                                ))}
+                            </div>
+                            <label className="ast-sign-name-field"><span>Nome completo do assinante</span><input type="text" autoComplete="name" value={signatureName} onChange={event => setSignatureName(event.target.value)} placeholder="Como consta no documento" /></label>
+                            <button className="ast-sign-primary" type="button" onClick={handleSign} disabled={!canSign}>
+                                {signing ? <><span className="ast-sign-button-spinner" />Gerando documento...</> : <><FileCheck2 size={18} />Assinar e gerar PDF</>}
+                            </button>
+                            <p className="ast-sign-evidence"><LockKeyhole size={13} />Data, hora, IP e dispositivo serão registrados como evidências.</p>
+                        </section>
+                    )}
+                </aside>
+            </main>
         </div>
     );
 };
