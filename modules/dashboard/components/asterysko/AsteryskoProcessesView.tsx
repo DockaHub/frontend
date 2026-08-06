@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Loader2, X, Mail, Phone, MapPin, Calendar, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, MoreVertical, Loader2, X, Mail, Phone, MapPin, Calendar, FileText, Edit3, Archive, Trash2, RotateCcw } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewProcessModal from './AsteryskoNewProcessModal';
+import AsteryskoEditProcessModal from './AsteryskoEditProcessModal';
 
 const ProcessBrandLogo: React.FC<{ logoUrl?: string; brandName: string }> = ({ logoUrl, brandName }) => {
     const [imgError, setImgError] = useState(false);
@@ -44,6 +45,10 @@ interface Process {
     id: string;
     inpiProcessNumber?: string;
     status: string;
+    procurator?: string;
+    filingDate?: string;
+    concessionDate?: string;
+    expirationDate?: string;
     brand?: {
         name: string;
         logoUrl?: string;
@@ -101,6 +106,9 @@ const getStatusLabelAndColor = (status: string) => {
         case 'ARCHIVED':
         case 'ARQUIVADO':
             return { label: 'Arquivado', color: 'bg-zinc-150 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-400' };
+        case 'CANCELLED':
+        case 'CANCELADO':
+            return { label: 'Cancelado', color: 'bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400' };
         default:
             const l = status?.toLowerCase() || '';
             if (l === 'leads') return { label: 'Novo Lead', color: 'bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' };
@@ -125,7 +133,12 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
     const [processes, setProcesses] = useState<Process[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingProcess, setEditingProcess] = useState<Process | null>(null);
     const [selectedClient, setSelectedClient] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState<'ACTIVE' | 'ARCHIVED' | 'ALL'>('ACTIVE');
+    const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
+    const menuRef = useRef<HTMLDivElement | null>(null);
 
     const fetchProcesses = async () => {
         try {
@@ -144,9 +157,60 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
         fetchProcesses();
     }, [organization?.id]);
 
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setOpenMenuId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleToggleArchive = async (process: Process) => {
+        setOpenMenuId(null);
+        const isArchived = ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(process.status?.toUpperCase() || '');
+        const newStatus = isArchived ? 'NEW' : 'ARCHIVED';
+        try {
+            await api.put(`/asterysko/processes/${process.id}`, { status: newStatus });
+            fetchProcesses();
+        } catch (error) {
+            console.error('Error toggling archive status', error);
+            alert('Erro ao alterar status do processo.');
+        }
+    };
+
+    const handleDeleteProcess = async (process: Process) => {
+        setOpenMenuId(null);
+        const brandName = process.brand?.name || 'este processo';
+        const confirmed = window.confirm(
+            `Tem certeza que deseja excluir DEFINITIVAMENTE a marca/processo "${brandName}"?\n\nEsta ação apagará todas as faturas, documentos, histórico RPI e dados do CRM associados tanto no painel admin quanto no Portal do Cliente.`
+        );
+        if (!confirmed) return;
+
+        try {
+            await api.delete(`/asterysko/processes/${process.id}`);
+            fetchProcesses();
+        } catch (error) {
+            console.error('Error deleting process', error);
+            alert('Erro ao excluir processo.');
+        }
+    };
+
+    const filteredProcesses = processes.filter((p) => {
+        const st = p.status?.toUpperCase() || '';
+        const isArchivedOrCancelled = st === 'ARCHIVED' || st === 'ARQUIVADO' || st === 'CANCELLED' || st === 'CANCELADO';
+        if (activeTab === 'ACTIVE') return !isArchivedOrCancelled;
+        if (activeTab === 'ARCHIVED') return isArchivedOrCancelled;
+        return true;
+    });
+
+    const activeCount = processes.filter(p => !['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(p.status?.toUpperCase() || '')).length;
+    const archivedCount = processes.filter(p => ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(p.status?.toUpperCase() || '')).length;
+
     return (
         <div className="bg-white dark:bg-zinc-950 min-h-full font-sans transition-colors duration-300 flex flex-col relative z-0">
-            {/* Modal */}
+            {/* Modal Novo Processo */}
             <AsteryskoNewProcessModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
@@ -154,9 +218,53 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                 organizationId={organization?.id}
             />
 
+            {/* Modal Editar Processo */}
+            <AsteryskoEditProcessModal
+                isOpen={Boolean(editingProcess)}
+                process={editingProcess}
+                onClose={() => setEditingProcess(null)}
+                onSuccess={fetchProcesses}
+            />
+
             {/* Header */}
             <div className="flex items-center justify-between pt-8 px-10 pb-6 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
-                <span className="font-season text-[22px] font-[420] text-black dark:text-white">Processos</span>
+                <div className="flex items-center gap-6">
+                    <span className="font-season text-[22px] font-[420] text-black dark:text-white">Processos</span>
+                    
+                    {/* Status Tabs */}
+                    <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-full border border-zinc-200 dark:border-zinc-800 text-xs font-semibold">
+                        <button
+                            onClick={() => setActiveTab('ACTIVE')}
+                            className={`px-3 py-1 rounded-full transition-colors ${
+                                activeTab === 'ACTIVE'
+                                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
+                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+                            }`}
+                        >
+                            Ativos ({activeCount})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('ARCHIVED')}
+                            className={`px-3 py-1 rounded-full transition-colors ${
+                                activeTab === 'ARCHIVED'
+                                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
+                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+                            }`}
+                        >
+                            Arquivados ({archivedCount})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('ALL')}
+                            className={`px-3 py-1 rounded-full transition-colors ${
+                                activeTab === 'ALL'
+                                    ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
+                                    : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
+                            }`}
+                        >
+                            Todos ({processes.length})
+                        </button>
+                    </div>
+                </div>
                 
                 <button 
                     onClick={() => setIsModalOpen(true)}
@@ -187,16 +295,17 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                             <Loader2 className="animate-spin text-black dark:text-white mr-2" size={16} />
                             <span className="text-sm font-semibold text-black dark:text-white">Carregando...</span>
                         </div>
-                    ) : processes.length === 0 ? (
+                    ) : filteredProcesses.length === 0 ? (
                         <div className="flex justify-center items-center py-12 opacity-40">
                             <span className="text-sm font-semibold text-black dark:text-white">Nenhum processo encontrado.</span>
                         </div>
                     ) : (
-                        processes.map((process) => {
+                        filteredProcesses.map((process) => {
                             const brandName = process.brand?.name || 'Sem Marca';
                             const clientName = process.brand?.client?.user?.name || 'N/A';
                             const nclClass = process.brand?.nclClasses?.[0] ? `NCL ${process.brand.nclClasses[0]}` : '-';
                             const statusInfo = getStatusLabelAndColor(process.status);
+                            const isArchived = ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(process.status?.toUpperCase() || '');
 
                             return (
                                 <div key={process.id} className="grid grid-cols-12 px-10 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors items-center relative group">
@@ -225,32 +334,73 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                         {nclClass}
                                     </div>
                                     
-                                    <div className="col-span-2 pl-4 pr-8">
+                                    <div className="col-span-2 pl-4 pr-12">
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${statusInfo.color}`}>
                                             {statusInfo.label}
                                         </span>
                                     </div>
                                     
                                     {/* Action Menu - Floating right */}
-                                    <div className="absolute right-10">
-                                        <button className="p-1 text-black dark:text-white opacity-50 hover:opacity-100 transition-opacity">
+                                    <div className="absolute right-8 z-10" ref={openMenuId === process.id ? menuRef : null}>
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenMenuId(openMenuId === process.id ? null : process.id);
+                                            }}
+                                            className="p-1.5 text-zinc-500 hover:text-black dark:hover:text-white rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all opacity-80 group-hover:opacity-100"
+                                            title="Opções do processo"
+                                        >
                                             <MoreVertical size={16} />
                                         </button>
+
+                                        {/* Dropdown Menu */}
+                                        {openMenuId === process.id && (
+                                            <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                                                <button
+                                                    onClick={() => {
+                                                        setOpenMenuId(null);
+                                                        setEditingProcess(process);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 flex items-center gap-2.5 transition-colors"
+                                                >
+                                                    <Edit3 size={14} className="text-zinc-500" />
+                                                    Editar Processo
+                                                </button>
+
+                                                <button
+                                                    onClick={() => handleToggleArchive(process)}
+                                                    className="w-full px-4 py-2 text-left text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 flex items-center gap-2.5 transition-colors"
+                                                >
+                                                    {isArchived ? (
+                                                        <>
+                                                            <RotateCcw size={14} className="text-blue-500" />
+                                                            Reativar Processo
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Archive size={14} className="text-amber-500" />
+                                                            Arquivar Processo
+                                                        </>
+                                                    )}
+                                                </button>
+
+                                                <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+
+                                                <button
+                                                    onClick={() => handleDeleteProcess(process)}
+                                                    className="w-full px-4 py-2 text-left text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2.5 transition-colors"
+                                                >
+                                                    <Trash2 size={14} />
+                                                    Excluir Definitivamente
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
                         })
                     )}
                 </div>
-
-                {/* Footer */}
-                {processes.length > 0 && (
-                    <div className="mt-6 pb-12 flex justify-center">
-                        <button className="text-[10px] font-semibold text-[#0412dd] dark:text-[#3b48ff] uppercase tracking-wider hover:opacity-80 transition-opacity">
-                            CARREGAR MAIS
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Sliding Side Panel (Drawer) for Client Details */}
