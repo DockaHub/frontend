@@ -1720,11 +1720,12 @@
 @media (min-width: 720px) {
   .ast-auth {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 100vh;
     min-height: 100dvh;
-    padding: 40px 24px;
+    padding: max(80px, 10vh) 24px 40px;
     background:
       radial-gradient(circle at 10% 10%, rgba(26, 31, 211, 0.05), transparent 30rem),
       radial-gradient(circle at 90% 90%, rgba(30, 136, 0, 0.04), transparent 34rem),
@@ -1749,12 +1750,12 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: flex-start;
     width: min(100%, 402px);
     min-height: 0;
     height: auto;
-    margin: auto;
+    margin: 0 auto;
     padding: 0;
     background: transparent;
     border: none;
