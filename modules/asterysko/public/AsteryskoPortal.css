@@ -384,10 +384,10 @@
     justify-content: center;
     min-height: 100vh;
     min-height: 100dvh;
-    padding: 40px 24px;
+    padding: 60px 24px;
     background:
-      radial-gradient(circle at 10% 10%, rgba(26, 31, 211, 0.06), transparent 30rem),
-      radial-gradient(circle at 90% 90%, rgba(30, 136, 0, 0.045), transparent 34rem),
+      radial-gradient(circle at 10% 10%, rgba(26, 31, 211, 0.05), transparent 30rem),
+      radial-gradient(circle at 90% 90%, rgba(30, 136, 0, 0.04), transparent 34rem),
       var(--ast-bg);
   }
 
@@ -411,53 +411,40 @@
     flex-direction: column;
     justify-content: center;
     align-items: stretch;
-    width: 440px;
-    max-width: 100%;
+    width: min(100%, 402px);
     min-height: auto;
     margin: auto;
-    padding: 44px 36px 36px;
-    border-radius: 32px;
-    background: rgba(255, 255, 255, 0.84);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border: 1px solid rgba(255, 255, 255, 0.95);
-    box-shadow:
-      0 24px 64px rgba(18, 18, 24, 0.075),
-      0 4px 16px rgba(18, 18, 24, 0.02);
+    padding: 0 0 30px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
     overflow: visible;
   }
 
   .ast-auth__content {
-    overflow: hidden;
-    border-radius: 20px;
-  }
-
-  .ast-auth__content--identifier,
-  .ast-auth__content--otp {
-    margin-top: 16px;
-    margin-bottom: 10px;
+    width: 100%;
+    position: relative;
   }
 
   .ast-auth__back {
-    top: 24px;
-    left: 24px;
+    top: -52px;
+    left: 0;
   }
 
   .ast-otp-burst {
-    top: -95px;
-    width: 440px;
+    top: -140px;
+    width: min(100vw, 420px);
     left: 50%;
     transform: translateX(-50%);
   }
 
   .ast-otp-progress {
-    right: 36px;
-    bottom: 16px;
-    left: 36px;
-  }
-
-  .ast-login-actions {
-    margin-top: 40px;
+    right: 0;
+    bottom: -10px;
+    left: 0;
   }
 }
 
