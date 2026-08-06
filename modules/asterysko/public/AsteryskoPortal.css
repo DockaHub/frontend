@@ -377,6 +377,90 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@media (min-width: 768px) {
+  .ast-auth {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: 40px 24px;
+    background:
+      radial-gradient(circle at 10% 10%, rgba(26, 31, 211, 0.06), transparent 30rem),
+      radial-gradient(circle at 90% 90%, rgba(30, 136, 0, 0.045), transparent 34rem),
+      var(--ast-bg);
+  }
+
+  .ast-auth--email-otp {
+    background:
+      radial-gradient(circle at 10% 10%, rgba(26, 31, 211, 0.12), transparent 30rem),
+      radial-gradient(circle at 90% 90%, rgba(26, 31, 211, 0.08), transparent 34rem),
+      #eaebff;
+  }
+
+  .ast-auth--phone-otp {
+    background:
+      radial-gradient(circle at 10% 10%, rgba(30, 136, 0, 0.12), transparent 30rem),
+      radial-gradient(circle at 90% 90%, rgba(30, 136, 0, 0.08), transparent 34rem),
+      #eaffe5;
+  }
+
+  .ast-auth__stage {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    width: 440px;
+    max-width: 100%;
+    min-height: auto;
+    margin: auto;
+    padding: 44px 36px 36px;
+    border-radius: 32px;
+    background: rgba(255, 255, 255, 0.84);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+      0 24px 64px rgba(18, 18, 24, 0.075),
+      0 4px 16px rgba(18, 18, 24, 0.02);
+    overflow: visible;
+  }
+
+  .ast-auth__content {
+    overflow: hidden;
+    border-radius: 20px;
+  }
+
+  .ast-auth__content--identifier,
+  .ast-auth__content--otp {
+    margin-top: 16px;
+    margin-bottom: 10px;
+  }
+
+  .ast-auth__back {
+    top: 24px;
+    left: 24px;
+  }
+
+  .ast-otp-burst {
+    top: -95px;
+    width: 440px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .ast-otp-progress {
+    right: 36px;
+    bottom: 16px;
+    left: 36px;
+  }
+
+  .ast-login-actions {
+    margin-top: 40px;
+  }
+}
+
 /* Portal */
 .ast-desktop-nav { display: none; }
 

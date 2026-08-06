@@ -14,8 +14,7 @@ import { AsteryskoSendToCrmModal } from './AsteryskoSendToCrmModal';
 import { AsteryskoEngineModal } from './AsteryskoEngineModal';
 import {
     AsteryskoOpportunity,
-    OpportunityCounts,
-    OpportunityListResponse
+    OpportunityCounts
 } from './asteryskoApiTypes';
 
 interface Props {

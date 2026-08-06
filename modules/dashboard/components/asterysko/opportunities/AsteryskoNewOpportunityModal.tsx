@@ -31,7 +31,7 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
     const [state, setState] = useState('');
     const [priority, setPriority] = useState('medium');
     const [summary, setSummary] = useState('');
-    const [internalNotes] = useState('');
+    const [internalNotes, setInternalNotes] = useState('');
     const [sourceType, setSourceType] = useState('manual');
 
     if (!isOpen) return null;
@@ -129,7 +129,7 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
                             <div>
                                 <p className="font-bold">Possível duplicidade identificada:</p>
                                 <ul className="list-disc list-inside mt-1 space-y-1">
-                                    {duplicateWarning.warnings.map((warning, idx) => (
+                                    {duplicateWarning.warnings.map((warning: any, idx: number) => (
                                         <li key={idx}>{warning.message}</li>
                                     ))}
                                 </ul>
