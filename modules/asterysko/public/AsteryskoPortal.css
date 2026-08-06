@@ -410,11 +410,12 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: stretch;
+    align-items: flex-start;
     width: min(100%, 402px);
-    min-height: auto;
+    min-height: 0;
+    height: auto;
     margin: auto;
-    padding: 0 0 30px;
+    padding: 26px;
     background: transparent;
     border: none;
     border-radius: 0;
@@ -430,8 +431,8 @@
   }
 
   .ast-auth__back {
-    top: -52px;
-    left: 0;
+    top: -48px;
+    left: 26px;
   }
 
   .ast-otp-burst {
@@ -442,9 +443,9 @@
   }
 
   .ast-otp-progress {
-    right: 0;
+    right: 26px;
     bottom: -10px;
-    left: 0;
+    left: 26px;
   }
 }
 
