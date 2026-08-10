@@ -653,7 +653,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             if (updatedProfile) {
                 setClientData((current: any) => ({ ...current, ...updatedProfile }));
             }
-            await refreshUser();
+            await refreshUser().catch(() => undefined);
             setEditingProfileField(null);
             setProfileDraft({});
             setProfileFeedback({ type: 'success', message: 'Dados atualizados com sucesso.' });
