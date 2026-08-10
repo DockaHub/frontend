@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Check, Clock3, FileText, ImagePlus, LockKeyhole, ShieldCheck, X } from 'lucide-react';
 import api from '../../../../services/api';
 
@@ -213,7 +214,7 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
         return <div className="ast-typeform__review">{!profileComplete && <div className="ast-typeform__profile-warning"><strong>Falta completar seus dados cadastrais</strong><p>Precisamos de nome, CPF/CNPJ e endereço para preencher contrato e procuração.</p><button type="button" onClick={onEditProfile}>Completar em Meus dados</button></div>}<dl><div><dt>Marca</dt><dd>{draft.brandName}</dd></div><div><dt>Proteção</dt><dd>{needsLogo ? 'Nome + logotipo' : 'Somente o nome'}</dd></div><div><dt>Segmento</dt><dd>{draft.brandType}</dd></div><div><dt>Atuação</dt><dd>{draft.goodsServices}</dd></div><div><dt>Plano</dt><dd>{selectedPlan ? `${selectedPlan.billingMode === 'SUBSCRIPTION' ? 'Mensal' : 'À vista'} · ${formatCurrency(selectedPlan.value)}${selectedPlan.billingMode === 'SUBSCRIPTION' ? '/mês' : ''}` : 'Não selecionado'}</dd></div></dl><div className="ast-typeform__automation"><ShieldCheck size={23} /><span><strong>Tudo conectado automaticamente</strong><small>CRM, contrato, procuração e cobrança após a assinatura.</small></span></div></div>;
     };
 
-    return (
+    const modal = (
         <div className="ast-typeform" role="dialog" aria-modal="true" aria-labelledby="ast-typeform-title">
             <header className="ast-typeform__topbar">
                 <button className="ast-typeform__brand" type="button" onClick={onCancel}><img src="/assets/asterysko/brand-mark.svg" alt="" /><span><strong>Asterysko</strong><small>Novo registro de marca</small></span></button>
@@ -254,6 +255,8 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
             </div>
         </div>
     );
+
+    return createPortal(modal, document.body);
 };
 
 export default NewTrademarkWizard;
