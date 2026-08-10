@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, FileText, ShieldCheck, Upload } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, ArrowRight, Check, Clock3, FileText, ImagePlus, LockKeyhole, ShieldCheck, X } from 'lucide-react';
 import api from '../../../../services/api';
 
 interface PortalPlan {
@@ -9,47 +9,105 @@ interface PortalPlan {
     value: number;
     officialTax?: number | null;
     billingMode: 'ONE_TIME' | 'SUBSCRIPTION' | string;
-    taxChargeTiming?: string;
+    portalRole?: 'MONTHLY_PROMO' | 'ONE_TIME';
+    compareAtPrice?: number | null;
+    installmentsAllowed?: boolean;
+    offerDurationMinutes?: number | null;
 }
 
 interface Props {
     profileComplete: boolean;
+    clientName: string;
+    clientDocument: string;
+    clientAddress: string;
     onCancel: () => void;
     onEditProfile: () => void;
 }
 
-const PRESENTATIONS = [
-    { value: 'NOMINATIVA', label: 'Somente nome', detail: 'Protege a expressão escrita, sem identidade visual específica.' },
-    { value: 'MISTA', label: 'Nome + logotipo', detail: 'Protege o conjunto formado pelo nome e sua identidade visual.' },
-    { value: 'FIGURATIVA', label: 'Somente símbolo', detail: 'Protege apenas o desenho, ícone ou elemento visual.' },
-    { value: 'TRIDIMENSIONAL', label: 'Forma tridimensional', detail: 'Para formas distintivas de produto ou embalagem.' }
-];
+type StepKey = 'name' | 'presentation' | 'segment' | 'logo' | 'activity' | 'classes' | 'documents' | 'plan' | 'review';
 
 const formatCurrency = (value: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 const newRequestId = () => typeof crypto !== 'undefined' && 'randomUUID' in crypto
     ? crypto.randomUUID()
     : `portal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+const OFFER_STORAGE_KEY = 'asterysko-trademark-offer-deadline';
+const OFFER_DURATION_MS = 30 * 60 * 1000;
 
-export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, onCancel, onEditProfile }) => {
-    const [step, setStep] = useState(0);
+const getOfferDeadline = () => {
+    const deadline = Date.now() + OFFER_DURATION_MS;
+    try {
+        const stored = Number(sessionStorage.getItem(OFFER_STORAGE_KEY));
+        if (Number.isFinite(stored) && stored > 0) return stored;
+        sessionStorage.setItem(OFFER_STORAGE_KEY, String(deadline));
+    } catch {
+        // Some embedded/private browsing contexts can deny session storage.
+    }
+    return deadline;
+};
+
+const formatRemaining = (milliseconds: number) => {
+    const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+    const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+    const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+    return `${minutes}:${seconds}`;
+};
+
+export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientName, clientDocument, clientAddress, onCancel, onEditProfile }) => {
+    const [stepIndex, setStepIndex] = useState(0);
     const [plans, setPlans] = useState<PortalPlan[]>([]);
     const [loadingPlans, setLoadingPlans] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [requestId] = useState(newRequestId);
+    const [offerDeadline, setOfferDeadline] = useState(getOfferDeadline);
+    const [remaining, setRemaining] = useState(() => Math.max(0, offerDeadline - Date.now()));
     const [draft, setDraft] = useState({
         brandName: '',
-        presentation: 'MISTA',
+        presentation: '',
         brandType: '',
         holders: '',
-        nature: '',
+        nature: 'Marca de Produto/Serviço',
         goodsServices: '',
         nclClasses: '',
         nclSpecification: '',
         planId: ''
     });
     const [logo, setLogo] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState('');
     const [documents, setDocuments] = useState<File[]>([]);
+    const questionRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+
+    const needsLogo = draft.presentation === 'MISTA';
+    const steps = useMemo<Array<{ key: StepKey; eyebrow: string; title: string; help: string }>>(() => [
+        { key: 'name', eyebrow: 'Vamos começar', title: 'Nos conte o nome da sua marca', help: 'Digite exatamente como o nome é usado ou será apresentado ao público.' },
+        { key: 'presentation', eyebrow: 'Forma de proteção', title: 'Você quer proteger apenas o nome ou também o logotipo?', help: 'Se escolher nome + logotipo, protegeremos o conjunto visual apresentado.' },
+        { key: 'segment', eyebrow: 'Sobre o negócio', title: 'Qual é o segmento da sua marca?', help: 'Isso nos ajuda a entender o mercado e direcionar a classificação no INPI.' },
+        ...(needsLogo ? [{ key: 'logo' as StepKey, eyebrow: 'Identidade visual', title: 'Envie agora o logotipo que será protegido', help: 'Use a versão principal, com boa resolução e sem cortes.' }] : []),
+        { key: 'activity', eyebrow: 'Atuação', title: 'O que sua marca vende ou quais serviços presta?', help: 'Conte de forma simples. Nosso time transformará sua resposta na especificação técnica adequada.' },
+        { key: 'classes', eyebrow: 'Classificação', title: 'Você já conhece alguma classe NCL da sua marca?', help: 'Se não souber, pode avançar sem preencher. A Asterysko fará a análise e confirmação.' },
+        { key: 'documents', eyebrow: 'Documentação', title: 'Quer adiantar algum documento de apoio?', help: 'Contrato social, cartão CNPJ, RG ou outro documento útil. Esta etapa é opcional.' },
+        { key: 'plan', eyebrow: 'Condição comercial', title: 'Como prefere contratar?', help: 'Escolha entre mensalidade sem comprometer o limite do cartão ou pagamento único à vista.' },
+        { key: 'review', eyebrow: 'Tudo pronto', title: 'Revise sua solicitação', help: 'Ao continuar, criaremos o processo no CRM e abriremos o contrato para assinatura.' }
+    ], [needsLogo]);
+    const step = steps[stepIndex] || steps[0];
+    const selectedPlan = plans.find(plan => plan.id === draft.planId);
+    const progress = ((stepIndex + 1) / steps.length) * 100;
+    const offerExpired = remaining <= 0;
+    const promotionalPlanSelected = selectedPlan?.billingMode === 'SUBSCRIPTION';
+
+    useEffect(() => {
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        return () => { document.body.style.overflow = previousOverflow; };
+    }, []);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape' && !submitting) onCancel();
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [onCancel, submitting]);
 
     useEffect(() => {
         let active = true;
@@ -60,24 +118,58 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, onCancel,
                 setPlans(available);
                 if (available.length === 1) setDraft(current => ({ ...current, planId: available[0].id }));
             })
-            .catch(error => active && setFeedback(error.response?.data?.error || 'Não foi possível carregar os planos disponíveis.'))
+            .catch(error => active && setFeedback(error.response?.data?.error || 'Não foi possível carregar as condições disponíveis.'))
             .finally(() => active && setLoadingPlans(false));
         return () => { active = false; };
     }, []);
 
-    const selectedPlan = plans.find(plan => plan.id === draft.planId);
-    const needsLogo = draft.presentation === 'MISTA' || draft.presentation === 'FIGURATIVA';
-    const steps = ['Marca', 'Atuação', 'Plano', 'Revisão'];
+    useEffect(() => {
+        const interval = window.setInterval(() => setRemaining(Math.max(0, offerDeadline - Date.now())), 1000);
+        return () => window.clearInterval(interval);
+    }, [offerDeadline]);
+
+    useEffect(() => {
+        if (!logo) {
+            setLogoPreview('');
+            return;
+        }
+        const url = URL.createObjectURL(logo);
+        setLogoPreview(url);
+        return () => URL.revokeObjectURL(url);
+    }, [logo]);
+
+    useEffect(() => {
+        const timer = window.setTimeout(() => questionRef.current?.focus(), 360);
+        return () => window.clearTimeout(timer);
+    }, [step.key]);
+
     const canContinue = useMemo(() => {
-        if (step === 0) return draft.brandName.trim().length >= 2 && (!needsLogo || Boolean(logo));
-        if (step === 1) return draft.goodsServices.trim().length >= 10;
-        if (step === 2) return Boolean(draft.planId);
-        return profileComplete && Boolean(selectedPlan);
-    }, [draft.brandName, draft.goodsServices, draft.planId, logo, needsLogo, profileComplete, selectedPlan, step]);
+        if (step.key === 'name') return draft.brandName.trim().length >= 2;
+        if (step.key === 'presentation') return Boolean(draft.presentation);
+        if (step.key === 'segment') return draft.brandType.trim().length >= 2;
+        if (step.key === 'logo') return Boolean(logo);
+        if (step.key === 'activity') return draft.goodsServices.trim().length >= 10;
+        if (step.key === 'plan') return Boolean(draft.planId) && !loadingPlans && (!promotionalPlanSelected || !offerExpired);
+        if (step.key === 'review') return profileComplete && Boolean(selectedPlan) && (!promotionalPlanSelected || !offerExpired);
+        return true;
+    }, [draft, loadingPlans, logo, offerExpired, profileComplete, promotionalPlanSelected, selectedPlan, step.key]);
 
     const goNext = () => {
         setFeedback('');
-        if (canContinue) setStep(current => Math.min(current + 1, steps.length - 1));
+        if (canContinue) setStepIndex(current => Math.min(current + 1, steps.length - 1));
+    };
+
+    const goBack = () => {
+        setFeedback('');
+        if (stepIndex === 0) onCancel();
+        else setStepIndex(current => Math.max(0, current - 1));
+    };
+
+    const renewOffer = () => {
+        const deadline = Date.now() + OFFER_DURATION_MS;
+        try { sessionStorage.setItem(OFFER_STORAGE_KEY, String(deadline)); } catch { /* optional browser storage */ }
+        setOfferDeadline(deadline);
+        setRemaining(OFFER_DURATION_MS);
     };
 
     const submit = async () => {
@@ -86,7 +178,7 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, onCancel,
             setSubmitting(true);
             setFeedback('');
             const payload = new FormData();
-            Object.entries({ ...draft, requestId }).forEach(([key, value]) => payload.append(key, value));
+            Object.entries({ ...draft, holders: draft.holders || clientName, requestId }).forEach(([key, value]) => payload.append(key, value));
             const normalizedClasses = draft.nclClasses.split(',').map(item => item.replace(/\D/g, '')).filter(Boolean);
             payload.set('nclClasses', JSON.stringify(normalizedClasses));
             if (logo) payload.append('logo', logo);
@@ -94,6 +186,7 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, onCancel,
             const response = await api.post('/asterysko/portal/new-trademark', payload);
             const contractUrl = response.data?.contractUrl;
             if (!contractUrl) throw new Error('CONTRACT_NOT_CREATED');
+            try { sessionStorage.removeItem(OFFER_STORAGE_KEY); } catch { /* optional browser storage */ }
             window.location.assign(contractUrl);
         } catch (error: any) {
             setFeedback(error.response?.data?.message || 'Não foi possível concluir a solicitação. Revise os dados e tente novamente.');
@@ -102,75 +195,64 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, onCancel,
         }
     };
 
+    const handleSubmit = (event: React.FormEvent) => {
+        event.preventDefault();
+        if (step.key === 'review') void submit();
+        else goNext();
+    };
+
+    const renderQuestion = () => {
+        if (step.key === 'name') return <label className="ast-typeform__single-field"><span>Nome da marca</span><input ref={questionRef as React.RefObject<HTMLInputElement>} value={draft.brandName} maxLength={160} onChange={event => setDraft(current => ({ ...current, brandName: event.target.value }))} placeholder="Digite o nome aqui..." /><small>Pressione Enter ou toque em Continuar</small></label>;
+        if (step.key === 'presentation') return <div className="ast-typeform__answer-grid"><button className={draft.presentation === 'NOMINATIVA' ? 'is-selected' : ''} type="button" onClick={() => { setDraft(current => ({ ...current, presentation: 'NOMINATIVA' })); setLogo(null); }}><span className="ast-typeform__answer-letter">A</span><strong>Proteger apenas o nome</strong><small>Marca nominativa</small>{draft.presentation === 'NOMINATIVA' && <Check size={18} />}</button><button className={draft.presentation === 'MISTA' ? 'is-selected' : ''} type="button" onClick={() => setDraft(current => ({ ...current, presentation: 'MISTA' }))}><span className="ast-typeform__answer-letter">B</span><strong>Proteger nome + logotipo</strong><small>Marca mista</small>{draft.presentation === 'MISTA' && <Check size={18} />}</button></div>;
+        if (step.key === 'segment') return <label className="ast-typeform__single-field"><span>Segmento da marca</span><input ref={questionRef as React.RefObject<HTMLInputElement>} value={draft.brandType} maxLength={80} onChange={event => setDraft(current => ({ ...current, brandType: event.target.value }))} placeholder="Ex.: moda, tecnologia, alimentação..." /><small>Uma descrição curta já é suficiente</small></label>;
+        if (step.key === 'logo') return <label className={`ast-typeform__dropzone ${logo ? 'has-file' : ''}`}><input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => setLogo(event.target.files?.[0] || null)} />{logoPreview ? <img src={logoPreview} alt="Prévia do logotipo" /> : <ImagePlus size={40} />}<span><strong>{logo ? logo.name : 'Selecione ou arraste seu logotipo'}</strong><small>PNG, JPG ou WebP · máximo de 10 MB</small></span>{logo && <em><Check size={15} /> Arquivo pronto</em>}</label>;
+        if (step.key === 'activity') return <label className="ast-typeform__single-field"><span>Produtos e serviços</span><textarea ref={questionRef as React.RefObject<HTMLTextAreaElement>} value={draft.goodsServices} maxLength={4000} rows={4} onChange={event => setDraft(current => ({ ...current, goodsServices: event.target.value }))} placeholder="Ex.: vendemos roupas esportivas pela internet e em lojas físicas..." /><small>{draft.goodsServices.length}/4000 caracteres</small></label>;
+        if (step.key === 'classes') return <label className="ast-typeform__single-field"><span>Classes NCL, se souber</span><input ref={questionRef as React.RefObject<HTMLInputElement>} value={draft.nclClasses} onChange={event => setDraft(current => ({ ...current, nclClasses: event.target.value }))} placeholder="Ex.: 35, 41" /><small>Não sabe? Deixe em branco e continue.</small></label>;
+        if (step.key === 'documents') return <label className={`ast-typeform__dropzone ${documents.length ? 'has-file' : ''}`}><input type="file" multiple accept="application/pdf,image/png,image/jpeg" onChange={event => setDocuments(Array.from(event.target.files || []).slice(0, 6))} /><FileText size={40} /><span><strong>{documents.length ? `${documents.length} documento(s) selecionado(s)` : 'Anexar documentos de apoio'}</strong><small>PDF, PNG ou JPG · até 6 arquivos · opcional</small></span>{documents.length > 0 && <em><Check size={15} /> Arquivos prontos</em>}</label>;
+        if (step.key === 'plan') return <div className="ast-typeform__plans">{loadingPlans && <p className="ast-typeform__loading">Carregando condições...</p>}{!loadingPlans && plans.map(plan => { const monthly = plan.billingMode === 'SUBSCRIPTION'; return <button className={draft.planId === plan.id ? 'is-selected' : ''} type="button" key={plan.id} onClick={() => setDraft(current => ({ ...current, planId: plan.id }))}><span className="ast-typeform__plan-top"><small>{monthly ? 'Mais escolhido' : 'Pagamento único'}</small>{draft.planId === plan.id && <Check size={17} />}</span><strong>{monthly ? 'Plano mensal' : 'À vista'}</strong><p>{plan.description || (monthly ? 'Acompanhamento contínuo sem comprometer o limite do cartão.' : 'Pagamento integral em uma única cobrança, sem parcelamento.')}</p><span className="ast-typeform__price">{plan.compareAtPrice ? <del>{formatCurrency(plan.compareAtPrice)}</del> : null}<b>{formatCurrency(plan.value)}</b>{monthly && <small>/mês</small>}</span><em>{monthly ? 'Sem comprometer o limite do cartão' : 'Sem opção de parcelamento'}</em></button>; })}{!loadingPlans && !plans.length && <p className="ast-typeform__error">Nenhuma condição comercial está disponível agora.</p>}{offerExpired && promotionalPlanSelected && <div className="ast-typeform__expired"><Clock3 size={18} /><span>A condição mensal promocional expirou.</span><button type="button" onClick={renewOffer}>Reservar novamente</button></div>}</div>;
+        return <div className="ast-typeform__review">{!profileComplete && <div className="ast-typeform__profile-warning"><strong>Falta completar seus dados cadastrais</strong><p>Precisamos de nome, CPF/CNPJ e endereço para preencher contrato e procuração.</p><button type="button" onClick={onEditProfile}>Completar em Meus dados</button></div>}<dl><div><dt>Marca</dt><dd>{draft.brandName}</dd></div><div><dt>Proteção</dt><dd>{needsLogo ? 'Nome + logotipo' : 'Somente o nome'}</dd></div><div><dt>Segmento</dt><dd>{draft.brandType}</dd></div><div><dt>Atuação</dt><dd>{draft.goodsServices}</dd></div><div><dt>Plano</dt><dd>{selectedPlan ? `${selectedPlan.billingMode === 'SUBSCRIPTION' ? 'Mensal' : 'À vista'} · ${formatCurrency(selectedPlan.value)}${selectedPlan.billingMode === 'SUBSCRIPTION' ? '/mês' : ''}` : 'Não selecionado'}</dd></div></dl><div className="ast-typeform__automation"><ShieldCheck size={23} /><span><strong>Tudo conectado automaticamente</strong><small>CRM, contrato, procuração e cobrança após a assinatura.</small></span></div></div>;
+    };
+
     return (
-        <section className="ast-intake" aria-labelledby="ast-intake-title">
-            <header className="ast-intake__header">
-                <button type="button" onClick={step === 0 ? onCancel : () => setStep(current => current - 1)} aria-label="Voltar">
-                    <ArrowLeft size={20} />
-                </button>
-                <div>
-                    <small>Novo processo</small>
-                    <h1 id="ast-intake-title">Registrar uma nova marca</h1>
-                    <p>Preencha as informações para gerarmos seu contrato e iniciarmos o atendimento.</p>
-                </div>
+        <div className="ast-typeform" role="dialog" aria-modal="true" aria-labelledby="ast-typeform-title">
+            <header className="ast-typeform__topbar">
+                <button className="ast-typeform__brand" type="button" onClick={onCancel}><img src="/assets/asterysko/brand-mark.svg" alt="" /><span><strong>Asterysko</strong><small>Novo registro de marca</small></span></button>
+                <div className="ast-typeform__offer"><Clock3 size={15} /><span>Oferta mensal válida por</span><strong className={offerExpired ? 'is-expired' : ''}>{formatRemaining(remaining)}</strong></div>
+                <button className="ast-typeform__close" type="button" onClick={onCancel} aria-label="Fechar formulário"><X size={21} /></button>
+                <span className="ast-typeform__progress" style={{ '--ast-progress': `${progress}%` } as React.CSSProperties} />
             </header>
 
-            <ol className="ast-intake__progress" aria-label="Etapas do formulário">
-                {steps.map((label, index) => (
-                    <li className={index === step ? 'ast-intake__progress-item--active' : index < step ? 'ast-intake__progress-item--done' : ''} key={label}>
-                        <span>{index < step ? <Check size={13} /> : index + 1}</span><small>{label}</small>
-                    </li>
-                ))}
-            </ol>
+            <div className="ast-typeform__body">
+                <main className="ast-typeform__question-pane">
+                    <form key={step.key} className="ast-typeform__question" onSubmit={handleSubmit}>
+                        <div className="ast-typeform__question-count"><span>{stepIndex + 1}</span><i>→</i><small>{step.eyebrow}</small></div>
+                        <h1 id="ast-typeform-title">{step.title}</h1>
+                        <p>{step.help}</p>
+                        <div className="ast-typeform__control">{renderQuestion()}</div>
+                        {feedback && <p className="ast-typeform__error" role="alert">{feedback}</p>}
+                        <footer className="ast-typeform__actions">
+                            <button type="button" onClick={goBack}><ArrowLeft size={17} /> Voltar</button>
+                            <button className="ast-typeform__continue" type="submit" disabled={!canContinue || submitting}>{submitting ? 'Criando seu processo...' : step.key === 'review' ? <><LockKeyhole size={16} /> Gerar contrato e continuar</> : <>Continuar <ArrowRight size={17} /></>}</button>
+                        </footer>
+                    </form>
+                </main>
 
-            <div className="ast-intake__layout">
-                <form className="ast-intake__card" onSubmit={event => { event.preventDefault(); step === 3 ? void submit() : goNext(); }}>
-                    {step === 0 && (
-                        <div className="ast-intake__step">
-                            <div className="ast-intake__step-heading"><small>Etapa 1 de 4</small><h2>Como é a sua marca?</h2><p>Informe o nome e a forma como ela será apresentada ao público.</p></div>
-                            <label className="ast-intake__field"><span>Nome da marca *</span><input autoFocus required maxLength={160} value={draft.brandName} onChange={event => setDraft(current => ({ ...current, brandName: event.target.value }))} placeholder="Ex.: Asterysko" /></label>
-                            <fieldset className="ast-intake__choices"><legend>Apresentação da marca *</legend>{PRESENTATIONS.map(item => <label className={draft.presentation === item.value ? 'ast-intake__choice--selected' : ''} key={item.value}><input type="radio" name="presentation" value={item.value} checked={draft.presentation === item.value} onChange={() => setDraft(current => ({ ...current, presentation: item.value }))} /><span><strong>{item.label}</strong><small>{item.detail}</small></span><i>{draft.presentation === item.value && <Check size={14} />}</i></label>)}</fieldset>
-                            <label className="ast-intake__field"><span>Tipo ou segmento da marca</span><input maxLength={80} value={draft.brandType} onChange={event => setDraft(current => ({ ...current, brandType: event.target.value }))} placeholder="Ex.: tecnologia, vestuário, alimentação" /></label>
-                            <label className="ast-intake__upload"><input type="file" accept="image/png,image/jpeg,image/webp" onChange={event => setLogo(event.target.files?.[0] || null)} /><Upload size={20} /><span><strong>{logo ? logo.name : 'Enviar logotipo'}</strong><small>{needsLogo ? 'Obrigatório para esta apresentação · PNG, JPG ou WebP · até 10 MB' : 'Opcional · PNG, JPG ou WebP · até 10 MB'}</small></span></label>
-                        </div>
-                    )}
-
-                    {step === 1 && (
-                        <div className="ast-intake__step">
-                            <div className="ast-intake__step-heading"><small>Etapa 2 de 4</small><h2>O que a marca identifica?</h2><p>Esta descrição ajuda nosso time a definir e validar as classes do INPI.</p></div>
-                            <label className="ast-intake__field"><span>Produtos e serviços oferecidos *</span><textarea autoFocus required minLength={10} maxLength={4000} rows={6} value={draft.goodsServices} onChange={event => setDraft(current => ({ ...current, goodsServices: event.target.value }))} placeholder="Descreva o que sua empresa vende ou presta, para quem e como a marca será usada." /></label>
-                            <div className="ast-intake__field-row"><label className="ast-intake__field"><span>Classes NCL que você já conhece</span><input value={draft.nclClasses} onChange={event => setDraft(current => ({ ...current, nclClasses: event.target.value }))} placeholder="Ex.: 35, 41" /><small>Opcional. Nossa equipe fará a conferência.</small></label><label className="ast-intake__field"><span>Titular da marca</span><input value={draft.holders} onChange={event => setDraft(current => ({ ...current, holders: event.target.value }))} placeholder="Se diferente do titular do cadastro" /></label></div>
-                            <label className="ast-intake__field"><span>Observações sobre a especificação</span><textarea rows={3} maxLength={4000} value={draft.nclSpecification} onChange={event => setDraft(current => ({ ...current, nclSpecification: event.target.value }))} placeholder="Produtos específicos, área de atuação, público ou outros detalhes relevantes." /></label>
-                            <label className="ast-intake__upload"><input type="file" multiple accept="application/pdf,image/png,image/jpeg" onChange={event => setDocuments(Array.from(event.target.files || []).slice(0, 6))} /><FileText size={20} /><span><strong>{documents.length ? `${documents.length} arquivo(s) selecionado(s)` : 'Anexar documentos de apoio'}</strong><small>Opcional · PDF, PNG ou JPG · até 6 arquivos</small></span></label>
-                        </div>
-                    )}
-
-                    {step === 2 && (
-                        <div className="ast-intake__step">
-                            <div className="ast-intake__step-heading"><small>Etapa 3 de 4</small><h2>Escolha o plano</h2><p>Os valores abaixo vêm diretamente da configuração comercial da Asterysko.</p></div>
-                            {loadingPlans && <p className="ast-intake__notice">Carregando planos...</p>}
-                            {!loadingPlans && !plans.length && <p className="ast-intake__notice ast-intake__notice--error">Nenhum plano está disponível. Fale com a Asterysko para continuar.</p>}
-                            <div className="ast-intake__plans">{plans.map(plan => <label className={draft.planId === plan.id ? 'ast-intake__plan--selected' : ''} key={plan.id}><input type="radio" name="plan" value={plan.id} checked={draft.planId === plan.id} onChange={() => setDraft(current => ({ ...current, planId: plan.id }))} /><span><small>{plan.billingMode === 'SUBSCRIPTION' ? 'Plano mensal' : 'Pagamento único'}</small><strong>{plan.name}</strong><p>{plan.description || 'Serviço de registro e acompanhamento de marca.'}</p></span><b>{formatCurrency(plan.value)}{plan.billingMode === 'SUBSCRIPTION' && <small>/mês</small>}</b></label>)}</div>
-                            <p className="ast-intake__legal-note">A cobrança será liberada somente após a assinatura do contrato. Taxas oficiais seguem a regra indicada no contrato do plano selecionado.</p>
-                        </div>
-                    )}
-
-                    {step === 3 && (
-                        <div className="ast-intake__step">
-                            <div className="ast-intake__step-heading"><small>Etapa 4 de 4</small><h2>Revise antes de continuar</h2><p>Ao concluir, o processo entra no CRM e seu contrato será aberto para assinatura.</p></div>
-                            {!profileComplete && <div className="ast-intake__profile-warning"><strong>Complete seus dados cadastrais</strong><p>Nome, CPF/CNPJ e endereço completo são necessários para gerar o contrato e a procuração.</p><button type="button" onClick={onEditProfile}>Ir para Meus dados</button></div>}
-                            <dl className="ast-intake__review"><div><dt>Marca</dt><dd>{draft.brandName}</dd></div><div><dt>Apresentação</dt><dd>{PRESENTATIONS.find(item => item.value === draft.presentation)?.label}</dd></div><div><dt>Atuação</dt><dd>{draft.goodsServices}</dd></div><div><dt>Plano</dt><dd>{selectedPlan ? `${selectedPlan.name} · ${formatCurrency(selectedPlan.value)}${selectedPlan.billingMode === 'SUBSCRIPTION' ? '/mês' : ''}` : 'Não selecionado'}</dd></div><div><dt>Arquivos</dt><dd>{[logo ? 'logotipo' : '', documents.length ? `${documents.length} documento(s)` : ''].filter(Boolean).join(' e ') || 'Nenhum arquivo'}</dd></div></dl>
-                            <div className="ast-intake__automation"><ShieldCheck size={24} /><span><strong>O que acontece agora</strong><small>Contrato e procuração preenchidos · criação no CRM · cobrança após assinatura · documentos disponíveis para o time operacional.</small></span></div>
-                        </div>
-                    )}
-
-                    {feedback && <p className="ast-intake__notice ast-intake__notice--error" role="alert">{feedback}</p>}
-                    <footer className="ast-intake__footer"><button type="button" onClick={step === 0 ? onCancel : () => setStep(current => current - 1)} disabled={submitting}>Voltar</button><button className="ast-intake__primary" type="submit" disabled={!canContinue || submitting || (step === 2 && loadingPlans)}>{submitting ? 'Criando seu processo...' : step === 3 ? 'Gerar contrato e continuar' : <>Continuar <ChevronRight size={17} /></>}</button></footer>
-                </form>
-
-                <aside className="ast-intake__aside"><ShieldCheck size={27} /><strong>Fluxo seguro e acompanhado</strong><p>Seu pedido será criado no CRM com todas as informações anexadas. A equipe Asterysko acompanhará as próximas etapas até o protocolo no INPI.</p><ol><li><span>1</span>Contrato digital</li><li><span>2</span>Pagamento</li><li><span>3</span>Procuração</li><li><span>4</span>Preparação e INPI</li></ol></aside>
+                <aside className="ast-certificate-preview" aria-label="Prévia ilustrativa do futuro certificado">
+                    <div className="ast-certificate-preview__label"><span>Prévia ao vivo</span><small>Representação ilustrativa</small></div>
+                    <div className="ast-certificate">
+                        <span className="ast-certificate__green" /><span className="ast-certificate__yellow" />
+                        <header><span className="ast-certificate__seal">BR</span><div><strong>REPÚBLICA FEDERATIVA DO BRASIL</strong><small>Instituto Nacional da Propriedade Industrial</small></div></header>
+                        <h2>Certificado de registro de marca</h2>
+                        <p className="ast-certificate__process">Processo nº: •••••••••</p>
+                        <p className="ast-certificate__copy">Certifica-se que a marca abaixo representada encontra-se registrada, observadas as características e condições indicadas neste documento.</p>
+                        <div className="ast-certificate__brand-box">{logoPreview && needsLogo ? <img src={logoPreview} alt="" /> : <strong>{draft.brandName || 'SUA MARCA'}</strong>}</div>
+                        <dl><div><dt>Titular:</dt><dd>{draft.holders || clientName || 'Nome do titular'}</dd></div><div><dt>CPF/CNPJ:</dt><dd>{clientDocument || '•••.•••.•••-••'}</dd></div><div><dt>Endereço:</dt><dd>{clientAddress || 'Endereço do titular'}</dd></div><div><dt>Apresentação:</dt><dd>{needsLogo ? 'Mista' : draft.presentation === 'NOMINATIVA' ? 'Nominativa' : 'A definir'}</dd></div><div><dt>Natureza:</dt><dd>{draft.nature}</dd></div><div><dt>NCL:</dt><dd>{draft.nclClasses || 'A validar'}</dd></div><div><dt>Especificação:</dt><dd>{draft.goodsServices || draft.brandType || 'Atividade da marca'}</dd></div></dl>
+                        <span className="ast-certificate__watermark">PRÉVIA</span>
+                    </div>
+                    <p>O certificado oficial é emitido pelo INPI somente após a concessão do registro. Esta prévia ajuda você a visualizar o resultado final.</p>
+                </aside>
             </div>
-        </section>
+        </div>
     );
 };
 

@@ -309,6 +309,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [subscriptionDueDay, setSubscriptionDueDay] = useState(Math.min(new Date().getDate(), 28));
     const [cardDraft, setCardDraft] = useState<CardDraft>(EMPTY_CARD);
     const [subscriptionSubmitting, setSubscriptionSubmitting] = useState(false);
+    const [oneTimePaymentSubmitting, setOneTimePaymentSubmitting] = useState(false);
     const [subscriptionFeedback, setSubscriptionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [pixCopied, setPixCopied] = useState(false);
     const [proxyUploading, setProxyUploading] = useState(false);
@@ -824,6 +825,26 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         setPaymentSheet(sheet);
     };
 
+    const startOneTimePixPayment = async () => {
+        const processId = String(selectedProcess?.id || '');
+        if (!processId || oneTimePaymentSubmitting) return;
+        try {
+            setOneTimePaymentSubmitting(true);
+            setSubscriptionFeedback(null);
+            const response = await api.post(`/asterysko/portal/payments/${processId}/one-time-pix`);
+            const invoiceUrl = response.data?.invoiceUrl;
+            if (!invoiceUrl) throw new Error('PAYMENT_URL_NOT_CREATED');
+            window.location.assign(invoiceUrl);
+        } catch (paymentError: any) {
+            setSubscriptionFeedback({
+                type: 'error',
+                message: paymentError.response?.data?.message || 'Não foi possível abrir o pagamento à vista.'
+            });
+        } finally {
+            setOneTimePaymentSubmitting(false);
+        }
+    };
+
     const submitSubscriptionAction = async (event: React.FormEvent) => {
         event.preventDefault();
         const processId = String(selectedProcess?.id || '');
@@ -1031,6 +1052,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 {view === 'new-registration' && (
                     <NewTrademarkWizard
                         profileComplete={profileComplete}
+                        clientName={profileValues.name}
+                        clientDocument={profileValues.cpfCnpj}
+                        clientAddress={addressDisplay}
                         onCancel={goHome}
                         onEditProfile={() => navigateView('profile')}
                     />
@@ -1233,12 +1257,18 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 )}
 
                                 {!subscriptionLoading && !subscription && subscriptionContext && !subscriptionContext.eligible && (
-                                    <article className="ast-payment-card">
+                                    <article className="ast-payment-card ast-one-time-payment">
                                         <div className="ast-payment-card__heading">
                                             <h2 className="ast-card-title">Pagamento do processo</h2>
                                             <span>Pagamento único</span>
                                         </div>
-                                        <p className="ast-history-empty">Este processo não possui mensalidade. Aqui você acompanha apenas as cobranças previstas no contrato original.</p>
+                                        <p className="ast-history-empty">Este processo não possui mensalidade. O pagamento é integral, em uma única cobrança via Pix.</p>
+                                        {subscriptionContext.contractSigned && !selectedProcessPaymentConfirmed && (
+                                            <button type="button" disabled={oneTimePaymentSubmitting || !subscriptionContext?.oneTimePaymentConfigured} onClick={() => void startOneTimePixPayment()}>
+                                                {oneTimePaymentSubmitting ? 'Preparando cobrança...' : subscriptionContext?.oneTimePaymentConfigured ? 'Pagar à vista via Pix' : 'Pagamento em configuração'}
+                                                <ChevronRight size={18} aria-hidden="true" />
+                                            </button>
+                                        )}
                                     </article>
                                 )}
 
