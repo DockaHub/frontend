@@ -53,6 +53,10 @@ interface PaymentReceiptData {
     brandName?: string | null;
     cardBrand?: string | null;
     cardLastFour?: string | null;
+    type?: string | null;
+    processId?: string | null;
+    officialBoletoUrl?: string | null;
+    officialBoletoCode?: string | null;
     payer: { name: string; cpfCnpj: string };
     recipient: { tradeName: string; legalName: string; cpfCnpj: string };
     fiscalInvoice?: {
@@ -117,6 +121,7 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
     CONFIRMED: 'Confirmada',
     PENDING: 'Pendente',
     AWAITING_PAYMENT_METHOD: 'Aguardando forma de pagamento',
+    RECEIPT_UPLOADED: 'Comprovante em análise',
     OVERDUE: 'Vencida',
     FAILED: 'Falhou',
     REFUSED: 'Recusada',
@@ -211,6 +216,7 @@ const formatDateTime = (value: unknown, fallback = 'Data não informada') => {
 
 const getPaymentMethodLabel = (receipt: PaymentReceiptData) => {
     const method = String(receipt.paymentMethod || '').toUpperCase();
+    if (method === 'INPI_GRU') return 'Guia oficial do INPI';
     if (method.includes('PIX')) return 'Pix';
     if (method.includes('CARD')) {
         const card = [receipt.cardBrand, receipt.cardLastFour ? `final ${receipt.cardLastFour}` : ''].filter(Boolean).join(' · ');
@@ -305,7 +311,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [subscriptionContext, setSubscriptionContext] = useState<any>(null);
     const [subscriptionLoading, setSubscriptionLoading] = useState(false);
     const [paymentSheet, setPaymentSheet] = useState<PaymentSheet>(null);
-    const [subscriptionMethod, setSubscriptionMethod] = useState<SubscriptionPaymentMethod>('CREDIT_CARD');
+    const [subscriptionMethod, setSubscriptionMethod] = useState<SubscriptionPaymentMethod>('PIX_AUTOMATIC');
     const [subscriptionDueDay, setSubscriptionDueDay] = useState(Math.min(new Date().getDate(), 28));
     const [cardDraft, setCardDraft] = useState<CardDraft>(EMPTY_CARD);
     const [subscriptionSubmitting, setSubscriptionSubmitting] = useState(false);
@@ -315,8 +321,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [proxyUploading, setProxyUploading] = useState(false);
     const [proxyDownloading, setProxyDownloading] = useState(false);
     const [proxyFeedback, setProxyFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [gruReceiptUploading, setGruReceiptUploading] = useState(false);
+    const [gruFeedback, setGruFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const pageRef = useRef<HTMLDivElement | null>(null);
     const proxyUploadInputRef = useRef<HTMLInputElement | null>(null);
+    const gruReceiptInputRef = useRef<HTMLInputElement | null>(null);
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
     const subscriptionRequestRef = useRef(0);
@@ -495,7 +504,16 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const selectedProcessId = String(selectedProcess?.id || '');
     const subscriptionMatchesSelectedProcess = String(subscriptionContext?.processId || subscription?.processId || '') === selectedProcessId;
     const processInvoices = invoices.filter(invoice => String(invoice.processId || '') === selectedProcessId);
-    const displayedPaymentHistory = subscriptionMatchesSelectedProcess && subscription ? subscriptionInvoices : processInvoices;
+    const federalFeeInvoice = processInvoices.find(invoice => String(invoice.type || '').toUpperCase() === 'TAX');
+    const federalFeeStatus = String(selectedProcess?.gruStatus || federalFeeInvoice?.status || 'PENDING').toUpperCase();
+    const federalFeeAvailable = Boolean(selectedProcess?.gruUrl || federalFeeInvoice?.officialBoletoUrl);
+    const federalFeeReceiptSubmitted = Boolean(selectedProcess?.gruReceiptUrl) || ['UPLOADED', 'RECEIPT_UPLOADED', 'PAID'].includes(federalFeeStatus);
+    const displayedPaymentHistory = subscriptionMatchesSelectedProcess && subscription
+        ? [
+            ...processInvoices.filter(invoice => String(invoice.type || '').toUpperCase() === 'TAX'),
+            ...subscriptionInvoices
+        ]
+        : processInvoices;
     const subscriptionStatus = String(subscription?.status || '').toUpperCase();
     const subscriptionMethodLabel = subscription?.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix Automático' : 'Cartão de crédito';
     const pixAutomaticAvailable = Boolean(subscriptionContext?.availablePaymentMethods?.includes('PIX_AUTOMATIC'));
@@ -745,6 +763,45 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         }
     };
 
+    const uploadFederalFeeReceipt = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        const processId = String(selectedProcess?.id || '');
+        event.target.value = '';
+        if (!file || !processId || gruReceiptUploading) return;
+        if (!['application/pdf', 'image/png', 'image/jpeg'].includes(file.type)) {
+            setGruFeedback({ type: 'error', message: 'Envie o comprovante em PDF, PNG ou JPG.' });
+            return;
+        }
+        if (file.size > 10 * 1024 * 1024) {
+            setGruFeedback({ type: 'error', message: 'O arquivo deve ter no máximo 10 MB.' });
+            return;
+        }
+        try {
+            setGruReceiptUploading(true);
+            setGruFeedback(null);
+            const formData = new FormData();
+            formData.append('file', file);
+            const response = await api.post(`/asterysko/processes/${processId}/gru/receipt`, formData);
+            const patch = {
+                gruReceiptUrl: response.data?.process?.gruReceiptUrl,
+                gruStatus: response.data?.process?.gruStatus || 'UPLOADED'
+            };
+            setProcesses(current => current.map(process => String(process.id) === processId ? { ...process, ...patch } : process));
+            setSelectedProcess((current: any) => current && String(current.id) === processId ? { ...current, ...patch } : current);
+            setFinancials((current: any) => ({
+                ...current,
+                invoices: (current.invoices || []).map((invoice: any) => String(invoice.processId || '') === processId && String(invoice.type || '').toUpperCase() === 'TAX'
+                    ? { ...invoice, status: 'receipt_uploaded' }
+                    : invoice)
+            }));
+            setGruFeedback({ type: 'success', message: response.data?.message || 'Comprovante enviado para validação.' });
+        } catch (uploadError: any) {
+            setGruFeedback({ type: 'error', message: uploadError.response?.data?.error || 'Não foi possível enviar o comprovante.' });
+        } finally {
+            setGruReceiptUploading(false);
+        }
+    };
+
     const getDocumentFileName = (name: string, url: string, isLogo = false) => {
         const cleanUrl = url.split('?')[0];
         const extension = cleanUrl.match(/\.([a-z0-9]{2,5})$/i)?.[1] || (isLogo ? 'png' : 'pdf');
@@ -817,10 +874,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         setPixCopied(false);
         setCardDraft(EMPTY_CARD);
         setSubscriptionDueDay(Number(subscription?.dueDay || Math.min(new Date().getDate(), 28)));
-        const alternativeMethod = subscription?.paymentMethod === 'CREDIT_CARD' && pixAutomaticAvailable
+        const preferredMethod: SubscriptionPaymentMethod = pixAutomaticAvailable ? 'PIX_AUTOMATIC' : 'CREDIT_CARD';
+        const alternativeMethod: SubscriptionPaymentMethod = subscription?.paymentMethod === 'CREDIT_CARD' && pixAutomaticAvailable
             ? 'PIX_AUTOMATIC'
             : 'CREDIT_CARD';
-        setSubscriptionMethod(sheet === 'payment-method' ? alternativeMethod : 'CREDIT_CARD');
+        setSubscriptionMethod(sheet === 'payment-method' ? alternativeMethod : preferredMethod);
         setPaymentSheet(sheet);
     };
 
@@ -1235,21 +1293,22 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                                 {!subscriptionLoading && !subscription && subscriptionContext?.eligible && (
                                     <article className="ast-payment-card ast-subscription-start">
-                                        <div className="ast-subscription-start__icon"><CreditCard size={25} aria-hidden="true" /></div>
+                                        <div className="ast-subscription-start__icon"><QrCode size={25} aria-hidden="true" /></div>
                                         <span className="ast-subscription-start__eyebrow">Proteção recorrente</span>
                                         <h2>Ative sua assinatura Asterysko</h2>
-                                        <p>Configure a forma de pagamento e acompanhe todas as cobranças sem sair do portal.</p>
+                                        <p>Autorize o Pix Automático uma única vez para pagar a primeira mensalidade e as próximas cobranças.</p>
                                         {subscriptionContext?.firstPaymentAmount && (
                                             <div className="ast-payment-card__copy">
-                                                <p>Primeira cobrança: <strong>{formatCurrency(subscriptionContext.firstPaymentAmount)}</strong></p>
+                                                <p>Primeira mensalidade: <strong>{formatCurrency(subscriptionContext.firstPaymentAmount)}</strong></p>
                                                 {subscriptionContext.initialFeeAmount > 0 && <p>Inclui <strong>{formatCurrency(subscriptionContext.initialFeeAmount)}</strong> da taxa GRU.</p>}
+                                                {Number(subscriptionContext.initialFeeAmount || 0) === 0 && <p>A taxa federal do INPI será enviada depois, em uma guia oficial separada.</p>}
                                             </div>
                                         )}
                                         {subscriptionContext?.planAmount && (
                                             <strong>{formatCurrency(subscriptionContext.planAmount)} <small>/ mês</small></strong>
                                         )}
                                         <button type="button" disabled={!subscriptionContext?.configured} onClick={() => openPaymentSheet('setup')}>
-                                            {subscriptionContext?.configured ? 'Configurar assinatura' : subscriptionContext?.contractSigned ? 'Pagamento em configuração' : 'Disponível após assinar o contrato'}
+                                            {subscriptionContext?.configured ? (pixAutomaticAvailable ? 'Autorizar Pix Automático' : 'Configurar pagamento') : subscriptionContext?.contractSigned ? 'Pagamento em configuração' : 'Disponível após assinar o contrato'}
                                             <ChevronRight size={18} aria-hidden="true" />
                                         </button>
                                     </article>
@@ -1338,6 +1397,44 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     </>
                                 )}
 
+                                {federalFeeAvailable && federalFeeStatus !== 'PAID' && !federalFeeReceiptSubmitted && (
+                                    <article className="ast-proxy-task ast-federal-fee-task">
+                                        <div className="ast-proxy-task__heading">
+                                            <span className="ast-proxy-task__icon"><FileText size={24} /></span>
+                                            <span><small>Pagamento ao Governo Federal</small><h2>Taxa oficial do INPI</h2></span>
+                                        </div>
+                                        <p>Esta guia foi emitida pelo INPI e não faz parte da mensalidade da Asterysko. Faça o pagamento diretamente ao Governo Federal e envie o comprovante.</p>
+                                        {federalFeeInvoice && (
+                                            <div className="ast-payment-card__copy">
+                                                <p>Valor da guia: <strong>{formatCurrency(federalFeeInvoice.value || federalFeeInvoice.amount)}</strong></p>
+                                                <p>Vencimento: <strong>{formatDate(federalFeeInvoice.dueDate)}</strong></p>
+                                            </div>
+                                        )}
+                                        <div className="ast-proxy-task__actions">
+                                            <button type="button" onClick={() => download(`/api/asterysko/processes/${selectedProcessId}/gru/download`, `Guia_INPI_${brandName.replace(/\s+/g, '_')}.pdf`)}>
+                                                <Download size={18} /> Baixar guia oficial
+                                            </button>
+                                            <button className="ast-proxy-task__upload" type="button" disabled={gruReceiptUploading} onClick={() => gruReceiptInputRef.current?.click()}>
+                                                <Upload size={18} /> {gruReceiptUploading ? 'Enviando...' : 'Enviar comprovante'}
+                                            </button>
+                                        </div>
+                                        <input ref={gruReceiptInputRef} className="ast-visually-hidden" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" onChange={uploadFederalFeeReceipt} />
+                                    </article>
+                                )}
+
+                                {federalFeeAvailable && federalFeeReceiptSubmitted && federalFeeStatus !== 'PAID' && (
+                                    <article className="ast-proxy-received">
+                                        <span><Check size={19} /></span>
+                                        <div>
+                                            <small>Aguardando validação</small>
+                                            <strong>Comprovante da taxa do INPI recebido</strong>
+                                            <p>Nossa equipe verificará o pagamento antes de liberar o processo para protocolo.</p>
+                                        </div>
+                                    </article>
+                                )}
+
+                                {gruFeedback && <p className={`ast-profile-feedback ast-profile-feedback--${gruFeedback.type}`} role="status">{gruFeedback.message}</p>}
+
                                 <article className="ast-history-card">
                                     <h2 className="ast-card-title">Histórico de pagamento</h2>
                                     {paymentReceiptError && <p className="ast-history-card__error" role="alert">{paymentReceiptError}</p>}
@@ -1351,7 +1448,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                                     {PAYMENT_STATUS_LABELS[paymentStatus] || invoice.status}
                                                 </span>
                                                 <strong>{formatCurrency(getValue(invoice.amount, invoice.value, invoice.total, 0))}</strong>
-                                                <small>{invoice.paymentMethod === 'PIX' || invoice.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix' : 'Cartão'} • {formatDate(getValue(invoice.paidAt, invoice.dueDate))}</small>
+                                                <small>{String(invoice.type || '').toUpperCase() === 'TAX' ? 'Guia oficial do INPI' : invoice.paymentMethod === 'PIX' || invoice.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix' : 'Cartão'} • {formatDate(getValue(invoice.paidAt, invoice.dueDate))}</small>
                                             </span>
                                             <span className="ast-history-row__open" aria-hidden="true">
                                                 {paymentReceiptLoading === receiptId ? <span className="ast-spinner" /> : <ChevronRight size={19} />}
@@ -1466,15 +1563,15 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             ) : (
                                 <>
                                     <div className="ast-payment-methods" role="radiogroup" aria-label="Forma de pagamento">
-                                        <button className={subscriptionMethod === 'CREDIT_CARD' ? 'ast-payment-method--active' : ''} type="button" onClick={() => setSubscriptionMethod('CREDIT_CARD')}>
-                                            <CreditCard size={21} />
-                                            <span><strong>Cartão</strong><small>Cobrança automática mensal</small></span>
-                                            <i>{subscriptionMethod === 'CREDIT_CARD' && <Check size={14} />}</i>
-                                        </button>
                                         <button className={subscriptionMethod === 'PIX_AUTOMATIC' ? 'ast-payment-method--active' : ''} type="button" disabled={!pixAutomaticAvailable} onClick={() => setSubscriptionMethod('PIX_AUTOMATIC')}>
                                             <QrCode size={21} />
-                                            <span><strong>Pix Automático</strong><small>{pixAutomaticAvailable ? 'Autorize uma única vez' : 'Disponível após a 1ª parcela'}</small></span>
+                                            <span><strong>Pix Automático</strong><small>{pixAutomaticAvailable ? 'Recomendado · autorize uma única vez' : 'Temporariamente indisponível'}</small></span>
                                             <i>{subscriptionMethod === 'PIX_AUTOMATIC' && <Check size={14} />}</i>
+                                        </button>
+                                        <button className={subscriptionMethod === 'CREDIT_CARD' ? 'ast-payment-method--active' : ''} type="button" onClick={() => setSubscriptionMethod('CREDIT_CARD')}>
+                                            <CreditCard size={21} />
+                                            <span><strong>Cartão</strong><small>Alternativa ao Pix Automático</small></span>
+                                            <i>{subscriptionMethod === 'CREDIT_CARD' && <Check size={14} />}</i>
                                         </button>
                                     </div>
 
@@ -1523,7 +1620,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             <button className="ast-payment-form__submit" type="submit" disabled={subscriptionSubmitting}>
                                 {subscriptionSubmitting ? 'Processando com segurança...' : paymentSheet === 'due-date' ? 'Confirmar novo vencimento' : subscriptionMethod === 'PIX_AUTOMATIC' ? 'Gerar autorização Pix' : 'Confirmar cartão'}
                             </button>
-                            <p className="ast-payment-form__security">Seus dados de cartão não são armazenados pela Asterysko.</p>
+                            <p className="ast-payment-form__security">{subscriptionMethod === 'PIX_AUTOMATIC' ? 'A autorização é concluída com segurança no aplicativo do seu banco.' : 'Seus dados de cartão não são armazenados pela Asterysko.'}</p>
                         </form>
                     </section>
                 </div>
@@ -1598,7 +1695,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                             <dl className="ast-receipt-modal__details">
                                 <div><dt>Pagador</dt><dd>{paymentReceipt.payer.name}<small>{paymentReceipt.payer.cpfCnpj}</small></dd></div>
-                                <div><dt>Recebedor</dt><dd>{paymentReceipt.recipient.tradeName}<small>{paymentReceipt.recipient.legalName} · CNPJ {paymentReceipt.recipient.cpfCnpj}</small></dd></div>
+                                <div><dt>Recebedor</dt><dd>{paymentReceipt.recipient.tradeName}<small>{String(paymentReceipt.type || '').toUpperCase() === 'TAX' ? `${paymentReceipt.recipient.legalName} · Pagamento pela guia oficial` : `${paymentReceipt.recipient.legalName} · CNPJ ${paymentReceipt.recipient.cpfCnpj}`}</small></dd></div>
                                 <div><dt>Forma de pagamento</dt><dd>{getPaymentMethodLabel(paymentReceipt)}</dd></div>
                                 <div><dt>Serviço</dt><dd>{paymentReceipt.description}{paymentReceipt.brandName && <small>Marca: {paymentReceipt.brandName}</small>}</dd></div>
                                 <div><dt>Identificador</dt><dd className="ast-receipt-modal__identifier">{paymentReceipt.displayId}</dd></div>
@@ -1625,6 +1722,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             )}
                             {paymentReceipt.fiscalInvoice?.xmlUrl && (
                                 <button type="button" onClick={() => downloadFiscalInvoiceXml(paymentReceipt)}><Download size={18} /> Baixar XML</button>
+                            )}
+                            {paymentReceipt.officialBoletoUrl && paymentReceipt.processId && (
+                                <button type="button" onClick={() => download(`/api/asterysko/processes/${paymentReceipt.processId}/gru/download`, `Guia_INPI_${paymentReceipt.id.slice(0, 8)}.pdf`)}><Download size={18} /> Baixar guia do INPI</button>
                             )}
                         </footer>
                     </section>

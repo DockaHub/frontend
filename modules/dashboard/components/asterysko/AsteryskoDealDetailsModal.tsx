@@ -246,6 +246,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const [invoiceDueDate, setInvoiceDueDate] = useState('');
     const [invoicePaymentMethod, setInvoicePaymentMethod] = useState('PIX');
     const [isSubmittingInvoice, setIsSubmittingInvoice] = useState(false);
+    const [pendingGruFile, setPendingGruFile] = useState<File | null>(null);
+    const [gruAmount, setGruAmount] = useState('');
+    const [gruDueDate, setGruDueDate] = useState('');
+    const [gruBarcode, setGruBarcode] = useState('');
 
     // Notification Mockup Modal State
     const [activeNotificationMockup, setActiveNotificationMockup] = useState<{
@@ -464,10 +468,24 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         }
     };
 
-    const handleFileUpload = async (file: File | undefined, uploadType: string) => {
+    const handleFileUpload = async (
+        file: File | undefined,
+        uploadType: string,
+        gruMetadata?: { amount: string; dueDate: string; barcode: string }
+    ) => {
         const processId = dealDetails?.processId || dealDetails?.process?.id || card?.processId || card?.id || dealDetails?.id;
         if (!file || !processId) {
             alert('Nenhum processo vinculado para anexar o arquivo.');
+            return;
+        }
+
+        if (uploadType === 'gru' && !gruMetadata) {
+            const defaultDueDate = new Date();
+            defaultDueDate.setDate(defaultDueDate.getDate() + 5);
+            setPendingGruFile(file);
+            setGruAmount('');
+            setGruDueDate(defaultDueDate.toISOString().slice(0, 10));
+            setGruBarcode('');
             return;
         }
         
@@ -481,6 +499,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 endpoint = `/asterysko/processes/${processId}/proxy/upload`;
             } else if (uploadType === 'gru') {
                 formData.append('file', file);
+                formData.append('amount', gruMetadata?.amount || '');
+                formData.append('dueDate', gruMetadata?.dueDate || '');
+                formData.append('barcode', gruMetadata?.barcode || '');
                 endpoint = `/asterysko/processes/${processId}/gru/upload`;
             } else if (uploadType === 'gru_receipt') {
                 formData.append('file', file);
@@ -501,7 +522,13 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                     'Content-Type': 'multipart/form-data'
                 }
             });
-            if (uploadType === 'certificate') {
+            if (uploadType === 'gru') {
+                setPendingGruFile(null);
+                setGruAmount('');
+                setGruDueDate('');
+                setGruBarcode('');
+                alert('Guia publicada como cobrança federal separada. O cliente foi notificado para pagar diretamente ao INPI.');
+            } else if (uploadType === 'certificate') {
                 alert('🏆 Certificado de Registro enviado com sucesso! O processo foi alterado para CONCLUÍDO e as notificações foram disparadas ao cliente por WhatsApp, E-mail e Portal.');
             } else if (uploadType === 'logo') {
                 alert('Logotipo da marca atualizado com sucesso!');
@@ -670,9 +697,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const nextActionInfo = getNextAction(currentDeal?.status);
 
     // Financial totals
-    const totalContractedVal = invoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0) || (parseFloat(String(rawValue || 0)) || 0);
-    const totalPaidVal = invoices.filter(inv => inv.status === 'PAID').reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
-    const totalPendingVal = invoices.filter(inv => inv.status !== 'PAID').reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
+    const serviceInvoices = invoices.filter(inv => String(inv.type || '').toUpperCase() !== 'TAX');
+    const totalContractedVal = serviceInvoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0) || (parseFloat(String(rawValue || 0)) || 0);
+    const totalPaidVal = serviceInvoices.filter(inv => inv.status === 'PAID').reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
+    const totalPendingVal = serviceInvoices.filter(inv => inv.status !== 'PAID').reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
 
     const formattedContracted = `R$ ${totalContractedVal.toFixed(2).replace('.', ',')}`;
     const formattedPaid = `R$ ${totalPaidVal.toFixed(2).replace('.', ',')}`;
@@ -1108,6 +1136,65 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     />
                                 );
                             })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PUBLISH FEDERAL INPI GUIDE MODAL */}
+            {pendingGruFile && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
+                    <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl shadow-2xl p-6 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-5">
+                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                            <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#0412dd]">Pagamento direto ao Governo Federal</p>
+                                <h3 className="font-season text-xl font-medium text-black dark:text-white">Publicar guia do INPI</h3>
+                            </div>
+                            <button onClick={() => setPendingGruFile(null)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1" aria-label="Fechar">
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                            A guia será exibida no portal como uma cobrança federal separada. O valor não será processado pelo Asaas nem contabilizado como receita da Asterysko.
+                        </p>
+
+                        <div className="flex flex-col gap-4">
+                            <div className="grid grid-cols-2 gap-3">
+                                <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                                    Valor da guia (R$)
+                                    <input type="text" inputMode="decimal" placeholder="355,00" value={gruAmount} onChange={event => setGruAmount(event.target.value)} className="mt-1 w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2.5 text-base bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]" />
+                                </label>
+                                <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                                    Vencimento
+                                    <input type="date" value={gruDueDate} onChange={event => setGruDueDate(event.target.value)} className="mt-1 w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2.5 text-base bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]" />
+                                </label>
+                            </div>
+                            <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">
+                                Código da guia <span className="font-normal text-zinc-400">(opcional)</span>
+                                <input type="text" placeholder="Código ou linha digitável exibida pelo INPI" value={gruBarcode} onChange={event => setGruBarcode(event.target.value)} className="mt-1 w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 py-2.5 text-base bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]" />
+                            </label>
+                            <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-800 px-3 py-2.5 text-xs text-zinc-600 dark:text-zinc-300 truncate">
+                                Arquivo: <strong>{pendingGruFile.name}</strong>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                            <button onClick={() => setPendingGruFile(null)} disabled={uploadingFile} className="px-4 py-2.5 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-300">Cancelar</button>
+                            <button
+                                onClick={() => {
+                                    if (!gruAmount.trim() || !gruDueDate) {
+                                        alert('Informe o valor e o vencimento exibidos na guia do INPI.');
+                                        return;
+                                    }
+                                    void handleFileUpload(pendingGruFile, 'gru', { amount: gruAmount, dueDate: gruDueDate, barcode: gruBarcode });
+                                }}
+                                disabled={uploadingFile}
+                                className="px-5 py-2.5 bg-[#0412dd] text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-1.5"
+                            >
+                                {uploadingFile && <Loader2 size={14} className="animate-spin" />}
+                                Publicar guia e notificar
+                            </button>
                         </div>
                     </div>
                 </div>

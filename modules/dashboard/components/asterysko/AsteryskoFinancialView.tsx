@@ -145,10 +145,11 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
     };
 
     // Calculate totals for dashboard cards
-    const totalBilled = invoices.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-    const totalPaid = invoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-    const totalPending = invoices.filter(i => i.status === 'PENDING').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-    const totalOverdue = invoices.filter(i => i.status === 'OVERDUE').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const serviceInvoices = invoices.filter(invoice => String(invoice.type || '').toUpperCase() !== 'TAX');
+    const totalBilled = serviceInvoices.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const totalPaid = serviceInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const totalPending = serviceInvoices.filter(i => i.status === 'PENDING').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const totalOverdue = serviceInvoices.filter(i => i.status === 'OVERDUE').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
     // Filter invoices list
     const filteredInvoices = invoices.filter(inv => {
