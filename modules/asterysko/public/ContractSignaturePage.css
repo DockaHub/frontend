@@ -616,6 +616,7 @@
         width: calc(100% - 24px);
         order: 2;
         margin: 0 12px;
+        padding-bottom: env(safe-area-inset-bottom);
     }
 
     .ast-sign-document-column {
@@ -624,8 +625,83 @@
 
     .ast-sign-form,
     .ast-sign-certificate {
+        padding: 23px 20px;
         border-radius: 18px;
         box-shadow: none;
+    }
+
+    .ast-sign-form > small {
+        font-size: 12px;
+        letter-spacing: .1em;
+    }
+
+    .ast-sign-form h2 {
+        margin-top: 9px;
+        margin-bottom: 11px;
+        font-size: clamp(34px, 10vw, 42px);
+        line-height: 1.03;
+    }
+
+    .ast-sign-form > p {
+        margin-bottom: 22px;
+        color: #575963;
+        font-size: 16px;
+        line-height: 1.5;
+    }
+
+    .ast-sign-acknowledgements {
+        gap: 12px;
+    }
+
+    .ast-sign-acknowledgements label {
+        min-height: 66px;
+        grid-template-columns: 26px minmax(0, 1fr);
+        gap: 12px;
+        align-items: center;
+        padding: 14px;
+        border-radius: 14px;
+    }
+
+    .ast-sign-acknowledgements label > span {
+        width: 25px;
+        height: 25px;
+        border-radius: 7px;
+    }
+
+    .ast-sign-acknowledgements em {
+        color: #454750;
+        font-size: 15px;
+        line-height: 1.45;
+    }
+
+    .ast-sign-name-field {
+        margin-top: 23px;
+    }
+
+    .ast-sign-name-field > span {
+        margin-bottom: 9px;
+        font-size: 14px;
+    }
+
+    .ast-sign-name-field input {
+        height: 56px;
+        padding: 0 15px;
+        border-radius: 13px;
+        font-size: 16px;
+    }
+
+    .ast-sign-primary,
+    .ast-sign-secondary {
+        min-height: 56px;
+        border-radius: 14px;
+        font-size: 15px;
+    }
+
+    .ast-sign-evidence {
+        gap: 8px;
+        margin-top: 15px !important;
+        font-size: 12.5px !important;
+        line-height: 1.4;
     }
 }
 
