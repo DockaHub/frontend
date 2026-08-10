@@ -127,10 +127,14 @@ const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
     ACTIVE: 'Ativa',
     CREATED: 'Aguardando autorização',
     PENDING_SETUP: 'Em configuração',
+    SETTING_UP: 'Em configuração',
     REAUTHORIZATION_PENDING: 'Aguardando nova autorização',
+    PAYMENT_METHOD_UPDATING: 'Atualizando forma de pagamento',
     PAYMENT_RECOVERY_PENDING: 'Regularização em processamento',
     PAYMENT_FAILED: 'Pagamento pendente',
+    PAYMENT_REVERSED: 'Pagamento estornado',
     SETUP_FAILED: 'Configuração incompleta',
+    SETUP_REQUIRES_REVIEW: 'Conciliação necessária',
     CANCELLED: 'Cancelada',
     COMPLETED: 'Encerrada após deferimento',
     INITIAL_PAYMENT_PENDING: 'Primeira cobrança em processamento'
@@ -1229,7 +1233,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                                 {!subscriptionLoading && subscription && (
                                     <>
-                                        <article className={`ast-payment-card ${subscriptionStatus === 'PAYMENT_FAILED' ? 'ast-payment-card--failed' : ''}`}>
+                                        <article className={`ast-payment-card ${['PAYMENT_FAILED', 'PAYMENT_REVERSED', 'SETUP_REQUIRES_REVIEW'].includes(subscriptionStatus) ? 'ast-payment-card--failed' : ''}`}>
                                             <div className="ast-payment-card__heading">
                                                 <h2 className="ast-card-title">Assinatura mensal</h2>
                                                 <span>{SUBSCRIPTION_STATUS_LABELS[subscriptionStatus] || subscription.status}</span>
