@@ -281,7 +281,7 @@ const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab:
 };
 
 export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit }) => {
-    const { user, logout, refreshUser } = useAuth();
+    const { user, logout } = useAuth();
     const [view, setView] = useState<PortalView>(getInitialView);
     const [processTab, setProcessTab] = useState<ProcessTab>(getInitialProcessTab);
     const [clientData, setClientData] = useState<any>(null);
@@ -653,7 +653,6 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             if (updatedProfile) {
                 setClientData((current: any) => ({ ...current, ...updatedProfile }));
             }
-            await refreshUser().catch(() => undefined);
             setEditingProfileField(null);
             setProfileDraft({});
             setProfileFeedback({ type: 'success', message: 'Dados atualizados com sucesso.' });
