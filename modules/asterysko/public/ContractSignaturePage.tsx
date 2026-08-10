@@ -10,6 +10,7 @@ interface ContractSignaturePageProps {
 
 type ContractDeal = {
     id: string;
+    processId?: string;
     title: string;
     contactName?: string;
     status?: string;
@@ -217,7 +218,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                             <h2>Assinatura confirmada</h2>
                             <dl><div><dt>Assinante</dt><dd>{getSignerName(deal)}</dd></div><div><dt>Data e hora</dt><dd>{signedDate}</dd></div><div><dt>Versão</dt><dd>{version}</dd></div></dl>
                             <a className="ast-sign-primary" href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={18} />Baixar contrato em PDF</a>
-                            <button className="ast-sign-secondary" type="button" onClick={() => window.location.assign('/portal?view=details&tab=payments')}>Continuar no portal</button>
+                            <button className="ast-sign-secondary" type="button" onClick={() => window.location.assign(`/portal?view=details&tab=payments${deal?.processId ? `&processId=${encodeURIComponent(deal.processId)}` : ''}`)}>Continuar no portal</button>
                         </section>
                     ) : (
                         <section className="ast-sign-form" aria-labelledby="ast-sign-form-title">

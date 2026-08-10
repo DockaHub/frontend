@@ -5,6 +5,7 @@ import { useAuth } from '../../../../context/AuthContext';
 import { forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
 import AsteryskoAnimatedMark from '../../../asterysko/public/AsteryskoAnimatedMark';
 import { useSystemBarColor } from '../../../asterysko/public/useSystemBarColor';
+import NewTrademarkWizard from './NewTrademarkWizard';
 import '../../../asterysko/public/AsteryskoPortal.css';
 
 interface AsteryskoClientPortalProps {
@@ -13,7 +14,7 @@ interface AsteryskoClientPortalProps {
     onToggleTheme?: () => void;
 }
 
-type PortalView = 'home' | 'details' | 'profile' | 'contracts';
+type PortalView = 'home' | 'details' | 'profile' | 'contracts' | 'new-registration';
 type ProcessTab = 'details' | 'payments' | 'documents';
 type ProfileFieldKey = 'identity' | 'document' | 'rg' | 'email' | 'phone' | 'address';
 
@@ -240,7 +241,7 @@ const getTimelineIcon = (item: any) => {
 
 const getInitialView = (): PortalView => {
     const requestedView = new URLSearchParams(window.location.search).get('view');
-    return requestedView === 'details' || requestedView === 'profile' || requestedView === 'contracts' ? requestedView : 'home';
+    return requestedView === 'details' || requestedView === 'profile' || requestedView === 'contracts' || requestedView === 'new-registration' ? requestedView : 'home';
 };
 
 const getInitialProcessTab = (): ProcessTab => {
@@ -383,8 +384,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     });
                 });
                 const loadedProcesses = Array.from(processMap.values());
+                const requestedProcessId = new URLSearchParams(window.location.search).get('processId');
                 setProcesses(loadedProcesses);
-                setSelectedProcess(loadedProcesses[0] || null);
+                setSelectedProcess(loadedProcesses.find(process => String(process.id) === requestedProcessId) || loadedProcesses[0] || null);
                 setError('');
             } catch (fetchError: any) {
                 console.error('Error loading portal data:', fetchError);
@@ -510,6 +512,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     };
     const addressDisplay = [profileValues.address, [profileValues.city, profileValues.state].filter(Boolean).join(' - '), profileValues.postalCode && `CEP ${profileValues.postalCode}`].filter(Boolean).join(', ');
     const isCompanyProfile = String(clientData?.type || '').toUpperCase() === 'PJ';
+    const profileComplete = ['name', 'email', 'cpfCnpj', 'address', 'city', 'state', 'postalCode'].every(key => Boolean(profileValues[key]));
     const profileGroups: Array<{ title: string; fields: ProfileFieldConfig[] }> = [
         {
             title: 'Identificação',
@@ -975,10 +978,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     {!loading && !displayedProcesses.length && (
                                         <p className="ast-empty-note">Nenhum processo foi vinculado ao seu cadastro ainda.</p>
                                     )}
-                                    <a className="ast-new-process-card" href="https://asterysko.com/nova-marca" target="_blank" rel="noreferrer">
+                                    <button className="ast-new-process-card" type="button" onClick={() => navigateView('new-registration')}>
                                         <img src={`${ASSET_ROOT}/home-imgFormkitAdd.svg`} alt="" />
                                         <span>Registrar uma nova marca</span>
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
 
@@ -1023,6 +1026,14 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         <img className="ast-home-burst" src={`${ASSET_ROOT}/home-imgGroup26.svg`} alt="" aria-hidden="true" />
                     </section>
+                )}
+
+                {view === 'new-registration' && (
+                    <NewTrademarkWizard
+                        profileComplete={profileComplete}
+                        onCancel={goHome}
+                        onEditProfile={() => navigateView('profile')}
+                    />
                 )}
 
                 {view === 'profile' && (

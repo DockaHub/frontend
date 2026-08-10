@@ -662,7 +662,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     }
     
     const dealDate = currentDeal?.date ? (currentDeal.date.includes('/') ? `Adicionado em ${currentDeal.date}` : `Adicionado em ${new Date(currentDeal.date).toLocaleDateString('pt-BR')}`) : 'Data não informada';
-    const sourceTag = currentDeal?.tags?.find((t: any) => typeof t === 'string' ? t.toLowerCase().includes('site') : t.label?.toLowerCase().includes('site')) ? 'Site' : 'Manual';
+    const sourceTag = currentDeal?.intakeData?.source === 'CLIENT_PORTAL'
+        ? 'Portal do Cliente'
+        : currentDeal?.tags?.find((t: any) => typeof t === 'string' ? t.toLowerCase().includes('site') : t.label?.toLowerCase().includes('site')) ? 'Site' : 'Manual';
     const priority = currentDeal?.priority === 'high' ? 'Alta' : currentDeal?.priority === 'low' ? 'Baixa' : 'Normal';
     const assignedUser = currentDeal?.assignedUser?.name || currentDeal?.assignedUserName || 'Sem dono';
     const nextActionInfo = getNextAction(currentDeal?.status);
@@ -698,6 +700,22 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 size: '—',
                 isPublic: true,
                 isImage: true
+            });
+        }
+
+        if (Array.isArray(p.intakeDocuments)) {
+            p.intakeDocuments.forEach((document: any, index: number) => {
+                if (!document?.url) return;
+                filesList.push({
+                    key: `intakeDocument-${index}`,
+                    name: document.name || `Documento enviado pelo cliente ${index + 1}`,
+                    url: resolveUrl(document.url),
+                    type: 'Documento do cliente',
+                    date: creationDate,
+                    size: document.size ? `${Math.max(1, Math.round(Number(document.size) / 1024))} KB` : '—',
+                    isPublic: false,
+                    isImage: String(document.mimeType || '').startsWith('image/')
+                });
             });
         }
 
@@ -1402,10 +1420,12 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         {[
                                             { label: 'Serviço', value: currentDeal?.serviceInterest || 'Registro de Marca' },
                                             { label: 'Marca', value: dealTitle },
-                                            { label: 'Apresentação', value: currentDeal?.presentation || 'Nominativa' },
-                                            { label: 'Natureza', value: currentDeal?.nature || 'Mista / Produto ou Serviço' },
-                                            { label: 'Classe de Nice', value: currentDeal?.process?.brand?.nclClasses?.[0] ? `NCL ${currentDeal.process.brand.nclClasses[0]}` : currentDeal?.nclClass || 'NCL 1' },
-                                            { label: 'Titular', value: clientName },
+                                            { label: 'Apresentação', value: currentDeal?.process?.brand?.presentation || currentDeal?.intakeData?.presentation || currentDeal?.presentation || 'Não informada' },
+                                            { label: 'Natureza', value: currentDeal?.process?.brand?.nature || currentDeal?.intakeData?.nature || currentDeal?.nature || 'Não informada' },
+                                            { label: 'Classes de Nice', value: currentDeal?.process?.brand?.nclClasses?.length ? currentDeal.process.brand.nclClasses.map((item: string) => `NCL ${item}`).join(', ') : 'A validar pela equipe' },
+                                            { label: 'Titular', value: currentDeal?.process?.brand?.holders || currentDeal?.intakeData?.holders || clientName },
+                                            { label: 'Produtos e serviços', value: currentDeal?.intakeData?.goodsServices || 'Não informado' },
+                                            { label: 'Especificação', value: currentDeal?.process?.brand?.nclSpecification || currentDeal?.intakeData?.nclSpecification || 'A validar pela equipe' },
                                         ].map((item, idx) => (
                                             <div key={idx} className="flex items-center justify-between py-3 border-b border-[#f0f0f0] dark:border-zinc-800/50 last:border-0 group">
                                                 <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400 w-1/3">{item.label}</span>
