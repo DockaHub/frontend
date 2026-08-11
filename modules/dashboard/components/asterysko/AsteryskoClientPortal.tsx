@@ -77,6 +77,8 @@ interface PaymentReceiptData {
 type PaymentSheet = 'setup' | 'due-date' | 'payment-method' | null;
 type SubscriptionPaymentMethod = 'CREDIT_CARD' | 'PIX_AUTOMATIC';
 
+const RETRYABLE_SUBSCRIPTION_SETUP_STATUSES = new Set(['SETUP_FAILED', 'CANCELLED']);
+
 interface CardDraft {
     holderName: string;
     number: string;
@@ -921,7 +923,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         }
         setPaymentReceipt(null);
         if (subscriptionContext?.eligible) {
-            openPaymentSheet(subscription ? 'payment-method' : 'setup');
+            const requiresSetupRetry = subscription && RETRYABLE_SUBSCRIPTION_SETUP_STATUSES.has(subscriptionStatus);
+            openPaymentSheet(subscription && !requiresSetupRetry ? 'payment-method' : 'setup');
             return;
         }
         void startOneTimePixPayment();
