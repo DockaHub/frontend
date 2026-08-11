@@ -57,6 +57,7 @@ interface PaymentReceiptData {
     processId?: string | null;
     officialBoletoUrl?: string | null;
     officialBoletoCode?: string | null;
+    invoiceUrl?: string | null;
     payer: { name: string; cpfCnpj: string };
     recipient: { tradeName: string; legalName: string; cpfCnpj: string };
     fiscalInvoice?: {
@@ -224,6 +225,16 @@ const getPaymentMethodLabel = (receipt: PaymentReceiptData) => {
     }
     if (method.includes('BOLETO')) return 'Boleto bancário';
     return 'Forma de pagamento não informada';
+};
+
+const getInvoicePaymentMethodLabel = (invoice: any) => {
+    const type = String(invoice?.type || '').toUpperCase();
+    const method = String(invoice?.paymentMethod || '').toUpperCase();
+    if (type === 'TAX') return 'Guia oficial do INPI';
+    if (method.includes('PIX')) return 'Pix';
+    if (method.includes('CARD')) return 'Cartão';
+    if (method.includes('BOLETO')) return 'Boleto';
+    return 'Forma de pagamento a definir';
 };
 
 const getProcessStatusLabel = (status: unknown) => PROCESS_STATUS_LABELS[String(status || '').toUpperCase()] || 'Em andamento';
@@ -902,6 +913,20 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         }
     };
 
+    const payOpenedInvoice = () => {
+        if (!paymentReceipt || String(paymentReceipt.type || '').toUpperCase() === 'TAX') return;
+        if (paymentReceipt.invoiceUrl) {
+            window.location.assign(paymentReceipt.invoiceUrl);
+            return;
+        }
+        setPaymentReceipt(null);
+        if (subscriptionContext?.eligible) {
+            openPaymentSheet(subscription ? 'payment-method' : 'setup');
+            return;
+        }
+        void startOneTimePixPayment();
+    };
+
     const submitSubscriptionAction = async (event: React.FormEvent) => {
         event.preventDefault();
         const processId = String(selectedProcess?.id || '');
@@ -1291,45 +1316,6 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                                 {subscriptionLoading && <p className="ast-empty-note">Carregando sua assinatura...</p>}
 
-                                {!subscriptionLoading && !subscription && subscriptionContext?.eligible && (
-                                    <article className="ast-payment-card ast-subscription-start">
-                                        <div className="ast-subscription-start__icon"><QrCode size={25} aria-hidden="true" /></div>
-                                        <span className="ast-subscription-start__eyebrow">Proteção recorrente</span>
-                                        <h2>Ative sua assinatura Asterysko</h2>
-                                        <p>Autorize o Pix Automático uma única vez para pagar a primeira mensalidade e as próximas cobranças.</p>
-                                        {subscriptionContext?.firstPaymentAmount && (
-                                            <div className="ast-payment-card__copy">
-                                                <p>Primeira mensalidade: <strong>{formatCurrency(subscriptionContext.firstPaymentAmount)}</strong></p>
-                                                {subscriptionContext.initialFeeAmount > 0 && <p>Inclui <strong>{formatCurrency(subscriptionContext.initialFeeAmount)}</strong> da taxa GRU.</p>}
-                                                {Number(subscriptionContext.initialFeeAmount || 0) === 0 && <p>A taxa federal do INPI será enviada depois, em uma guia oficial separada.</p>}
-                                            </div>
-                                        )}
-                                        {subscriptionContext?.planAmount && (
-                                            <strong>{formatCurrency(subscriptionContext.planAmount)} <small>/ mês</small></strong>
-                                        )}
-                                        <button type="button" disabled={!subscriptionContext?.configured} onClick={() => openPaymentSheet('setup')}>
-                                            {subscriptionContext?.configured ? (pixAutomaticAvailable ? 'Autorizar Pix Automático' : 'Configurar pagamento') : subscriptionContext?.contractSigned ? 'Pagamento em configuração' : 'Disponível após assinar o contrato'}
-                                            <ChevronRight size={18} aria-hidden="true" />
-                                        </button>
-                                    </article>
-                                )}
-
-                                {!subscriptionLoading && !subscription && subscriptionContext && !subscriptionContext.eligible && (
-                                    <article className="ast-payment-card ast-one-time-payment">
-                                        <div className="ast-payment-card__heading">
-                                            <h2 className="ast-card-title">Pagamento do processo</h2>
-                                            <span>Pagamento único</span>
-                                        </div>
-                                        <p className="ast-history-empty">Este processo não possui mensalidade. O pagamento é integral, em uma única cobrança via Pix.</p>
-                                        {subscriptionContext.contractSigned && !selectedProcessPaymentConfirmed && (
-                                            <button type="button" disabled={oneTimePaymentSubmitting || !subscriptionContext?.oneTimePaymentConfigured} onClick={() => void startOneTimePixPayment()}>
-                                                {oneTimePaymentSubmitting ? 'Preparando cobrança...' : subscriptionContext?.oneTimePaymentConfigured ? 'Pagar à vista via Pix' : 'Pagamento em configuração'}
-                                                <ChevronRight size={18} aria-hidden="true" />
-                                            </button>
-                                        )}
-                                    </article>
-                                )}
-
                                 {!subscriptionLoading && subscription && (
                                     <>
                                         <article className={`ast-payment-card ${['PAYMENT_FAILED', 'PAYMENT_REVERSED', 'SETUP_REQUIRES_REVIEW'].includes(subscriptionStatus) ? 'ast-payment-card--failed' : ''}`}>
@@ -1448,7 +1434,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                                     {PAYMENT_STATUS_LABELS[paymentStatus] || invoice.status}
                                                 </span>
                                                 <strong>{formatCurrency(getValue(invoice.amount, invoice.value, invoice.total, 0))}</strong>
-                                                <small>{String(invoice.type || '').toUpperCase() === 'TAX' ? 'Guia oficial do INPI' : invoice.paymentMethod === 'PIX' || invoice.paymentMethod === 'PIX_AUTOMATIC' ? 'Pix' : 'Cartão'} • {formatDate(getValue(invoice.paidAt, invoice.dueDate))}</small>
+                                                <small>{getInvoicePaymentMethodLabel(invoice)} • {formatDate(getValue(invoice.paidAt, invoice.dueDate))}</small>
                                             </span>
                                             <span className="ast-history-row__open" aria-hidden="true">
                                                 {paymentReceiptLoading === receiptId ? <span className="ast-spinner" /> : <ChevronRight size={19} />}
@@ -1538,9 +1524,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     <section className="ast-payment-sheet__panel" onClick={event => event.stopPropagation()}>
                         <header className="ast-payment-sheet__header">
                             <div>
-                                <small>Assinatura Asterysko</small>
+                                <small>{paymentSheet === 'setup' ? 'Pagamento da fatura' : 'Assinatura Asterysko'}</small>
                                 <h2 id="ast-payment-sheet-title">
-                                    {paymentSheet === 'due-date' ? 'Alterar vencimento' : paymentSheet === 'payment-method' ? 'Regularizar pagamento' : 'Forma de pagamento'}
+                                    {paymentSheet === 'due-date' ? 'Alterar vencimento' : paymentSheet === 'payment-method' ? 'Regularizar pagamento' : 'Pagar mensalidade'}
                                 </h2>
                             </div>
                             <button type="button" disabled={subscriptionSubmitting} onClick={() => setPaymentSheet(null)} aria-label="Fechar"><X size={21} /></button>
@@ -1725,6 +1711,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             )}
                             {paymentReceipt.officialBoletoUrl && paymentReceipt.processId && (
                                 <button type="button" onClick={() => download(`/api/asterysko/processes/${paymentReceipt.processId}/gru/download`, `Guia_INPI_${paymentReceipt.id.slice(0, 8)}.pdf`)}><Download size={18} /> Baixar guia do INPI</button>
+                            )}
+                            {String(paymentReceipt.type || '').toUpperCase() !== 'TAX' && ['AWAITING_PAYMENT_METHOD', 'PENDING', 'OVERDUE', 'FAILED', 'REFUSED'].includes(String(paymentReceipt.status || '').toUpperCase()) && (
+                                <button type="button" disabled={subscriptionLoading || oneTimePaymentSubmitting} onClick={payOpenedInvoice}>
+                                    <CreditCard size={18} /> {oneTimePaymentSubmitting ? 'Preparando pagamento...' : 'Pagar fatura'}
+                                </button>
                             )}
                         </footer>
                     </section>
