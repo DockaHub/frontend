@@ -692,6 +692,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const sourceTag = currentDeal?.intakeData?.source === 'CLIENT_PORTAL'
         ? 'Portal do Cliente'
         : currentDeal?.tags?.find((t: any) => typeof t === 'string' ? t.toLowerCase().includes('site') : t.label?.toLowerCase().includes('site')) ? 'Site' : 'Manual';
+    const contactPreference = currentDeal?.intakeData?.contactPreferenceLabel
+        || (currentDeal?.intakeData?.contactPreference === 'WHATSAPP' ? 'WhatsApp'
+            : currentDeal?.intakeData?.contactPreference === 'PHONE' ? 'Ligação'
+            : 'Não informada');
     const priority = currentDeal?.priority === 'high' ? 'Alta' : currentDeal?.priority === 'low' ? 'Baixa' : 'Normal';
     const assignedUser = currentDeal?.assignedUser?.name || currentDeal?.assignedUserName || 'Sem dono';
     const nextActionInfo = getNextAction(currentDeal?.status);
@@ -1583,6 +1587,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         <div className="flex justify-between items-center">
                                             <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Origem</span>
                                             <span className="text-[13px] font-medium text-black dark:text-white">{sourceTag}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Contato preferido</span>
+                                            <span className="text-[13px] font-medium text-black dark:text-white">{contactPreference}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Prioridade</span>
