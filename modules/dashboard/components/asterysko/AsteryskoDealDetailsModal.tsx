@@ -4,6 +4,7 @@ import api, { getBackendUrl } from '../../../../services/api';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 import { forceDownloadFile } from './utils/fileDownload';
 import { getPhaseForStage, getStagesForPhase } from './config/crmConfig';
+import { useAuth } from '../../../../context/AuthContext';
 
 // Resolve uma URL relativa ou absoluta para uma URL completa de imagem/arquivo
 const resolveUrl = (rawUrl: string | undefined | null): string => {
@@ -209,6 +210,7 @@ const getNextAction = (status: string) => {
 };
 
 const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onUpdate }) => {
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('Visão geral');
     const [isClosing, setIsClosing] = useState(false);
     const [newObservation, setNewObservation] = useState('');
@@ -268,6 +270,8 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const [editContactEmail, setEditContactEmail] = useState('');
     const [editContactPhone, setEditContactPhone] = useState('');
     const [isSavingContact, setIsSavingContact] = useState(false);
+    const [responsibleOptions, setResponsibleOptions] = useState<any[]>([]);
+    const [isSavingResponsible, setIsSavingResponsible] = useState(false);
 
     const currentDeal = dealDetails || card;
     const clientId = currentDeal?.clientId || currentDeal?.client?.id;
@@ -312,12 +316,19 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     useEffect(() => {
         if (isOpen && card?.id) {
             fetchDetails();
+            api.get('/asterysko/crm/member-options')
+                .then(response => setResponsibleOptions(Array.isArray(response.data) ? response.data : []))
+                .catch(error => {
+                    console.error('Failed to load CRM member options', error);
+                    setResponsibleOptions([]);
+                });
         } else {
             setDealDetails(null);
             setObservations([]);
             setPreviewFile(null);
             setInvoices([]);
             setActiveNotificationMockup(null);
+            setResponsibleOptions([]);
         }
     }, [isOpen, card?.id]);
 
@@ -342,6 +353,34 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             setIsClosing(false);
             onClose();
         }, 300);
+    };
+
+    const handleResponsibleChange = async (assignedUserId: string) => {
+        if (!currentDeal?.id) return;
+        try {
+            setIsSavingResponsible(true);
+            const normalizedId = assignedUserId || null;
+            await api.put(`/asterysko/crm/deals/${currentDeal.id}`, { assignedUserId: normalizedId });
+            const selectedResponsible = responsibleOptions.find(option => option.id === normalizedId);
+            setDealDetails((previous: any) => ({
+                ...(previous || currentDeal),
+                assignedUserId: normalizedId,
+                assignedUserName: selectedResponsible?.name || 'Sem dono',
+                assignedUser: selectedResponsible ? { id: selectedResponsible.id, name: selectedResponsible.name } : null
+            }));
+            onUpdate?.();
+
+            const isAdmin = String(user?.role || '').toUpperCase() === 'ADMIN';
+            if (normalizedId && normalizedId !== user?.id && !isAdmin) {
+                alert(`Lead atribuído a ${selectedResponsible?.name || 'outro responsável'}. A partir de agora, ele ficará visível apenas para essa pessoa e administradores.`);
+                handleClose();
+            }
+        } catch (error: any) {
+            console.error('Failed to assign CRM lead', error);
+            alert(error.response?.data?.error || 'Não foi possível definir o responsável pelo lead.');
+        } finally {
+            setIsSavingResponsible(false);
+        }
     };
 
     const handleAddObservation = async () => {
@@ -1596,9 +1635,20 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                             <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Prioridade</span>
                                             <span className="text-[13px] font-medium text-black dark:text-white">{priority}</span>
                                         </div>
-                                        <div className="flex justify-between items-center">
+                                        <div className="flex justify-between items-center gap-3">
                                             <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Responsável</span>
-                                            <span className="text-[13px] font-medium text-black dark:text-white">{assignedUser}</span>
+                                            <select
+                                                aria-label="Responsável pelo contato"
+                                                value={currentDeal?.assignedUserId || ''}
+                                                onChange={event => handleResponsibleChange(event.target.value)}
+                                                disabled={isSavingResponsible}
+                                                className="min-w-0 max-w-[170px] rounded-lg border border-[#e5e5e5] bg-white px-2 py-1.5 text-right text-[12px] font-medium text-black outline-none transition-colors focus:border-[#0412dd] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                            >
+                                                <option value="">Sem dono — toda equipe</option>
+                                                {responsibleOptions.map(option => (
+                                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Data de Entrada</span>
