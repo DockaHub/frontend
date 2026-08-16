@@ -1,0 +1,404 @@
+.workspace-entry {
+  position: fixed;
+  inset: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #fff;
+  color: #050505;
+  font-family: 'Inter Tight', 'Inter', 'Plus Jakarta Sans', sans-serif;
+  animation: workspace-page-in 520ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entry,
+.workspace-entry * {
+  box-sizing: border-box;
+}
+
+.workspace-entry__wordmark {
+  display: block;
+  width: 248px;
+  max-width: calc(100vw - 64px);
+  height: auto;
+  margin: clamp(72px, 15vh, 100px) auto 0;
+  animation: workspace-wordmark-in 620ms 80ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entry__content {
+  width: min(360px, calc(100vw - 32px));
+  margin: 81px auto 16px;
+}
+
+.workspace-entry__header {
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.workspace-entry__header h1,
+.workspace-entering h1,
+.workspace-entry__status h1 {
+  margin: 0;
+  font-family: 'Season Mix', 'Playfair Display', serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -.02em;
+}
+
+.workspace-entry__header h1 {
+  animation: workspace-copy-in 520ms 190ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entry__header p {
+  margin: 16px 0 0;
+  color: #929292;
+  font-size: 12px;
+  line-height: 1;
+  animation: workspace-copy-in 520ms 260ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entry__list {
+  display: flex;
+  max-height: calc(100dvh - 305px);
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: 20px;
+  background: #f6f6f6;
+  scrollbar-width: thin;
+  animation: workspace-list-in 540ms 300ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entry__item {
+  position: relative;
+  display: flex;
+  min-height: 60px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #050505;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  opacity: 0;
+  animation: workspace-item-in 520ms cubic-bezier(.22, .8, .25, 1) forwards;
+  animation-delay: calc(390ms + (var(--workspace-index) * 70ms));
+  transition: background 180ms ease, transform 180ms cubic-bezier(.2, .8, .2, 1), box-shadow 180ms ease;
+}
+
+.workspace-entry__item:hover,
+.workspace-entry__item:focus-visible {
+  background: #fff;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .055);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.workspace-entry__item:active {
+  transform: scale(.985);
+}
+
+.workspace-entry__identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+}
+
+.workspace-logo {
+  position: relative;
+  display: grid;
+  width: 60px;
+  height: 60px;
+  flex: 0 0 60px;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.workspace-logo--asset img,
+.workspace-logo--uploaded img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.workspace-logo--uploaded img {
+  padding: 8px;
+}
+
+.workspace-logo--asterysko {
+  background: #0412dd;
+}
+
+.workspace-logo--asterysko img {
+  display: block;
+  width: 38px;
+  height: 35px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.workspace-logo--fallback {
+  color: #fff;
+  font-family: 'Season Mix', serif;
+  font-size: 24px;
+}
+
+.workspace-logo__custom-svg,
+.workspace-logo__custom-svg svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.workspace-logo__custom-svg {
+  width: 70%;
+  height: 70%;
+  transform-origin: center;
+}
+
+.workspace-logo--large {
+  width: 84px;
+  height: 84px;
+  flex-basis: 84px;
+  border-radius: 14px;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .12);
+}
+
+.workspace-logo--large.workspace-logo--asterysko img {
+  width: 52px;
+  height: 48px;
+}
+
+.workspace-logo--large.workspace-logo--fallback {
+  font-size: 32px;
+}
+
+.workspace-entry__details {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workspace-entry__details strong {
+  max-width: 190px;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-entry__members {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #444;
+  font-size: 9px;
+  line-height: 1;
+}
+
+.workspace-entry__members svg {
+  color: #7f7f7f;
+}
+
+.workspace-entry__arrow {
+  flex: 0 0 auto;
+  margin-right: 1px;
+  transition: transform 180ms ease;
+}
+
+.workspace-entry__item:hover .workspace-entry__arrow,
+.workspace-entry__item:focus-visible .workspace-entry__arrow {
+  transform: translateX(3px);
+}
+
+.workspace-entry__status,
+.workspace-entering {
+  display: flex;
+  min-height: 220px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: workspace-copy-in 480ms 160ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entry__status p,
+.workspace-entering p {
+  max-width: 290px;
+  margin: 14px 0 0;
+  color: #929292;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.workspace-entry__spinner {
+  margin-bottom: 16px;
+  animation: workspace-spin 850ms linear infinite;
+}
+
+.workspace-entry__status button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 22px;
+  padding: 10px 15px;
+  border: 0;
+  border-radius: 999px;
+  background: #050505;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.workspace-entry__status .workspace-entry__quiet-action {
+  margin-top: 10px;
+  background: transparent;
+  color: #777;
+}
+
+.workspace-entering__logo-wrap {
+  position: relative;
+  display: grid;
+  width: 116px;
+  height: 116px;
+  margin-bottom: 28px;
+  place-items: center;
+}
+
+.workspace-entering__logo-wrap .workspace-logo {
+  z-index: 2;
+  animation: workspace-logo-arrive 680ms cubic-bezier(.2, .85, .25, 1.15) both;
+}
+
+.workspace-entering__halo {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: 50%;
+  animation: workspace-halo 1.25s ease-out infinite;
+}
+
+.workspace-entering h1 {
+  animation: workspace-copy-in 500ms 160ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entering p {
+  animation: workspace-copy-in 500ms 240ms cubic-bezier(.22, .8, .25, 1) both;
+}
+
+.workspace-entering__progress {
+  width: 150px;
+  height: 2px;
+  margin-top: 25px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #ededed;
+}
+
+.workspace-entering__progress i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: #050505;
+  transform-origin: left;
+  animation: workspace-progress 1.35s .05s cubic-bezier(.25, .7, .25, 1) both;
+}
+
+@keyframes workspace-page-in {
+  from { opacity: 0; }
+}
+
+@keyframes workspace-wordmark-in {
+  from { opacity: 0; transform: translateY(-10px); }
+}
+
+@keyframes workspace-copy-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes workspace-list-in {
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+}
+
+@keyframes workspace-item-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes workspace-logo-arrive {
+  from { opacity: 0; transform: scale(.72) rotate(-6deg); }
+  to { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes workspace-halo {
+  0% { opacity: .65; transform: scale(.72); }
+  85%, 100% { opacity: 0; transform: scale(1.22); }
+}
+
+@keyframes workspace-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes workspace-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  .workspace-entry__wordmark {
+    width: 216px;
+    margin-top: 74px;
+  }
+
+  .workspace-entry__content {
+    margin-top: 70px;
+  }
+
+  .workspace-entry__list {
+    max-height: calc(100dvh - 278px);
+    padding: 14px;
+    border-radius: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-entry,
+  .workspace-entry__wordmark,
+  .workspace-entry__header h1,
+  .workspace-entry__header p,
+  .workspace-entry__list,
+  .workspace-entry__item,
+  .workspace-entry__status,
+  .workspace-entering,
+  .workspace-entering__logo-wrap .workspace-logo,
+  .workspace-entering h1,
+  .workspace-entering p,
+  .workspace-entering__progress i {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .workspace-entering__halo,
+  .workspace-entry__spinner {
+    animation: none !important;
+  }
+
+  .workspace-entry__item {
+    opacity: 1;
+  }
+}

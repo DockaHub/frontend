@@ -178,7 +178,7 @@ export const LoginPage: React.FC = () => {
 
     try {
       await login({ email: email.trim(), password });
-      navigate('/');
+      navigate('/workspaces', { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.error || 'Email ou senha incorretos. Tente novamente.');
       await returnAction();

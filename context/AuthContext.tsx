@@ -11,6 +11,8 @@ interface AuthContextType {
     logout: () => void;
     isAuthenticated: boolean;
     refreshUser: () => Promise<void>;
+    isFreshLogin: boolean;
+    completeFreshLogin: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +40,7 @@ const normalizeUser = (source: Omit<User, 'role'> & { role?: string }): User => 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isFreshLogin, setIsFreshLogin] = useState(false);
 
     // Load user from localStorage on mount and refresh from API
     useEffect(() => {
@@ -116,6 +119,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             if (response.user && response.token) {
                 const normalizedUser = normalizeUser(response.user);
                 setUser(normalizedUser);
+                setIsFreshLogin(true);
                 localStorage.setItem('user', JSON.stringify(normalizedUser));
             }
         } catch (error) {
@@ -141,7 +145,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const logout = () => {
         authService.logout();
         setUser(null);
+        setIsFreshLogin(false);
     };
+
+    const completeFreshLogin = () => setIsFreshLogin(false);
 
     const value: AuthContextType = {
         user,
@@ -151,6 +158,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         logout,
         isAuthenticated: !!user,
         refreshUser,
+        isFreshLogin,
+        completeFreshLogin,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

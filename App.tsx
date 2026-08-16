@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import UnifiedSidebar from './components/UnifiedSidebar';
 import MailLayout from './modules/mail/MailLayout';
@@ -19,6 +19,7 @@ import CommandPalette from './components/common/CommandPalette';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './modules/auth/LoginPage';
+import { WorkspaceEntryPage } from './modules/auth/WorkspaceEntryPage';
 import { ForcePasswordChange } from './components/auth/ForcePasswordChange';
 import { RoleGuard } from './components/auth/RoleGuard';
 import { Organization } from './types';
@@ -42,7 +43,7 @@ import { getApiBaseUrl } from './services/api';
 
 // Main App Content component to use hooks inside Provider
 const AppContent: React.FC = () => {
-  const { user, logout, isAuthenticated } = useAuth();
+  const { user, logout, isAuthenticated, isFreshLogin, completeFreshLogin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -62,6 +63,9 @@ const AppContent: React.FC = () => {
   // Initialize with Docka HQ (org_1) - placeholder
   const [currentOrg, setCurrentOrg] = useState<Organization>(ORGANIZATIONS[0]);
   const [userOrgs, setUserOrgs] = useState<Organization[]>([]);
+  const [organizationsLoaded, setOrganizationsLoaded] = useState(false);
+  const [organizationsError, setOrganizationsError] = useState('');
+  const [organizationReloadKey, setOrganizationReloadKey] = useState(0);
 
   // Domain Routing State
   const [isTenantDomain, setIsTenantDomain] = useState(false);
@@ -138,6 +142,9 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const fetchUserOrgs = async () => {
       if (user?.id) {
+        setOrganizationsLoaded(false);
+        setOrganizationsError('');
+        setUserOrgs([]);
         try {
           const { organizationService } = await import('./services/organizationService');
           const orgs = await organizationService.getMyOrganizations();
@@ -170,7 +177,7 @@ const AppContent: React.FC = () => {
                 setCurrentOrg(singleOrg);
                 
                 // If on home, go to overview
-                if (window.location.pathname === '/' || (window.location.pathname === '/dashboard' && !params.get('view'))) {
+                if (!isFreshLogin && (window.location.pathname === '/' || (window.location.pathname === '/dashboard' && !params.get('view')))) {
                   navigate(`/dashboard?org=${singleOrg.id}&view=overview`, { replace: true });
                 }
               } else {
@@ -180,11 +187,14 @@ const AppContent: React.FC = () => {
           }
         } catch (error) {
           console.error('Failed to load user organizations:', error);
+          setOrganizationsError('Confira sua conexão e tente novamente em instantes.');
+        } finally {
+          setOrganizationsLoaded(true);
         }
       }
     };
     fetchUserOrgs();
-  }, [user]);
+  }, [user?.id, organizationReloadKey]);
 
   // Sync currentOrg with URL parameter reactively
   useEffect(() => {
@@ -256,6 +266,9 @@ const AppContent: React.FC = () => {
   };
 
   const handleLogout = () => {
+    setUserOrgs([]);
+    setOrganizationsLoaded(false);
+    setOrganizationsError('');
     logout();
     setIsSettingsOpen(false);
     addToast({
@@ -266,6 +279,12 @@ const AppContent: React.FC = () => {
     // Em domínio de cliente (ex: cliente.asterysko.com), nunca redirecionar para /login da Manyways
     navigate(isTenantDomain ? '/portal/login' : '/login', { replace: true });
   };
+
+  const handleWorkspaceEnter = useCallback((organization: Organization) => {
+    setCurrentOrg(organization);
+    navigate(`/dashboard?org=${organization.id}&view=overview`, { replace: true });
+    completeFreshLogin();
+  }, [completeFreshLogin, navigate]);
 
   // Open Settings Handlers
   const handleOpenProfile = () => {
@@ -355,6 +374,23 @@ const AppContent: React.FC = () => {
 
   if (user?.requirePasswordChange) {
     return <ForcePasswordChange />;
+  }
+
+  const shouldShowWorkspaceEntry = user?.role?.toUpperCase() !== 'CLIENT'
+    && (isFreshLogin || location.pathname === '/workspaces');
+
+  if (shouldShowWorkspaceEntry) {
+    return (
+      <WorkspaceEntryPage
+        userName={user?.name || ''}
+        organizations={userOrgs}
+        loading={!organizationsLoaded}
+        error={organizationsError}
+        onEnter={handleWorkspaceEnter}
+        onRetry={() => setOrganizationReloadKey((key) => key + 1)}
+        onLogout={handleLogout}
+      />
+    );
   }
 
   return (

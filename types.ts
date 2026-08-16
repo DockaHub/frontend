@@ -40,6 +40,9 @@ export interface Organization {
   iconScale?: number;
   clientPortalDomain?: string;
   leadsAguardando?: number;
+  _count?: {
+    members: number;
+  };
 }
 
 export type EmailLabel = 'Important' | 'Social' | 'Updates' | 'Work' | 'System' | 'Personal';
