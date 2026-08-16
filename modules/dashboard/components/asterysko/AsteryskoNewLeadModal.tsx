@@ -53,7 +53,7 @@ const Field = ({ label, locked, children }: { label: string; locked?: boolean; c
 
 const inputClass = 'w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white placeholder:text-[#ccc] disabled:text-[#8f8f8f] disabled:cursor-not-allowed';
 
-const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, organizationId }) => {
+const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [loadingOptions, setLoadingOptions] = useState(false);
     const [plans, setPlans] = useState<any[]>([]);
@@ -72,20 +72,20 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
         const requests: Promise<any>[] = [
             api.get('/asterysko/crm/plan-options'),
             api.get('/asterysko/crm/client-options'),
-            organizationId ? api.get(`/organizations/${organizationId}/members`) : Promise.resolve({ data: [] })
+            api.get('/asterysko/crm/member-options')
         ];
         Promise.all(requests)
             .then(([planResponse, clientResponse, memberResponse]) => {
                 setPlans(Array.isArray(planResponse.data) ? planResponse.data.filter((plan: any) => plan.active !== false) : []);
                 setClients(Array.isArray(clientResponse.data) ? clientResponse.data : []);
-                setMembers(Array.isArray(memberResponse.data) ? memberResponse.data.filter((member: any) => String(member.user?.role || member.globalRole || '').toUpperCase() !== 'CLIENT') : []);
+                setMembers(Array.isArray(memberResponse.data) ? memberResponse.data : []);
             })
             .catch(error => {
                 console.error('Failed to load lead options', error);
                 setFeedback('Não foi possível carregar clientes, planos ou responsáveis.');
             })
             .finally(() => setLoadingOptions(false));
-    }, [isOpen, organizationId]);
+    }, [isOpen]);
 
     const filteredClients = useMemo(() => {
         const term = formData.clientName.trim().toLocaleLowerCase('pt-BR');
@@ -198,7 +198,7 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                     </Field>
 
                     <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Organização do atendimento</h3></div>
-                    <Field label="Responsável comercial"><select className={`${inputClass} appearance-none`} value={formData.assignedUserId} onChange={event => setFormData(current => ({ ...current, assignedUserId: event.target.value }))}><option value="">Selecione um usuário interno</option>{members.map(member => <option key={member.userId || member.user?.id} value={member.userId || member.user?.id}>{member.user?.name || member.name} {member.user?.email ? `— ${member.user.email}` : ''}</option>)}</select></Field>
+                    <Field label="Responsável comercial"><select className={`${inputClass} appearance-none`} value={formData.assignedUserId} onChange={event => setFormData(current => ({ ...current, assignedUserId: event.target.value }))}><option value="">Selecione uma pessoa da equipe Asterysko</option>{members.map(member => <option key={member.id} value={member.id}>{member.name} {member.email ? `— ${member.email}` : ''}</option>)}</select></Field>
                     <Field label="Etapa inicial do CRM"><select className={`${inputClass} appearance-none`} value={formData.status} onChange={event => setFormData(current => ({ ...current, status: event.target.value }))}>{CRM_STAGES.map(stage => <option key={stage.id} value={stage.id}>{stage.label}</option>)}</select>{formData.status === 'contract' && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">Ao cadastrar, o cliente e o processo serão provisionados e o contrato será enviado por e-mail, WhatsApp e portal.</p>}</Field>
                     <Field label="Origem do lead"><select className={`${inputClass} appearance-none`} value={formData.leadOrigin} onChange={event => setFormData(current => ({ ...current, leadOrigin: event.target.value }))}>{['Instagram', 'Site', 'Indicação', 'Prospecção ativa', 'Outros'].map(option => <option key={option}>{option}</option>)}</select></Field>
                     <Field label="Prioridade"><select className={`${inputClass} appearance-none`} value={formData.priority} onChange={event => setFormData(current => ({ ...current, priority: event.target.value }))}><option value="low">Baixa</option><option value="medium">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></Field>

@@ -57,7 +57,7 @@ interface DealDetailsModalProps {
     organization?: Organization;
 }
 
-const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, deal, onConvertSuccess, organization }) => {
+const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, deal, onConvertSuccess }) => {
     const { user } = useAuth();
     const { addToast } = useToast();
     const [loading, setLoading] = useState(false);
@@ -321,20 +321,17 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
     const [activities, setActivities] = useState<any[]>([]);
 
     useEffect(() => {
-        if (organization?.id) {
-            api.get(`/organizations/${organization.id}/members`)
-                .then(res => {
-                    const staff = res.data.filter((m: any) => m.globalRole !== 'CLIENT');
-                    setOrganizationMembers(staff);
-                })
-                .catch(err => console.error('Error loading members:', err));
+        if (isOpen) {
+            api.get('/asterysko/crm/member-options')
+                .then(res => setOrganizationMembers(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading CRM members:', err));
         }
         if (isOpen) {
             api.get('/asterysko/plans')
                 .then(res => setCommercialPlans(Array.isArray(res.data) ? res.data.filter((plan: any) => plan.active !== false) : []))
                 .catch(err => console.error('Error loading commercial plans:', err));
         }
-    }, [organization?.id, isOpen]);
+    }, [isOpen]);
 
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1213,7 +1210,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                         <option value="">-- Não Atribuído --</option>
                                         {organizationMembers.map(m => (
                                             <option key={m.id} value={m.userId || m.id}>
-                                                {m.user?.name || m.name || "Usuário"}
+                                                {m.name || "Usuário"}
                                             </option>
                                         ))}
                                     </select>
