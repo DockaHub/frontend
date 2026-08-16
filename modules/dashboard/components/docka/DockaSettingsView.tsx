@@ -6,6 +6,7 @@ import {
 import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
 import DashboardPage from '../../../../components/DashboardPage';
+import SlackIntegrationSettings from './SlackIntegrationSettings';
 
 interface DockaSettingsViewProps {
     organization?: Organization;
@@ -28,6 +29,10 @@ const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization }) =
                 <div className="space-y-8">
                     {organization && (
                         <OrganizationIconSettings organization={organization} />
+                    )}
+
+                    {organization?.slug === 'manyspace' && (
+                        <SlackIntegrationSettings organization={organization} />
                     )}
 
                     {/* Global Identity */}
