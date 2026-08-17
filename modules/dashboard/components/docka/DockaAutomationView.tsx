@@ -11,7 +11,7 @@ import api from '../../../../services/api';
 
 type NodeKind = 'trigger' | 'action';
 type FlowStatus = 'active' | 'paused' | 'draft';
-type FlowSource = 'system' | 'template' | 'form' | 'custom';
+type FlowSource = 'native' | 'custom';
 
 interface AutomationNode {
     id: string;
@@ -23,6 +23,8 @@ interface AutomationNode {
     icon: string;
     organizationId: string;
     message?: string;
+    type?: string;
+    config?: Record<string, any>;
 }
 
 interface AutomationFlow {
@@ -34,6 +36,8 @@ interface AutomationFlow {
     source: FlowSource;
     nodes: AutomationNode[];
     updatedAt: string;
+    triggerType?: string;
+    triggerConfig?: Record<string, any>;
 }
 
 interface AutomationTemplate {
@@ -45,27 +49,6 @@ interface AutomationTemplate {
     kind: NodeKind;
 }
 
-interface NotificationTemplate {
-    id: string;
-    slug: string;
-    name: string;
-    channel: string;
-    stageSlug?: string | null;
-    content: string;
-    isActive: boolean;
-    updatedAt?: string;
-}
-
-interface DockaForm {
-    id: string;
-    name: string;
-    org: string;
-    target: string;
-    status: string;
-}
-
-const CUSTOM_FLOWS_KEY = 'manyways-automation-flows-v2';
-
 const templates: AutomationTemplate[] = [
     { app: 'Manyways', title: 'Evento do sistema', description: 'Quando algo acontecer em uma empresa', icon: 'zap', color: '#7657F6', kind: 'trigger' },
     { app: 'Webhook', title: 'Webhook recebido', description: 'Receber dados de qualquer sistema', icon: 'webhook', color: '#F05D69', kind: 'trigger' },
@@ -74,23 +57,10 @@ const templates: AutomationTemplate[] = [
     { app: 'E-mail', title: 'Enviar e-mail', description: 'Disparar uma mensagem personalizada', icon: 'mail', color: '#EA4335', kind: 'action' },
     { app: 'Slack', title: 'Notificar no Slack', description: 'Publicar em um canal ou conversa', icon: 'slack', color: '#4A154B', kind: 'action' },
     { app: 'WhatsApp', title: 'Enviar WhatsApp', description: 'Notificar um contato pelo WhatsApp', icon: 'message', color: '#17B26A', kind: 'action' },
-    { app: 'Financeiro', title: 'Criar cobrança', description: 'Gerar uma nova cobrança', icon: 'card', color: '#635BFF', kind: 'action' },
+    { app: 'Webhook', title: 'Enviar webhook', description: 'Enviar dados para outro sistema', icon: 'webhook', color: '#F05D69', kind: 'action' },
+    { app: 'Notificação interna', title: 'Notificar equipe', description: 'Criar uma notificação dentro da Manyways', icon: 'zap', color: '#7657F6', kind: 'action' },
     { app: 'Aguardar', title: 'Adicionar espera', description: 'Pausar o fluxo por um período', icon: 'clock', color: '#F79009', kind: 'action' },
-    { app: 'Many AI', title: 'Gerar com IA', description: 'Analisar e produzir conteúdo', icon: 'bot', color: '#111827', kind: 'action' },
 ];
-
-const stageLabels: Record<string, string> = {
-    'lead-created': 'Novo lead cadastrado',
-    'new-dispatch': 'Nova movimentação no INPI',
-    'invoice-pending': 'Nova fatura gerada',
-    'payment-success': 'Pagamento confirmado',
-    'contract-pending': 'Contrato aguardando assinatura',
-    'contract-signed': 'Contrato assinado',
-    'a-protocolar': 'GRU reconhecida',
-    'protocolado': 'Processo protocolado',
-    'registro-vigor': 'Registro de marca concedido',
-    'processo-concluido': 'Certificado de registro emitido',
-};
 
 const iconFor = (name: string, size = 18) => {
     const props = { size, strokeWidth: 1.9 };
@@ -119,125 +89,44 @@ const node = (
     message?: string,
 ): AutomationNode => ({ id, kind, app, title, description, organizationId, icon, color, message });
 
-const buildAsteryskoSystemFlows = (organizationId: string): AutomationFlow[] => [
-    {
-        id: 'system-asterysko-scout-ai',
-        name: 'Scout AI — pesquisa de oportunidades',
-        description: 'Pesquisa empresas, valida candidatas e envia oportunidades elegíveis para análise.',
-        organizationId,
-        status: 'active',
-        source: 'system',
-        updatedAt: new Date().toISOString(),
-        nodes: [
-            node('scout-trigger', 'trigger', 'Agenda', 'Execução programada do Scout AI', 'Horário e segmentos configurados na Asterysko', organizationId, 'clock', '#8779F4'),
-            node('scout-search', 'action', 'Many AI', 'Pesquisar e validar empresas', 'Descobre, estrutura e valida os websites candidatos', organizationId, 'bot', '#111827'),
-            node('scout-crm', 'action', 'Asterysko CRM', 'Criar oportunidade para análise', 'Somente candidatas aprovadas pelos critérios de segurança', organizationId, 'zap', '#7657F6'),
-        ],
-    },
-    {
-        id: 'system-asterysko-ingestion',
-        name: 'Motor de captação por fontes',
-        description: 'Processa fontes ativas, recupera execuções interrompidas e enriquece oportunidades.',
-        organizationId,
-        status: 'active',
-        source: 'system',
-        updatedAt: new Date().toISOString(),
-        nodes: [
-            node('ingestion-trigger', 'trigger', 'Agenda', 'Fonte pronta para executar', 'Verificação automática das fontes agendadas', organizationId, 'clock', '#8779F4'),
-            node('ingestion-process', 'action', 'Asterysko', 'Processar e normalizar resultados', 'Evita duplicidade e recupera execuções abandonadas', organizationId, 'zap', '#7657F6'),
-            node('ingestion-enrich', 'action', 'Many AI', 'Enriquecer contatos empresariais', 'Valida canais e possíveis decisores', organizationId, 'bot', '#111827'),
-        ],
-    },
-    {
-        id: 'system-asterysko-new-lead',
-        name: 'Novo lead — aviso comercial',
-        description: 'Avisa a equipe sempre que um lead entra pelo CRM ou formulário do site.',
-        organizationId,
-        status: 'active',
-        source: 'system',
-        updatedAt: new Date().toISOString(),
-        nodes: [
-            node('lead-trigger', 'trigger', 'Asterysko CRM', 'Novo lead recebido', 'Lead criado manualmente ou pelo formulário', organizationId, 'form', '#5D7DF5'),
-            node('lead-slack', 'action', 'Slack', 'Avisar equipe comercial', 'Publica a entrada do lead no canal configurado', organizationId, 'slack', '#4A154B'),
-        ],
-    },
-    {
-        id: 'system-asterysko-contract',
-        name: 'Contrato assinado — provisionamento',
-        description: 'Cria o processo e a cobrança, atualiza o CRM e confirma a assinatura ao cliente e à equipe.',
-        organizationId,
-        status: 'active',
-        source: 'system',
-        updatedAt: new Date().toISOString(),
-        nodes: [
-            node('contract-trigger', 'trigger', 'Asterysko CRM', 'Contrato assinado', 'Assinatura digital concluída pelo cliente', organizationId, 'zap', '#7657F6'),
-            node('contract-billing', 'action', 'Financeiro', 'Criar processo e cobrança', 'Provisionamento idempotente no portal do cliente', organizationId, 'card', '#635BFF'),
-            node('contract-slack', 'action', 'Slack', 'Avisar a equipe', 'Publica a confirmação no canal configurado', organizationId, 'slack', '#4A154B'),
-            node('contract-client', 'action', 'E-mail + WhatsApp', 'Confirmar ao cliente', 'Envia as mensagens transacionais configuradas', organizationId, 'mail', '#EA4335'),
-        ],
-    },
-];
-
-const buildTemplateFlows = (templatesData: NotificationTemplate[], organizationId: string): AutomationFlow[] => {
-    const groups = templatesData.reduce<Record<string, NotificationTemplate[]>>((accumulator, template) => {
-        const stage = template.stageSlug || template.slug;
-        accumulator[stage] = [...(accumulator[stage] || []), template];
-        return accumulator;
-    }, {});
-
-    return Object.entries(groups).map(([stage, group]) => ({
-        id: `template-${stage}`,
-        name: stageLabels[stage] || group[0].name,
-        description: `${group.length} comunicação${group.length > 1 ? 'ões' : ''} configurada${group.length > 1 ? 's' : ''} para esta etapa.`,
-        organizationId,
-        status: group.some((item) => item.isActive) ? 'active' : 'paused',
-        source: 'template',
-        updatedAt: group.map((item) => item.updatedAt || '').sort().at(-1) || new Date().toISOString(),
-        nodes: [
-            node(`trigger-${stage}`, 'trigger', 'Asterysko', stageLabels[stage] || stage, 'Mudança de etapa ou evento operacional', organizationId, 'zap', '#7657F6'),
-            ...group.map((item) => node(
-                `template-${item.id}`,
-                'action',
-                item.channel === 'EMAIL' ? 'E-mail' : 'WhatsApp',
-                item.name,
-                item.isActive ? 'Modelo ativo no sistema' : 'Modelo pausado no sistema',
-                organizationId,
-                item.channel === 'EMAIL' ? 'mail' : 'message',
-                item.channel === 'EMAIL' ? '#EA4335' : '#17B26A',
-                item.content,
-            )),
-        ],
-    }));
-};
-
-const buildFormFlows = (forms: DockaForm[], organizations: Organization[]): AutomationFlow[] => forms.flatMap((form) => {
-    const organization = organizations.find((item) => item.name.toLowerCase() === form.org.toLowerCase());
-    if (!organization) return [];
-    return [{
-        id: `form-${form.id}`,
-        name: `Formulário — ${form.name}`,
-        description: `Captura respostas e encaminha automaticamente para ${form.target}.`,
-        organizationId: organization.id,
-        status: form.status?.toLowerCase() === 'active' ? 'active' as const : 'paused' as const,
-        source: 'form' as const,
-        updatedAt: new Date().toISOString(),
-        nodes: [
-            node(`form-trigger-${form.id}`, 'trigger', 'Formulário', form.name, 'Nova resposta recebida no site', organization.id, 'form', '#5D7DF5'),
-            node(`form-action-${form.id}`, 'action', organization.slug === 'asterysko' ? 'Asterysko CRM' : 'Contatos', form.target, 'Cria o registro no painel da empresa', organization.id, 'zap', '#7657F6'),
-            ...(organization.slug === 'asterysko' ? [node(`form-slack-${form.id}`, 'action', 'Slack', 'Avisar novo lead', 'Notifica o canal comercial configurado', organization.id, 'slack', '#4A154B')] : []),
-        ],
-    }];
-});
-
 const createDraftFlow = (organizationId: string): AutomationFlow => ({
-    id: `custom-${Date.now()}`,
+    id: `draft-${Date.now()}`,
     name: 'Novo fluxo sem título',
     description: 'Configure um gatilho e adicione as ações deste fluxo.',
     organizationId,
     status: 'draft',
     source: 'custom',
     updatedAt: new Date().toISOString(),
+    triggerType: 'EVENT',
+    triggerConfig: { eventType: 'crm.lead.created' },
     nodes: [node(`trigger-${Date.now()}`, 'trigger', 'Manyways', 'Escolha o que inicia o fluxo', 'Selecione um gatilho no catálogo à esquerda', organizationId, 'zap', '#7657F6')],
+});
+
+const visualForApp = (app = '') => {
+    const value = app.toLowerCase();
+    if (value.includes('slack')) return { icon: 'slack', color: '#4A154B' };
+    if (value.includes('whatsapp')) return { icon: 'message', color: '#17B26A' };
+    if (value.includes('mail') || value.includes('e-mail')) return { icon: 'mail', color: '#EA4335' };
+    if (value.includes('agenda') || value.includes('aguard')) return { icon: 'clock', color: '#8779F4' };
+    if (value.includes('form')) return { icon: 'form', color: '#5D7DF5' };
+    if (value.includes('finance')) return { icon: 'card', color: '#635BFF' };
+    if (value.includes('ai')) return { icon: 'bot', color: '#111827' };
+    if (value.includes('webhook')) return { icon: 'webhook', color: '#F05D69' };
+    return { icon: 'zap', color: '#7657F6' };
+};
+
+const normalizeFlow = (flow: AutomationFlow): AutomationFlow => ({
+    ...flow,
+    status: String(flow.status).toLowerCase() as FlowStatus,
+    source: String(flow.source).toLowerCase() as FlowSource,
+    description: flow.description || '',
+    nodes: (flow.nodes || []).map((item) => ({
+        ...item,
+        config: item.kind === 'trigger' ? { ...(item.config || {}), ...(flow.triggerConfig || {}) } : item.config,
+        description: item.description || '',
+        organizationId: item.organizationId || flow.organizationId,
+        ...(!item.icon || !item.color ? visualForApp(item.app) : {}),
+    })),
 });
 
 const statusStyles: Record<FlowStatus, string> = {
@@ -250,7 +139,7 @@ const statusLabel: Record<FlowStatus, string> = { active: 'Ativo', paused: 'Paus
 
 const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ organizations }) => {
     const { addToast } = useToast();
-    const companies = useMemo(() => organizations.filter((item) => item.slug !== 'manyspace'), [organizations]);
+    const companies = useMemo(() => organizations, [organizations]);
     const [flows, setFlows] = useState<AutomationFlow[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState('all');
     const [search, setSearch] = useState('');
@@ -263,44 +152,23 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
     const [catalogHighlight, setCatalogHighlight] = useState(false);
     const catalogTimer = useRef<number | null>(null);
 
+    const loadFlows = async (quiet = false) => {
+        if (!quiet) setLoading(true);
+        try {
+            const response = await api.get<AutomationFlow[]>('/automations');
+            setFlows((response.data || []).map(normalizeFlow));
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro ao carregar automações', message: error.response?.data?.error || 'Não foi possível acessar o motor.' });
+        } finally {
+            if (!quiet) setLoading(false);
+        }
+    };
+
     useEffect(() => {
         let mounted = true;
-        const loadFlows = async () => {
-            setLoading(true);
-            const asterysko = companies.find((item) => item.slug === 'asterysko');
-            const systemFlows = asterysko ? buildAsteryskoSystemFlows(asterysko.id) : [];
-            let notificationFlows: AutomationFlow[] = [];
-            let formFlows: AutomationFlow[] = [];
-
-            const [templateResult, formsResult] = await Promise.allSettled([
-                asterysko ? api.get<NotificationTemplate[]>('/whatsapp/templates') : Promise.resolve({ data: [] as NotificationTemplate[] }),
-                api.get<DockaForm[]>('/forms'),
-            ]);
-
-            if (asterysko && templateResult.status === 'fulfilled') {
-                notificationFlows = buildTemplateFlows(templateResult.value.data || [], asterysko.id);
-            }
-            if (formsResult.status === 'fulfilled') {
-                formFlows = buildFormFlows(formsResult.value.data || [], companies);
-            }
-
-            let customFlows: AutomationFlow[] = [];
-            try {
-                const stored = window.localStorage.getItem(CUSTOM_FLOWS_KEY);
-                customFlows = stored ? JSON.parse(stored) : [];
-                if (!Array.isArray(customFlows)) customFlows = [];
-            } catch {
-                customFlows = [];
-            }
-
-            if (mounted) {
-                setFlows([...systemFlows, ...notificationFlows, ...formFlows, ...customFlows]);
-                setLoading(false);
-            }
-        };
-        void loadFlows();
+        if (mounted) void loadFlows();
         return () => { mounted = false; };
-    }, [companies]);
+    }, []);
 
     useEffect(() => () => {
         if (catalogTimer.current) window.clearTimeout(catalogTimer.current);
@@ -337,31 +205,65 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
         openEditor(createDraftFlow(organizationId));
     };
 
-    const persistCustomFlow = (flow: AutomationFlow) => {
-        const next = [...flows.filter((item) => item.id !== flow.id), { ...flow, updatedAt: new Date().toISOString() }];
-        setFlows(next);
-        window.localStorage.setItem(CUSTOM_FLOWS_KEY, JSON.stringify(next.filter((item) => item.source === 'custom')));
+    const saveFlow = async (): Promise<AutomationFlow | null> => {
+        if (!editingFlow || !isEditable) return null;
+        try {
+            const payload = {
+                organizationId: editingFlow.organizationId,
+                name: editingFlow.name,
+                description: editingFlow.description,
+                triggerType: editingFlow.triggerType || 'EVENT',
+                triggerConfig: editingFlow.triggerConfig || {},
+                nodes: editingFlow.nodes,
+            };
+            const response = editingFlow.id.startsWith('draft-')
+                ? await api.post<AutomationFlow>('/automations', payload)
+                : await api.put<AutomationFlow>(`/automations/${editingFlow.id}`, payload);
+            const saved = normalizeFlow(response.data);
+            setEditingFlow(saved);
+            await loadFlows(true);
+            addToast({ type: 'success', title: 'Fluxo salvo', message: 'A automação foi persistida no motor da Manyways.' });
+            return saved;
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro ao salvar fluxo', message: error.response?.data?.error || 'Revise as etapas e tente novamente.' });
+            return null;
+        }
     };
 
-    const saveFlow = () => {
-        if (!editingFlow || !isEditable) return;
-        const saved = { ...editingFlow, updatedAt: new Date().toISOString() };
-        setEditingFlow(saved);
-        persistCustomFlow(saved);
-        addToast({ type: 'success', title: 'Fluxo salvo', message: 'O rascunho foi atualizado na lista desta empresa.' });
-    };
-
-    const toggleFlow = () => {
-        if (!editingFlow || !isEditable) return;
+    const toggleFlow = async () => {
+        if (!editingFlow) return;
+        let target = editingFlow;
+        if (target.id.startsWith('draft-')) {
+            const saved = await saveFlow();
+            if (!saved) return;
+            target = saved;
+        }
         const nextStatus: FlowStatus = editingFlow.status === 'active' ? 'paused' : 'active';
-        const next = { ...editingFlow, status: nextStatus, updatedAt: new Date().toISOString() };
-        setEditingFlow(next);
-        persistCustomFlow(next);
-        addToast({
-            type: nextStatus === 'active' ? 'success' : 'info',
-            title: nextStatus === 'active' ? 'Fluxo marcado como ativo' : 'Fluxo pausado',
-            message: 'O motor genérico de execução será conectado ao backend em uma próxima etapa.',
-        });
+        try {
+            const response = await api.patch<AutomationFlow>(`/automations/${target.id}/status`, { status: nextStatus.toUpperCase() });
+            setEditingFlow(normalizeFlow(response.data));
+            await loadFlows(true);
+            addToast({ type: nextStatus === 'active' ? 'success' : 'info', title: nextStatus === 'active' ? 'Automação ativada' : 'Automação pausada', message: nextStatus === 'active' ? 'Novos eventos já podem iniciar este fluxo.' : 'Nenhuma nova execução será iniciada.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível alterar o status', message: error.response?.data?.error || 'Tente novamente.' });
+        }
+    };
+
+    const testFlow = async () => {
+        if (!editingFlow) return;
+        let target = editingFlow;
+        if (target.id.startsWith('draft-')) {
+            const saved = await saveFlow();
+            if (!saved) return;
+            target = saved;
+        }
+        try {
+            const response = await api.post(`/automations/${target.id}/test`, { payload: { name: 'Cliente de teste', email: 'teste@example.com', phone: '5585999999999' } });
+            const success = response.data?.status === 'SUCCEEDED';
+            addToast({ type: success ? 'success' : 'warning', title: success ? 'Teste validado' : 'Teste concluído com alerta', message: success ? 'Todas as etapas foram validadas pelo motor sem realizar envios reais.' : response.data?.error || 'Consulte o histórico da execução.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Falha no teste', message: error.response?.data?.error || 'Não foi possível testar o fluxo.' });
+        }
     };
 
     const updateFlow = (patch: Partial<AutomationFlow>) => {
@@ -372,6 +274,16 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
     const updateSelectedNode = (patch: Partial<AutomationNode>) => {
         if (!editingFlow || !selectedNode || !isEditable) return;
         setEditingFlow({ ...editingFlow, nodes: editingFlow.nodes.map((item) => item.id === selectedNode.id ? { ...item, ...patch } : item) });
+    };
+
+    const updateTriggerConfiguration = (config: Record<string, any>, triggerType: string) => {
+        if (!editingFlow || !selectedNode || !isEditable) return;
+        setEditingFlow({
+            ...editingFlow,
+            triggerConfig: config,
+            triggerType,
+            nodes: editingFlow.nodes.map((item) => item.id === selectedNode.id ? { ...item, config } : item),
+        });
     };
 
     const openCatalog = (kind: NodeKind) => {
@@ -389,8 +301,32 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
     const addNode = (template: AutomationTemplate) => {
         if (!editingFlow || !isEditable) return;
         const newNode = node(`${template.kind}-${Date.now()}`, template.kind, template.app, template.title, template.description, editingFlow.organizationId, template.icon, template.color, template.kind === 'action' ? 'Use {{variáveis}} para personalizar esta ação.' : undefined);
+        if (template.kind === 'trigger') {
+            newNode.config = template.app === 'Formulário'
+                ? { eventType: 'form.submitted' }
+                : template.app === 'Webhook'
+                    ? { eventType: 'webhook.received' }
+                    : template.app === 'Agenda'
+                        ? { intervalMinutes: 60 }
+                        : { eventType: 'crm.lead.created' };
+        } else if (template.app === 'E-mail') {
+            newNode.config = { to: '{{email}}', subject: template.title };
+        } else if (template.app === 'WhatsApp') {
+            newNode.config = { to: '{{phone}}' };
+        } else if (template.app === 'Aguardar') {
+            newNode.config = { seconds: 60 };
+        } else if (template.app === 'Webhook') {
+            newNode.config = { url: '' };
+        }
         const nextNodes = template.kind === 'trigger' ? [newNode, ...editingFlow.nodes.filter((item) => item.kind !== 'trigger')] : [...editingFlow.nodes, newNode];
-        setEditingFlow({ ...editingFlow, nodes: nextNodes });
+        setEditingFlow({
+            ...editingFlow,
+            nodes: nextNodes,
+            ...(template.kind === 'trigger' ? {
+                triggerType: template.app === 'Agenda' ? 'SCHEDULE' : template.app === 'Webhook' ? 'WEBHOOK' : 'EVENT',
+                triggerConfig: newNode.config,
+            } : {}),
+        });
         setSelectedNodeId(newNode.id);
         setMobileCatalogOpen(false);
         if (window.matchMedia('(max-width: 1279px)').matches) setMobileConfigOpen(true);
@@ -438,7 +374,7 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
         <div className="flex h-full flex-col overflow-hidden bg-white text-docka-900 dark:bg-zinc-950 dark:text-zinc-100">
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-docka-200 px-4 dark:border-zinc-800 lg:px-5">
                 <div className="flex min-w-0 items-center gap-3"><button onClick={() => setEditingFlow(null)} className="rounded-lg p-2 text-docka-500 hover:bg-docka-50 dark:hover:bg-zinc-900" aria-label="Voltar para fluxos"><ArrowLeft size={17} /></button><div className="hidden items-center gap-2 text-xs text-docka-400 md:flex"><span>Automações</span><span>/</span></div><input value={editingFlow.name} disabled={!isEditable} onChange={(event) => updateFlow({ name: event.target.value })} className="min-w-0 max-w-[280px] truncate border-none bg-transparent text-sm font-bold outline-none disabled:opacity-100 sm:min-w-[260px]" aria-label="Nome do fluxo" /><span className={`hidden rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-wider sm:inline-flex ${statusStyles[editingFlow.status]}`}>{statusLabel[editingFlow.status]}</span>{!isEditable && <span className="hidden rounded-full bg-violet-50 px-2 py-1 text-[9px] font-bold text-violet-600 lg:inline-flex dark:bg-violet-950/40 dark:text-violet-300">Fluxo do sistema</span>}</div>
-                <div className="flex shrink-0 items-center gap-2">{isEditable ? <><button onClick={saveFlow} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm transition hover:bg-docka-50 sm:flex dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"><Save size={15} /> Salvar</button><button onClick={toggleFlow} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm ${editingFlow.status === 'active' ? 'bg-amber-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500'}`}><Radio size={14} /> {editingFlow.status === 'active' ? 'Pausar' : 'Ativar'}</button></> : <span className="flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"><Check size={14} /> Configuração existente</span>}</div>
+                <div className="flex shrink-0 items-center gap-2">{isEditable && <button onClick={testFlow} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm hover:bg-docka-50 sm:flex dark:border-zinc-700 dark:bg-zinc-900"><Play size={14} /> Testar</button>}{isEditable && <button onClick={() => void saveFlow()} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm transition hover:bg-docka-50 md:flex dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"><Save size={15} /> Salvar</button>}<button onClick={toggleFlow} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm ${editingFlow.status === 'active' ? 'bg-amber-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500'}`}><Radio size={14} /> {editingFlow.status === 'active' ? 'Pausar' : 'Ativar'}</button></div>
             </header>
 
             <div className="flex min-h-0 flex-1">
@@ -454,13 +390,48 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
                 </main>
 
                 <aside className={`${mobileConfigOpen ? 'fixed inset-y-0 right-0 z-50 flex w-[min(360px,92vw)]' : 'hidden'} flex-col border-l border-docka-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 xl:static xl:inset-auto xl:z-auto xl:flex xl:w-[320px] xl:shrink-0 xl:shadow-none`}>
-                    {selectedNode && <><div className="flex h-16 shrink-0 items-center gap-3 border-b border-docka-100 px-5 dark:border-zinc-800"><span className="flex h-9 w-9 items-center justify-center rounded-xl text-white" style={{ backgroundColor: selectedNode.color }}>{iconFor(selectedNode.icon, 18)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{selectedNode.app}</p><p className="text-[10px] text-docka-400">{selectedNode.kind === 'trigger' ? 'Detalhes do gatilho' : 'Detalhes da ação'}</p></div><button onClick={() => setMobileConfigOpen(false)} className="xl:hidden"><X size={18} /></button></div><div className="custom-scrollbar flex-1 overflow-y-auto p-5"><div className="mb-5 flex rounded-xl bg-docka-50 p-1 dark:bg-zinc-900"><button className="flex-1 rounded-lg bg-white py-2 text-[10px] font-bold shadow-sm dark:bg-zinc-800">Configuração</button><button className="flex-1 py-2 text-[10px] font-bold text-docka-400">Conexão</button></div><div className="space-y-5"><Field label="Nome da etapa"><input value={selectedNode.title} disabled={!isEditable} onChange={(event) => updateSelectedNode({ title: event.target.value })} className="automation-input disabled:cursor-default disabled:opacity-75" /></Field><Field label="Empresa"><div className="relative"><select value={editingFlow.organizationId} disabled={!isEditable} onChange={(event) => updateFlow({ organizationId: event.target.value, nodes: editingFlow.nodes.map((item) => ({ ...item, organizationId: event.target.value })) })} className="automation-input appearance-none pr-9 disabled:cursor-default disabled:opacity-75">{companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div></Field>{selectedNode.message && <Field label="Mensagem / instrução"><textarea value={selectedNode.message} disabled={!isEditable} onChange={(event) => updateSelectedNode({ message: event.target.value })} rows={7} className="automation-input resize-none leading-5 disabled:cursor-default disabled:opacity-75" />{isEditable && <button className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-violet-600"><GitBranch size={12} /> Inserir variável</button>}</Field>}<div className={`rounded-xl border p-3 ${isEditable ? 'border-amber-100 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20' : 'border-emerald-100 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20'}`}><div className={`flex items-center gap-2 text-[10px] font-bold ${isEditable ? 'text-amber-800 dark:text-amber-300' : 'text-emerald-800 dark:text-emerald-300'}`}><Settings2 size={13} /> {isEditable ? 'Rascunho do construtor' : 'Conectado ao sistema atual'}</div><p className={`mt-1 text-[9px] leading-4 ${isEditable ? 'text-amber-700/80 dark:text-amber-400/80' : 'text-emerald-700/80 dark:text-emerald-400/80'}`}>{isEditable ? 'As etapas ficam salvas, mas a execução genérica ainda depende do motor no backend.' : 'Este desenho representa o fluxo que já existe no código e nas configurações atuais.'}</p></div></div></div>{isEditable && <div className="flex shrink-0 items-center gap-2 border-t border-docka-100 p-4 dark:border-zinc-800">{selectedNode.kind === 'action' && <button onClick={removeSelectedNode} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30">Remover</button>}<button onClick={saveFlow} className="ml-auto flex items-center gap-2 rounded-xl bg-docka-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900"><Save size={14} /> Salvar fluxo</button></div>}</>}
+                    {selectedNode && <><div className="flex h-16 shrink-0 items-center gap-3 border-b border-docka-100 px-5 dark:border-zinc-800"><span className="flex h-9 w-9 items-center justify-center rounded-xl text-white" style={{ backgroundColor: selectedNode.color }}>{iconFor(selectedNode.icon, 18)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{selectedNode.app}</p><p className="text-[10px] text-docka-400">{selectedNode.kind === 'trigger' ? 'Detalhes do gatilho' : 'Detalhes da ação'}</p></div><button onClick={() => setMobileConfigOpen(false)} className="xl:hidden"><X size={18} /></button></div><div className="custom-scrollbar flex-1 overflow-y-auto p-5"><div className="mb-5 flex rounded-xl bg-docka-50 p-1 dark:bg-zinc-900"><button className="flex-1 rounded-lg bg-white py-2 text-[10px] font-bold shadow-sm dark:bg-zinc-800">Configuração</button><button className="flex-1 py-2 text-[10px] font-bold text-docka-400">Conexão</button></div><div className="space-y-5"><Field label="Nome da etapa"><input value={selectedNode.title} disabled={!isEditable} onChange={(event) => updateSelectedNode({ title: event.target.value })} className="automation-input disabled:cursor-default disabled:opacity-75" /></Field><Field label="Empresa"><div className="relative"><select value={editingFlow.organizationId} disabled={!isEditable} onChange={(event) => updateFlow({ organizationId: event.target.value, nodes: editingFlow.nodes.map((item) => ({ ...item, organizationId: event.target.value })) })} className="automation-input appearance-none pr-9 disabled:cursor-default disabled:opacity-75">{companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div></Field>{selectedNode.kind === 'trigger' && isEditable && <TriggerConfiguration node={selectedNode} flowId={editingFlow.id} onChange={updateTriggerConfiguration} />}{selectedNode.kind === 'action' && isEditable && <ActionConfiguration node={selectedNode} onChange={(patch) => updateSelectedNode(patch)} />}{selectedNode.message && !isEditable && <Field label="Mensagem / instrução"><textarea value={selectedNode.message} disabled rows={7} className="automation-input resize-none leading-5 disabled:cursor-default disabled:opacity-75" /></Field>}<div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/20"><div className="flex items-center gap-2 text-[10px] font-bold text-emerald-800 dark:text-emerald-300"><Settings2 size={13} /> {isEditable ? 'Conectado ao motor Manyways' : 'Conectado ao sistema atual'}</div><p className="mt-1 text-[9px] leading-4 text-emerald-700/80 dark:text-emerald-400/80">{isEditable ? 'Salvar persiste o fluxo; Ativar passa a receber eventos reais e executar as ações.' : 'Ativar ou Pausar altera diretamente a configuração desta automação nativa.'}</p></div></div></div>{isEditable && <div className="flex shrink-0 items-center gap-2 border-t border-docka-100 p-4 dark:border-zinc-800">{selectedNode.kind === 'action' && <button onClick={removeSelectedNode} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30">Remover</button>}<button onClick={() => void saveFlow()} className="ml-auto flex items-center gap-2 rounded-xl bg-docka-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900"><Save size={14} /> Salvar fluxo</button></div>}</>}
                 </aside>
                 {mobileConfigOpen && <button className="fixed inset-0 z-40 bg-black/30 xl:hidden" onClick={() => setMobileConfigOpen(false)} aria-label="Fechar configuração" />}
             </div>
             <style>{`.automation-input{width:100%;border-radius:.75rem;border:1px solid #e5e7eb;background:#fff;padding:.65rem .75rem;font-size:.75rem;outline:none;transition:border-color .15s,box-shadow .15s}.automation-input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.1)}.dark .automation-input{border-color:#3f3f46;background:#18181b;color:#f4f4f5}@media(prefers-reduced-motion:reduce){.automation-input,button{transition:none!important;animation:none!important}}`}</style>
         </div>
     );
+};
+
+const TriggerConfiguration = ({ node, flowId, onChange }: { node: AutomationNode; flowId: string; onChange: (config: Record<string, any>, triggerType: string) => void }) => {
+    const config = node.config || {};
+    if (node.app === 'Agenda') {
+        return <Field label="Executar a cada"><div className="relative"><select value={Number(config.intervalMinutes || 60)} onChange={(event) => onChange({ intervalMinutes: Number(event.target.value) }, 'SCHEDULE')} className="automation-input appearance-none pr-9"><option value={5}>5 minutos</option><option value={15}>15 minutos</option><option value={30}>30 minutos</option><option value={60}>1 hora</option><option value={360}>6 horas</option><option value={1440}>1 dia</option><option value={10080}>1 semana</option></select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div></Field>;
+    }
+    const events = node.app === 'Formulário'
+        ? [{ value: 'form.submitted', label: 'Nova resposta enviada' }]
+        : node.app === 'Webhook'
+            ? [{ value: 'webhook.received', label: 'Webhook recebido' }]
+            : [
+                { value: 'crm.lead.created', label: 'Novo lead criado' },
+                { value: 'contract.signed', label: 'Contrato assinado' },
+                { value: 'invoice.created', label: 'Nova fatura criada' },
+                { value: 'payment.confirmed', label: 'Pagamento confirmado' },
+                { value: 'form.submitted', label: 'Formulário enviado' },
+            ];
+    const webhookUrl = node.app === 'Webhook' && config.secret && !flowId.startsWith('draft-')
+        ? `${String(api.defaults.baseURL || '').replace(/\/$/, '')}/automations/hooks/${flowId}/${config.secret}`
+        : '';
+    return <><Field label="Evento que inicia o fluxo"><div className="relative"><select value={config.eventType || events[0].value} onChange={(event) => onChange({ ...config, eventType: event.target.value }, node.app === 'Webhook' ? 'WEBHOOK' : 'EVENT')} className="automation-input appearance-none pr-9">{events.map((event) => <option key={event.value} value={event.value}>{event.label}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div></Field>{node.app === 'Webhook' && <Field label="URL de entrada">{webhookUrl ? <div className="space-y-2"><input readOnly value={webhookUrl} className="automation-input" /><button type="button" onClick={() => void navigator.clipboard.writeText(webhookUrl)} className="text-[10px] font-bold text-violet-600">Copiar URL do webhook</button></div> : <p className="rounded-xl bg-docka-50 p-3 text-[10px] text-docka-500 dark:bg-zinc-900">Salve o fluxo para gerar a URL segura de entrada.</p>}</Field>}</>;
+};
+
+const ActionConfiguration = ({ node, onChange }: { node: AutomationNode; onChange: (patch: Partial<AutomationNode>) => void }) => {
+    const config = node.config || {};
+    if (node.app === 'Aguardar') {
+        return <Field label="Tempo de espera (segundos)"><input type="number" min={1} max={604800} value={Number(config.seconds || 60)} onChange={(event) => onChange({ config: { ...config, seconds: Number(event.target.value) } })} className="automation-input" /></Field>;
+    }
+    return <>
+        {(node.app === 'E-mail' || node.app === 'WhatsApp') && <Field label={node.app === 'E-mail' ? 'Destinatário' : 'Número do WhatsApp'}><input value={config.to || (node.app === 'E-mail' ? '{{email}}' : '{{phone}}')} onChange={(event) => onChange({ config: { ...config, to: event.target.value } })} className="automation-input" /></Field>}
+        {node.app === 'E-mail' && <Field label="Assunto"><input value={config.subject || node.title} onChange={(event) => onChange({ config: { ...config, subject: event.target.value } })} className="automation-input" /></Field>}
+        {node.app === 'Webhook' && <Field label="URL HTTPS"><input value={config.url || ''} placeholder="https://api.exemplo.com/webhook" onChange={(event) => onChange({ config: { ...config, url: event.target.value } })} className="automation-input" /></Field>}
+        {node.app !== 'Financeiro' && node.app !== 'Many AI' && <Field label="Mensagem / instrução"><textarea value={node.message || ''} onChange={(event) => onChange({ message: event.target.value })} rows={6} className="automation-input resize-none leading-5" /><button type="button" className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-violet-600"><GitBranch size={12} /> Use variáveis como {'{{name}}'}, {'{{email}}'} ou {'{{phone}}'}</button></Field>}
+    </>;
 };
 
 const CompanyChip = ({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) => <button onClick={onClick} className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-bold transition ${active ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300' : 'border-docka-200 bg-white text-docka-500 hover:border-docka-300 dark:border-zinc-700 dark:bg-zinc-950'}`}>{label}<span className={`rounded-full px-1.5 py-0.5 text-[8px] ${active ? 'bg-violet-600 text-white' : 'bg-docka-100 dark:bg-zinc-800'}`}>{count}</span></button>;
