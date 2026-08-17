@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     ArrowLeft, Bot, Building2, Check, ChevronDown, Clock3, CreditCard,
     FormInput, GitBranch, ListFilter, Mail, MessageCircle, MoreHorizontal, Play,
-    Plus, Radio, Save, Search, Settings2, Slack, Sparkles, Webhook, Workflow,
-    X, Zap
+    Pencil, Plus, Radio, Save, Search, Settings2, Slack, Sparkles, Trash2,
+    Webhook, Workflow, X, Zap
 } from 'lucide-react';
 import { Organization } from '../../../../types';
 import { useToast } from '../../../../context/ToastContext';
@@ -46,6 +46,13 @@ interface AutomationCompany {
     name: string;
     slug?: string;
 }
+
+interface ConnectionState {
+    configured: boolean;
+    label: string;
+}
+
+type AutomationConnections = Record<'email' | 'slack' | 'whatsapp' | 'webhook' | 'internal' | 'schedule', ConnectionState>;
 
 interface AutomationTemplate {
     app: string;
@@ -122,6 +129,16 @@ const visualForApp = (app = '') => {
     return { icon: 'zap', color: '#7657F6' };
 };
 
+const connectionKeyFor = (node?: AutomationNode): keyof AutomationConnections => {
+    const app = String(node?.app || '').toLowerCase();
+    if (app.includes('slack')) return 'slack';
+    if (app.includes('whatsapp')) return 'whatsapp';
+    if (app.includes('mail') || app.includes('e-mail')) return 'email';
+    if (app.includes('webhook')) return 'webhook';
+    if (app.includes('agenda') || app.includes('aguard')) return 'schedule';
+    return 'internal';
+};
+
 const normalizeFlow = (flow: AutomationFlow): AutomationFlow => ({
     ...flow,
     status: String(flow.status).toLowerCase() as FlowStatus,
@@ -157,6 +174,9 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
     const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
     const [mobileConfigOpen, setMobileConfigOpen] = useState(false);
     const [catalogHighlight, setCatalogHighlight] = useState(false);
+    const [sideTab, setSideTab] = useState<'configuration' | 'connection'>('configuration');
+    const [connections, setConnections] = useState<AutomationConnections | null>(null);
+    const [connectionsLoading, setConnectionsLoading] = useState(false);
     const catalogTimer = useRef<number | null>(null);
     const companies = useMemo<AutomationCompany[]>(() => {
         const available = new Map<string, AutomationCompany>();
@@ -210,7 +230,22 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
         setCatalogKind('trigger');
         setMobileCatalogOpen(false);
         setMobileConfigOpen(false);
+        setSideTab('configuration');
+        setConnections(null);
     };
+
+    useEffect(() => {
+        if (!editingFlow || sideTab !== 'connection') return;
+        let active = true;
+        setConnectionsLoading(true);
+        api.get<AutomationConnections>('/automations/connections', { params: { organizationId: editingFlow.organizationId } })
+            .then((response) => { if (active) setConnections(response.data); })
+            .catch((error: any) => {
+                if (active) addToast({ type: 'error', title: 'Falha ao verificar conexão', message: error.response?.data?.error || 'Tente novamente.' });
+            })
+            .finally(() => { if (active) setConnectionsLoading(false); });
+        return () => { active = false; };
+    }, [editingFlow?.organizationId, sideTab]);
 
     const createFlow = () => {
         if (selectedCompanyId === 'all') {
@@ -283,6 +318,36 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
             addToast({ type: success ? 'success' : 'warning', title: success ? 'Teste validado' : 'Teste concluído com alerta', message: success ? 'Todas as etapas foram validadas pelo motor sem realizar envios reais.' : response.data?.error || 'Consulte o histórico da execução.' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Falha no teste', message: error.response?.data?.error || 'Não foi possível testar o fluxo.' });
+        }
+    };
+
+    const personalizeFlow = async () => {
+        if (!editingFlow || editingFlow.source !== 'native') return;
+        try {
+            const response = await api.post<AutomationFlow>(`/automations/${editingFlow.id}/duplicate`);
+            const personalized = normalizeFlow(response.data);
+            await loadFlows(true);
+            openEditor(personalized);
+            addToast({ type: 'success', title: 'Versão editável criada', message: 'O fluxo original continua protegido. Agora você pode alterar gatilhos, ações e mensagens nesta versão.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível personalizar', message: error.response?.data?.error || 'Tente novamente.' });
+        }
+    };
+
+    const deleteFlow = async () => {
+        if (!editingFlow || !isEditable) return;
+        if (!window.confirm(`Excluir o fluxo “${editingFlow.name}”? Esta ação não pode ser desfeita.`)) return;
+        if (editingFlow.id.startsWith('draft-')) {
+            setEditingFlow(null);
+            return;
+        }
+        try {
+            await api.delete(`/automations/${editingFlow.id}`);
+            setEditingFlow(null);
+            await loadFlows(true);
+            addToast({ type: 'success', title: 'Fluxo excluído', message: 'A automação personalizada foi removida.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível excluir', message: error.response?.data?.error || 'Tente novamente.' });
         }
     };
 
@@ -394,14 +459,14 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
         <div className="flex h-full flex-col overflow-hidden bg-white text-docka-900 dark:bg-zinc-950 dark:text-zinc-100">
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-docka-200 px-4 dark:border-zinc-800 lg:px-5">
                 <div className="flex min-w-0 items-center gap-3"><button onClick={() => setEditingFlow(null)} className="rounded-lg p-2 text-docka-500 hover:bg-docka-50 dark:hover:bg-zinc-900" aria-label="Voltar para fluxos"><ArrowLeft size={17} /></button><div className="hidden items-center gap-2 text-xs text-docka-400 md:flex"><span>Automações</span><span>/</span></div><input value={editingFlow.name} disabled={!isEditable} onChange={(event) => updateFlow({ name: event.target.value })} className="min-w-0 max-w-[280px] truncate border-none bg-transparent text-sm font-bold outline-none disabled:opacity-100 sm:min-w-[260px]" aria-label="Nome do fluxo" /><span className={`hidden rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-wider sm:inline-flex ${statusStyles[editingFlow.status]}`}>{statusLabel[editingFlow.status]}</span>{!isEditable && <span className="hidden rounded-full bg-violet-50 px-2 py-1 text-[9px] font-bold text-violet-600 lg:inline-flex dark:bg-violet-950/40 dark:text-violet-300">Fluxo do sistema</span>}</div>
-                <div className="flex shrink-0 items-center gap-2">{isEditable && <button onClick={testFlow} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm hover:bg-docka-50 sm:flex dark:border-zinc-700 dark:bg-zinc-900"><Play size={14} /> Testar</button>}{isEditable && <button onClick={() => void saveFlow()} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm transition hover:bg-docka-50 md:flex dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"><Save size={15} /> Salvar</button>}<button onClick={toggleFlow} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm ${editingFlow.status === 'active' ? 'bg-amber-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500'}`}><Radio size={14} /> {editingFlow.status === 'active' ? 'Pausar' : 'Ativar'}</button></div>
+                <div className="flex shrink-0 items-center gap-2">{!isEditable && <button onClick={() => void personalizeFlow()} className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-xs font-bold text-violet-700 hover:bg-violet-100 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300"><Pencil size={14} /> Personalizar</button>}{isEditable && <button onClick={testFlow} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm hover:bg-docka-50 sm:flex dark:border-zinc-700 dark:bg-zinc-900"><Play size={14} /> Testar</button>}{isEditable && <button onClick={() => void deleteFlow()} className="hidden rounded-xl border border-red-100 bg-white p-2.5 text-red-600 hover:bg-red-50 sm:flex dark:border-red-900 dark:bg-zinc-900 dark:hover:bg-red-950/30" aria-label="Excluir fluxo"><Trash2 size={15} /></button>}{isEditable && <button onClick={() => void saveFlow()} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm transition hover:bg-docka-50 md:flex dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"><Save size={15} /> Salvar</button>}<button onClick={toggleFlow} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm ${editingFlow.status === 'active' ? 'bg-amber-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500'}`}><Radio size={14} /> {editingFlow.status === 'active' ? 'Pausar' : 'Ativar'}</button></div>
             </header>
 
             <div className="flex min-h-0 flex-1">
                 <aside className={`${mobileCatalogOpen ? 'fixed inset-y-0 left-0 z-50 flex w-[280px]' : 'hidden'} ${catalogHighlight ? 'lg:ring-4 lg:ring-inset lg:ring-violet-100 dark:lg:ring-violet-950/40' : ''} flex-col border-r border-docka-200 bg-white shadow-2xl transition-shadow dark:border-zinc-800 dark:bg-zinc-950 lg:static lg:inset-auto lg:z-auto lg:flex lg:w-[240px] lg:shrink-0 lg:shadow-none`}>
                     <div className="flex h-14 items-center justify-between border-b border-docka-100 px-4 dark:border-zinc-800"><div className="flex items-center gap-2"><Sparkles size={16} className="text-violet-600" /><span className="text-xs font-bold">{isEditable ? 'Adicionar etapa' : 'Etapas disponíveis'}</span></div><button onClick={() => setMobileCatalogOpen(false)} className="lg:hidden"><X size={18} /></button></div>
                     <div className="grid grid-cols-2 border-b border-docka-100 p-2 dark:border-zinc-800">{(['trigger', 'action'] as NodeKind[]).map((kind) => <button key={kind} disabled={!isEditable} onClick={() => setCatalogKind(kind)} className={`rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-40 ${catalogKind === kind ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' : 'text-docka-400'}`}>{kind === 'trigger' ? 'Gatilhos' : 'Ações'}</button>)}</div>
-                    <div className="custom-scrollbar flex-1 overflow-y-auto p-3"><p className="mb-3 px-1 text-[9px] font-black uppercase tracking-[.18em] text-docka-400">{catalogKind === 'trigger' ? 'Iniciar quando...' : 'Depois, faça...'}</p>{!isEditable && <div className="mb-3 rounded-xl border border-violet-100 bg-violet-50 p-3 text-[9px] leading-4 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300">Este fluxo representa uma automação já implementada no sistema e está disponível para consulta.</div>}<div className="grid grid-cols-2 gap-2">{templates.filter((item) => item.kind === catalogKind).map((item) => <button key={`${item.kind}-${item.app}`} disabled={!isEditable} onClick={() => addNode(item)} className="group min-h-[108px] rounded-2xl border border-docka-100 bg-docka-50/60 p-3 text-left transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-violet-800 dark:hover:bg-zinc-900"><span className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-sm" style={{ backgroundColor: item.color }}>{iconFor(item.icon, 16)}</span><span className="block text-xs font-bold">{item.app}</span><span className="mt-1 block text-[9px] leading-3 text-docka-400">{item.title}</span></button>)}</div></div>
+                    <div className="custom-scrollbar flex-1 overflow-y-auto p-3"><p className="mb-3 px-1 text-[9px] font-black uppercase tracking-[.18em] text-docka-400">{catalogKind === 'trigger' ? 'Iniciar quando...' : 'Depois, faça...'}</p>{!isEditable && <div className="mb-3 rounded-xl border border-violet-100 bg-violet-50 p-3 text-[9px] leading-4 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300"><p>Este é o fluxo original do sistema. Crie uma versão editável para melhorar gatilhos e ações sem comprometer a operação atual.</p><button onClick={() => void personalizeFlow()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-2 py-2 text-[10px] font-bold text-white"><Pencil size={12} /> Personalizar fluxo</button></div>}<div className="grid grid-cols-2 gap-2">{templates.filter((item) => item.kind === catalogKind).map((item) => <button key={`${item.kind}-${item.app}`} disabled={!isEditable} onClick={() => addNode(item)} className="group min-h-[108px] rounded-2xl border border-docka-100 bg-docka-50/60 p-3 text-left transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-violet-800 dark:hover:bg-zinc-900"><span className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-sm" style={{ backgroundColor: item.color }}>{iconFor(item.icon, 16)}</span><span className="block text-xs font-bold">{item.app}</span><span className="mt-1 block text-[9px] leading-3 text-docka-400">{item.title}</span></button>)}</div></div>
                 </aside>
                 {mobileCatalogOpen && <button className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setMobileCatalogOpen(false)} aria-label="Fechar catálogo" />}
 
@@ -410,7 +475,7 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
                 </main>
 
                 <aside className={`${mobileConfigOpen ? 'fixed inset-y-0 right-0 z-50 flex w-[min(360px,92vw)]' : 'hidden'} flex-col border-l border-docka-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950 xl:static xl:inset-auto xl:z-auto xl:flex xl:w-[320px] xl:shrink-0 xl:shadow-none`}>
-                    {selectedNode && <><div className="flex h-16 shrink-0 items-center gap-3 border-b border-docka-100 px-5 dark:border-zinc-800"><span className="flex h-9 w-9 items-center justify-center rounded-xl text-white" style={{ backgroundColor: selectedNode.color }}>{iconFor(selectedNode.icon, 18)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{selectedNode.app}</p><p className="text-[10px] text-docka-400">{selectedNode.kind === 'trigger' ? 'Detalhes do gatilho' : 'Detalhes da ação'}</p></div><button onClick={() => setMobileConfigOpen(false)} className="xl:hidden"><X size={18} /></button></div><div className="custom-scrollbar flex-1 overflow-y-auto p-5"><div className="mb-5 flex rounded-xl bg-docka-50 p-1 dark:bg-zinc-900"><button className="flex-1 rounded-lg bg-white py-2 text-[10px] font-bold shadow-sm dark:bg-zinc-800">Configuração</button><button className="flex-1 py-2 text-[10px] font-bold text-docka-400">Conexão</button></div><div className="space-y-5"><Field label="Nome da etapa"><input value={selectedNode.title} disabled={!isEditable} onChange={(event) => updateSelectedNode({ title: event.target.value })} className="automation-input disabled:cursor-default disabled:opacity-75" /></Field><Field label="Empresa"><div className="relative"><select value={editingFlow.organizationId} disabled={!isEditable} onChange={(event) => updateFlow({ organizationId: event.target.value, nodes: editingFlow.nodes.map((item) => ({ ...item, organizationId: event.target.value })) })} className="automation-input appearance-none pr-9 disabled:cursor-default disabled:opacity-75">{companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div></Field>{selectedNode.kind === 'trigger' && isEditable && <TriggerConfiguration node={selectedNode} flowId={editingFlow.id} onChange={updateTriggerConfiguration} />}{selectedNode.kind === 'action' && isEditable && <ActionConfiguration node={selectedNode} onChange={(patch) => updateSelectedNode(patch)} />}{selectedNode.message && !isEditable && <Field label="Mensagem / instrução"><textarea value={selectedNode.message} disabled rows={7} className="automation-input resize-none leading-5 disabled:cursor-default disabled:opacity-75" /></Field>}<div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/20"><div className="flex items-center gap-2 text-[10px] font-bold text-emerald-800 dark:text-emerald-300"><Settings2 size={13} /> {isEditable ? 'Conectado ao motor Manyways' : 'Conectado ao sistema atual'}</div><p className="mt-1 text-[9px] leading-4 text-emerald-700/80 dark:text-emerald-400/80">{isEditable ? 'Salvar persiste o fluxo; Ativar passa a receber eventos reais e executar as ações.' : 'Ativar ou Pausar altera diretamente a configuração desta automação nativa.'}</p></div></div></div>{isEditable && <div className="flex shrink-0 items-center gap-2 border-t border-docka-100 p-4 dark:border-zinc-800">{selectedNode.kind === 'action' && <button onClick={removeSelectedNode} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30">Remover</button>}<button onClick={() => void saveFlow()} className="ml-auto flex items-center gap-2 rounded-xl bg-docka-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900"><Save size={14} /> Salvar fluxo</button></div>}</>}
+                    {selectedNode && <><div className="flex h-16 shrink-0 items-center gap-3 border-b border-docka-100 px-5 dark:border-zinc-800"><span className="flex h-9 w-9 items-center justify-center rounded-xl text-white" style={{ backgroundColor: selectedNode.color }}>{iconFor(selectedNode.icon, 18)}</span><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{selectedNode.app}</p><p className="text-[10px] text-docka-400">{selectedNode.kind === 'trigger' ? 'Detalhes do gatilho' : 'Detalhes da ação'}</p></div><button onClick={() => setMobileConfigOpen(false)} className="xl:hidden"><X size={18} /></button></div><div className="custom-scrollbar flex-1 overflow-y-auto p-5"><div className="mb-5 flex rounded-xl bg-docka-50 p-1 dark:bg-zinc-900"><button onClick={() => setSideTab('configuration')} className={`flex-1 rounded-lg py-2 text-[10px] font-bold ${sideTab === 'configuration' ? 'bg-white shadow-sm dark:bg-zinc-800' : 'text-docka-400'}`}>Configuração</button><button onClick={() => setSideTab('connection')} className={`flex-1 rounded-lg py-2 text-[10px] font-bold ${sideTab === 'connection' ? 'bg-white shadow-sm dark:bg-zinc-800' : 'text-docka-400'}`}>Conexão</button></div>{sideTab === 'connection' ? <ConnectionPanel node={selectedNode} connections={connections} loading={connectionsLoading} /> : <div className="space-y-5"><Field label="Nome da etapa"><input value={selectedNode.title} disabled={!isEditable} onChange={(event) => updateSelectedNode({ title: event.target.value })} className="automation-input disabled:cursor-default disabled:opacity-75" /></Field><Field label="Descrição da etapa"><input value={selectedNode.description} disabled={!isEditable} onChange={(event) => updateSelectedNode({ description: event.target.value })} className="automation-input disabled:cursor-default disabled:opacity-75" /></Field><Field label="Empresa"><div className="relative"><select value={editingFlow.organizationId} disabled={!isEditable} onChange={(event) => updateFlow({ organizationId: event.target.value, nodes: editingFlow.nodes.map((item) => ({ ...item, organizationId: event.target.value })) })} className="automation-input appearance-none pr-9 disabled:cursor-default disabled:opacity-75">{companies.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div></Field>{selectedNode.kind === 'trigger' && isEditable && <TriggerConfiguration node={selectedNode} flowId={editingFlow.id} onChange={updateTriggerConfiguration} />}{selectedNode.kind === 'action' && isEditable && <ActionConfiguration node={selectedNode} onChange={(patch) => updateSelectedNode(patch)} />}{selectedNode.message && !isEditable && <Field label="Mensagem / instrução"><textarea value={selectedNode.message} disabled rows={7} className="automation-input resize-none leading-5 disabled:cursor-default disabled:opacity-75" /></Field>}<div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 dark:border-emerald-900/50 dark:bg-emerald-950/20"><div className="flex items-center gap-2 text-[10px] font-bold text-emerald-800 dark:text-emerald-300"><Settings2 size={13} /> {isEditable ? 'Conectado ao motor Manyways' : 'Conectado ao sistema atual'}</div><p className="mt-1 text-[9px] leading-4 text-emerald-700/80 dark:text-emerald-400/80">{isEditable ? 'Salvar persiste o fluxo; Ativar passa a receber eventos reais e executar as ações.' : 'Ativar ou Pausar altera diretamente a configuração desta automação nativa.'}</p></div></div>}</div>{isEditable && sideTab === 'configuration' && <div className="flex shrink-0 items-center gap-2 border-t border-docka-100 p-4 dark:border-zinc-800">{selectedNode.kind === 'action' && <button onClick={removeSelectedNode} className="rounded-xl border border-red-100 px-3 py-2.5 text-xs font-bold text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950/30">Remover etapa</button>}<button onClick={() => void saveFlow()} className="ml-auto flex items-center gap-2 rounded-xl bg-docka-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900"><Save size={14} /> Salvar fluxo</button></div>}</>}
                 </aside>
                 {mobileConfigOpen && <button className="fixed inset-0 z-40 bg-black/30 xl:hidden" onClick={() => setMobileConfigOpen(false)} aria-label="Fechar configuração" />}
             </div>
@@ -430,9 +495,11 @@ const TriggerConfiguration = ({ node, flowId, onChange }: { node: AutomationNode
             ? [{ value: 'webhook.received', label: 'Webhook recebido' }]
             : [
                 { value: 'crm.lead.created', label: 'Novo lead criado' },
+                { value: 'crm.lead.assigned', label: 'Lead atribuído' },
                 { value: 'contract.signed', label: 'Contrato assinado' },
                 { value: 'invoice.created', label: 'Nova fatura criada' },
                 { value: 'payment.confirmed', label: 'Pagamento confirmado' },
+                { value: 'process.updated', label: 'Processo atualizado' },
                 { value: 'form.submitted', label: 'Formulário enviado' },
             ];
     const webhookUrl = node.app === 'Webhook' && config.secret && !flowId.startsWith('draft-')
@@ -452,6 +519,26 @@ const ActionConfiguration = ({ node, onChange }: { node: AutomationNode; onChang
         {node.app === 'Webhook' && <Field label="URL HTTPS"><input value={config.url || ''} placeholder="https://api.exemplo.com/webhook" onChange={(event) => onChange({ config: { ...config, url: event.target.value } })} className="automation-input" /></Field>}
         {node.app !== 'Financeiro' && node.app !== 'Many AI' && <Field label="Mensagem / instrução"><textarea value={node.message || ''} onChange={(event) => onChange({ message: event.target.value })} rows={6} className="automation-input resize-none leading-5" /><button type="button" className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-violet-600"><GitBranch size={12} /> Use variáveis como {'{{name}}'}, {'{{email}}'} ou {'{{phone}}'}</button></Field>}
     </>;
+};
+
+const ConnectionPanel = ({ node, connections, loading }: { node: AutomationNode; connections: AutomationConnections | null; loading: boolean }) => {
+    const key = connectionKeyFor(node);
+    const connection = connections?.[key];
+    const names: Record<keyof AutomationConnections, string> = {
+        email: 'Provedor de e-mail',
+        slack: 'Workspace e canal do Slack',
+        whatsapp: 'Instância do WhatsApp',
+        webhook: 'Conexão HTTPS',
+        internal: 'Serviços internos da Manyways',
+        schedule: 'Agendador da Manyways',
+    };
+    const openSettings = () => {
+        const url = new URL(window.location.href);
+        url.searchParams.set('view', 'settings');
+        window.location.assign(url.toString());
+    };
+    if (loading) return <div className="flex items-center gap-2 rounded-xl bg-docka-50 p-4 text-xs font-bold text-docka-400 dark:bg-zinc-900"><Sparkles size={15} className="animate-pulse text-violet-500" /> Verificando conexão...</div>;
+    return <div className="space-y-4"><div className={`rounded-2xl border p-4 ${connection?.configured ? 'border-emerald-100 bg-emerald-50 dark:border-emerald-900/50 dark:bg-emerald-950/20' : 'border-amber-100 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20'}`}><div className="flex items-start gap-3"><span className={`mt-0.5 h-2.5 w-2.5 rounded-full ${connection?.configured ? 'bg-emerald-500' : 'bg-amber-500'}`} /><div><p className="text-xs font-bold">{names[key]}</p><p className="mt-1 text-[10px] leading-4 text-docka-500 dark:text-zinc-400">{connection?.label || 'Conexão ainda não verificada.'}</p></div></div></div><div className="rounded-xl border border-docka-100 p-3 text-[10px] leading-4 text-docka-500 dark:border-zinc-800"><strong className="block text-docka-800 dark:text-zinc-200">Como esta etapa usa a conexão</strong><span>{node.kind === 'trigger' ? 'O gatilho recebe eventos desta origem e entrega os dados às próximas ações.' : 'A ação utiliza esta integração quando o fluxo chega nesta etapa.'}</span></div>{!connection?.configured && <button onClick={openSettings} className="w-full rounded-xl bg-docka-900 px-4 py-2.5 text-xs font-bold text-white dark:bg-zinc-100 dark:text-zinc-900">Abrir configurações</button>}</div>;
 };
 
 const CompanyChip = ({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) => <button onClick={onClick} className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-[10px] font-bold transition ${active ? 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300' : 'border-docka-200 bg-white text-docka-500 hover:border-docka-300 dark:border-zinc-700 dark:bg-zinc-950'}`}>{label}<span className={`rounded-full px-1.5 py-0.5 text-[8px] ${active ? 'bg-violet-600 text-white' : 'bg-docka-100 dark:bg-zinc-800'}`}>{count}</span></button>;
