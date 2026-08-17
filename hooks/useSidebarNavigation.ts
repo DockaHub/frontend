@@ -171,7 +171,9 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         const perms = currentOrg.memberPermissions;
         if (!perms) {
             if (currentOrg.slug === 'manyspace') {
-                return items.filter((item) => !['team', 'automations', 'settings'].includes(item.id));
+                // Mantém a central visível durante a restauração da sessão/API.
+                // O backend continua sendo a autoridade para leitura e gerenciamento.
+                return items.filter((item) => !['team', 'settings'].includes(item.id));
             }
             return items;
         }

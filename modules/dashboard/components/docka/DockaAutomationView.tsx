@@ -38,6 +38,13 @@ interface AutomationFlow {
     updatedAt: string;
     triggerType?: string;
     triggerConfig?: Record<string, any>;
+    organization?: { id: string; name: string; slug?: string };
+}
+
+interface AutomationCompany {
+    id: string;
+    name: string;
+    slug?: string;
 }
 
 interface AutomationTemplate {
@@ -139,11 +146,11 @@ const statusLabel: Record<FlowStatus, string> = { active: 'Ativo', paused: 'Paus
 
 const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ organizations }) => {
     const { addToast } = useToast();
-    const companies = useMemo(() => organizations, [organizations]);
     const [flows, setFlows] = useState<AutomationFlow[]>([]);
     const [selectedCompanyId, setSelectedCompanyId] = useState('all');
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [editingFlow, setEditingFlow] = useState<AutomationFlow | null>(null);
     const [selectedNodeId, setSelectedNodeId] = useState('');
     const [catalogKind, setCatalogKind] = useState<NodeKind>('trigger');
@@ -151,14 +158,27 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
     const [mobileConfigOpen, setMobileConfigOpen] = useState(false);
     const [catalogHighlight, setCatalogHighlight] = useState(false);
     const catalogTimer = useRef<number | null>(null);
+    const companies = useMemo<AutomationCompany[]>(() => {
+        const available = new Map<string, AutomationCompany>();
+        organizations.forEach((organization) => available.set(organization.id, organization));
+        flows.forEach((flow) => {
+            if (flow.organization && !available.has(flow.organization.id)) {
+                available.set(flow.organization.id, flow.organization);
+            }
+        });
+        return [...available.values()].sort((first, second) => first.name.localeCompare(second.name));
+    }, [flows, organizations]);
 
     const loadFlows = async (quiet = false) => {
         if (!quiet) setLoading(true);
+        setLoadError('');
         try {
             const response = await api.get<AutomationFlow[]>('/automations');
             setFlows((response.data || []).map(normalizeFlow));
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Erro ao carregar automações', message: error.response?.data?.error || 'Não foi possível acessar o motor.' });
+            const message = error.response?.data?.error || 'O motor de automações está temporariamente indisponível.';
+            setLoadError(message);
+            addToast({ type: 'error', title: 'Erro ao carregar automações', message });
         } finally {
             if (!quiet) setLoading(false);
         }
@@ -362,7 +382,7 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
 
                         <section className="overflow-hidden rounded-2xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                             <div className="flex flex-col gap-3 border-b border-docka-100 p-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-sm font-bold">Fluxos</h2><p className="mt-0.5 text-[10px] text-docka-400">Clique em um fluxo para visualizar o gatilho e todas as ações.</p></div><div className="relative w-full sm:w-72"><Search size={14} className="absolute left-3 top-3 text-docka-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar automação..." className="w-full rounded-xl border border-docka-200 bg-docka-50/50 py-2.5 pl-9 pr-3 text-xs outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-950" /></div></div>
-                            {loading ? <div className="flex min-h-64 items-center justify-center"><div className="flex items-center gap-2 text-xs font-bold text-docka-400"><Sparkles size={16} className="animate-pulse text-violet-500" /> Carregando fluxos existentes...</div></div> : visibleFlows.length === 0 ? <div className="flex min-h-72 flex-col items-center justify-center px-6 text-center"><div className="mb-4 rounded-2xl bg-docka-50 p-4 text-docka-300 dark:bg-zinc-800"><ListFilter size={26} /></div><h3 className="text-sm font-bold">Nenhum fluxo nesta empresa</h3><p className="mt-1 max-w-md text-xs leading-5 text-docka-400">Ainda não existe uma automação implementada para esta empresa. Você pode iniciar um novo rascunho.</p><button onClick={createFlow} className="mt-4 flex items-center gap-2 rounded-xl border border-violet-200 px-4 py-2 text-xs font-bold text-violet-600 hover:bg-violet-50 dark:border-violet-900 dark:hover:bg-violet-950/30"><Plus size={14} /> Criar primeiro fluxo</button></div> : <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">{visibleFlows.map((flow) => <FlowCard key={flow.id} flow={flow} company={companyFor(flow.organizationId)} onClick={() => openEditor(flow)} />)}</div>}
+                            {loading ? <div className="flex min-h-64 items-center justify-center"><div className="flex items-center gap-2 text-xs font-bold text-docka-400"><Sparkles size={16} className="animate-pulse text-violet-500" /> Carregando fluxos existentes...</div></div> : loadError ? <div className="flex min-h-72 flex-col items-center justify-center px-6 text-center"><div className="mb-4 rounded-2xl bg-red-50 p-4 text-red-500 dark:bg-red-950/30"><Workflow size={26} /></div><h3 className="text-sm font-bold">Motor temporariamente indisponível</h3><p className="mt-1 max-w-md text-xs leading-5 text-docka-400">{loadError}</p><button onClick={() => void loadFlows()} className="mt-4 rounded-xl border border-violet-200 px-4 py-2 text-xs font-bold text-violet-600 hover:bg-violet-50 dark:border-violet-900 dark:hover:bg-violet-950/30">Tentar novamente</button></div> : visibleFlows.length === 0 ? <div className="flex min-h-72 flex-col items-center justify-center px-6 text-center"><div className="mb-4 rounded-2xl bg-docka-50 p-4 text-docka-300 dark:bg-zinc-800"><ListFilter size={26} /></div><h3 className="text-sm font-bold">Nenhum fluxo nesta empresa</h3><p className="mt-1 max-w-md text-xs leading-5 text-docka-400">Ainda não existe uma automação implementada para esta empresa. Você pode iniciar um novo rascunho.</p><button onClick={createFlow} className="mt-4 flex items-center gap-2 rounded-xl border border-violet-200 px-4 py-2 text-xs font-bold text-violet-600 hover:bg-violet-50 dark:border-violet-900 dark:hover:bg-violet-950/30"><Plus size={14} /> Criar primeiro fluxo</button></div> : <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">{visibleFlows.map((flow) => <FlowCard key={flow.id} flow={flow} company={companyFor(flow.organizationId)} onClick={() => openEditor(flow)} />)}</div>}
                         </section>
                     </div>
                 </div>
@@ -441,7 +461,7 @@ const Metric = ({ label, value, icon: Icon, tone }: { label: string; value: numb
     return <div className="flex items-center justify-between rounded-2xl border border-docka-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"><div><p className="text-[9px] font-black uppercase tracking-[.16em] text-docka-400">{label}</p><p className="mt-2 text-2xl font-bold">{value}</p></div><div className={`rounded-xl p-3 ${styles[tone]}`}><Icon size={19} /></div></div>;
 };
 
-const FlowCard = ({ flow, company, onClick }: { flow: AutomationFlow; company?: Organization; onClick: () => void }) => <button onClick={onClick} className="group rounded-2xl border border-docka-100 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-violet-900"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300">{iconFor(flow.nodes[0]?.icon || 'zap', 18)}</div><div className="min-w-0"><h3 className="truncate text-xs font-bold">{flow.name}</h3><p className="mt-1 truncate text-[9px] text-docka-400">{company?.name || 'Empresa'}</p></div></div><span className={`shrink-0 rounded-full border px-2 py-1 text-[8px] font-black uppercase ${statusStyles[flow.status]}`}>{statusLabel[flow.status]}</span></div><p className="mt-4 line-clamp-2 min-h-8 text-[10px] leading-4 text-docka-500 dark:text-zinc-400">{flow.description}</p><div className="mt-4 flex items-center justify-between border-t border-docka-50 pt-3 dark:border-zinc-800"><div className="flex -space-x-1.5">{flow.nodes.slice(0, 4).map((item) => <span key={item.id} className="flex h-6 w-6 items-center justify-center rounded-lg border-2 border-white text-white dark:border-zinc-950" style={{ backgroundColor: item.color }}>{iconFor(item.icon, 11)}</span>)}{flow.nodes.length > 4 && <span className="flex h-6 w-6 items-center justify-center rounded-lg border-2 border-white bg-docka-100 text-[8px] font-bold dark:border-zinc-950 dark:bg-zinc-800">+{flow.nodes.length - 4}</span>}</div><span className="flex items-center gap-1 text-[9px] font-bold text-violet-600 opacity-70 transition group-hover:opacity-100">Abrir fluxo <ChevronDown size={11} className="-rotate-90" /></span></div></button>;
+const FlowCard = ({ flow, company, onClick }: { flow: AutomationFlow; company?: AutomationCompany; onClick: () => void }) => <button onClick={onClick} className="group rounded-2xl border border-docka-100 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-violet-200 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-violet-900"><div className="flex items-start justify-between gap-3"><div className="flex min-w-0 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300">{iconFor(flow.nodes[0]?.icon || 'zap', 18)}</div><div className="min-w-0"><h3 className="truncate text-xs font-bold">{flow.name}</h3><p className="mt-1 truncate text-[9px] text-docka-400">{company?.name || flow.organization?.name || 'Empresa'}</p></div></div><span className={`shrink-0 rounded-full border px-2 py-1 text-[8px] font-black uppercase ${statusStyles[flow.status]}`}>{statusLabel[flow.status]}</span></div><p className="mt-4 line-clamp-2 min-h-8 text-[10px] leading-4 text-docka-500 dark:text-zinc-400">{flow.description}</p><div className="mt-4 flex items-center justify-between border-t border-docka-50 pt-3 dark:border-zinc-800"><div className="flex -space-x-1.5">{flow.nodes.slice(0, 4).map((item) => <span key={item.id} className="flex h-6 w-6 items-center justify-center rounded-lg border-2 border-white text-white dark:border-zinc-950" style={{ backgroundColor: item.color }}>{iconFor(item.icon, 11)}</span>)}{flow.nodes.length > 4 && <span className="flex h-6 w-6 items-center justify-center rounded-lg border-2 border-white bg-docka-100 text-[8px] font-bold dark:border-zinc-950 dark:bg-zinc-800">+{flow.nodes.length - 4}</span>}</div><span className="flex items-center gap-1 text-[9px] font-bold text-violet-600 opacity-70 transition group-hover:opacity-100">Abrir fluxo <ChevronDown size={11} className="-rotate-90" /></span></div></button>;
 
 const Connector = ({ onAdd }: { onAdd?: () => void }) => <div className="flex h-16 flex-col items-center"><div className="h-6 w-px bg-docka-300 dark:bg-zinc-700" />{onAdd ? <button onClick={onAdd} className="z-10 flex h-6 w-6 items-center justify-center rounded-full border border-docka-200 bg-white text-docka-400 shadow-sm hover:border-violet-400 hover:text-violet-600 dark:border-zinc-700 dark:bg-zinc-900"><Plus size={13} /></button> : <div className="h-2 w-2 rounded-full bg-docka-300 dark:bg-zinc-700" />}<div className="h-4 w-px bg-docka-300 dark:bg-zinc-700" /></div>;
 
