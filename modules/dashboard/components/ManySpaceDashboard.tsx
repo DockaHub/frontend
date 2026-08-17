@@ -11,13 +11,16 @@ import DockaFormsView from './docka/DockaFormsView';
 import UserHomeView from './docka/UserHomeView';
 import DockaGroupFinanceView from './docka/DockaGroupFinanceView';
 import DockaClientsView from './docka/DockaClientsView';
+import DockaTeamAccessView from './docka/DockaTeamAccessView';
+import DockaAutomationView from './docka/DockaAutomationView';
 
 interface ManySpaceDashboardProps {
     activeView: string;
     organization?: Organization;
+    organizations?: Organization[];
 }
 
-const ManySpaceDashboard: React.FC<ManySpaceDashboardProps> = ({ activeView, organization }) => {
+const ManySpaceDashboard: React.FC<ManySpaceDashboardProps> = ({ activeView, organization, organizations = [] }) => {
     switch (activeView) {
         case 'home':
             return <UserHomeView />;
@@ -27,6 +30,10 @@ const ManySpaceDashboard: React.FC<ManySpaceDashboardProps> = ({ activeView, org
             return <DockaEcosystemView />;
         case 'clients':
             return <DockaClientsView />;
+        case 'team':
+            return <DockaTeamAccessView organizations={organizations} />;
+        case 'automations':
+            return <DockaAutomationView organizations={organizations} />;
         case 'forms':
             return <DockaFormsView />;
         case 'audit':
@@ -36,7 +43,7 @@ const ManySpaceDashboard: React.FC<ManySpaceDashboardProps> = ({ activeView, org
         case 'billing':
             return <DockaBillingView />;
         case 'settings':
-            return <DockaSettingsView organization={organization} />;
+            return <DockaSettingsView organization={organization} organizations={organizations} />;
         default:
             return (
                 <div className="h-full bg-white animate-in fade-in duration-300">

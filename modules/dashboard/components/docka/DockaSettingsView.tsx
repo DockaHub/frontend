@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
-    Shield, Globe, Key, Save, Server, ToggleLeft, ToggleRight, Database, Settings
+    Shield, Globe, Key, Server, ToggleLeft, ToggleRight, Database, Settings,
+    Building2, CheckCircle2, ChevronDown
 } from 'lucide-react';
 import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
@@ -10,25 +11,65 @@ import SlackIntegrationSettings from './SlackIntegrationSettings';
 
 interface DockaSettingsViewProps {
     organization?: Organization;
+    organizations?: Organization[];
 }
 
-const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization }) => {
+const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization, organizations = [] }) => {
+    const managedOrganizations = useMemo(
+        () => organizations.filter((item) => item.slug !== 'manyspace'),
+        [organizations]
+    );
+    const [selectedOrganizationId, setSelectedOrganizationId] = useState(managedOrganizations[0]?.id || organization?.id || '');
+    const selectedOrganization = organizations.find((item) => item.id === selectedOrganizationId) || organization;
+
+    useEffect(() => {
+        if (managedOrganizations.length > 0 && !managedOrganizations.some((item) => item.id === selectedOrganizationId)) {
+            setSelectedOrganizationId(managedOrganizations[0].id);
+        }
+    }, [managedOrganizations, selectedOrganizationId]);
+
     return (
         <DashboardPage 
-            title="Configurações Globais" 
+            title="Central de Configurações"
             icon={Settings}
-            actions={
-                <button className="bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white px-6 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest hover:bg-docka-800 dark:hover:bg-white transition-colors shadow-sm flex items-center gap-2">
-                    <Save size={16} /> Salvar Alterações
-                </button>
-            }
         >
             <div className="animate-in fade-in duration-500">
-                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-8 -mt-2">Gerenciamento global da infraestrutura e segurança da holding.</p>
+                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-8 -mt-2">Configurações do grupo e de todas as empresas, sem precisar entrar em cada painel.</p>
 
                 <div className="space-y-8">
-                    {organization && (
-                        <OrganizationIconSettings organization={organization} />
+                    <div className="overflow-hidden rounded-2xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                        <div className="flex flex-col gap-4 border-b border-docka-100 bg-docka-50/40 px-6 py-5 dark:border-zinc-800 dark:bg-zinc-800/30 md:flex-row md:items-center md:justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="rounded-xl bg-violet-50 p-2.5 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300"><Building2 size={19} /></div>
+                                <div>
+                                    <h2 className="text-sm font-bold text-docka-900 dark:text-zinc-100">Configurações por empresa</h2>
+                                    <p className="mt-0.5 text-[10px] text-docka-500 dark:text-zinc-400">Escolha o painel que deseja configurar.</p>
+                                </div>
+                            </div>
+                            <div className="relative min-w-[240px]">
+                                <select value={selectedOrganizationId} onChange={(event) => setSelectedOrganizationId(event.target.value)} className="w-full appearance-none rounded-xl border border-docka-200 bg-white px-4 py-2.5 pr-10 text-xs font-bold outline-none focus:border-violet-400 dark:border-zinc-700 dark:bg-zinc-900">
+                                    {managedOrganizations.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                                    {organization && managedOrganizations.length === 0 && <option value={organization.id}>{organization.name}</option>}
+                                </select>
+                                <ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" />
+                            </div>
+                        </div>
+                        <div className="grid gap-px bg-docka-100 sm:grid-cols-3 dark:bg-zinc-800">
+                            {[
+                                ['Identidade visual', 'Logo, ícone e cores'],
+                                ['Equipe e permissões', 'Gerenciado na aba Equipe'],
+                                ['Integrações', 'Canais e credenciais'],
+                            ].map(([title, description]) => (
+                                <div key={title} className="flex items-center gap-3 bg-white px-5 py-4 dark:bg-zinc-900">
+                                    <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+                                    <div><p className="text-xs font-bold">{title}</p><p className="mt-0.5 text-[9px] text-docka-400">{description}</p></div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {selectedOrganization && (
+                        <OrganizationIconSettings key={selectedOrganization.id} organization={selectedOrganization} />
                     )}
 
                     {organization?.slug === 'manyspace' && (

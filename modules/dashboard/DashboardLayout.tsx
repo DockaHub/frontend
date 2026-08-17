@@ -88,7 +88,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
         }
 
         // Default / SAAS
-        return <ManySpaceDashboard activeView={activeView} organization={selectedOrg} />;
+        return <ManySpaceDashboard
+            activeView={activeView}
+            organization={selectedOrg}
+            organizations={userOrgs}
+        />;
     };
 
     return (

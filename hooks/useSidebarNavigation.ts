@@ -2,7 +2,7 @@ import {
     LayoutDashboard, Ticket, CreditCard, Mic2, LayoutTemplate, Megaphone, Users,
     BarChart3, Settings, Globe, Headphones, FolderOpen, Mail,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
-    Network, FileInput, Server, Search, MessageSquare, Book, Trophy, Wallet
+    Network, Server, Search, MessageSquare, Book, Trophy, Wallet
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization } from '../types';
@@ -71,7 +71,6 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'orange-program', label: 'Orange Program', icon: Zap },
                 { id: 'client-list', label: 'Base de Clientes', icon: Users },
                 { id: 'financial', label: 'Financeiro', icon: CreditCard },
-                { id: 'settings', label: 'Configurações', icon: Settings },
             ];
         }
 
@@ -99,7 +98,6 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                     ]
                 },
                 { id: 'organizations', label: 'Organizações', icon: Building2 },
-                { id: 'settings', label: 'Configurações', icon: Settings },
                 { id: 'reports', label: 'Relatórios', icon: BarChart3 },
             ];
         }
@@ -114,7 +112,6 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'crm', label: 'CRM', icon: Briefcase, badgeCount: unreadLeads > 0 ? unreadLeads : undefined, badgeColor: 'bg-red-500' },
                 { id: 'performance', label: 'Minhas Metas', icon: Trophy },
                 { id: 'financial', label: 'Financeiro', icon: CreditCard },
-                { id: 'settings', label: 'Configuração', icon: Settings },
             ];
         }
 
@@ -127,7 +124,6 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'financial', label: 'Gestão de Contas', icon: CreditCard },
                 { id: 'vehicles', label: 'Veículos (Dirigir)', icon: Car },
                 { id: 'crm', label: 'CRM & Propostas', icon: Users },
-                { id: 'settings', label: 'Configurações', icon: Settings },
             ];
         }
 
@@ -141,20 +137,19 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'webmail', label: 'Webmail', icon: Mail },
                 { id: 'financial', label: 'Faturas', icon: CreditCard },
                 { id: 'support', label: 'Suporte', icon: Headphones },
-                { id: 'settings', label: 'Configurações', icon: Settings },
             ];
         }
 
         // ManySpace (Holding)
         if (currentOrg.slug === 'manyspace') {
             return [
-                { id: 'overview', label: 'Visão Global', icon: Globe },
-                { id: 'finance', label: 'Financeiro do Grupo', icon: Wallet },
-                { id: 'ecosystem', label: 'Ecossistema', icon: Network },
+                { id: 'overview', label: 'Início', icon: Home },
+                { id: 'finance', label: 'Financeiro', icon: Wallet },
+                { id: 'team', label: 'Equipe', icon: Users },
                 { id: 'clients', label: 'Clientes', icon: Users },
-                { id: 'forms', label: 'Formulários & Captura', icon: FileInput },
-                { id: 'audit', label: 'Auditoria & Logs', icon: ShieldAlert },
-                { id: 'billing', label: 'Faturamento Geral', icon: CreditCard },
+                { id: 'automations', label: 'Automações', icon: Zap },
+                { id: 'ecosystem', label: 'Ecossistema', icon: Network },
+                { id: 'audit', label: 'Auditoria', icon: ShieldAlert },
                 { id: 'settings', label: 'Configurações', icon: Settings },
             ];
         }
@@ -162,7 +157,6 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         // Fallback
         return [
             { id: 'overview', label: 'Visão Geral', icon: LayoutDashboard },
-            { id: 'settings', label: 'Configurações', icon: Settings },
         ];
     };
 
@@ -175,7 +169,12 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         }
 
         const perms = currentOrg.memberPermissions;
-        if (!perms) return items; // Fallback se não houver permissões definidas
+        if (!perms) {
+            if (currentOrg.slug === 'manyspace') {
+                return items.filter((item) => !['team', 'automations', 'settings'].includes(item.id));
+            }
+            return items;
+        }
 
         return items.filter(item => {
             // Regras específicas da Asterysko
@@ -196,8 +195,12 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 return perms.canAccessSettings !== false;
             }
 
+            if (item.id.toLowerCase() === 'automations') {
+                return perms.canAccessSettings !== false;
+            }
+
             // Regras para Pessoas/Usuários
-            if (['users', 'members', 'pessoas', 'clients'].includes(item.id.toLowerCase())) {
+            if (['users', 'members', 'pessoas', 'clients', 'team'].includes(item.id.toLowerCase())) {
                 return perms.canAccessPeople !== false;
             }
 
