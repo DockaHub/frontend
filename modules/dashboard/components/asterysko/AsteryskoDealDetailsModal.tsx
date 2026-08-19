@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Check, FileText, Plus, MoreVertical, Clock, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon } from 'lucide-react';
+import { X, Check, FileText, Plus, MoreVertical, Clock, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon, Building2, MapPin, Search } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 import { forceDownloadFile } from './utils/fileDownload';
@@ -264,7 +264,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         date: string;
     } | null>(null);
 
-    // Contact Editing State
+    // Contact & Client Data Editing States
     const [isEditingContact, setIsEditingContact] = useState(false);
     const [editContactName, setEditContactName] = useState('');
     const [editContactEmail, setEditContactEmail] = useState('');
@@ -272,6 +272,24 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const [isSavingContact, setIsSavingContact] = useState(false);
     const [responsibleOptions, setResponsibleOptions] = useState<any[]>([]);
     const [isSavingResponsible, setIsSavingResponsible] = useState(false);
+
+    // Plans & Proposal States
+    const [commercialPlans, setCommercialPlans] = useState<any[]>([]);
+    const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+    const [dealEstimatedValue, setDealEstimatedValue] = useState<string>('');
+    const [isSavingPlan, setIsSavingPlan] = useState<boolean>(false);
+
+    // Full Client & Contract Profile States
+    const [isEditingClientData, setIsEditingClientData] = useState(false);
+    const [clientType, setClientType] = useState<'PF' | 'PJ'>('PJ');
+    const [clientCpfCnpj, setClientCpfCnpj] = useState('');
+    const [clientRazaoSocial, setClientRazaoSocial] = useState('');
+    const [clientAddress, setClientAddress] = useState('');
+    const [clientCity, setClientCity] = useState('');
+    const [clientState, setClientState] = useState('');
+    const [clientPostalCode, setClientPostalCode] = useState('');
+    const [isLoadingCnpj, setIsLoadingCnpj] = useState(false);
+    const [isSavingClientData, setIsSavingClientData] = useState(false);
 
     const currentDeal = dealDetails || card;
     const clientId = currentDeal?.clientId || currentDeal?.client?.id;
@@ -310,6 +328,138 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             console.error("Failed to fetch deal details", error);
         } finally {
             setIsLoadingDetails(false);
+        }
+    };
+
+    useEffect(() => {
+        if (isOpen) {
+            api.get('/asterysko/plans')
+                .then(res => setCommercialPlans(Array.isArray(res.data) ? res.data.filter((p: any) => p.active !== false) : []))
+                .catch(err => console.error('Failed to load commercial plans', err));
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (dealDetails) {
+            setSelectedPlanId(dealDetails.planId || '');
+            setDealEstimatedValue(dealDetails.value ? dealDetails.value.toString().replace('R$ ', '').trim() : '');
+            const client = dealDetails.client;
+            if (client) {
+                const rawCpf = client.cpfCnpj || '';
+                setClientType(client.type || (rawCpf.replace(/\D/g, '').length > 11 ? 'PJ' : 'PF'));
+                setClientCpfCnpj(rawCpf);
+                setClientRazaoSocial(dealDetails.contactName || dealDetails.title || '');
+                setClientAddress(client.address || '');
+                setClientCity(client.city || '');
+                setClientState(client.state || '');
+                setClientPostalCode(client.postalCode || '');
+            } else {
+                const tags = dealDetails.tags || [];
+                let cnpj = '';
+                let address = '';
+                let city = '';
+                let state = '';
+                let postalCode = '';
+                if (Array.isArray(tags)) {
+                    tags.forEach((t: any) => {
+                        const tagStr = typeof t === 'string' ? t : t.label || '';
+                        const lower = tagStr.toLowerCase();
+                        if (lower.startsWith('cnpj:') || lower.startsWith('cpf:')) cnpj = tagStr.split(':')[1]?.trim() || '';
+                        if (lower.startsWith('address:') || lower.startsWith('endereco:')) address = tagStr.split(':')[1]?.trim() || '';
+                        if (lower.startsWith('city:') || lower.startsWith('cidade:')) city = tagStr.split(':')[1]?.trim() || '';
+                        if (lower.startsWith('state:') || lower.startsWith('uf:')) state = tagStr.split(':')[1]?.trim() || '';
+                        if (lower.startsWith('cep:') || lower.startsWith('postalcode:')) postalCode = tagStr.split(':')[1]?.trim() || '';
+                    });
+                }
+                setClientType(cnpj.replace(/\D/g, '').length > 11 ? 'PJ' : 'PF');
+                setClientCpfCnpj(cnpj);
+                setClientRazaoSocial(dealDetails.contactName || dealDetails.title || '');
+                setClientAddress(address);
+                setClientCity(city);
+                setClientState(state);
+                setClientPostalCode(postalCode);
+            }
+        }
+    }, [dealDetails]);
+
+    const handleCnpjChange = async (val: string) => {
+        setClientCpfCnpj(val);
+        const clean = val.replace(/\D/g, '');
+        if (clean.length === 14) {
+            try {
+                setIsLoadingCnpj(true);
+                const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${clean}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.razao_social || data.nome_fantasia) {
+                        setClientRazaoSocial(data.razao_social || data.nome_fantasia);
+                    }
+                    const logradouro = data.logradouro || '';
+                    const numero = data.numero || '';
+                    const complemento = data.complemento ? ` - ${data.complemento}` : '';
+                    const bairro = data.bairro ? ` - ${data.bairro}` : '';
+                    if (logradouro) {
+                        setClientAddress(`${logradouro}, ${numero}${complemento}${bairro}`);
+                    }
+                    if (data.municipio) setClientCity(data.municipio);
+                    if (data.uf) setClientState(data.uf);
+                    if (data.cep) setClientPostalCode(data.cep);
+                }
+            } catch (err) {
+                console.error('Failed to fetch CNPJ from BrasilAPI', err);
+            } finally {
+                setIsLoadingCnpj(false);
+            }
+        }
+    };
+
+    const handleSaveClientData = async () => {
+        if (!currentDeal?.id) return;
+        try {
+            setIsSavingClientData(true);
+            await api.put(`/asterysko/crm/deals/${currentDeal.id}`, {
+                clientData: {
+                    type: clientType,
+                    cpfCnpj: clientCpfCnpj,
+                    address: clientAddress,
+                    city: clientCity,
+                    state: clientState,
+                    postalCode: clientPostalCode,
+                    name: clientRazaoSocial || editContactName || currentDeal.contactName,
+                    email: editContactEmail || currentDeal.contactEmail,
+                    phone: editContactPhone || currentDeal.contactPhone
+                }
+            });
+            alert('Dados do cliente para Contrato e Procuração salvos com sucesso!');
+            setIsEditingClientData(false);
+            fetchDetails();
+            if (onUpdate) onUpdate();
+        } catch (error: any) {
+            console.error('Failed to save client data', error);
+            alert(error.response?.data?.error || 'Erro ao salvar dados do cliente.');
+        } finally {
+            setIsSavingClientData(false);
+        }
+    };
+
+    const handleSavePlan = async (newPlanId: string, customVal?: string) => {
+        if (!currentDeal?.id) return;
+        try {
+            setIsSavingPlan(true);
+            const payload: any = {};
+            if (newPlanId) {
+                payload.planId = newPlanId;
+            } else if (customVal !== undefined) {
+                payload.value = customVal;
+            }
+            await api.put(`/asterysko/crm/deals/${currentDeal.id}`, payload);
+            fetchDetails();
+            if (onUpdate) onUpdate();
+        } catch (error: any) {
+            console.error('Failed to update plan/value', error);
+            alert(error.response?.data?.error || 'Erro ao atualizar plano comercial.');
+        } finally {
+            setIsSavingPlan(false);
         }
     };
 
@@ -1615,10 +1765,41 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                             {/* Right Column (Sidebar) */}
                             <div className="w-full lg:w-[300px] bg-white dark:bg-zinc-900 p-6 lg:p-8 flex flex-col gap-8 shrink-0">
                                 
-                                {/* Resumo Comercial */}
+                                {/* Resumo Comercial & Proposta */}
                                 <div>
-                                    <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-4">Resumo comercial</p>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider">Proposta & Comercial</p>
+                                    </div>
                                     <div className="flex flex-col gap-3">
+                                        {/* Plano de Registro */}
+                                        <div className="flex flex-col gap-1 border-b border-zinc-100 dark:border-zinc-800 pb-3">
+                                            <label className="text-[11px] font-semibold text-[#666] dark:text-zinc-400">Plano da Proposta</label>
+                                            <select
+                                                value={selectedPlanId}
+                                                onChange={(e) => {
+                                                    const planId = e.target.value;
+                                                    setSelectedPlanId(planId);
+                                                    const found = commercialPlans.find(p => p.id === planId);
+                                                    if (found) {
+                                                        const formatted = `R$ ${parseFloat(found.value).toFixed(2).replace('.', ',')}`;
+                                                        setDealEstimatedValue(formatted);
+                                                        handleSavePlan(planId);
+                                                    } else {
+                                                        handleSavePlan('');
+                                                    }
+                                                }}
+                                                disabled={isSavingPlan}
+                                                className="w-full rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1.5 text-xs font-semibold text-black outline-none transition-colors focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                            >
+                                                <option value="">Plano Personalizado</option>
+                                                {commercialPlans.map(plan => (
+                                                    <option key={plan.id} value={plan.id}>
+                                                        {plan.name} — R$ {parseFloat(plan.value).toFixed(2).replace('.', ',')} {plan.billingMode === 'SUBSCRIPTION' ? '/mês' : '(À vista)'}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
                                         <div className="flex justify-between items-center">
                                             <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Valor Estimado</span>
                                             <span className="text-[14px] font-bold text-[#0412dd] dark:text-[#3b48ff]">{dealValue}</span>
@@ -1822,6 +2003,163 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 </button>
                                                 <button
                                                     onClick={() => setIsEditingContact(false)}
+                                                    className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Dados Cadastrais / Jurídicos para Contrato e Procuração */}
+                                <div className="border-t border-[#e5e5e5] dark:border-zinc-800 pt-8">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div>
+                                            <p className="text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider">Dados do Titular / Contrato</p>
+                                            <p className="text-[10px] text-zinc-400">Usados na Procuração e Contrato</p>
+                                        </div>
+                                        {!isEditingClientData ? (
+                                            <button 
+                                                onClick={() => setIsEditingClientData(true)}
+                                                className="text-[11px] font-bold text-[#0412dd] dark:text-[#3b48ff] flex items-center gap-1 hover:underline cursor-pointer"
+                                            >
+                                                <Edit2 size={12} /> {clientId || clientCpfCnpj ? 'Editar' : '+ Cadastrar'}
+                                            </button>
+                                        ) : null}
+                                    </div>
+
+                                    {!isEditingClientData ? (
+                                        <div className="bg-zinc-50 dark:bg-zinc-800/40 rounded-xl p-3.5 border border-[#e5e5e5] dark:border-zinc-700/60 flex flex-col gap-2">
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Tipo:</span>
+                                                <span className="font-bold text-black dark:text-white">{clientType === 'PJ' ? 'Pessoa Jurídica (PJ)' : 'Pessoa Física (PF)'}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-zinc-500 dark:text-zinc-400 font-medium">{clientType === 'PJ' ? 'CNPJ' : 'CPF'}:</span>
+                                                <span className="font-bold font-mono text-black dark:text-white">{clientCpfCnpj || <span className="text-amber-600 dark:text-amber-400 italic">Pendente</span>}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center text-xs">
+                                                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Razão/Titular:</span>
+                                                <span className="font-bold text-black dark:text-white truncate max-w-[140px]">{clientRazaoSocial || clientName || 'Não informado'}</span>
+                                            </div>
+                                            <div className="text-xs border-t border-zinc-200/60 dark:border-zinc-700/60 pt-2 mt-1">
+                                                <span className="text-zinc-500 dark:text-zinc-400 font-medium block mb-0.5">Endereço:</span>
+                                                <span className="text-black dark:text-white text-[11px] leading-tight block">
+                                                    {clientAddress ? `${clientAddress}${clientCity ? ` - ${clientCity}/${clientState}` : ''}${clientPostalCode ? ` (CEP ${clientPostalCode})` : ''}` : <span className="text-amber-600 dark:text-amber-400 italic">Endereço pendente</span>}
+                                                </span>
+                                            </div>
+                                            {!clientId && (
+                                                <div className="mt-1 pt-1.5 border-t border-zinc-200/60 dark:border-zinc-700/60">
+                                                    <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1">
+                                                        <AlertTriangle size={11} /> Salve para provisionar o cliente
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-2.5 bg-zinc-50 dark:bg-zinc-800/60 p-3.5 rounded-xl border border-[#0412dd]/30">
+                                            <div className="flex gap-2 mb-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setClientType('PJ')}
+                                                    className={`flex-1 py-1 text-xs font-bold rounded-lg border transition-colors ${clientType === 'PJ' ? 'bg-[#0412dd] text-white border-[#0412dd]' : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'}`}
+                                                >
+                                                    PJ (Empresa)
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setClientType('PF')}
+                                                    className={`flex-1 py-1 text-xs font-bold rounded-lg border transition-colors ${clientType === 'PF' ? 'bg-[#0412dd] text-white border-[#0412dd]' : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700'}`}
+                                                >
+                                                    PF (Pessoa Física)
+                                                </button>
+                                            </div>
+
+                                            <div>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <label className="text-[10px] font-bold text-zinc-500 uppercase">{clientType === 'PJ' ? 'CNPJ' : 'CPF'}</label>
+                                                    {isLoadingCnpj && <span className="text-[10px] text-[#0412dd] font-medium flex items-center gap-1"><Loader2 size={10} className="animate-spin" /> Buscando Receita...</span>}
+                                                </div>
+                                                <input 
+                                                    type="text"
+                                                    value={clientCpfCnpj}
+                                                    onChange={(e) => handleCnpjChange(e.target.value)}
+                                                    placeholder={clientType === 'PJ' ? "00.000.000/0001-00" : "000.000.000-00"}
+                                                    className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                />
+                                                {clientType === 'PJ' && <span className="text-[9.5px] text-zinc-400 mt-0.5 block">Digite o CNPJ para preencher os dados automaticamente</span>}
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Razão Social / Nome do Titular</label>
+                                                <input 
+                                                    type="text"
+                                                    value={clientRazaoSocial}
+                                                    onChange={(e) => setClientRazaoSocial(e.target.value)}
+                                                    placeholder="Nome empresarial ou titular"
+                                                    className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Endereço (Rua, Nº, Bairro)</label>
+                                                <input 
+                                                    type="text"
+                                                    value={clientAddress}
+                                                    onChange={(e) => setClientAddress(e.target.value)}
+                                                    placeholder="Ex: Av. Paulista, 1000, Bela Vista"
+                                                    className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                />
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Cidade</label>
+                                                    <input 
+                                                        type="text"
+                                                        value={clientCity}
+                                                        onChange={(e) => setClientCity(e.target.value)}
+                                                        placeholder="São Paulo"
+                                                        className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">Estado (UF)</label>
+                                                    <input 
+                                                        type="text"
+                                                        value={clientState}
+                                                        onChange={(e) => setClientState(e.target.value)}
+                                                        placeholder="SP"
+                                                        maxLength={2}
+                                                        className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd] uppercase"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">CEP</label>
+                                                <input 
+                                                    type="text"
+                                                    value={clientPostalCode}
+                                                    onChange={(e) => setClientPostalCode(e.target.value)}
+                                                    placeholder="00000-000"
+                                                    className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs bg-white dark:bg-zinc-950 text-black dark:text-white outline-none focus:border-[#0412dd]"
+                                                />
+                                            </div>
+
+                                            <div className="flex items-center gap-2 pt-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSaveClientData}
+                                                    disabled={isSavingClientData}
+                                                    className="flex-1 bg-[#0412dd] text-white text-xs font-bold py-1.5 rounded-lg hover:bg-blue-800 transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                                                >
+                                                    {isSavingClientData ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />} Salvar Dados
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsEditingClientData(false)}
                                                     className="px-3 py-1.5 border border-zinc-200 dark:border-zinc-700 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
                                                 >
                                                     Cancelar
