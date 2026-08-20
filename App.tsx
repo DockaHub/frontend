@@ -39,7 +39,6 @@ import { ContractSignaturePage } from './modules/asterysko/public/ContractSignat
 import AsteryskoClientPortal from './modules/dashboard/components/asterysko/AsteryskoClientPortal';
 import { AsteryskoLoginPage } from './modules/asterysko/public/AsteryskoLoginPage';
 import WelcomePage from './modules/asterysko/public/WelcomePage';
-import AsteryskoLandingPage from './modules/asterysko/public/AsteryskoLandingPage';
 import { getApiBaseUrl } from './services/api';
 
 // Main App Content component to use hooks inside Provider
@@ -356,10 +355,6 @@ const AppContent: React.FC = () => {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
       </div>
     );
-  }
-
-  if (location.pathname === '/lp' || location.pathname.startsWith('/lp/')) {
-    return <AsteryskoLandingPage />;
   }
 
   if (!isAuthenticated) {
