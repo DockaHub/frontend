@@ -24,9 +24,22 @@ const AsteryskoBrandMark: React.FC<{ className?: string; style?: React.CSSProper
     </svg>
 );
 
+const ManywaysBrandMark: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
+    <svg viewBox="0 0 600 600" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
+        <path d="M535.712 527.642C540.289 527.642 544 531.353 544 535.93C544 540.507 540.289 544.218 535.712 544.218H63.2881C58.7107 544.218 55 540.507 55 535.93C55 531.353 58.7107 527.642 63.2881 527.642H535.712Z" fill="currentColor"/>
+        <path d="M464.977 421.341C469.399 420.156 473.943 422.78 475.128 427.202C476.313 431.623 473.689 436.168 469.267 437.353L85.225 540.256C80.8035 541.441 76.2588 538.817 75.0741 534.396C73.8894 529.974 76.5132 525.43 80.9347 524.245L464.977 421.341Z" fill="currentColor"/>
+        <path d="M373.979 350.189C377.943 347.9 383.012 349.258 385.3 353.222C387.589 357.186 386.231 362.255 382.267 364.544L87.9368 534.476C83.9727 536.764 78.9037 535.406 76.615 531.442C74.3263 527.478 75.6845 522.409 79.6487 520.12L373.979 350.189Z" fill="currentColor"/>
+        <path d="M276.057 315.927C279.293 312.691 284.541 312.691 287.778 315.927C291.015 319.164 291.015 324.412 287.778 327.649L82.0857 533.341C78.849 536.577 73.6012 536.577 70.3645 533.341C67.1278 530.104 67.1278 524.856 70.3645 521.62L276.057 315.927Z" fill="currentColor"/>
+        <path d="M183.55 316.568C185.839 312.604 190.907 311.245 194.872 313.534C198.836 315.823 200.194 320.892 197.905 324.856L79.0515 530.717C76.7628 534.681 71.6939 536.039 67.7297 533.75C63.7656 531.462 62.4074 526.393 64.6961 522.428L183.55 316.568Z" fill="currentColor"/>
+        <path d="M107.109 346.406C108.293 341.985 112.838 339.361 117.259 340.545C121.681 341.73 124.305 346.275 123.12 350.696L75.3062 529.14C74.1215 533.561 69.5768 536.185 65.1554 535C60.7339 533.815 58.1101 529.271 59.2948 524.849L107.109 346.406Z" fill="currentColor"/>
+        <path d="M55 393.65C55 389.073 58.7107 385.362 63.2881 385.362C67.8655 385.362 71.5763 389.073 71.5763 393.65L71.5763 535.649C71.5763 540.227 67.8655 543.938 63.2881 543.938C58.7107 543.938 55 540.227 55 535.649L55 393.65Z" fill="currentColor"/>
+    </svg>
+);
+
 const getBgColorForSlug = (slug: string) => {
     switch (slug?.toLowerCase()) {
-        case 'manyspace': return '#fd6b32';
+        case 'manyspace':
+        case 'manyways': return '#000000';
         case 'fauves': return '#2a2ad7';
         case 'tokyon': return '#dc2626';
         case 'asterysko': return '#0412dd';
@@ -112,7 +125,6 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     }, [userOrgs]);
 
     const { unreadCount } = useNotifications();
-
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
     const handleSelectOrg = (org: Organization) => {
@@ -148,6 +160,9 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     };
     const firstName = user.name?.trim().split(/\s+/)[0] || 'Usuário';
 
+    const isCurrentAsterysko = currentOrg.slug === 'asterysko';
+    const isCurrentManyways = currentOrg.slug === 'manyspace' || currentOrg.slug === 'manyways';
+
     return (
         <div className={`flex flex-col bg-white dark:bg-zinc-950 pt-[15px] pb-[15px] h-full border-r border-[#e5e5e5] dark:border-zinc-800 shrink-0 relative w-[180px] ${className}`}>
 
@@ -160,11 +175,15 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                     <button 
                         onClick={() => setIsOrgMenuOpen(!isOrgMenuOpen)}
                         className="relative w-[40px] h-[40px] rounded-xl flex items-center justify-center text-white transition-all duration-150 active:translate-y-[2px] group-hover:-translate-y-[1px] shadow-sm overflow-hidden"
-                        style={{ backgroundColor: currentOrg.slug === 'asterysko' ? '#0412dd' : getBgColorForSlug(currentOrg.slug) }}
+                        style={{ backgroundColor: isCurrentAsterysko ? '#0412dd' : getBgColorForSlug(currentOrg.slug) }}
                     >
-                        {currentOrg.slug === 'asterysko' ? (
+                        {isCurrentAsterysko ? (
                             <div className="w-[22px] h-[22px] text-white">
                                 <AsteryskoBrandMark />
+                            </div>
+                        ) : isCurrentManyways ? (
+                            <div className="w-[24px] h-[24px] text-white">
+                                <ManywaysBrandMark />
                             </div>
                         ) : (
                             <span className="text-[17px] font-black uppercase">
@@ -186,6 +205,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                 {userOrgs.map((org, index) => {
                                     const isSelected = org.id === currentOrg.id;
                                     const isAsterysko = org.slug === 'asterysko';
+                                    const isManyways = org.slug === 'manyspace' || org.slug === 'manyways';
                                     let bg = isAsterysko ? '#0412dd' : getBgColorForSlug(org.slug);
                                     
                                     return (
@@ -207,6 +227,10 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                                     {isAsterysko ? (
                                                         <div className="w-[20px] h-[20px] text-white">
                                                             <AsteryskoBrandMark />
+                                                        </div>
+                                                    ) : isManyways ? (
+                                                        <div className="w-[20px] h-[20px] text-white">
+                                                            <ManywaysBrandMark />
                                                         </div>
                                                     ) : (
                                                         <span className="text-[15px] font-black uppercase">

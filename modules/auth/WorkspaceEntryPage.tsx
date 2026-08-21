@@ -19,6 +19,8 @@ const KNOWN_BRAND_ASSETS: Record<string, string> = {
   fauves: '/brands/fauves.svg',
   niva: '/brands/niva.svg',
   tokyon: '/brands/tokyon.svg',
+  manyspace: '/favicon.svg',
+  manyways: '/favicon.svg',
 };
 
 const BRAND_COLORS: Record<string, string> = {
