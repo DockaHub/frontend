@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Loader2, CheckCircle2 } from 'lucide-react';
+import { Plus, Loader2, CheckCircle2, RefreshCw } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewLeadModal from './AsteryskoNewLeadModal';
@@ -45,6 +45,7 @@ interface Props {
 const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
     const [allColumns, setAllColumns] = useState<Column[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [draggedCardId, setDraggedCardId] = useState<string | null>(null);
     const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
     const [selectedCard, setSelectedCard] = useState<DealCard | null>(null);
@@ -73,23 +74,6 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
         }
     };
 
-    const fetchDeals = async () => {
-        try {
-            setIsLoading(true);
-            const response = await api.get(`/asterysko/crm/deals`);
-            setAllColumns(Array.isArray(response.data) ? response.data : []);
-        } catch (error) {
-            console.error('Failed to fetch deals', error);
-            setAllColumns([]);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchDeals();
-    }, [organization?.id]);
-
     // Show temporary toast notification
     const showToast = (message: string) => {
         setToastMessage(message);
@@ -97,6 +81,30 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
             setToastMessage(null);
         }, 3500);
     };
+
+    const fetchDeals = async (manualRefresh = false, showFeedback = false) => {
+        try {
+            if (manualRefresh) setIsRefreshing(true);
+            else setIsLoading(true);
+            const response = await api.get(`/asterysko/crm/deals`);
+            const columns = Array.isArray(response.data) ? response.data : [];
+            setAllColumns(columns);
+            const newLeadCount = columns.find((column: Column) => column.id === 'leads')?.cards.length || 0;
+            window.dispatchEvent(new CustomEvent('asterysko-crm-updated', { detail: { newLeadCount } }));
+            if (showFeedback) showToast('CRM atualizado com os dados mais recentes.');
+        } catch (error) {
+            console.error('Failed to fetch deals', error);
+            if (!manualRefresh) setAllColumns([]);
+            else if (showFeedback) showToast('Não foi possível atualizar o CRM. Tente novamente.');
+        } finally {
+            if (manualRefresh) setIsRefreshing(false);
+            else setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDeals();
+    }, [organization?.id]);
 
     // Calculate card counts per phase
     const phaseCounts = useMemo(() => {
@@ -200,6 +208,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
         try {
             await api.put(`/asterysko/crm/deals/${movedCardId}/status`, { status: targetColumnId });
+            window.dispatchEvent(new CustomEvent('asterysko-crm-updated'));
 
             if (oldPhase !== newPhase) {
                 const phaseLabels: Record<CrmPhaseId, string> = {
@@ -233,9 +242,20 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                         <span className="font-season text-[22px] font-[420] text-black dark:text-white">CRM</span>
                     </div>
 
-                    {/* Button Novo Lead ONLY in Commercial Tab */}
-                    {activeTab === 'commercial' && (
+                    <div className="flex items-center gap-2">
                         <button 
+                            type="button"
+                            onClick={() => void fetchDeals(true, true)}
+                            disabled={isLoading || isRefreshing}
+                            className="flex h-[32px] items-center justify-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-3.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                            aria-label="Atualizar dados do CRM"
+                            title="Buscar novos leads e atualizar o funil"
+                        >
+                            <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
+                            <span className="hidden sm:inline">Atualizar</span>
+                        </button>
+                        {/* Button Novo Lead ONLY in Commercial Tab */}
+                        {activeTab === 'commercial' && <button
                             onClick={() => setIsLeadModalOpen(true)}
                             className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 text-black dark:text-white font-sans text-xs font-semibold px-4 h-[32px] rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
                         >
@@ -243,8 +263,8 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                                 <Plus size={10} className="text-white" strokeWidth={3} />
                             </div>
                             Novo lead
-                        </button>
-                    )}
+                        </button>}
+                    </div>
                 </div>
 
                 {/* Internal Tabs Segment Control */}
@@ -402,7 +422,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                 onClose={() => setIsLeadModalOpen(false)}
                 onSuccess={() => {
                     setIsLeadModalOpen(false);
-                    fetchDeals();
+                    void fetchDeals(true);
                 }}
                 organizationId={organization?.id}
             />
@@ -411,10 +431,10 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                 isOpen={!!selectedCard}
                 onClose={() => {
                     setSelectedCard(null);
-                    fetchDeals();
+                    void fetchDeals(true);
                 }}
                 card={selectedCard}
-                onUpdate={fetchDeals}
+                onUpdate={() => void fetchDeals(true)}
             />
         </div>
     );

@@ -36,15 +36,20 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
             // Polling every 30 seconds
             const interval = setInterval(fetchUnread, 30000);
 
-            // Escutando eventos customizados para desconto imediato pós-leitura
-            const handleLeadRead = () => {
-                setUnreadLeads(prev => Math.max(0, prev - 1));
+            // Synchronize immediately after the CRM refreshes, moves or archives a lead.
+            const handleCrmUpdated = (event: Event) => {
+                const count = Number((event as CustomEvent<{ newLeadCount?: number }>).detail?.newLeadCount);
+                if (Number.isFinite(count) && count >= 0) {
+                    setUnreadLeads(count);
+                    return;
+                }
+                void fetchUnread();
             };
-            window.addEventListener('asterysko-lead-read', handleLeadRead);
+            window.addEventListener('asterysko-crm-updated', handleCrmUpdated);
 
             return () => {
                 clearInterval(interval);
-                window.removeEventListener('asterysko-lead-read', handleLeadRead);
+                window.removeEventListener('asterysko-crm-updated', handleCrmUpdated);
             };
         } else {
             setUnreadLeads(0);
