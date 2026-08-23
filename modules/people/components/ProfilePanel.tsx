@@ -6,13 +6,17 @@ import OrgTag from '../../../components/common/OrgTag';
 import UserAvatar from '../../../components/common/UserAvatar';
 
 interface ProfilePanelProps {
+    contact: Contact;
+    onClose: () => void;
     onRemoveMember: (contact: Contact) => Promise<void>;
+    onDeleteUser?: (contact: Contact) => Promise<void>;
     onUpdatePermissions: (contactId: string, permissions: any) => Promise<void>;
 }
 
-const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveMember, onUpdatePermissions }) => {
+const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveMember, onDeleteUser, onUpdatePermissions }) => {
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [showConfirmDelete, setShowConfirmDelete] = React.useState(false);
+    const [showConfirmPermanentDelete, setShowConfirmPermanentDelete] = React.useState(false);
     const [isSaving, setIsSaving] = React.useState(false);
     const [localPermissions, setLocalPermissions] = React.useState(contact?.permissions || {
         canAccessFinance: false,
@@ -31,9 +35,23 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveM
 
     const handleDelete = async () => {
         setIsDeleting(true);
-        await onRemoveMember(contact);
-        setIsDeleting(false);
-        setShowConfirmDelete(false);
+        try {
+            await onRemoveMember(contact);
+        } finally {
+            setIsDeleting(false);
+            setShowConfirmDelete(false);
+        }
+    };
+
+    const handlePermanentDelete = async () => {
+        if (!onDeleteUser) return;
+        setIsDeleting(true);
+        try {
+            await onDeleteUser(contact);
+        } finally {
+            setIsDeleting(false);
+            setShowConfirmPermanentDelete(false);
+        }
     };
 
     const handleSavePermissions = async () => {
@@ -175,12 +193,13 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveM
                 </div>
 
                 {/* Danger Zone */}
-                <div className="mt-12 pt-6 border-t border-docka-100 dark:border-zinc-800">
-                    <h3 className="text-xs font-bold text-red-500 dark:text-red-400 uppercase tracking-wider mb-4">Zona de Perigo</h3>
+                <div className="mt-12 pt-6 border-t border-docka-100 dark:border-zinc-800 space-y-3">
+                    <h3 className="text-xs font-bold text-red-500 dark:text-red-400 uppercase tracking-wider mb-2">Zona de Perigo</h3>
                     
+                    {/* Remover da Organização */}
                     {!showConfirmDelete ? (
                         <button 
-                            onClick={() => setShowConfirmDelete(true)}
+                            onClick={() => { setShowConfirmDelete(true); setShowConfirmPermanentDelete(false); }}
                             className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 rounded-lg text-sm font-medium transition-colors"
                         >
                             <Trash2 size={16} />
@@ -206,6 +225,41 @@ const ProfilePanel: React.FC<ProfilePanelProps> = ({ contact, onClose, onRemoveM
                                 </button>
                             </div>
                         </div>
+                    )}
+
+                    {/* Excluir Usuário Permanentemente */}
+                    {onDeleteUser && (
+                        !showConfirmPermanentDelete ? (
+                            <button 
+                                onClick={() => { setShowConfirmPermanentDelete(true); setShowConfirmDelete(false); }}
+                                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-xs font-bold transition-colors border border-red-200 dark:border-red-800/40"
+                            >
+                                <Trash2 size={14} />
+                                Excluir Usuário do Hub (Permanente)
+                            </button>
+                        ) : (
+                            <div className="space-y-3 p-4 bg-red-100 dark:bg-red-950/80 rounded-lg border-2 border-red-400 dark:border-red-600">
+                                <p className="text-xs text-red-900 dark:text-red-100 font-bold">
+                                    ⚠️ ATENÇÃO: Isso excluirá permanentemente a conta de {contact.name}, acessos e dados do hub da Manyways/Manyspace!
+                                </p>
+                                <div className="flex gap-2">
+                                    <button 
+                                        disabled={isDeleting}
+                                        onClick={handlePermanentDelete}
+                                        className="flex-1 px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-xs font-bold rounded-md transition-colors disabled:opacity-50 shadow-sm"
+                                    >
+                                        {isDeleting ? 'Excluindo...' : 'Sim, Excluir Usuário'}
+                                    </button>
+                                    <button 
+                                        disabled={isDeleting}
+                                        onClick={() => setShowConfirmPermanentDelete(false)}
+                                        className="flex-1 px-3 py-1.5 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-600 text-zinc-700 dark:text-zinc-300 text-xs font-bold rounded-md transition-colors"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        )
                     )}
                 </div>
             </div>

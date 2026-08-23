@@ -27,5 +27,11 @@ export const userService = {
             }
         });
         return response.data;
+    },
+
+    async deleteUser(userId: string) {
+        const response = await api.delete(`/users/${userId}`);
+        return response.data;
     }
 };
+

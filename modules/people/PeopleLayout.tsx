@@ -10,7 +10,9 @@ import PlaceholderView from '../../components/PlaceholderView';
 import Modal from '../../components/common/Modal';
 import { Users, User, Mail, Briefcase, Building2, Shield } from 'lucide-react';
 import { organizationService } from '../../services/organizationService';
+import { userService } from '../../services/userService';
 import { useToast } from '../../context/ToastContext';
+
 
 interface PeopleLayoutProps {
     currentOrg: Organization;
@@ -190,6 +192,25 @@ const PeopleLayout: React.FC<PeopleLayoutProps> = ({ currentOrg, hasAccess = tru
         }
     };
 
+    const handleDeleteUser = async (contact: Contact) => {
+        try {
+            await userService.deleteUser(contact.id);
+            addToast({
+                type: 'success',
+                title: 'Usuário excluído',
+                message: `${contact.name} foi excluído permanentemente da plataforma.`
+            });
+            setSelectedContact(null);
+            fetchMembers();
+        } catch (error: any) {
+            addToast({
+                type: 'error',
+                title: 'Erro ao excluir usuário',
+                message: error.response?.data?.error || error.message || 'Erro de conexão'
+            });
+        }
+    };
+
     const handleUpdatePermissions = async (contactId: string, permissions: any) => {
         try {
             await organizationService.updateMemberPermissions(currentOrg.id, contactId, permissions);
@@ -244,11 +265,13 @@ const PeopleLayout: React.FC<PeopleLayoutProps> = ({ currentOrg, hasAccess = tru
                             contact={selectedContact} 
                             onClose={() => setSelectedContact(null)} 
                             onRemoveMember={handleRemoveMember}
+                            onDeleteUser={handleDeleteUser}
                             onUpdatePermissions={handleUpdatePermissions}
                         />
                     </div>
                 </div>
             )}
+
 
             {/* ADD MEMBER MODAL */}
             <Modal

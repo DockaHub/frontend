@@ -113,7 +113,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
         if (!confirm('Tem certeza que deseja remover este usuário da organização?')) return;
         try {
             await organizationService.removeMember(selectedOrgId, userId);
-            addToast({ type: 'success', title: 'Usuário removido', duration: 3000 });
+            addToast({ type: 'success', title: 'Usuário removido da organização', duration: 3000 });
             loadMembers();
         } catch (error) {
             console.error("Failed to remove member", error);
@@ -121,8 +121,22 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
         }
     };
 
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`⚠️ ATENÇÃO: Deseja realmente excluir permanentemente o usuário "${userName}" de todo o sistema Manyspace/Manyways? Esta ação removerá a conta e todos os acessos.`)) return;
+        try {
+            await userService.deleteUser(userId);
+            addToast({ type: 'success', title: 'Usuário excluído com sucesso da plataforma', duration: 3500 });
+            setSelectedUser(null);
+            loadMembers();
+        } catch (error: any) {
+            console.error("Failed to delete user", error);
+            addToast({ type: 'error', title: error.response?.data?.error || 'Erro ao excluir usuário', duration: 4000 });
+        }
+    };
+
     const handleOpenUserModal = async (user: any) => {
         setSelectedUser(user);
+
         setFormData({
             name: user.name,
             email: user.email,
@@ -666,6 +680,22 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                 </div>
                                             )}
                                         </div>
+                                    </div>
+
+                                    <div className="border-t border-red-200 bg-red-50/50 p-4 rounded-lg mt-6 mb-4">
+                                        <h4 className="text-sm font-bold text-red-700 mb-1 flex items-center">
+                                            <Trash2 size={16} className="mr-2" /> Zona de Perigo
+                                        </h4>
+                                        <p className="text-xs text-red-600 mb-3">
+                                            Excluir esta conta permanentemente removerá todos os acessos, permissões e dados do usuário no Manyspace/Manyways.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => selectedUser && handleDeleteUser(selectedUser.id, selectedUser.name)}
+                                            className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-md transition-colors shadow-sm flex items-center gap-1.5"
+                                        >
+                                            <Trash2 size={14} /> Excluir Conta do Usuário
+                                        </button>
                                     </div>
 
                                     <div className="flex justify-end items-center border-t border-docka-200 pt-4">
