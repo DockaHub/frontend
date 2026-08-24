@@ -141,9 +141,21 @@ const AppContent: React.FC = () => {
           if (orgs && orgs.length > 0) {
             console.log('Loading user organizations:', orgs);
 
-            const filteredOrgs = orgs.filter(org => !org.name.includes("'s Workspace"));
+            const filteredOrgs = orgs.filter(org => 
+              !org.name.includes("'s Workspace") &&
+              org.slug !== 'docka' &&
+              !org.name.toLowerCase().includes('docka')
+            );
 
-            const enhancedOrgs = filteredOrgs.map(org => ({
+            const sortedOrgs = [...filteredOrgs].sort((a, b) => {
+              const aIsMaster = a.slug === 'manyspace' || a.slug === 'manyways';
+              const bIsMaster = b.slug === 'manyspace' || b.slug === 'manyways';
+              if (aIsMaster && !bIsMaster) return -1;
+              if (!aIsMaster && bIsMaster) return 1;
+              return a.name.localeCompare(b.name);
+            });
+
+            const enhancedOrgs = sortedOrgs.map(org => ({
               ...org,
               logoColor: org.logoColor || 'bg-blue-600',
               type: (org.type || 'SAAS').toUpperCase() as any,

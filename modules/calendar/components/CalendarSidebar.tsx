@@ -77,7 +77,7 @@ const CalendarSidebar: React.FC = () => {
                     colors={['bg-indigo-500 border-indigo-600', 'bg-purple-500 border-purple-600', 'bg-blue-500 border-blue-600']} 
                 />
                 <CalendarGroup 
-                    title="Docka HQ" 
+                    title="ManySpace" 
                     items={['Time de Design', 'Engenharia', 'Feriados']} 
                     colors={['bg-orange-500 border-orange-600', 'bg-slate-500 border-slate-600', 'bg-green-500 border-green-600']} 
                 />

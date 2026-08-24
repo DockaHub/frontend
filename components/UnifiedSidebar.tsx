@@ -110,19 +110,32 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     }, []);
 
     // Hotkey switching (e.g. Meta+1, Meta+2)
+    const filteredAndSortedOrgs = React.useMemo(() => {
+        const valid = (userOrgs.length > 0 ? userOrgs : [currentOrg]).filter(
+            o => o.slug !== 'docka' && !o.name.toLowerCase().includes('docka')
+        );
+        return [...valid].sort((a, b) => {
+            const aIsMaster = a.slug === 'manyspace' || a.slug === 'manyways';
+            const bIsMaster = b.slug === 'manyspace' || b.slug === 'manyways';
+            if (aIsMaster && !bIsMaster) return -1;
+            if (!aIsMaster && bIsMaster) return 1;
+            return a.name.localeCompare(b.name);
+        });
+    }, [userOrgs, currentOrg]);
+
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if ((event.metaKey || event.ctrlKey) && !isNaN(Number(event.key))) {
                 const index = Number(event.key) - 1;
-                if (index >= 0 && index < userOrgs.length) {
+                if (index >= 0 && index < filteredAndSortedOrgs.length) {
                     event.preventDefault();
-                    handleSelectOrg(userOrgs[index]);
+                    handleSelectOrg(filteredAndSortedOrgs[index]);
                 }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [userOrgs]);
+    }, [filteredAndSortedOrgs]);
 
     const { unreadCount } = useNotifications();
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -199,61 +212,75 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                         <div className="fixed inset-0 z-40" onClick={() => setIsOrgMenuOpen(false)} />
                         <div 
                             ref={orgMenuRef}
-                            className="absolute top-[50px] left-6 w-[280px] bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-2"
+                            className="absolute top-[50px] left-6 w-[290px] bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-2"
                         >
                             <div className="space-y-1">
-                                {userOrgs.map((org, index) => {
+                                {filteredAndSortedOrgs.map((org, index) => {
                                     const isSelected = org.id === currentOrg.id;
                                     const isAsterysko = org.slug === 'asterysko';
                                     const isManyways = org.slug === 'manyspace' || org.slug === 'manyways';
                                     let bg = isAsterysko ? '#0412dd' : getBgColorForSlug(org.slug);
                                     
                                     return (
-                                        <button
-                                            key={org.id}
-                                            onClick={() => handleSelectOrg(org)}
-                                            className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors group text-left ${
-                                                isSelected ? 'bg-white/5' : 'hover:bg-white/10'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                {/* Logo wrapper with white ring if active */}
-                                                <div 
-                                                    className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold relative shrink-0 transition-transform duration-150 ${
-                                                        isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e1f22]' : 'group-hover:scale-105'
-                                                    }`}
-                                                    style={{ backgroundColor: bg }}
-                                                >
-                                                    {isAsterysko ? (
-                                                        <div className="w-[20px] h-[20px] text-white">
-                                                            <AsteryskoBrandMark />
+                                        <React.Fragment key={org.id}>
+                                            {index === 1 && filteredAndSortedOrgs.length > 1 && (
+                                                <div className="pt-2 pb-1 px-2 flex items-center gap-2">
+                                                    <span className="text-[10px] font-bold text-[#80848e] uppercase tracking-wider">Empresas do Portfólio</span>
+                                                    <div className="flex-1 h-px bg-white/10" />
+                                                </div>
+                                            )}
+                                            <button
+                                                onClick={() => handleSelectOrg(org)}
+                                                className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors group text-left ${
+                                                    isSelected ? 'bg-white/5' : 'hover:bg-white/10'
+                                                }`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    {/* Logo wrapper with white ring if active */}
+                                                    <div 
+                                                        className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold relative shrink-0 transition-transform duration-150 ${
+                                                            isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e1f22]' : 'group-hover:scale-105'
+                                                        }`}
+                                                        style={{ backgroundColor: bg }}
+                                                    >
+                                                        {isAsterysko ? (
+                                                            <div className="w-[20px] h-[20px] text-white">
+                                                                <AsteryskoBrandMark />
+                                                            </div>
+                                                        ) : isManyways ? (
+                                                            <div className="w-[20px] h-[20px] text-white">
+                                                                <ManywaysBrandMark />
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-[15px] font-black uppercase">
+                                                                {org.name.substring(0, 1)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Text */}
+                                                    <div className="min-w-0">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <h4 className="font-bold text-white text-[14px] leading-snug truncate">
+                                                                {org.name}
+                                                            </h4>
+                                                            {isManyways && (
+                                                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-white/10 text-zinc-300 rounded">
+                                                                    Mandante
+                                                                </span>
+                                                            )}
                                                         </div>
-                                                    ) : isManyways ? (
-                                                        <div className="w-[20px] h-[20px] text-white">
-                                                            <ManywaysBrandMark />
-                                                        </div>
-                                                    ) : (
-                                                        <span className="text-[15px] font-black uppercase">
-                                                            {org.name.substring(0, 1)}
-                                                        </span>
-                                                    )}
+                                                        <p className="text-[11px] text-[#9f9f9f] truncate">
+                                                            {org.slug}.manyspace.io
+                                                        </p>
+                                                    </div>
                                                 </div>
                                                 
-                                                {/* Text */}
-                                                <div className="min-w-0">
-                                                    <h4 className="font-bold text-white text-[14px] leading-snug truncate">
-                                                        {org.name}
-                                                    </h4>
-                                                    <p className="text-[11px] text-[#9f9f9f] truncate">
-                                                        {org.slug}.manyspace.io
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            
-                                            <span className="text-[10px] font-medium text-[#9f9f9f] font-mono bg-white/5 px-1.5 py-0.5 rounded uppercase">
-                                                ⌘{index + 1}
-                                            </span>
-                                        </button>
+                                                <span className="text-[10px] font-medium text-[#9f9f9f] font-mono bg-white/5 px-1.5 py-0.5 rounded uppercase">
+                                                    ⌘{index + 1}
+                                                </span>
+                                            </button>
+                                        </React.Fragment>
                                     );
                                 })}
                             </div>

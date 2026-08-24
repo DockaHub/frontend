@@ -101,7 +101,7 @@ const MeetHome: React.FC<MeetHomeProps> = ({ onStartInstantMeeting, onJoinMeetin
                         <span className="text-sm font-bold text-docka-700 dark:text-zinc-300">Interno & Seguro</span>
                     </div>
                     <p className="text-sm text-docka-500 dark:text-zinc-500 max-w-md">
-                        Suas reuniões são criptografadas e roteadas internamente. Apenas membros da organização <strong>Docka HQ</strong> podem entrar automaticamente.
+                        Suas reuniões são criptografadas e roteadas internamente. Apenas membros autorizados da sua organização podem entrar automaticamente.
                     </p>
                 </div>
             </div>
