@@ -74,8 +74,6 @@ export const getBrandBgColor = (org?: Partial<Organization> | null): string => {
         case 'manyways': return '#000000';
         case 'fauves': return '#2a2ad7';
         case 'tokyon': return '#000000';
-        case 'postizi': return '#8b5cf6';
-        case 'hostizi': return '#059669';
         case 'umachave': return '#f97316';
         case 'allyo': return '#0d1e1d';
         case 'niva': return '#1d0c17';
@@ -218,19 +216,6 @@ export const getViewLabel = (slug?: string, view?: string): string => {
         if (map[v]) return map[v];
     }
 
-    // Hostizi specific
-    if (s === 'hostizi') {
-        const map: Record<string, string> = {
-            overview: 'Dashboard Infra',
-            clients: 'Clientes',
-            hosting: 'Hospedagem (Sites)',
-            domains: 'Domínios',
-            webmail: 'Webmail',
-            financial: 'Faturas',
-            support: 'Suporte',
-        };
-        if (map[v]) return map[v];
-    }
 
     // Uma Chave specific
     if (s === 'umachave') {

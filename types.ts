@@ -40,6 +40,16 @@ export interface Organization {
   iconScale?: number;
   clientPortalDomain?: string;
   leadsAguardando?: number;
+  membersPreview?: Array<{
+    id: string;
+    role?: string;
+    user?: {
+      id: string;
+      name?: string;
+      email?: string;
+      avatar?: string;
+    };
+  }>;
   _count?: {
     members: number;
   };

@@ -7,7 +7,6 @@ import TokyonDashboard from './components/TokyonDashboard';
 import AsteryskoDashboard from './components/AsteryskoDashboard';
 import UmaChaveDashboard from './components/UmaChaveDashboard';
 import ManySpaceDashboard from './components/ManySpaceDashboard';
-import HostiziDashboard from './components/HostiziDashboard';
 import { Menu, ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import UnifiedSidebar from '../../components/UnifiedSidebar';
@@ -77,10 +76,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
             );
         }
         if (selectedOrg.type === 'INFRASTRUCTURE') {
-            // Check for specific overrides if needed, otherwise default infra dashboard
-            if (selectedOrg.slug?.includes('hostizi')) {
-                return <HostiziDashboard user={user} activeView={activeView} organization={selectedOrg} />;
-            }
             return <TokyonDashboard user={user} activeView={activeView} onNavigate={handleViewChange} organization={selectedOrg} />;
         }
         if (selectedOrg.slug === 'umachave') {

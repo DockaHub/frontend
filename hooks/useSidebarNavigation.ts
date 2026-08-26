@@ -127,19 +127,6 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
             ];
         }
 
-        // Specific Menu for Hostizi
-        if (currentOrg.slug === 'hostizi') {
-            return [
-                { id: 'overview', label: 'Dashboard Infra', icon: LayoutDashboard },
-                { id: 'clients', label: 'Clientes', icon: Users },
-                { id: 'hosting', label: 'Hospedagem (Sites)', icon: Server },
-                { id: 'domains', label: 'Domínios', icon: Globe },
-                { id: 'webmail', label: 'Webmail', icon: Mail },
-                { id: 'financial', label: 'Faturas', icon: CreditCard },
-                { id: 'support', label: 'Suporte', icon: Headphones },
-            ];
-        }
-
         // ManySpace (Holding)
         if (currentOrg.slug === 'manyspace') {
             return [

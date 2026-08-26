@@ -14,8 +14,6 @@ export const ORGANIZATIONS: Organization[] = [
   { id: 'org_2', name: 'Fauves', slug: 'fauves', logoColor: 'bg-amber-700', type: 'EVENT_TECH', features: { calendar: true, drive: true, contacts: true } },
   { id: '2a89b3f0-643f-4514-b201-3c7e43db859a', name: 'Tokyon', slug: 'tokyon', logoColor: 'bg-red-600', type: 'INFRASTRUCTURE', features: { calendar: false, drive: false, contacts: false } },
   { id: 'org_4', name: 'Asterysko', slug: 'asterysko', logoColor: 'bg-blue-600', type: 'AGENCY' },
-  { id: 'org_5', name: 'Postizi', slug: 'postizi', logoColor: 'bg-purple-600', type: 'SAAS' },
-  { id: 'org_6', name: 'Hostizi', slug: 'hostizi', logoColor: 'bg-emerald-600', type: 'INFRASTRUCTURE' },
   { id: 'org_7', name: 'Uma Chave', slug: 'umachave', logoColor: 'bg-orange-500', type: 'AGENCY' },
 ];
 

@@ -6,7 +6,7 @@ export const getApiBaseUrl = () => {
     }
     const hostname = window.location.hostname;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
-    return isLocal ? 'http://localhost:3001/api' : 'https://backend-production-0647.up.railway.app/api';
+    return isLocal ? 'http://localhost:3002/api' : 'https://backend-production-0647.up.railway.app/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -45,9 +45,15 @@ api.interceptors.response.use(
     (response) => response,
     (error: AxiosError) => {
         if (error.response?.status === 401) {
-            // Não redirecionar para /login se estivermos no portal do cliente ou página de assinatura
-            const isPublicPath = window.location.pathname.startsWith('/portal') || window.location.pathname.startsWith('/sign');
-            if (!isPublicPath) {
+            const requestUrl = error.config?.url || '';
+            const isAuthRoute = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
+            const isPublicOrLoginPage = 
+                window.location.pathname.startsWith('/portal') || 
+                window.location.pathname.startsWith('/sign') || 
+                window.location.pathname === '/login' ||
+                window.location.pathname.startsWith('/login');
+
+            if (!isAuthRoute && !isPublicOrLoginPage) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/login';

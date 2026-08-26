@@ -10,6 +10,13 @@ import { useSidebarNavigation } from '../hooks/useSidebarNavigation';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationPanel from './NotificationPanel';
+import { getBackendUrl } from '../services/api';
+
+const getLogoUrl = (logo?: string) => {
+    if (!logo) return undefined;
+    if (/^(https?:|data:|blob:)/.test(logo)) return logo;
+    return `${getBackendUrl()}${logo.startsWith('/') ? '' : '/'}${logo}`;
+};
 
 const AsteryskoBrandMark: React.FC<{ className?: string; style?: React.CSSProperties }> = ({ className, style }) => (
     <svg viewBox="0 0 38 34" fill="none" className={className} style={style} xmlns="http://www.w3.org/2000/svg">
@@ -43,11 +50,190 @@ const getBgColorForSlug = (slug: string) => {
         case 'fauves': return '#2a2ad7';
         case 'tokyon': return '#dc2626';
         case 'asterysko': return '#0412dd';
-        case 'postizi': return '#8b5cf6';
-        case 'hostizi': return '#059669';
         case 'umachave': return '#f97316';
         default: return '#3b82f6';
     }
+};
+
+const BrandLogo: React.FC<{
+    org: Organization;
+    size?: 'sm' | 'md' | 'lg';
+    className?: string;
+}> = ({ org, size = 'md', className = '' }) => {
+    const slug = org.slug?.toLowerCase() || '';
+
+    const dim = size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-[40px] h-[40px]' : 'w-9 h-9';
+    const iconDim = size === 'sm' ? 'w-3.5 h-3.5' : size === 'lg' ? 'w-[22px] h-[22px]' : 'w-5 h-5';
+
+    // 1. Uploaded custom logo image
+    if (org.logo) {
+        const logoUrl = getLogoUrl(org.logo);
+        if (logoUrl) {
+            return (
+                <img
+                    src={logoUrl}
+                    alt={org.name}
+                    className={`${dim} rounded-xl object-cover shrink-0 ${className}`}
+                />
+            );
+        }
+    }
+
+    // 2. Asterysko
+    if (slug === 'asterysko') {
+        return (
+            <div
+                className={`${dim} rounded-xl bg-[#0412dd] flex items-center justify-center text-white shrink-0 ${className}`}
+            >
+                <div className={iconDim}>
+                    <AsteryskoBrandMark />
+                </div>
+            </div>
+        );
+    }
+
+    // 3. ManySpace / Manyways
+    if (slug === 'manyspace' || slug === 'manyways') {
+        return (
+            <div
+                className={`${dim} rounded-xl bg-black flex items-center justify-center text-white shrink-0 ${className}`}
+            >
+                <div className={size === 'lg' ? 'w-[24px] h-[24px]' : 'w-[20px] h-[20px]'}>
+                    <ManywaysBrandMark />
+                </div>
+            </div>
+        );
+    }
+
+    // 4. Fauves
+    if (slug === 'fauves') {
+        return (
+            <div
+                className={`${dim} rounded-xl bg-[#2a2ad7] flex items-center justify-center text-white shrink-0 overflow-hidden ${className}`}
+            >
+                <img src="/brands/fauves.svg" alt="Fauves" className="w-full h-full object-cover" />
+            </div>
+        );
+    }
+
+    // 5. Tokyon
+    if (slug === 'tokyon') {
+        return (
+            <div
+                className={`${dim} rounded-xl bg-black flex items-center justify-center text-white shrink-0 overflow-hidden ${className}`}
+            >
+                <img src="/brands/tokyon.svg" alt="Tokyon" className="w-full h-full object-cover" />
+            </div>
+        );
+    }
+
+    // 6. Known brand assets (/brands/allyo.svg, /brands/niva.svg)
+    const knownBrandAssets: Record<string, string> = {
+        allyo: '/brands/allyo.svg',
+        niva: '/brands/niva.svg',
+    };
+    if (knownBrandAssets[slug]) {
+        return (
+            <div
+                className={`${dim} rounded-xl bg-black flex items-center justify-center text-white shrink-0 overflow-hidden ${className}`}
+            >
+                <img src={knownBrandAssets[slug]} alt={org.name} className="w-full h-full object-cover" />
+            </div>
+        );
+    }
+
+    // 7. Custom raw svgIcon from DB (e.g. Uma Chave, Docka, etc.)
+    if (org.svgIcon && org.svgIcon.includes('<svg')) {
+        const bg = org.iconBg || getBgColorForSlug(org.slug);
+        const scale = org.iconScale || 1;
+        return (
+            <div
+                className={`${dim} rounded-xl flex items-center justify-center text-white font-bold shrink-0 overflow-hidden ${className}`}
+                style={{ backgroundColor: bg }}
+            >
+                <div
+                    className={`${iconDim} flex items-center justify-center [&>svg]:w-full [&>svg]:h-full [&>svg]:object-contain`}
+                    style={{ transform: `scale(${scale})` }}
+                    dangerouslySetInnerHTML={{ __html: org.svgIcon }}
+                />
+            </div>
+        );
+    }
+
+    // 8. Fallback: Styled initial letter with brand background
+    const bg = org.iconBg || getBgColorForSlug(org.slug);
+    return (
+        <div
+            className={`${dim} rounded-xl flex items-center justify-center text-white font-black uppercase shrink-0 ${className}`}
+            style={{ backgroundColor: bg }}
+        >
+            <span className={size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-[17px]' : 'text-[15px]'}>
+                {org.name.substring(0, 1)}
+            </span>
+        </div>
+    );
+};
+
+const AVATAR_COLORS = [
+    'bg-indigo-600',
+    'bg-emerald-600',
+    'bg-amber-600',
+    'bg-rose-600',
+    'bg-blue-600',
+    'bg-purple-600',
+    'bg-teal-600',
+    'bg-orange-600'
+];
+
+const OrgMembersStack: React.FC<{ org: Organization }> = ({ org }) => {
+    const members = org.membersPreview || [];
+    const displayedMembers = members.slice(0, 4);
+    const totalMembers = org._count?.members || members.length || 1;
+    const extraMembers = totalMembers - displayedMembers.length;
+
+    return (
+        <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+            {displayedMembers.length > 0 ? (
+                <div className="flex items-center -space-x-1.5 shrink-0">
+                    {displayedMembers.map((member, i) => {
+                        const u = member.user;
+                        const name = u?.name || u?.email || 'Membro';
+                        const initial = name.charAt(0).toUpperCase();
+                        const color = AVATAR_COLORS[(name.charCodeAt(0) + i) % AVATAR_COLORS.length];
+                        const avatarUrl = u?.avatar ? getLogoUrl(u.avatar) : undefined;
+
+                        return avatarUrl ? (
+                            <img
+                                key={member.id || i}
+                                src={avatarUrl}
+                                alt={name}
+                                className="w-4 h-4 rounded-full object-cover ring-1.5 ring-[#1e1f22] bg-zinc-700"
+                                title={name}
+                            />
+                        ) : (
+                            <div
+                                key={member.id || i}
+                                className={`w-4 h-4 rounded-full ${color} text-white text-[7.5px] font-bold flex items-center justify-center ring-1.5 ring-[#1e1f22] shrink-0`}
+                                title={name}
+                            >
+                                {initial}
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : null}
+
+            <span className="text-[11px] text-[#9f9f9f] truncate">
+                {extraMembers > 0 ? (
+                    `+ ${extraMembers} ${extraMembers === 1 ? 'pessoa' : 'pessoas'}`
+                ) : totalMembers === 1 ? (
+                    '1 pessoa'
+                ) : (
+                    `${totalMembers} pessoas`
+                )}
+            </span>
+        </div>
+    );
 };
 
 interface UnifiedSidebarProps {
@@ -187,22 +373,10 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                     {/* Switcher trigger button */}
                     <button 
                         onClick={() => setIsOrgMenuOpen(!isOrgMenuOpen)}
-                        className="relative w-[40px] h-[40px] rounded-xl flex items-center justify-center text-white transition-all duration-150 active:translate-y-[2px] group-hover:-translate-y-[1px] shadow-sm overflow-hidden"
-                        style={{ backgroundColor: isCurrentAsterysko ? '#0412dd' : getBgColorForSlug(currentOrg.slug) }}
+                        className="relative rounded-xl flex items-center justify-center transition-all duration-150 active:translate-y-[2px] group-hover:-translate-y-[1px] shadow-sm overflow-hidden"
+                        title={currentOrg.name}
                     >
-                        {isCurrentAsterysko ? (
-                            <div className="w-[22px] h-[22px] text-white">
-                                <AsteryskoBrandMark />
-                            </div>
-                        ) : isCurrentManyways ? (
-                            <div className="w-[24px] h-[24px] text-white">
-                                <ManywaysBrandMark />
-                            </div>
-                        ) : (
-                            <span className="text-[17px] font-black uppercase">
-                                {currentOrg.name.substring(0, 1)}
-                            </span>
-                        )}
+                        <BrandLogo org={currentOrg} size="lg" />
                     </button>
                 </div>
 
@@ -212,14 +386,12 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                         <div className="fixed inset-0 z-40" onClick={() => setIsOrgMenuOpen(false)} />
                         <div 
                             ref={orgMenuRef}
-                            className="absolute top-[50px] left-6 w-[290px] bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-2"
+                            className="absolute top-[50px] left-6 w-[320px] bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-2"
                         >
                             <div className="space-y-1">
                                 {filteredAndSortedOrgs.map((org, index) => {
                                     const isSelected = org.id === currentOrg.id;
-                                    const isAsterysko = org.slug === 'asterysko';
                                     const isManyways = org.slug === 'manyspace' || org.slug === 'manyways';
-                                    let bg = isAsterysko ? '#0412dd' : getBgColorForSlug(org.slug);
                                     
                                     return (
                                         <React.Fragment key={org.id}>
@@ -235,48 +407,33 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                                     isSelected ? 'bg-white/5' : 'hover:bg-white/10'
                                                 }`}
                                             >
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                                                     {/* Logo wrapper with white ring if active */}
                                                     <div 
-                                                        className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold relative shrink-0 transition-transform duration-150 ${
+                                                        className={`rounded-xl shrink-0 transition-transform duration-150 ${
                                                             isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e1f22]' : 'group-hover:scale-105'
                                                         }`}
-                                                        style={{ backgroundColor: bg }}
                                                     >
-                                                        {isAsterysko ? (
-                                                            <div className="w-[20px] h-[20px] text-white">
-                                                                <AsteryskoBrandMark />
-                                                            </div>
-                                                        ) : isManyways ? (
-                                                            <div className="w-[20px] h-[20px] text-white">
-                                                                <ManywaysBrandMark />
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-[15px] font-black uppercase">
-                                                                {org.name.substring(0, 1)}
-                                                            </span>
-                                                        )}
+                                                        <BrandLogo org={org} size="md" />
                                                     </div>
                                                     
-                                                    {/* Text */}
-                                                    <div className="min-w-0">
+                                                    {/* Text & Member Avatar Stack */}
+                                                    <div className="min-w-0 flex-1">
                                                         <div className="flex items-center gap-1.5">
                                                             <h4 className="font-bold text-white text-[14px] leading-snug truncate">
                                                                 {org.name}
                                                             </h4>
                                                             {isManyways && (
-                                                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-white/10 text-zinc-300 rounded">
+                                                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-white/10 text-zinc-300 rounded shrink-0">
                                                                     Mandante
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <p className="text-[11px] text-[#9f9f9f] truncate">
-                                                            {org.slug}.manyspace.io
-                                                        </p>
+                                                        <OrgMembersStack org={org} />
                                                     </div>
                                                 </div>
                                                 
-                                                <span className="text-[10px] font-medium text-[#9f9f9f] font-mono bg-white/5 px-1.5 py-0.5 rounded uppercase">
+                                                <span className="text-[10px] font-medium text-[#9f9f9f] font-mono bg-white/5 px-1.5 py-0.5 rounded uppercase shrink-0">
                                                     ⌘{index + 1}
                                                 </span>
                                             </button>
