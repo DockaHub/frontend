@@ -1,6 +1,6 @@
 import {
-    LayoutDashboard, Ticket, CreditCard, Mic2, LayoutTemplate, Megaphone, Users,
-    BarChart3, Settings, Globe, Headphones, FolderOpen, Mail,
+    LayoutDashboard, Ticket, CreditCard, Megaphone, Users,
+    Settings, Globe, Headphones, Mail,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
     Network, Server, Search, MessageSquare, Book, Trophy, Wallet
 } from 'lucide-react';
@@ -82,19 +82,14 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         // Specific Menu for Fauves
         if (currentOrg.slug === 'fauves') {
             return [
-                { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
-                { id: 'events', label: 'Eventos & Vendas', icon: Ticket },
-                { id: 'leads', label: 'Newsletter & Leads', icon: Users },
-                { id: 'categories', label: 'Categorias', icon: FolderOpen },
-                { id: 'artists', label: 'Artistas', icon: Mic2 },
-                { id: 'slides', label: 'Slides', icon: LayoutTemplate },
-                { id: 'ads', label: 'Anúncios', icon: Megaphone },
-                { id: 'emails', label: 'Emails', icon: Mail },
-                { id: 'users', label: 'Usuários', icon: Users },
-                { id: 'finance', label: 'Financeiro', icon: CreditCard },
+                { id: 'overview', label: 'Centro de comando', icon: LayoutDashboard },
+                { id: 'organizations', label: 'Produtoras', icon: Building2 },
+                { id: 'events', label: 'Eventos', icon: Ticket },
+                { id: 'users', label: 'Usuários & Risco', icon: ShieldAlert },
+                { id: 'finance', label: 'Financeiro & Pix', icon: Wallet },
                 {
                     id: 'helpdesk',
-                    label: 'Helpdesk',
+                    label: 'Suporte',
                     icon: Headphones,
                     children: [
                         { id: 'helpdesk-tickets', label: 'Tickets', icon: MessageSquare },
@@ -102,8 +97,8 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                         { id: 'helpdesk-center', label: 'Central de Ajuda', icon: Book }
                     ]
                 },
-                { id: 'organizations', label: 'Organizações', icon: Building2 },
-                { id: 'reports', label: 'Relatórios', icon: BarChart3 },
+                { id: 'marketing', label: 'Marketing', icon: Megaphone },
+                { id: 'settings', label: 'Auditoria & Ajustes', icon: Settings },
             ];
         }
 

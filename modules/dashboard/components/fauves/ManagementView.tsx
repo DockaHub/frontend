@@ -7,9 +7,10 @@ import FauvesUserDetails from './FauvesUserDetails';
 
 interface ManagementViewProps {
     type: 'users' | 'artists' | 'categories' | 'ads' | 'slides';
+    hideHeader?: boolean;
 }
 
-const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
+const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = false }) => {
     const [data, setData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -552,7 +553,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
 
     return (
         <div className="animate-in fade-in duration-300">
-            <div className="flex justify-between items-end mb-8">
+            {!hideHeader && <div className="flex justify-between items-end mb-8">
                 <div>
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{type === 'ads' ? 'Anúncios da Plataforma' : config.title}</h1>
@@ -570,7 +571,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type }) => {
                         </button>
                     )}
                 </div>
-            </div>
+            </div>}
 
             <div className="bg-transparent mb-6">
                 {type === 'ads' ? (

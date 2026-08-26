@@ -8,6 +8,7 @@ import {
   Lock, Building, Ticket, ShoppingCart, 
   CalendarDays, TrendingUp, Bell, Handshake,
   ChevronRight, Trash2
+  , ShieldCheck
 } from 'lucide-react';
 import { fauvesService } from '../../../../services/fauvesService';
 
@@ -77,6 +78,35 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
     } catch (err) {
       console.error('Failed to toggle status:', err);
       alert('Erro ao alterar status.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleAdmin = async () => {
+    if (!window.confirm(`${user?.isAdmin ? 'Remover' : 'Conceder'} privilégios de administrador para ${user?.email}?`)) return;
+    setSaving(true);
+    try {
+      await fauvesService.setUserAdmin(userId, !user.isAdmin);
+      await fetchUserDetails();
+      if (onUpdate) onUpdate();
+    } catch (err) {
+      console.error('Failed to update admin privileges:', err);
+      alert('A API Fauves não concluiu a alteração de privilégios.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetAccess = async () => {
+    if (!window.confirm(`Enviar redefinição de senha / OTP para ${user?.email}?`)) return;
+    setSaving(true);
+    try {
+      await fauvesService.resetUserAccess(userId);
+      alert('Redefinição de acesso enviada com sucesso.');
+    } catch (err) {
+      console.error('Failed to reset access:', err);
+      alert('A API Fauves não concluiu o envio da redefinição.');
     } finally {
       setSaving(false);
     }
@@ -188,7 +218,7 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400">Clique em "Resetar" para definir uma nova senha para este usuário.</p>
             </div>
-            <button className="flex items-center gap-2 px-6 py-2.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 rounded-xl font-bold text-xs hover:bg-amber-100 transition-all border border-amber-100 dark:border-amber-900/30">
+            <button onClick={resetAccess} disabled={saving} className="flex items-center gap-2 px-6 py-2.5 bg-amber-50 dark:bg-amber-900/10 text-amber-600 dark:text-amber-400 rounded-xl font-bold text-xs hover:bg-amber-100 transition-all border border-amber-100 dark:border-amber-900/30 disabled:opacity-50">
               <RotateCw size={14} /> Resetar
             </button>
           </section>
@@ -335,11 +365,15 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
           <section className="bg-white dark:bg-zinc-900 rounded-[2rem] p-8 shadow-sm border border-zinc-100 dark:border-zinc-800/50">
             <h3 className="text-xs font-black text-zinc-900 dark:text-zinc-100 mb-6 uppercase tracking-widest">Ações Rápidas</h3>
             <div className="space-y-2">
+              <button onClick={toggleAdmin} disabled={saving} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-bold text-teal-600 transition-all group disabled:opacity-50">
+                <span className="flex items-center gap-2"><ShieldCheck size={14} /> {user.isAdmin ? 'Remover administrador' : 'Tornar administrador'}</span>
+                <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all" />
+              </button>
               <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-bold text-indigo-500 transition-all group">
                 <span className="flex items-center gap-2"><ShoppingCart size={14} /> Ver todos os pedidos</span>
                 <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all" />
               </button>
-              <button className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-bold text-amber-500 transition-all group">
+              <button onClick={resetAccess} disabled={saving} className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800 text-xs font-bold text-amber-500 transition-all group disabled:opacity-50">
                 <span className="flex items-center gap-2"><Lock size={14} /> Resetar senha</span>
                 <ChevronRight size={14} className="opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all" />
               </button>

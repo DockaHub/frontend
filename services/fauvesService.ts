@@ -1,5 +1,35 @@
 import axios from 'axios';
 import api from './api';
+import { adminActionSchema, globalSettingsInputSchema, overviewSnapshotSchema, withdrawalSchema } from './fauvesSchemas';
+
+export type FauvesIntegrationStatus = 'operational' | 'degraded' | 'offline';
+
+export interface FauvesOverviewSnapshot {
+    gmv: number;
+    platformRevenue: number;
+    ticketsToday: number;
+    courtesyTicketsToday: number;
+    pendingWithdrawals: number;
+    activeEvents: number;
+    activeOrganizations: number;
+    paymentMix: { pix: number; card: number };
+    revenueSeries: Array<{ label: string; current: number; previous: number }>;
+    integrations: Array<{ name: string; status: FauvesIntegrationStatus; latency?: string }>;
+    activities: Array<{ id: string; type: string; title: string; description: string; createdAt: string; amount?: number }>;
+}
+
+export interface FauvesWithdrawal {
+    id: string;
+    organizationId?: string;
+    organizationName: string;
+    eventName?: string;
+    amount: number;
+    status: string;
+    pixKey?: string;
+    bankAccount?: Record<string, unknown> | string;
+    requestedAt: string;
+    processedAt?: string;
+}
 
 const getBaseURL = () => {
     if (typeof window !== 'undefined') {
@@ -35,6 +65,27 @@ const fauvesApi = axios.create({
     },
 });
 
+const requestFirstAvailable = async <T>(
+    method: 'get' | 'post' | 'put' | 'patch' | 'delete',
+    endpoints: string[],
+    data?: unknown,
+): Promise<T> => {
+    let lastError: unknown;
+    for (const endpoint of endpoints) {
+        try {
+            const response = method === 'get' || method === 'delete'
+                ? await fauvesApi[method](endpoint)
+                : await fauvesApi[method](endpoint, data);
+            return response.data as T;
+        } catch (error: any) {
+            lastError = error;
+            if ([401, 403, 404, 405].includes(error.response?.status)) continue;
+            throw error;
+        }
+    }
+    throw lastError || new Error('Nenhum endpoint compatível está disponível na API Fauves.');
+};
+
 // Interceptor to add token or docka-key if needed
 fauvesApi.interceptors.request.use((config) => {
     if (typeof window !== 'undefined') {
@@ -68,11 +119,15 @@ export const fauvesService = {
                 const total = data.total || (Array.isArray(rawEvents) ? rawEvents.length : 0);
 
                 const items = (rawEvents || []).map((ev: any) => ({
+                    ...ev,
                     id: ev.id,
                     title: ev.name || ev.title || 'Sem título',
                     date: ev.startDate ? new Date(ev.startDate).toLocaleDateString('pt-BR') : (ev.date || '-'),
                     location: ev.locationCity ? `${ev.locationCity}, ${ev.locationUf}` : (ev.location || '-'),
                     status: ev.status || (ev.isPublished ? 'published' : 'draft'),
+                    organizationName: ev.organization?.name || ev.organizationName || 'Sem produtora',
+                    ticketsSold: Number(ev.ticketsSold ?? ev._count?.tickets ?? ev.stats?.sales ?? 0),
+                    ticketCapacity: Number(ev.ticketCapacity ?? ev.capacity ?? ev.totalTickets ?? 0),
                     image: ev.image || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80',
                     stats: ev.stats || { views: 0, clicks: 0, interests: 0, orders: 0, sales: 0 }
                 }));
@@ -219,10 +274,14 @@ export const fauvesService = {
                     if (!name && email !== '-') name = email.split('@')[0];
 
                     return {
+                        ...o,
                         id: o.id,
                         code: o.code || o.id.substring(0, 8).toUpperCase(),
                         customer: { name: name || 'Cliente', email: email },
                         amount: Number(o.totalAmount || 0),
+                        netAmount: Number(o.netAmount || 0),
+                        platformFee: Number(o.platformFee || 0),
+                        paymentMethod: o.paymentMethod || o.paymentType || '-',
                         status: ((o.paymentStatus || 'pending').toLowerCase() === 'paid' ? 'approved' :
                             (o.paymentStatus || 'pending').toLowerCase() === 'canceled' ? 'canceled' : 'pending') as 'approved' | 'pending' | 'canceled',
                         date: o.createdAt ? new Date(o.createdAt).toLocaleDateString('pt-BR') : '-',
@@ -236,6 +295,30 @@ export const fauvesService = {
             }
         }
         throw lastError;
+    },
+
+    getOrder: async (id: string) => {
+        const payload = await requestFirstAvailable<any>('get', [
+            `docka/orders/${id}`, `admin/orders/${id}`, `orders/${id}`,
+        ]);
+        const order = payload.order || payload.item || payload;
+        const email = order.purchaserEmail || order.customerEmail || order.email || order.user?.email || '-';
+        return {
+            ...order,
+            id: order.id,
+            code: order.code || String(order.id).slice(0, 8).toUpperCase(),
+            customer: {
+                name: order.purchaserName || order.customerName || order.user?.name || 'Cliente',
+                email,
+                phone: order.purchaserPhone || order.user?.phone,
+                document: order.purchaserDocument || order.user?.cpf,
+            },
+            amount: Number(order.totalAmount || order.amount || 0),
+            status: String(order.paymentStatus || order.status || 'pending').toLowerCase() === 'paid' ? 'approved' : String(order.paymentStatus || order.status || 'pending').toLowerCase(),
+            date: order.createdAt ? new Date(order.createdAt).toLocaleDateString('pt-BR') : '-',
+            event: order.event?.name || order.eventName || '-',
+            rawFields: order,
+        };
     },
 
     getSupportTickets: async (page = 1, limit = 20) => {
@@ -284,11 +367,16 @@ export const fauvesService = {
                         logo = `${baseUrl}${logo.startsWith('/') ? '' : '/'}${logo}`;
                     }
                     return {
+                        ...org,
                         id: org.id,
                         name: org.name || 'Sem nome',
                         slug: org.slug || '-',
                         eventCount: org.eventCount || org._count?.events || 0,
                         status: org.isActive !== false ? 'active' : 'inactive',
+                        currentLevel: org.currentLevel || org.level || 'BRONZE',
+                        platformFeePercent: Number(org.platformFeePercent ?? org.platformFee ?? 0),
+                        lifetimeTicketsSold: Number(org.lifetimeTicketsSold ?? org.ticketsSold ?? 0),
+                        efiAccountStatus: org.efiAccountStatus || org.bankStatus || 'pending',
                         logo
                     };
                 });
@@ -629,6 +717,14 @@ export const fauvesService = {
         return response.data;
     },
 
+    setUserAdmin: async (id: string, isAdmin: boolean) => requestFirstAvailable<any>('post', [
+        `docka/users/${id}/admin`, `admin/users/${id}/admin`, `users/${id}/admin`,
+    ], { isAdmin }),
+
+    resetUserAccess: async (id: string) => requestFirstAvailable<any>('post', [
+        `docka/users/${id}/reset-access`, `admin/users/${id}/reset-access`, `users/${id}/reset-password`,
+    ], { sendEmail: true, sendOtp: true }),
+
     deleteUser: async (id: string) => {
         const response = await fauvesApi.delete(`docka/users/${id}`);
         return response.data;
@@ -675,7 +771,110 @@ export const fauvesService = {
             }
         }
         return [];
-    }
+    },
+
+    getOverviewSnapshot: async (): Promise<FauvesOverviewSnapshot> => {
+        try {
+            const payload = await requestFirstAvailable<any>('get', [
+                'docka/operations/overview',
+                'admin/operations/overview',
+                'admin/dashboard/overview',
+            ]);
+            const source = payload.data || payload.overview || payload;
+            return overviewSnapshotSchema.parse({
+                gmv: Number(source.gmv ?? source.totalRevenue ?? 0),
+                platformRevenue: Number(source.platformRevenue ?? source.takeRateRevenue ?? source.platformFees ?? 0),
+                ticketsToday: Number(source.ticketsToday ?? source.salesTodayCount ?? 0),
+                courtesyTicketsToday: Number(source.courtesyTicketsToday ?? source.courtesiesToday ?? 0),
+                pendingWithdrawals: Number(source.pendingWithdrawals ?? source.withdrawalQueueAmount ?? 0),
+                activeEvents: Number(source.activeEvents ?? source.eventsActive ?? 0),
+                activeOrganizations: Number(source.activeOrganizations ?? source.organizationsActive ?? 0),
+                paymentMix: source.paymentMix || { pix: Number(source.pixShare ?? 0), card: Number(source.cardShare ?? 0) },
+                revenueSeries: source.revenueSeries || source.chart || [],
+                integrations: source.integrations || [],
+                activities: source.activities || source.recentActivity || [],
+            });
+        } catch {
+            const [stats, orders, organizations, events] = await Promise.all([
+                fauvesService.getStats(),
+                fauvesService.getOrders(1, 100).catch(() => ({ items: [], total: 0 })),
+                fauvesService.getOrganizations(1, 100).catch(() => ({ items: [], total: 0 })),
+                fauvesService.getEvents(1, 100).catch(() => ({ items: [], total: 0 })),
+            ]);
+            const paidOrders = orders.items.filter((order: any) => order.status === 'approved');
+            const gmv = Number(stats.totalRevenue || paidOrders.reduce((total: number, order: any) => total + Number(order.amount || 0), 0));
+            return overviewSnapshotSchema.parse({
+                gmv,
+                platformRevenue: Number(stats.platformRevenue || stats.platformFees || 0),
+                ticketsToday: Number(stats.ticketsToday || stats.salesTodayCount || 0),
+                courtesyTicketsToday: Number(stats.courtesyTicketsToday || 0),
+                pendingWithdrawals: Number(stats.pendingWithdrawals || 0),
+                activeEvents: Number(stats.eventsActive || events.items.filter((event: any) => event.status === 'published').length),
+                activeOrganizations: organizations.items.filter((org: any) => org.status === 'active').length,
+                paymentMix: { pix: Number(stats.pixShare || 0), card: Number(stats.cardShare || 0) },
+                revenueSeries: stats.revenueSeries || [],
+                integrations: stats.integrations || [],
+                activities: stats.activities || [],
+            });
+        }
+    },
+
+    getWithdrawals: async (page = 1, limit = 20): Promise<{ items: FauvesWithdrawal[]; total: number }> => {
+        const payload = await requestFirstAvailable<any>('get', [
+            `docka/withdrawals?page=${page}&perPage=${limit}`,
+            `admin/withdrawals?page=${page}&perPage=${limit}`,
+            `withdrawals?page=${page}&perPage=${limit}`,
+        ]);
+        const rawItems = payload.withdrawals || payload.items || payload.data || (Array.isArray(payload) ? payload : []);
+        const items = rawItems.map((item: any) => withdrawalSchema.parse({
+            id: item.id,
+            organizationId: item.organizationId,
+            organizationName: item.organization?.name || item.organizationName || 'Produtora',
+            eventName: item.event?.name || item.eventName,
+            amount: Number(item.amount || 0),
+            status: String(item.status || 'pending').toLowerCase(),
+            pixKey: item.pixKey || item.bankAccount?.pixKey || item.bankAccount?.key,
+            bankAccount: item.bankAccount,
+            requestedAt: item.requestedAt || item.createdAt || new Date().toISOString(),
+            processedAt: item.processedAt,
+        }));
+        return { items, total: Number(payload.total ?? payload.meta?.total ?? items.length) };
+    },
+
+    runAdminAction: async (
+        resource: 'organizations' | 'events' | 'users' | 'orders' | 'withdrawals' | 'tickets',
+        id: string,
+        action: string,
+        payload: Record<string, unknown> = {},
+    ) => {
+        const input = adminActionSchema.parse({ resource, id, action, payload });
+        return requestFirstAvailable<any>('post', [
+            `docka/${input.resource}/${input.id}/${input.action}`,
+            `admin/${input.resource}/${input.id}/${input.action}`,
+            `${input.resource}/${input.id}/${input.action}`,
+        ], input.payload);
+    },
+
+    getAuditLogs: async (page = 1, limit = 50) => {
+        const payload = await requestFirstAvailable<any>('get', [
+            `docka/audit-logs?page=${page}&perPage=${limit}`,
+            `admin/audit-logs?page=${page}&perPage=${limit}`,
+            `admin/audit?page=${page}&perPage=${limit}`,
+        ]);
+        const items = payload.logs || payload.items || payload.data || (Array.isArray(payload) ? payload : []);
+        return { items, total: Number(payload.total ?? payload.meta?.total ?? items.length) };
+    },
+
+    getGlobalSettings: async () => requestFirstAvailable<any>('get', [
+        'docka/settings/global', 'admin/settings/global', 'admin/settings',
+    ]),
+
+    updateGlobalSettings: async (payload: Record<string, unknown>) => {
+        const input = globalSettingsInputSchema.parse(payload);
+        return requestFirstAvailable<any>('put', [
+            'docka/settings/global', 'admin/settings/global', 'admin/settings',
+        ], input);
+    },
 };
 
 export default fauvesService;

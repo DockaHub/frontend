@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Save, Link as LinkIcon, Calendar, MapPin, User, Image as ImageIcon, X, CheckIcon } from 'lucide-react';
+import { Search, Loader2, Save, Link as LinkIcon, Image as ImageIcon, X } from 'lucide-react';
 import { fauvesService } from '../../../../services/fauvesService';
 
 const BRAZIL_UFS = [
