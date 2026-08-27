@@ -1,8 +1,8 @@
 import {
-    LayoutDashboard, Ticket, CreditCard, Megaphone, Users,
-    Settings, Globe, Headphones, Mail,
+    LayoutDashboard, Ticket, CreditCard, Mic2, LayoutTemplate, Megaphone, Users,
+    BarChart3, Settings, Headphones, FolderOpen,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
-    Network, Server, Search, MessageSquare, Book, Trophy, Wallet
+    Network, Search, Trophy, Wallet
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization } from '../types';
@@ -82,23 +82,18 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
         // Specific Menu for Fauves
         if (currentOrg.slug === 'fauves') {
             return [
-                { id: 'overview', label: 'Centro de comando', icon: LayoutDashboard },
-                { id: 'organizations', label: 'Produtoras', icon: Building2 },
+                { id: 'overview', label: 'Início', icon: LayoutDashboard },
+                { id: 'organizations', label: 'Calendários', icon: Building2 },
                 { id: 'events', label: 'Eventos', icon: Ticket },
                 { id: 'users', label: 'Usuários & Risco', icon: ShieldAlert },
-                { id: 'finance', label: 'Financeiro & Pix', icon: Wallet },
-                {
-                    id: 'helpdesk',
-                    label: 'Suporte',
-                    icon: Headphones,
-                    children: [
-                        { id: 'helpdesk-tickets', label: 'Tickets', icon: MessageSquare },
-                        { id: 'helpdesk-chat', label: 'Live Chat', icon: Users },
-                        { id: 'helpdesk-center', label: 'Central de Ajuda', icon: Book }
-                    ]
-                },
-                { id: 'marketing', label: 'Marketing', icon: Megaphone },
-                { id: 'settings', label: 'Auditoria & Ajustes', icon: Settings },
+                { id: 'finance', label: 'Financeiro', icon: CreditCard },
+                { id: 'helpdesk', label: 'Suporte', icon: Headphones },
+                { id: 'reports', label: 'Relatórios', icon: BarChart3 },
+                { id: 'categories', label: 'Categorias', icon: FolderOpen },
+                { id: 'artists', label: 'Artistas', icon: Mic2 },
+                { id: 'slides', label: 'Slides', icon: LayoutTemplate },
+                { id: 'ads', label: 'Anúncios', icon: Megaphone },
+                { id: 'settings', label: 'Configurações', icon: Settings },
             ];
         }
 

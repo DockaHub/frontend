@@ -1,104 +1,183 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-    Activity, ArrowDownToLine, Building2, CalendarDays, CircleDollarSign,
-    CreditCard, RefreshCw, Sparkles, Ticket, TrendingUp, Users,
-} from 'lucide-react';
-import { Area, AreaChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Calendar, CalendarDays, RefreshCw, ServerCog, WalletCards } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { fauvesService, FauvesOverviewSnapshot } from '../../../../services/fauvesService';
-import { currency, LoadingState, PageHeader, Panel, SecondaryButton, shortCurrency, StatusBadge } from './FauvesUI';
+import { currency, shortCurrency } from './FauvesUI';
+
+const BORDER = 'border-[#e5e5e5] dark:border-zinc-800';
 
 const EMPTY: FauvesOverviewSnapshot = {
-    gmv: 0, platformRevenue: 0, ticketsToday: 0, courtesyTicketsToday: 0,
-    pendingWithdrawals: 0, activeEvents: 0, activeOrganizations: 0,
-    paymentMix: { pix: 0, card: 0 }, revenueSeries: [], integrations: [], activities: [],
+    gmv: 0,
+    platformRevenue: 0,
+    ticketsToday: 0,
+    courtesyTicketsToday: 0,
+    pendingWithdrawals: 0,
+    activeEvents: 0,
+    activeOrganizations: 0,
+    paymentMix: { pix: 0, card: 0 },
+    revenueSeries: [],
+    integrations: [],
+    activities: [],
 };
 
-const fallbackSeries = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul'].map((label) => ({ label, current: 0, previous: 0 }));
+const monthLabels = ['jul/25', 'ago/25', 'set/25', 'out/25', 'nov/25', 'dez/25', 'jan/26', 'fev/26', 'mar/26', 'abr/26', 'mai/26', 'jun/26'];
+const emptyRevenueSeries = monthLabels.map((label) => ({ label, current: 0, previous: 0 }));
+
+const todayLabel = () => {
+    const now = new Date();
+    const weekdays = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return `${weekdays[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}. de ${now.getFullYear()}`;
+};
+
+interface KpiProps {
+    label: string;
+    value: string;
+    detail: React.ReactNode;
+}
+
+const Kpi = ({ label, value, detail }: KpiProps) => (
+    <div className={`flex min-h-[170px] min-w-0 flex-col justify-between border-b border-r bg-white p-5 sm:p-[30px] dark:bg-zinc-950 ${BORDER}`}>
+        <span className="text-xs font-medium text-black sm:text-sm dark:text-zinc-300">{label}</span>
+        <div className="flex flex-col gap-5">
+            <span className="truncate font-season text-[28px] font-[420] leading-none text-black sm:text-[32px] dark:text-white" title={value}>{value}</span>
+            <span className="min-h-[10px] text-[10px] font-semibold leading-none text-[#9f9f9f] dark:text-zinc-500">{detail}</span>
+        </div>
+    </div>
+);
 
 const RevenueChart = ({ data }: { data: FauvesOverviewSnapshot['revenueSeries'] }) => {
-    const series = data.length > 1 ? data.slice(-12) : fallbackSeries;
+    const series = data.length > 1 ? data.slice(-12) : emptyRevenueSeries;
     return (
-        <div className="mt-6">
-            <div className="mb-4 flex items-center gap-5 text-[11px] font-semibold text-slate-500">
-                <span className="flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-teal-500" /> Período atual</span>
-                <span className="flex items-center gap-2"><i className="h-2 w-2 rounded-full bg-slate-300 dark:bg-zinc-600" /> Período anterior</span>
-            </div>
-            <div className="h-64 rounded-xl bg-gradient-to-b from-teal-50/60 to-transparent pt-3 dark:from-teal-950/20">
-                <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={series} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
-                        <defs><linearGradient id="fauvesArea" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#14b8a6" stopOpacity={0.28} /><stop offset="95%" stopColor="#14b8a6" stopOpacity={0} /></linearGradient></defs>
-                        <CartesianGrid vertical={false} stroke="#94a3b8" strokeOpacity={0.12} />
-                        <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: '#94a3b8' }} tickFormatter={(value) => shortCurrency(Number(value))} />
-                        <Tooltip formatter={(value) => currency(Number(value))} contentStyle={{ borderRadius: 12, borderColor: '#e2e8f0', fontSize: 11 }} />
-                        <Area type="monotone" dataKey="previous" stroke="#94a3b8" strokeWidth={2} strokeDasharray="7 7" fill="transparent" />
-                        <Area type="monotone" dataKey="current" stroke="#0d9488" strokeWidth={3} fill="url(#fauvesArea)" />
-                    </AreaChart>
-                </ResponsiveContainer>
-            </div>
+        <div className="h-[374px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={series} margin={{ top: 28, right: 0, left: 0, bottom: 0 }} barCategoryGap={0}>
+                    <defs>
+                        <linearGradient id="fauvesRevenue" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#dedeff" stopOpacity={0.95} />
+                            <stop offset="100%" stopColor="#f8f8ff" stopOpacity={0.2} />
+                        </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="#e5e5e5" vertical />
+                    <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#111111', fontFamily: 'Plus Jakarta Sans' }} interval={0} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#111111', fontFamily: 'Plus Jakarta Sans' }} width={34} allowDecimals={false} />
+                    <Tooltip cursor={{ fill: 'rgba(42,42,215,.035)' }} formatter={(value) => currency(Number(value))} contentStyle={{ border: '1px solid #e5e5e5', borderRadius: 0, fontSize: 11, boxShadow: 'none' }} />
+                    <Bar dataKey="current" fill="url(#fauvesRevenue)" stroke="#2a2ad7" strokeWidth={1} radius={0}>
+                        <LabelList dataKey="current" position="top" formatter={(value: React.ReactNode) => Number(value) ? shortCurrency(Number(value)) : ''} style={{ fontSize: 9, fill: '#111111', fontFamily: 'Plus Jakarta Sans' }} />
+                    </Bar>
+                </BarChart>
+            </ResponsiveContainer>
         </div>
     );
 };
 
-const PaymentDonut = ({ pix, card }: { pix: number; card: number }) => {
-    const normalizedPix = pix + card > 0 ? (pix / (pix + card)) * 100 : 0;
-    const chartData = [{ name: 'Pix', value: pix }, { name: 'Cartão', value: card }];
-    return (
-        <div className="flex items-center gap-6 py-5">
-            <div className="relative h-32 w-32 shrink-0">
-                <ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={chartData} dataKey="value" innerRadius={44} outerRadius={62} strokeWidth={0}>{chartData.map((item, index) => <Cell key={item.name} fill={index === 0 ? '#14b8a6' : '#334155'} />)}</Pie><Tooltip formatter={(value) => currency(Number(value))} /></PieChart></ResponsiveContainer>
-                <div className="absolute inset-4 flex flex-col items-center justify-center rounded-full bg-white dark:bg-zinc-900"><span className="text-xl font-bold text-slate-950 dark:text-white">{Math.round(normalizedPix)}%</span><span className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Pix</span></div>
-            </div>
-            <div className="flex-1 space-y-4">
-                <div><div className="flex justify-between text-xs"><span className="font-semibold text-slate-700 dark:text-zinc-200">Pix</span><span>{currency(pix)}</span></div><div className="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-zinc-800"><div className="h-full rounded-full bg-teal-500" style={{ width: `${normalizedPix}%` }} /></div></div>
-                <div><div className="flex justify-between text-xs"><span className="font-semibold text-slate-700 dark:text-zinc-200">Cartão</span><span>{currency(card)}</span></div><div className="mt-2 h-1.5 rounded-full bg-slate-100 dark:bg-zinc-800"><div className="h-full rounded-full bg-slate-700 dark:bg-zinc-400" style={{ width: `${100 - normalizedPix}%` }} /></div></div>
-            </div>
-        </div>
-    );
-};
+interface AlertRowProps {
+    icon: React.ReactNode;
+    label: string;
+    action: string;
+}
 
-const FauvesOverviewView: React.FC = () => {
+const AlertRow = ({ icon, label, action }: AlertRowProps) => (
+    <div className={`flex min-h-[51px] items-center justify-between gap-5 border-t px-5 py-3 sm:px-[30px] ${BORDER}`}>
+        <div className="flex min-w-0 items-center gap-[10px]">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center text-[#fd6b32]">{icon}</span>
+            <span className="truncate text-xs font-semibold text-black dark:text-zinc-200">{label}</span>
+        </div>
+        <span className="truncate text-right text-[11px] font-normal text-[#9f9f9f] dark:text-zinc-500">{action}</span>
+    </div>
+);
+
+const FauvesOverviewView: React.FC<{ userName?: string }> = ({ userName = 'Usuário' }) => {
     const [snapshot, setSnapshot] = useState<FauvesOverviewSnapshot>(EMPTY);
     const [ranking, setRanking] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const load = async () => {
         setLoading(true);
-        const [overview, rankingData] = await Promise.all([
-            fauvesService.getOverviewSnapshot(),
-            fauvesService.getRanking().catch(() => []),
-        ]);
-        setSnapshot(overview);
-        setRanking(Array.isArray(rankingData) ? rankingData : []);
-        setLoading(false);
+        try {
+            const [overview, rankingData] = await Promise.all([
+                fauvesService.getOverviewSnapshot(),
+                fauvesService.getRanking().catch(() => []),
+            ]);
+            setSnapshot(overview);
+            setRanking(Array.isArray(rankingData) ? rankingData : []);
+        } catch {
+            setSnapshot(EMPTY);
+            setRanking([]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => { void load(); }, []);
 
-    const metrics = useMemo(() => [
-        { label: 'GMV total', value: shortCurrency(snapshot.gmv), detail: currency(snapshot.gmv), icon: CircleDollarSign, accent: 'text-teal-600 bg-teal-50 dark:bg-teal-950/40' },
-        { label: 'Receita Fauves', value: shortCurrency(snapshot.platformRevenue), detail: 'Take-rate acumulado', icon: TrendingUp, accent: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40' },
-        { label: 'Ingressos hoje', value: snapshot.ticketsToday.toLocaleString('pt-BR'), detail: `${snapshot.courtesyTicketsToday} cortesias`, icon: Ticket, accent: 'text-cyan-600 bg-cyan-50 dark:bg-cyan-950/40' },
-        { label: 'Saques pendentes', value: shortCurrency(snapshot.pendingWithdrawals), detail: 'Fila Pix operacional', icon: ArrowDownToLine, accent: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40' },
-        { label: 'Eventos ativos', value: snapshot.activeEvents.toLocaleString('pt-BR'), detail: 'Publicados e vendendo', icon: CalendarDays, accent: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40' },
-        { label: 'Calendários', value: snapshot.activeOrganizations.toLocaleString('pt-BR'), detail: 'Produtoras operando', icon: Building2, accent: 'text-slate-600 bg-slate-100 dark:bg-zinc-800' },
-    ], [snapshot]);
+    const kpis: KpiProps[] = [
+        { label: 'GMV Total', value: shortCurrency(snapshot.gmv), detail: <><span className="text-[#76ba00]">+0%</span> <span>vs mês anterior</span></> },
+        { label: 'Receita Fauves', value: shortCurrency(snapshot.platformRevenue), detail: 'Take-rate acumulado' },
+        { label: 'Ingressos hoje', value: snapshot.ticketsToday.toLocaleString('pt-BR'), detail: `${snapshot.courtesyTicketsToday} cortesias` },
+        { label: 'Saques pendentes', value: shortCurrency(snapshot.pendingWithdrawals), detail: 'Fila Pix operacional' },
+        { label: 'Eventos ativos', value: snapshot.activeEvents.toLocaleString('pt-BR'), detail: 'Publicados e vendendo' },
+        { label: 'Calendários', value: snapshot.activeOrganizations.toLocaleString('pt-BR'), detail: 'Produtoras operando' },
+    ];
+
+    const topOrganizations = useMemo(() => ranking.slice(0, 5), [ranking]);
+    const maxRanking = Math.max(1, ...topOrganizations.map((item) => Number(item.value || item.revenue || 0)));
+    const degradedIntegrations = snapshot.integrations.filter((integration) => integration.status !== 'operational').length;
 
     return (
-        <div className="animate-in fade-in duration-500">
-            <PageHeader eyebrow="Fauves HQ · Live telemetry" title="Centro de comando" description="Visão consolidada da receita, operação e saúde da plataforma em tempo real." actions={<><span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300"><Activity size={13} /> Operação online</span><SecondaryButton onClick={() => void load()} disabled={loading}><RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Atualizar</SecondaryButton></>} />
-            {loading ? <Panel><LoadingState /></Panel> : <>
-                <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">{metrics.map((metric) => <Panel key={metric.label} className="group p-5 transition hover:-translate-y-0.5 hover:border-teal-300"><div className={`mb-5 inline-flex rounded-xl p-2.5 ${metric.accent}`}><metric.icon size={18} /></div><div className="truncate text-2xl font-bold tracking-tight text-slate-950 dark:text-white" title={metric.detail}>{metric.value}</div><div className="mt-1 text-xs font-semibold text-slate-600 dark:text-zinc-300">{metric.label}</div><div className="mt-1 text-[10px] text-slate-400">{metric.detail}</div></Panel>)}</div>
-                <div className="grid gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,.8fr)]">
-                    <Panel className="p-6"><div className="flex items-start justify-between"><div><h2 className="font-bold text-slate-900 dark:text-white">Faturamento</h2><p className="mt-1 text-xs text-slate-400">Comparativo por período</p></div><Sparkles size={18} className="text-teal-500" /></div><RevenueChart data={snapshot.revenueSeries} /></Panel>
-                    <Panel className="p-6"><div className="flex items-center justify-between"><div><h2 className="font-bold text-slate-900 dark:text-white">Mix de pagamentos</h2><p className="mt-1 text-xs text-slate-400">Pix vs. cartão de crédito</p></div><CreditCard size={18} className="text-slate-400" /></div><PaymentDonut pix={snapshot.paymentMix.pix} card={snapshot.paymentMix.card} /></Panel>
+        <div className="min-h-full bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
+            <header className={`sticky top-0 z-10 flex h-[75px] items-center justify-between border-b bg-white/95 px-5 backdrop-blur-sm sm:px-7 dark:bg-zinc-950/95 ${BORDER}`}>
+                <span className="font-season text-[22px] font-[420] text-black dark:text-white">Olá, {userName}</span>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => void load()} disabled={loading} aria-label="Atualizar dashboard" className="mr-1 rounded-full p-1.5 text-[#9f9f9f] transition hover:bg-zinc-100 hover:text-black disabled:opacity-40 dark:hover:bg-zinc-800 dark:hover:text-white">
+                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                    <Calendar size={17} className="text-[#9f9f9f]" />
+                    <span className="hidden text-sm font-semibold text-black sm:inline dark:text-zinc-300">{todayLabel()}</span>
                 </div>
-                <div className="mt-6 grid gap-6 xl:grid-cols-3">
-                    <Panel className="overflow-hidden xl:col-span-1"><div className="border-b border-slate-100 px-6 py-5 dark:border-zinc-800"><h2 className="font-bold text-slate-900 dark:text-white">Top produtoras</h2><p className="mt-1 text-xs text-slate-400">Ranking por GMV</p></div><div className="p-5">{ranking.length ? <div className="space-y-4">{ranking.slice(0, 10).map((item, index) => <div key={item.id || item.name || index} className="flex items-center gap-3"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500 dark:bg-zinc-800">{index + 1}</span><div className="min-w-0 flex-1"><div className="truncate text-xs font-bold text-slate-800 dark:text-zinc-100">{item.name || item.organizationName}</div><div className="mt-1 h-1 rounded-full bg-slate-100 dark:bg-zinc-800"><div className="h-full rounded-full bg-teal-500" style={{ width: `${Math.max(5, (Number(item.value || item.revenue || 0) / Number(ranking[0]?.value || ranking[0]?.revenue || 1)) * 100)}%` }} /></div></div><span className="text-xs font-semibold text-slate-500">{shortCurrency(Number(item.value || item.revenue || 0))}</span></div>)}</div> : <div className="py-12 text-center text-xs text-slate-400">Sem faturamento ranqueado no período.</div>}</div></Panel>
-                    <Panel className="overflow-hidden"><div className="border-b border-slate-100 px-6 py-5 dark:border-zinc-800"><h2 className="font-bold text-slate-900 dark:text-white">Saúde das integrações</h2><p className="mt-1 text-xs text-slate-400">Serviços críticos da operação</p></div><div className="divide-y divide-slate-100 dark:divide-zinc-800">{(snapshot.integrations.length ? snapshot.integrations : ['Efí Bank', 'Resend', 'Cloudflare R2', 'Database'].map((name) => ({ name, status: 'degraded' as const, latency: undefined }))).map((integration) => <div key={integration.name} className="flex items-center justify-between px-6 py-4"><div><div className="text-xs font-bold text-slate-800 dark:text-zinc-100">{integration.name}</div><div className="mt-1 text-[10px] text-slate-400">{integration.latency || 'Aguardando telemetria'}</div></div><StatusBadge value={integration.status} /></div>)}</div></Panel>
-                    <Panel className="overflow-hidden"><div className="border-b border-slate-100 px-6 py-5 dark:border-zinc-800"><h2 className="font-bold text-slate-900 dark:text-white">Atividade ao vivo</h2><p className="mt-1 text-xs text-slate-400">Últimos eventos operacionais</p></div><div className="max-h-80 divide-y divide-slate-100 overflow-y-auto dark:divide-zinc-800">{snapshot.activities.length ? snapshot.activities.map((item) => <div key={item.id} className="flex gap-3 px-6 py-4"><div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-teal-500 shadow-[0_0_0_4px_rgba(20,184,166,.12)]" /><div className="min-w-0 flex-1"><div className="text-xs font-bold text-slate-800 dark:text-zinc-100">{item.title}</div><p className="mt-1 truncate text-[10px] text-slate-400">{item.description}</p></div>{item.amount !== undefined && <span className="text-xs font-bold text-emerald-600">{shortCurrency(item.amount)}</span>}</div>) : <div className="flex min-h-56 flex-col items-center justify-center text-center text-xs text-slate-400"><Users size={24} className="mb-3 opacity-40" />Nenhuma atividade recebida.</div>}</div></Panel>
+            </header>
+
+            <section className={`grid grid-cols-2 border-l md:grid-cols-3 xl:grid-cols-6 ${BORDER}`} aria-label="Indicadores da operação">
+                {kpis.map((kpi) => <Kpi key={kpi.label} {...kpi} />)}
+            </section>
+
+            <section className="grid grid-cols-1 xl:grid-cols-2">
+                <div className={`border-b border-r ${BORDER}`}>
+                    <div className={`flex min-h-[72px] items-center gap-4 border-b px-5 sm:px-[30px] ${BORDER}`}>
+                        <h2 className="text-sm font-medium text-black dark:text-zinc-200">Faturamento</h2>
+                        <span className="text-[10px] font-medium text-black dark:text-zinc-500">Comparativo por período</span>
+                    </div>
+                    <RevenueChart data={snapshot.revenueSeries} />
                 </div>
-            </>}
+
+                <div className={`border-b ${BORDER}`}>
+                    <div className={`flex min-h-[72px] items-center border-b px-5 sm:px-[30px] ${BORDER}`}>
+                        <h2 className="text-sm font-medium text-black dark:text-zinc-200">Top organizadores</h2>
+                    </div>
+                    <div className="min-h-[204px]">
+                        {topOrganizations.length ? topOrganizations.map((item, index) => {
+                            const value = Number(item.value || item.revenue || 0);
+                            const width = Math.max(7, (value / maxRanking) * 100);
+                            return (
+                                <div key={item.id || item.name || index} className={`flex min-h-[41px] items-center border-b px-5 last:border-b-0 sm:px-[30px] ${BORDER}`}>
+                                    <span className="w-[145px] shrink-0 truncate text-xs font-medium text-[#fd6b32]">{item.name || item.organizationName || 'Organizador'}</span>
+                                    <div className="relative h-[30px] min-w-0 flex-1">
+                                        <div className="absolute inset-y-0 left-0 border-r border-[#fd6b32] bg-gradient-to-l from-[#ffeee8] to-transparent dark:from-orange-950/30" style={{ width: `${width}%` }} />
+                                    </div>
+                                    <span className="w-[76px] shrink-0 text-right text-[10px] font-medium text-black dark:text-zinc-300">{shortCurrency(value)}</span>
+                                </div>
+                            );
+                        }) : <div className="flex min-h-[204px] items-center justify-center text-xs text-[#9f9f9f]">Sem faturamento ranqueado no período.</div>}
+                    </div>
+
+                    <div className={`flex min-h-[72px] items-center border-y px-5 sm:px-[30px] ${BORDER}`}>
+                        <h2 className="text-sm font-medium text-black dark:text-zinc-200">Alertas operacionais</h2>
+                    </div>
+                    <AlertRow icon={<WalletCards size={17} strokeWidth={1.5} />} label="Saques Pix pendentes" action={snapshot.pendingWithdrawals > 0 ? `Revisar ${currency(snapshot.pendingWithdrawals)}` : 'Fila conciliada'} />
+                    <AlertRow icon={<ServerCog size={17} strokeWidth={1.5} />} label="Saúde das integrações" action={degradedIntegrations ? `${degradedIntegrations} serviço(s) exigem atenção` : 'Todos os serviços operacionais'} />
+                    <AlertRow icon={<CalendarDays size={17} strokeWidth={1.5} />} label="Eventos ativos" action={`${snapshot.activeEvents.toLocaleString('pt-BR')} publicados e vendendo`} />
+                </div>
+            </section>
         </div>
     );
 };
