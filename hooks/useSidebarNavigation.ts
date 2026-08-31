@@ -1,5 +1,5 @@
 import {
-    LayoutDashboard, Ticket, CreditCard, Mic2, LayoutTemplate, Megaphone, Users,
+    LayoutDashboard, Ticket, CreditCard, Mic2, Users,
     BarChart3, Settings, Headphones, FolderOpen,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
     Network, Search, Trophy, Wallet
@@ -91,8 +91,6 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'reports', label: 'Relatórios', icon: BarChart3 },
                 { id: 'categories', label: 'Categorias', icon: FolderOpen },
                 { id: 'artists', label: 'Artistas', icon: Mic2 },
-                { id: 'slides', label: 'Slides', icon: LayoutTemplate },
-                { id: 'ads', label: 'Anúncios', icon: Megaphone },
                 { id: 'settings', label: 'Configurações', icon: Settings },
             ];
         }

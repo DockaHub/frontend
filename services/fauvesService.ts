@@ -31,26 +31,19 @@ export interface FauvesWithdrawal {
     processedAt?: string;
 }
 
+export interface FauvesReportsSnapshot {
+    periodDays: number;
+    revenue: number;
+    orders: number;
+    tickets: number;
+    users: number;
+    trends: { revenue: number | null; orders: number | null; tickets: number | null; users: number | null };
+    series: Array<{ label: string; revenue: number; tickets: number }>;
+    topEvents: Array<{ id: string; name: string; tickets: number; revenue: number }>;
+    topOrganizations: Array<{ id: string; name: string; eventCount: number; revenue: number; change: number | null }>;
+}
+
 const getBaseURL = () => {
-    if (typeof window !== 'undefined') {
-        const savedUrl = localStorage.getItem('FAUVES_DYNAMIC_API_URL');
-        if (savedUrl) {
-            let url = savedUrl.trim();
-
-            if (url.includes('fauves-api-production.up.railway.app')) {
-                console.warn(`[FauvesAPI] Ignoring stale domain in localStorage: ${url}. Switching to Proxy.`);
-            } else {
-                if (url.endsWith('/')) url = url.slice(0, -1);
-                if (!url.toLowerCase().endsWith('/api')) {
-                    url += '/api';
-                }
-                const finalUrl = `${url}/`;
-                console.log(`[FauvesAPI] Base URL configured from localStorage: ${finalUrl}`);
-                return finalUrl;
-            }
-        }
-    }
-
     const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
     const proxyUrl = apiBase.endsWith('/') ? `${apiBase}fauves-proxy/` : `${apiBase}/fauves-proxy/`;
 
@@ -86,17 +79,35 @@ const requestFirstAvailable = async <T>(
     throw lastError || new Error('Nenhum endpoint compatível está disponível na API Fauves.');
 };
 
-// Interceptor to add token or docka-key if needed
+const collectAllPages = async <T>(
+    loader: (page: number, limit: number) => Promise<{ items: T[]; total: number }>,
+    pageSize = 200,
+): Promise<{ items: T[]; total: number }> => {
+    const first = await loader(1, pageSize);
+    const pageCount = Math.min(25, Math.ceil(first.total / pageSize));
+    if (pageCount <= 1) return first;
+
+    const remaining = await Promise.all(
+        Array.from({ length: pageCount - 1 }, (_, index) => loader(index + 2, pageSize)),
+    );
+    return { items: [first, ...remaining].flatMap((page) => page.items), total: first.total };
+};
+
+const startOfLocalDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+const changePercent = (current: number, previous: number): number | null => {
+    if (previous === 0) return current === 0 ? 0 : null;
+    return Math.round(((current - previous) / previous) * 1000) / 10;
+};
+
+// The browser only sends the ManySpace session. The Fauves integration key is
+// injected by the authenticated backend proxy and is never stored client-side.
 fauvesApi.interceptors.request.use((config) => {
     if (typeof window !== 'undefined') {
-        const dockaKey = localStorage.getItem('FAUVES_DOCKA_API_KEY');
-        if (dockaKey) {
-            config.headers['x-docka-key'] = dockaKey;
-        }
-
-        const dynamicToken = localStorage.getItem('FAUVES_DYNAMIC_API_TOKEN');
-        const defaultToken = localStorage.getItem('token');
-        const token = dynamicToken || defaultToken;
+        // Remove credentials left by the legacy direct-to-Fauves configuration.
+        localStorage.removeItem('FAUVES_DYNAMIC_API_URL');
+        localStorage.removeItem('FAUVES_DYNAMIC_API_TOKEN');
+        localStorage.removeItem('FAUVES_DOCKA_API_KEY');
+        const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -198,9 +209,10 @@ export const fauvesService = {
                 const items = (rawItems || []).map((item: any) => {
                     if (!item) return {};
                     if (type === 'users') {
+                        const fullName = [item.name, item.surname].filter(Boolean).join(' ') || item.fullName || 'Sem nome';
                         return {
                             ...item,
-                            col1: item.name || item.fullName || 'Sem nome',
+                            col1: fullName,
                             sub1: item.email || '-',
                             col2: item.email || '-',
                             col3: item.isAdmin ? 'Admin' : (item.role || 'Usuário'),
@@ -221,7 +233,7 @@ export const fauvesService = {
                     if (type === 'artists') {
                         return {
                             ...item,
-                            img: item.photoUrl || item.image || 'https://via.placeholder.com/150',
+                            img: item.imageUrl || item.photoUrl || item.image || '',
                             col1: item.name || 'Sem nome',
                             col2: String(item._count?.events || item.eventCount || 0),
                             col3: item.spotifyUrl || '', 
@@ -276,14 +288,14 @@ export const fauvesService = {
                     return {
                         ...o,
                         id: o.id,
-                        code: o.code || o.id.substring(0, 8).toUpperCase(),
+                        code: o.code || String(o.id || '').slice(0, 8).toUpperCase(),
                         customer: { name: name || 'Cliente', email: email },
                         amount: Number(o.totalAmount || 0),
                         netAmount: Number(o.netAmount || 0),
                         platformFee: Number(o.platformFee || 0),
                         paymentMethod: o.paymentMethod || o.paymentType || '-',
-                        status: ((o.paymentStatus || 'pending').toLowerCase() === 'paid' ? 'approved' :
-                            (o.paymentStatus || 'pending').toLowerCase() === 'canceled' ? 'canceled' : 'pending') as 'approved' | 'pending' | 'canceled',
+                        status: (['paid', 'approved'].includes(String(o.paymentStatus || o.status || 'pending').toLowerCase()) ? 'approved' :
+                            ['canceled', 'cancelled', 'refunded'].includes(String(o.paymentStatus || o.status || 'pending').toLowerCase()) ? 'canceled' : 'pending') as 'approved' | 'pending' | 'canceled',
                         date: o.createdAt ? new Date(o.createdAt).toLocaleDateString('pt-BR') : '-',
                         event: o.event?.name || o.eventName || '-'
                     };
@@ -371,8 +383,8 @@ export const fauvesService = {
                         id: org.id,
                         name: org.name || 'Sem nome',
                         slug: org.slug || '-',
-                        eventCount: org.eventCount || org._count?.events || 0,
-                        status: org.isActive !== false ? 'active' : 'inactive',
+                        eventCount: Number(org.eventCount ?? org._count?.events ?? 0),
+                        status: org.isBlocked ? 'blocked' : (org.isActive === false ? 'inactive' : 'active'),
                         currentLevel: org.currentLevel || org.level || 'BRONZE',
                         platformFeePercent: Number(org.platformFeePercent ?? org.platformFee ?? 0),
                         lifetimeTicketsSold: Number(org.lifetimeTicketsSold ?? org.ticketsSold ?? 0),
@@ -773,6 +785,91 @@ export const fauvesService = {
         return [];
     },
 
+    getReportsSnapshot: async (periodDays = 30): Promise<FauvesReportsSnapshot> => {
+        const days = [7, 30, 90].includes(periodDays) ? periodDays : 30;
+        const [ordersPage, usersPage, organizationsPage, ranking] = await Promise.all([
+            collectAllPages<any>((page, limit) => fauvesService.getOrders(page, limit)),
+            collectAllPages<any>((page, limit) => fauvesService.getManagementData('users', page, limit)),
+            collectAllPages<any>((page, limit) => fauvesService.getOrganizations(page, limit)),
+            fauvesService.getRanking(),
+        ]);
+
+        const today = startOfLocalDay(new Date());
+        const currentStart = new Date(today);
+        currentStart.setDate(currentStart.getDate() - (days - 1));
+        const previousStart = new Date(currentStart);
+        previousStart.setDate(previousStart.getDate() - days);
+
+        const inRange = (value: unknown, start: Date, end?: Date) => {
+            const date = new Date(String(value || ''));
+            return Number.isFinite(date.getTime()) && date >= start && (!end || date < end);
+        };
+        const ticketQuantity = (order: any) => Math.max(1, Number(order.participantsCount ?? order.ticketCount ?? 1) || 1);
+        const paidOrders = ordersPage.items.filter((order: any) => order.status === 'approved');
+        const currentOrders = paidOrders.filter((order: any) => inRange(order.createdAt, currentStart));
+        const previousOrders = paidOrders.filter((order: any) => inRange(order.createdAt, previousStart, currentStart));
+        const currentUsers = usersPage.items.filter((user: any) => inRange(user.createdAt, currentStart));
+        const previousUsers = usersPage.items.filter((user: any) => inRange(user.createdAt, previousStart, currentStart));
+        const sumRevenue = (orders: any[]) => orders.reduce((total, order) => total + Number(order.amount || 0), 0);
+        const sumTickets = (orders: any[]) => orders.reduce((total, order) => total + ticketQuantity(order), 0);
+
+        const series = Array.from({ length: days }, (_, index) => {
+            const date = new Date(currentStart);
+            date.setDate(date.getDate() + index);
+            const next = new Date(date);
+            next.setDate(next.getDate() + 1);
+            const dayOrders = currentOrders.filter((order: any) => inRange(order.createdAt, date, next));
+            return {
+                label: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+                revenue: sumRevenue(dayOrders),
+                tickets: sumTickets(dayOrders),
+            };
+        });
+
+        const eventTotals = new Map<string, { id: string; name: string; tickets: number; revenue: number }>();
+        currentOrders.forEach((order: any) => {
+            const id = String(order.eventId || order.event || 'sem-evento');
+            const current = eventTotals.get(id) || { id, name: order.event || 'Evento não informado', tickets: 0, revenue: 0 };
+            current.tickets += ticketQuantity(order);
+            current.revenue += Number(order.amount || 0);
+            eventTotals.set(id, current);
+        });
+
+        const organizationById = new Map(organizationsPage.items.map((organization: any) => [String(organization.id), organization]));
+        const topOrganizations = ranking.slice(0, 5).map((item: any) => {
+            const organization: any = organizationById.get(String(item.id));
+            return {
+                id: String(item.id),
+                name: item.name || organization?.name || 'Produtora',
+                eventCount: Number(organization?.eventCount ?? organization?._count?.events ?? 0),
+                revenue: Number(item.value || 0),
+                change: typeof item.change === 'number' ? item.change : null,
+            };
+        });
+
+        const currentRevenue = sumRevenue(currentOrders);
+        const previousRevenue = sumRevenue(previousOrders);
+        const currentTickets = sumTickets(currentOrders);
+        const previousTickets = sumTickets(previousOrders);
+
+        return {
+            periodDays: days,
+            revenue: currentRevenue,
+            orders: currentOrders.length,
+            tickets: currentTickets,
+            users: currentUsers.length,
+            trends: {
+                revenue: changePercent(currentRevenue, previousRevenue),
+                orders: changePercent(currentOrders.length, previousOrders.length),
+                tickets: changePercent(currentTickets, previousTickets),
+                users: changePercent(currentUsers.length, previousUsers.length),
+            },
+            series,
+            topEvents: Array.from(eventTotals.values()).sort((a, b) => b.revenue - a.revenue).slice(0, 5),
+            topOrganizations,
+        };
+    },
+
     getOverviewSnapshot: async (): Promise<FauvesOverviewSnapshot> => {
         try {
             const payload = await requestFirstAvailable<any>('get', [
@@ -803,18 +900,42 @@ export const fauvesService = {
             ]);
             const paidOrders = orders.items.filter((order: any) => order.status === 'approved');
             const gmv = Number(stats.totalRevenue || paidOrders.reduce((total: number, order: any) => total + Number(order.amount || 0), 0));
+            const today = startOfLocalDay(new Date());
+            const ticketQuantity = (order: any) => Math.max(1, Number(order.participantsCount ?? order.ticketCount ?? 1) || 1);
+            const todayOrders = paidOrders.filter((order: any) => {
+                const createdAt = new Date(order.createdAt);
+                return Number.isFinite(createdAt.getTime()) && createdAt >= today;
+            });
+            const paymentCounts = paidOrders.reduce((acc: { pix: number; card: number }, order: any) => {
+                const method = String(order.paymentMethod || '').toLowerCase();
+                if (method.includes('pix')) acc.pix += 1;
+                if (method.includes('card') || method.includes('credit')) acc.card += 1;
+                return acc;
+            }, { pix: 0, card: 0 });
+            const paymentTotal = paymentCounts.pix + paymentCounts.card;
+            const revenueSeries = Array.from({ length: 7 }, (_, index) => {
+                const date = new Date(today);
+                date.setDate(date.getDate() - (6 - index));
+                const next = new Date(date); next.setDate(next.getDate() + 1);
+                const previousDate = new Date(date); previousDate.setDate(previousDate.getDate() - 7);
+                const previousNext = new Date(next); previousNext.setDate(previousNext.getDate() - 7);
+                const sumBetween = (start: Date, end: Date) => paidOrders
+                    .filter((order: any) => { const createdAt = new Date(order.createdAt); return createdAt >= start && createdAt < end; })
+                    .reduce((total: number, order: any) => total + Number(order.amount || 0), 0);
+                return { label: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''), current: sumBetween(date, next), previous: sumBetween(previousDate, previousNext) };
+            });
             return overviewSnapshotSchema.parse({
                 gmv,
-                platformRevenue: Number(stats.platformRevenue || stats.platformFees || 0),
-                ticketsToday: Number(stats.ticketsToday || stats.salesTodayCount || 0),
+                platformRevenue: Number(stats.platformRevenue || stats.platformFees || paidOrders.reduce((total: number, order: any) => total + Number(order.platformFee || 0), 0)),
+                ticketsToday: Number(stats.ticketsToday || stats.salesTodayCount || todayOrders.reduce((total: number, order: any) => total + ticketQuantity(order), 0)),
                 courtesyTicketsToday: Number(stats.courtesyTicketsToday || 0),
                 pendingWithdrawals: Number(stats.pendingWithdrawals || 0),
                 activeEvents: Number(stats.eventsActive || events.items.filter((event: any) => event.status === 'published').length),
                 activeOrganizations: organizations.items.filter((org: any) => org.status === 'active').length,
-                paymentMix: { pix: Number(stats.pixShare || 0), card: Number(stats.cardShare || 0) },
-                revenueSeries: stats.revenueSeries || [],
-                integrations: stats.integrations || [],
-                activities: stats.activities || [],
+                paymentMix: paymentTotal ? { pix: Math.round((paymentCounts.pix / paymentTotal) * 100), card: Math.round((paymentCounts.card / paymentTotal) * 100) } : { pix: 0, card: 0 },
+                revenueSeries: stats.revenueSeries || revenueSeries,
+                integrations: stats.integrations || [{ name: 'API Fauves', status: 'operational' }],
+                activities: stats.activities || orders.items.slice(0, 6).map((order: any) => ({ id: String(order.id), type: 'order', title: `Pedido ${order.code}`, description: `${order.customer?.name || 'Cliente'} · ${order.event || 'Evento'}`, createdAt: order.createdAt || new Date().toISOString(), amount: Number(order.amount || 0) })),
             });
         }
     },

@@ -185,8 +185,6 @@ export const getViewLabel = (slug?: string, view?: string): string => {
             leads: 'Newsletter & Leads',
             categories: 'Categorias',
             artists: 'Artistas',
-            slides: 'Slides',
-            ads: 'Anúncios',
             emails: 'Emails',
             users: 'Usuários',
             finance: 'Financeiro',

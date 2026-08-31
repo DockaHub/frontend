@@ -8,7 +8,6 @@ const FauvesOverviewView = React.lazy(() => import('./fauves/FauvesOverviewView'
 const FauvesOrganizationsView = React.lazy(() => import('./fauves/FauvesOrganizationsView'));
 const FauvesEventsAdminView = React.lazy(() => import('./fauves/FauvesEventsAdminView'));
 const FauvesFinanceAdminView = React.lazy(() => import('./fauves/FauvesFinanceAdminView'));
-const FauvesMarketingView = React.lazy(() => import('./fauves/FauvesMarketingView'));
 const FauvesAuditSettingsView = React.lazy(() => import('./fauves/FauvesAuditSettingsView'));
 const ManagementView = React.lazy(() => import('./fauves/ManagementView'));
 const SupportView = React.lazy(() => import('./fauves/SupportView'));
@@ -37,10 +36,7 @@ const FauvesDashboard: React.FC<FauvesDashboardProps> = ({ activeView, user }) =
             case 'helpdesk-tickets':
             case 'helpdesk-chat':
             case 'helpdesk-center': return <SupportView activeSubView={activeView} />;
-            case 'marketing': return <FauvesMarketingView />;
-            case 'slides': return <FauvesMarketingView initialTab="slides" />;
-            case 'artists': return <FauvesMarketingView initialTab="artists" />;
-            case 'ads': return <FauvesMarketingView initialTab="ads" />;
+            case 'artists': return <ManagementView type="artists" />;
             case 'settings': return <FauvesAuditSettingsView />;
             case 'leads': return <LeadsView />;
             case 'reports': return <ReportsView />;
