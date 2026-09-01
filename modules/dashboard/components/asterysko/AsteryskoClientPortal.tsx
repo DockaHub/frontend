@@ -175,6 +175,30 @@ const formatPresentation = (value: unknown) => {
     return labels[normalized] || String(value || 'Não informada');
 };
 
+const getProcessDetailRows = (process: any): Array<[string, string]> => {
+    if (!process) return [];
+
+    const nclClasses = Array.isArray(process.nclClasses)
+        ? process.nclClasses.map((item: unknown) => String(item).trim()).filter(Boolean)
+        : [];
+    const nclValue = nclClasses.length
+        ? nclClasses.map((item: string) => /^classe/i.test(item) ? item : `Classe ${item}`).join(', ')
+        : String(process.nclClass || '').trim();
+
+    return [
+        ['Apresentação', process.presentation ? formatPresentation(process.presentation) : ''],
+        ['Natureza', String(process.nature || '').trim()],
+        ['Segmento da marca', String(process.brandType || '').trim()],
+        ['Titular', String(process.holders || '').trim()],
+        ['Classificação NCL', nclValue],
+        ['Especificação', String(process.nclSpecification || '').trim()],
+        ['Procurador', String(process.procurator || '').trim()],
+        ['Data do depósito', process.filingDate ? formatDate(process.filingDate, '') : ''],
+        ['Data da concessão', process.concessionDate ? formatDate(process.concessionDate, '') : ''],
+        ['Vigência até', process.expirationDate ? formatDate(process.expirationDate, '') : ''],
+    ].filter(([, value]) => Boolean(String(value || '').trim())) as Array<[string, string]>;
+};
+
 const getProfileValue = (value: unknown) => {
     const normalized = String(value ?? '').trim();
     if (!normalized || /^(pending|pendente|não informado|n\/a)$/i.test(normalized)) return '';
@@ -521,6 +545,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const clientName = String(getValue(clientData?.name, user?.name, 'Levy'));
     const firstName = clientName.split(/\s+/)[0];
     const brandName = String(getValue(selectedProcess?.brandName, displayedProcesses[0]?.brandName, 'Sua marca'));
+    const processDetailRows = getProcessDetailRows(selectedProcess);
     const invoices = financials.invoices as any[];
     const contracts = financials.contracts as any[];
     const pendingContracts = contracts.filter(contract => {
@@ -1288,27 +1313,16 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         {processTab === 'details' && (
                             <div key="details" className="ast-process-content ast-process-content--details ast-tab-transition">
-                                <article className="ast-info-card">
-                                    <h2 className="ast-card-title">Informações gerais</h2>
-                                    <div className="ast-info-card__body">
-                                        {[
-                                            ['Apresentação', formatPresentation(selectedProcess?.presentation)],
-                                            ['Natureza', getValue(selectedProcess?.nature, 'Não informada')],
-                                            ['Segmento da marca', getValue(selectedProcess?.brandType, 'Não informado')],
-                                            ['Titular', getValue(selectedProcess?.holders, 'Não informado')],
-                                            ['Classificação NCL', Array.isArray(selectedProcess?.nclClasses) && selectedProcess.nclClasses.length
-                                                ? selectedProcess.nclClasses.map((item: string) => /^classe/i.test(item) ? item : `Classe ${item}`).join(', ')
-                                                : getValue(selectedProcess?.nclClass, 'Não informada')],
-                                            ['Especificação', getValue(selectedProcess?.nclSpecification, 'Não informada')],
-                                            ['Procurador', getValue(selectedProcess?.procurator, 'Não informado')],
-                                            ['Data do depósito', formatDate(selectedProcess?.filingDate, 'Não informada')],
-                                            ['Data da concessão', formatDate(selectedProcess?.concessionDate, 'Não informada')],
-                                            ['Vigência até', formatDate(selectedProcess?.expirationDate, 'Não informada')],
-                                        ].map(([label, value]) => (
-                                            <div className="ast-info-row" key={String(label)}><strong>{label}</strong><small>{String(value)}</small></div>
-                                        ))}
-                                    </div>
-                                </article>
+                                {processDetailRows.length > 0 && (
+                                    <article className="ast-info-card">
+                                        <h2 className="ast-card-title">Informações gerais</h2>
+                                        <div className="ast-info-card__body">
+                                            {processDetailRows.map(([label, value]) => (
+                                                <div className="ast-info-row" key={label}><strong>{label}</strong><small>{value}</small></div>
+                                            ))}
+                                        </div>
+                                    </article>
+                                )}
 
                                 <article className="ast-timeline-card">
                                     <h2 className="ast-card-title">Andamento</h2>
