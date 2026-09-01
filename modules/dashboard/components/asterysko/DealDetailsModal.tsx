@@ -1194,7 +1194,7 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     </select>
                                     {formData.billingMode === 'SUBSCRIPTION' && (
                                         <div className="rounded-lg border border-indigo-100 bg-indigo-50/70 px-3 py-2 text-xs leading-relaxed text-indigo-800 dark:border-indigo-900/30 dark:bg-indigo-950/20 dark:text-indigo-200">
-                                            Primeira cobrança: <strong>R$ {Number(formData.firstPaymentAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>. Depois: <strong>R$ {Number(formData.recurringAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</strong> até o deferimento.
+                                            Mensalidade desde a primeira cobrança: <strong>R$ {Number(formData.recurringAmount || formData.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês</strong> até o deferimento. A GRU será emitida separadamente.
                                         </div>
                                     )}
                                     {formData.signedAt && <p className="text-[11px] text-docka-400">O plano fica bloqueado após a assinatura do contrato.</p>}

@@ -49,10 +49,17 @@ interface Process {
     filingDate?: string;
     concessionDate?: string;
     expirationDate?: string;
+    certificateDate?: string;
     brand?: {
         name: string;
+        type?: string;
+        presentation?: string;
+        nature?: string;
+        brandType?: string;
+        holders?: string;
         logoUrl?: string;
         nclClasses?: string[];
+        nclSpecification?: string;
         client?: {
             id: string;
             type: string;
@@ -303,7 +310,10 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                         filteredProcesses.map((process) => {
                             const brandName = process.brand?.name || 'Sem Marca';
                             const clientName = process.brand?.client?.user?.name || 'N/A';
-                            const nclClass = process.brand?.nclClasses?.[0] ? `NCL ${process.brand.nclClasses[0]}` : '-';
+                            const nclClasses = process.brand?.nclClasses || [];
+                            const nclClass = nclClasses.length
+                                ? `NCL ${nclClasses[0]}${nclClasses.length > 1 ? ` +${nclClasses.length - 1}` : ''}`
+                                : '-';
                             const statusInfo = getStatusLabelAndColor(process.status);
                             const isArchived = ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(process.status?.toUpperCase() || '');
 

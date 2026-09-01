@@ -160,6 +160,21 @@ const TIMELINE_ICONS: Record<string, string> = {
 
 const getValue = (...values: any[]) => values.find(value => value !== undefined && value !== null && value !== '') ?? '';
 
+const formatPresentation = (value: unknown) => {
+    const normalized = String(value || '').trim().toUpperCase();
+    const labels: Record<string, string> = {
+        NOMINATIVA: 'Nominativa',
+        MISTA: 'Mista',
+        FIGURATIVA: 'Figurativa',
+        TRIDIMENSIONAL: 'Tridimensional',
+        POSICAO: 'De posição',
+        'POSIÇÃO': 'De posição',
+        PADRAO_ORNAMENTAL: 'Padrão ornamental',
+        'PADRÃO ORNAMENTAL': 'Padrão ornamental'
+    };
+    return labels[normalized] || String(value || 'Não informada');
+};
+
 const getProfileValue = (value: unknown) => {
     const normalized = String(value ?? '').trim();
     if (!normalized || /^(pending|pendente|não informado|n\/a)$/i.test(normalized)) return '';
@@ -403,6 +418,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             brandLogo: brand.logoUrl,
                             presentation: process.presentation || brand.presentation,
                             nclClasses: process.nclClasses?.length ? process.nclClasses : brand.nclClasses,
+                            nature: process.nature || brand.nature,
+                            brandType: process.brandType || brand.brandType,
+                            holders: process.holders || brand.holders,
+                            nclSpecification: process.nclSpecification || brand.nclSpecification,
                         });
                     });
                 });
@@ -1273,11 +1292,18 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     <h2 className="ast-card-title">Informações gerais</h2>
                                     <div className="ast-info-card__body">
                                         {[
-                                            ['Apresentação', getValue(selectedProcess?.presentation, 'Não informada')],
+                                            ['Apresentação', formatPresentation(selectedProcess?.presentation)],
+                                            ['Natureza', getValue(selectedProcess?.nature, 'Não informada')],
+                                            ['Segmento da marca', getValue(selectedProcess?.brandType, 'Não informado')],
+                                            ['Titular', getValue(selectedProcess?.holders, 'Não informado')],
                                             ['Classificação NCL', Array.isArray(selectedProcess?.nclClasses) && selectedProcess.nclClasses.length
                                                 ? selectedProcess.nclClasses.map((item: string) => /^classe/i.test(item) ? item : `Classe ${item}`).join(', ')
                                                 : getValue(selectedProcess?.nclClass, 'Não informada')],
-                                            ['Data do protocolo', formatDate(selectedProcess?.filingDate, 'Não informada')],
+                                            ['Especificação', getValue(selectedProcess?.nclSpecification, 'Não informada')],
+                                            ['Procurador', getValue(selectedProcess?.procurator, 'Não informado')],
+                                            ['Data do depósito', formatDate(selectedProcess?.filingDate, 'Não informada')],
+                                            ['Data da concessão', formatDate(selectedProcess?.concessionDate, 'Não informada')],
+                                            ['Vigência até', formatDate(selectedProcess?.expirationDate, 'Não informada')],
                                         ].map(([label, value]) => (
                                             <div className="ast-info-row" key={String(label)}><strong>{label}</strong><small>{String(value)}</small></div>
                                         ))}
@@ -1551,6 +1577,12 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 </>
                             ) : (
                                 <>
+                                    {paymentSheet === 'setup' && (
+                                        <div className="ast-payment-form__intro">
+                                            <strong>Primeira mensalidade: {formatCurrency(subscriptionContext?.planAmount)}</strong>
+                                            <p>Este pagamento cadastra a recorrência do serviço. A guia GRU do INPI será emitida posteriormente e paga separadamente ao Governo Federal.</p>
+                                        </div>
+                                    )}
                                     <div className="ast-payment-methods" role="radiogroup" aria-label="Forma de pagamento">
                                         <button className={subscriptionMethod === 'PIX_AUTOMATIC' ? 'ast-payment-method--active' : ''} type="button" disabled={!pixAutomaticAvailable} onClick={() => setSubscriptionMethod('PIX_AUTOMATIC')}>
                                             <QrCode size={21} />

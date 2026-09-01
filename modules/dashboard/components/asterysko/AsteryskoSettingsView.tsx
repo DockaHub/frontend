@@ -28,7 +28,7 @@ interface Plan {
     commissionOps: number | string;
     category: string;
     billingMode: 'ONE_TIME' | 'SUBSCRIPTION';
-    taxChargeTiming: 'SEPARATE' | 'FIRST_PAYMENT' | 'NOT_INCLUDED';
+    taxChargeTiming: 'SEPARATE' | 'NOT_INCLUDED';
     recurrenceEndEvent: string | null;
     active: boolean;
 }
@@ -1967,16 +1967,16 @@ const WhatsAppCard: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
-                                <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Cobrança da taxa GRU</label>
+                                <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5">Tratamento da taxa GRU</label>
                                 <select
                                     className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm text-slate-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
                                     value={selectedPlan?.taxChargeTiming || 'SEPARATE'}
                                     onChange={(e) => setSelectedPlan({ ...selectedPlan, taxChargeTiming: e.target.value as Plan['taxChargeTiming'] })}
                                 >
-                                    <option value="FIRST_PAYMENT">Somar na primeira cobrança</option>
-                                    <option value="SEPARATE">Cobrar separadamente</option>
-                                    <option value="NOT_INCLUDED">Não incluída</option>
+                                    <option value="SEPARATE">Emitir depois, em cobrança separada</option>
+                                    <option value="NOT_INCLUDED">Não aplicável ao plano</option>
                                 </select>
+                                <p className="mt-1.5 text-xs text-slate-500">A GRU nunca compõe a primeira mensalidade e será paga diretamente ao Governo Federal.</p>
                             </div>
                             {selectedPlan?.billingMode === 'SUBSCRIPTION' && (
                                 <div>
@@ -1991,9 +1991,9 @@ const WhatsAppCard: React.FC = () => {
                                 </div>
                             )}
                         </div>
-                        {selectedPlan?.billingMode === 'SUBSCRIPTION' && selectedPlan.taxChargeTiming === 'FIRST_PAYMENT' && (
+                        {selectedPlan?.billingMode === 'SUBSCRIPTION' && (
                             <div className="rounded-xl border border-indigo-100 bg-indigo-50/70 p-3 text-xs leading-relaxed text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-950/30 dark:text-indigo-200">
-                                Primeira cobrança: <strong>R$ {(Number(selectedPlan.value || 0) + Number(selectedPlan.officialTax || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>. Demais mensalidades: <strong>R$ {Number(selectedPlan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>.
+                                Primeira cobrança e mensalidades seguintes: <strong>R$ {Number(selectedPlan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>. A GRU será emitida manualmente depois.
                             </div>
                         )}
                         <div className="grid grid-cols-2 gap-4">

@@ -53,7 +53,7 @@ const Field = ({ label, locked, children }: { label: string; locked?: boolean; c
 
 const inputClass = 'w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white placeholder:text-[#ccc] disabled:text-[#8f8f8f] disabled:cursor-not-allowed';
 
-const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) => {
+const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, organizationId }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [loadingOptions, setLoadingOptions] = useState(false);
     const [plans, setPlans] = useState<any[]>([]);
@@ -194,7 +194,7 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess }) 
                     <Field label="Serviço de interesse"><select className={`${inputClass} appearance-none`} value={formData.serviceInterest} onChange={event => setFormData(current => ({ ...current, serviceInterest: event.target.value }))}>{['Registro de marca', 'Renovação', 'Recurso', 'Oposição', 'Transferência', 'Acompanhamento', 'Outro'].map(option => <option key={option}>{option}</option>)}</select></Field>
                     <Field label="Plano comercial">
                         <div className="relative"><select className={`${inputClass} appearance-none pr-6`} value={formData.planId} onChange={event => setFormData(current => ({ ...current, planId: event.target.value }))}><option value="">Selecione um plano</option>{plans.map(plan => <option key={plan.id} value={plan.id}>{plan.name} — {plan.billingMode === 'SUBSCRIPTION' ? `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês` : `R$ ${Number(plan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-[#9f9f9f]" /></div>
-                        {selectedPlan?.billingMode === 'SUBSCRIPTION' && <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-300">Primeira cobrança: R$ {(Number(selectedPlan.value || 0) + (selectedPlan.taxChargeTiming === 'FIRST_PAYMENT' ? Number(selectedPlan.officialTax || 0) : 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. Depois: R$ {Number(selectedPlan.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês.</p>}
+                        {selectedPlan?.billingMode === 'SUBSCRIPTION' && <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-300">Mensalidade desde a primeira cobrança: R$ {Number(selectedPlan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. A GRU será emitida separadamente depois.</p>}
                     </Field>
 
                     <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Organização do atendimento</h3></div>
