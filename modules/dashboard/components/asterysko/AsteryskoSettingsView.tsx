@@ -8,9 +8,14 @@ import OrganizationIconSettings from '../../../../components/OrganizationIconSet
 import DashboardPage from '../../../../components/DashboardPage';
 import { AsteryskoScoutAutomationSettings } from './AsteryskoScoutAutomationSettings';
 
+export type AsteryskoSettingsTab = 'notifications' | 'crm_rules' | 'rpi' | 'scout_ai' | 'plans' | 'portal';
+
 interface AsteryskoSettingsViewProps {
     onOpenClientPortal?: () => void;
     organization?: Organization;
+    embedded?: boolean;
+    initialTab?: AsteryskoSettingsTab;
+    visibleTabs?: AsteryskoSettingsTab[];
 }
 
 interface Plan {
@@ -28,8 +33,29 @@ interface Plan {
     active: boolean;
 }
 
-const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenClientPortal, organization }) => {
-    const [activeSettingsTab, setActiveSettingsTab] = useState<'notifications' | 'crm_inpi' | 'scout_ai' | 'plans' | 'portal'>('notifications');
+const ASTERYSKO_SETTINGS_TABS: Array<{
+    id: AsteryskoSettingsTab;
+    label: string;
+    icon: React.ComponentType<{ size?: number }>;
+}> = [
+    { id: 'notifications', label: 'Conexões & Notificações', icon: Smartphone },
+    { id: 'crm_rules', label: 'Fluxo do Negócio', icon: CheckSquare },
+    { id: 'rpi', label: 'Marcas & RPI', icon: Shield },
+    { id: 'scout_ai', label: 'Scout AI', icon: Bot },
+    { id: 'plans', label: 'Planos & Honorários', icon: CreditCard },
+    { id: 'portal', label: 'Portal do Cliente', icon: Users },
+];
+
+const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
+    onOpenClientPortal,
+    organization,
+    embedded = false,
+    initialTab = 'notifications',
+    visibleTabs,
+}) => {
+    const visibleTabsKey = visibleTabs?.join('|') || 'all';
+    const availableTabs = ASTERYSKO_SETTINGS_TABS.filter((tab) => !visibleTabs || visibleTabs.includes(tab.id));
+    const [activeSettingsTab, setActiveSettingsTab] = useState<AsteryskoSettingsTab>(initialTab);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -69,10 +95,19 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({ onOpenCli
     useEffect(() => {
         if (activeSettingsTab === 'plans') {
             fetchPlans();
-        } else if (activeSettingsTab === 'crm_inpi') {
+        } else if (activeSettingsTab === 'rpi') {
             fetchInpiHistory();
         }
     }, [activeSettingsTab]);
+
+    useEffect(() => {
+        const allowedTabs = visibleTabsKey === 'all'
+            ? ASTERYSKO_SETTINGS_TABS
+            : ASTERYSKO_SETTINGS_TABS.filter((tab) => visibleTabsKey.split('|').includes(tab.id));
+        if (!allowedTabs.some((tab) => tab.id === activeSettingsTab)) {
+            setActiveSettingsTab(allowedTabs.some((tab) => tab.id === initialTab) ? initialTab : (allowedTabs[0]?.id || 'notifications'));
+        }
+    }, [activeSettingsTab, initialTab, visibleTabsKey]);
 
     const fetchInpiHistory = async () => {
         try {
@@ -1464,67 +1499,29 @@ const WhatsAppCard: React.FC = () => {
     );
 };
 
-    return (
-        <DashboardPage title="Configurações Asterysko" icon={Shield}>
+    const settingsContent = (
+        <>
             <div className="animate-in fade-in duration-500 max-w-4xl mx-auto pb-20">
-                <p className="text-docka-500 dark:text-zinc-400 text-sm mb-6 -mt-2">Preferências do escritório, integração WhatsApp, tabela de planos e portal do cliente.</p>
+                {!embedded && <p className="text-docka-500 dark:text-zinc-400 text-sm mb-6 -mt-2">Preferências do escritório, integração WhatsApp, tabela de planos e portal do cliente.</p>}
 
                 {/* SETTINGS TABS NAVIGATION */}
                 <div className="flex border-b border-docka-200 dark:border-zinc-800 mb-8 bg-white dark:bg-zinc-900 rounded-2xl p-1.5 shadow-sm gap-1 overflow-x-auto">
-                    <button
-                        onClick={() => setActiveSettingsTab('notifications')}
-                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                            activeSettingsTab === 'notifications'
-                                ? 'bg-[#0412dd] text-white shadow-md'
-                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
-                        }`}
-                    >
-                        <Smartphone size={16} /> Conexões & Notificações
-                    </button>
-
-                    <button
-                        onClick={() => setActiveSettingsTab('crm_inpi')}
-                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                            activeSettingsTab === 'crm_inpi'
-                                ? 'bg-[#0412dd] text-white shadow-md'
-                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
-                        }`}
-                    >
-                        <CheckSquare size={16} /> CRM & Motor INPI
-                    </button>
-
-                    <button
-                        onClick={() => setActiveSettingsTab('scout_ai')}
-                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                            activeSettingsTab === 'scout_ai'
-                                ? 'bg-[#0412dd] text-white shadow-md'
-                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
-                        }`}
-                    >
-                        <Bot size={16} /> Scout AI
-                    </button>
-
-                    <button
-                        onClick={() => setActiveSettingsTab('plans')}
-                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                            activeSettingsTab === 'plans'
-                                ? 'bg-[#0412dd] text-white shadow-md'
-                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
-                        }`}
-                    >
-                        <CreditCard size={16} /> Planos & Honorários
-                    </button>
-
-                    <button
-                        onClick={() => setActiveSettingsTab('portal')}
-                        className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                            activeSettingsTab === 'portal'
-                                ? 'bg-[#0412dd] text-white shadow-md'
-                                : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
-                        }`}
-                    >
-                        <Users size={16} /> Portal do Cliente & Marca
-                    </button>
+                    {availableTabs.map((tab) => {
+                        const TabIcon = tab.icon;
+                        return (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveSettingsTab(tab.id)}
+                                className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                    activeSettingsTab === tab.id
+                                        ? 'bg-[#0412dd] text-white shadow-md'
+                                        : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
+                                }`}
+                            >
+                                <TabIcon size={16} /> {tab.label}
+                            </button>
+                        );
+                    })}
                 </div>
 
                 <div className="space-y-8">
@@ -1544,13 +1541,14 @@ const WhatsAppCard: React.FC = () => {
                         <AsteryskoScoutAutomationSettings organizationId={organization?.id} />
                     )}
 
-                    {/* TAB 2: CRM RULES & INPI MOTOR */}
-                    {activeSettingsTab === 'crm_inpi' && (
+                    {activeSettingsTab === 'crm_rules' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
-                            {/* CRM Stage Task Manager Section */}
                             <CrmStageTaskManager />
+                        </div>
+                    )}
 
-                            {/* INPI Integration & RPI Upload */}
+                    {activeSettingsTab === 'rpi' && (
+                        <div className="space-y-8 animate-in fade-in duration-300">
                             <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
                                 <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30">
                                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
@@ -1558,8 +1556,12 @@ const WhatsAppCard: React.FC = () => {
                                     </h3>
                                 </div>
                                 <div className="p-6 space-y-4">
-                                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-lg text-xs text-blue-700 dark:text-blue-300 mb-4">
-                                        <strong>Importante:</strong> Faça o upload do arquivo XML das Revistas (RPI) semanais ou históricas do INPI para alimentar o nosso Motor de Busca de Viabilidade interno.
+                                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl text-xs text-blue-700 dark:text-blue-300 mb-4">
+                                        <strong>Uma RPI, dois destinos:</strong> o XML alimenta a base do Radar da Marca e, ao mesmo tempo, cruza os números do INPI para atualizar automaticamente processos, etapas do CRM e notificações da Asterysko.
+                                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                            <div className="rounded-lg border border-blue-100 bg-white/70 p-3 dark:border-blue-900/40 dark:bg-zinc-950/30"><strong>Radar da Marca</strong><br />Atualiza a base usada nas buscas de viabilidade.</div>
+                                            <div className="rounded-lg border border-blue-100 bg-white/70 p-3 dark:border-blue-900/40 dark:bg-zinc-950/30"><strong>Processos internos</strong><br />Registra despachos e movimenta processos vinculados.</div>
+                                        </div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1572,7 +1574,7 @@ const WhatsAppCard: React.FC = () => {
                                             >
                                                 <Upload size={24} className="text-docka-400 dark:text-zinc-500 mb-2" />
                                                 <p className="text-sm font-bold text-docka-700 dark:text-zinc-300">Clique para selecionar o XML</p>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-500 mt-1 text-center">Tamanho máx recomendado: 100MB<br />O processamento rodará em segundo plano.</p>
+                                                <p className="text-xs text-docka-500 dark:text-zinc-500 mt-1 text-center">Formato XML • limite de 150MB<br />O processamento rodará em segundo plano.</p>
                                             </div>
                                             <input
                                                 id="rpi-upload"
@@ -1594,7 +1596,7 @@ const WhatsAppCard: React.FC = () => {
                                                             headers: { 'Content-Type': 'multipart/form-data' }
                                                         });
 
-                                                        addToast({ type: 'success', title: 'Processamento Iniciado', message: 'O arquivo XML está sendo indexado no Motor de Busca em segundo plano.' });
+                                                        addToast({ type: 'success', title: 'Processamento Iniciado', message: 'A RPI está alimentando o Radar da Marca e cruzando os processos internos em segundo plano.' });
                                                     } catch (err: any) {
                                                         console.error(err);
                                                         addToast({ type: 'error', title: 'Falha no Envio', message: err.response?.data?.error || 'Erro ao comunicar com a API.' });
@@ -2066,6 +2068,14 @@ const WhatsAppCard: React.FC = () => {
                     </div>
                 </div>
             </Modal>
+        </>
+    );
+
+    if (embedded) return settingsContent;
+
+    return (
+        <DashboardPage title="Configurações Asterysko" icon={Shield}>
+            {settingsContent}
         </DashboardPage>
     );
 };

@@ -2,29 +2,41 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
     Shield, Globe, Key, Server, ToggleLeft, ToggleRight, Database, Settings,
-    Building2, CheckCircle2, ChevronDown
+    Building2, CheckCircle2, ChevronDown, LayoutDashboard, Briefcase, ScanSearch,
+    ArrowRight
 } from 'lucide-react';
 import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
 import DashboardPage from '../../../../components/DashboardPage';
 import SlackIntegrationSettings from './SlackIntegrationSettings';
+import AsteryskoSettingsView from '../asterysko/AsteryskoSettingsView';
 
 interface DockaSettingsViewProps {
     organization?: Organization;
     organizations?: Organization[];
 }
 
+type ConfigurationScope = 'dashboard' | 'business' | 'brands';
+
+const CONFIGURATION_SCOPES = [
+    { id: 'dashboard' as const, label: 'Dashboard', description: 'Identidade e acesso do painel', icon: LayoutDashboard },
+    { id: 'business' as const, label: 'Negócio', description: 'CRM, planos, portal e conexões', icon: Briefcase },
+    { id: 'brands' as const, label: 'Marcas & RPI', description: 'Radar, revistas e automações', icon: ScanSearch },
+];
+
 const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization, organizations = [] }) => {
     const managedOrganizations = useMemo(
-        () => organizations.filter((item) => item.slug !== 'manyspace'),
-        [organizations]
+        () => organizations.length > 0 ? organizations : (organization ? [organization] : []),
+        [organization, organizations]
     );
-    const [selectedOrganizationId, setSelectedOrganizationId] = useState(managedOrganizations[0]?.id || organization?.id || '');
-    const selectedOrganization = organizations.find((item) => item.id === selectedOrganizationId) || organization;
+    const preferredOrganization = managedOrganizations.find((item) => item.slug === 'asterysko') || managedOrganizations[0] || organization;
+    const [selectedOrganizationId, setSelectedOrganizationId] = useState(preferredOrganization?.id || '');
+    const [activeScope, setActiveScope] = useState<ConfigurationScope>('dashboard');
+    const selectedOrganization = managedOrganizations.find((item) => item.id === selectedOrganizationId) || organization;
 
     useEffect(() => {
         if (managedOrganizations.length > 0 && !managedOrganizations.some((item) => item.id === selectedOrganizationId)) {
-            setSelectedOrganizationId(managedOrganizations[0].id);
+            setSelectedOrganizationId((managedOrganizations.find((item) => item.slug === 'asterysko') || managedOrganizations[0]).id);
         }
     }, [managedOrganizations, selectedOrganizationId]);
 
@@ -54,27 +66,84 @@ const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization, org
                                 <ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" />
                             </div>
                         </div>
-                        <div className="grid gap-px bg-docka-100 sm:grid-cols-3 dark:bg-zinc-800">
-                            {[
-                                ['Identidade visual', 'Logo, ícone e cores'],
-                                ['Equipe e permissões', 'Gerenciado na aba Equipe'],
-                                ['Integrações', 'Canais e credenciais'],
-                            ].map(([title, description]) => (
-                                <div key={title} className="flex items-center gap-3 bg-white px-5 py-4 dark:bg-zinc-900">
-                                    <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
-                                    <div><p className="text-xs font-bold">{title}</p><p className="mt-0.5 text-[9px] text-docka-400">{description}</p></div>
-                                </div>
-                            ))}
+                        <div className="grid gap-px bg-docka-100 md:grid-cols-3 dark:bg-zinc-800">
+                            {CONFIGURATION_SCOPES.map((scope) => {
+                                const ScopeIcon = scope.icon;
+                                const isActive = activeScope === scope.id;
+                                return (
+                                    <button
+                                        key={scope.id}
+                                        type="button"
+                                        onClick={() => setActiveScope(scope.id)}
+                                        className={`flex items-center gap-3 px-5 py-4 text-left transition-colors ${isActive ? 'bg-[#0412dd] text-white' : 'bg-white hover:bg-docka-50 dark:bg-zinc-900 dark:hover:bg-zinc-800'}`}
+                                    >
+                                        <ScopeIcon size={18} className={isActive ? 'text-white' : 'text-docka-400'} />
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-xs font-bold">{scope.label}</p>
+                                            <p className={`mt-0.5 text-[9px] ${isActive ? 'text-blue-100' : 'text-docka-400'}`}>{scope.description}</p>
+                                        </div>
+                                        <ArrowRight size={14} className={isActive ? 'text-white' : 'text-docka-300'} />
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
-                    {selectedOrganization && (
-                        <OrganizationIconSettings key={selectedOrganization.id} organization={selectedOrganization} />
+                    <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-docka-400">
+                        <span>Manyspace</span><span>/</span>
+                        <span className="text-docka-700 dark:text-zinc-300">{selectedOrganization?.name || 'Dashboard'}</span><span>/</span>
+                        <span className="text-[#0412dd]">{CONFIGURATION_SCOPES.find((scope) => scope.id === activeScope)?.label}</span>
+                    </div>
+
+                    {activeScope === 'dashboard' && selectedOrganization && (
+                        <>
+                            <OrganizationIconSettings key={selectedOrganization.id} organization={selectedOrganization} />
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                {[
+                                    ['Identidade visual', 'Logo, ícone e cores'],
+                                    ['Equipe e permissões', 'Gerenciado na aba Equipe'],
+                                    ['Integrações', 'Organizadas por negócio'],
+                                ].map(([title, description]) => (
+                                    <div key={title} className="flex items-center gap-3 rounded-xl border border-docka-200 bg-white px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900">
+                                        <CheckCircle2 size={16} className="shrink-0 text-emerald-500" />
+                                        <div><p className="text-xs font-bold">{title}</p><p className="mt-0.5 text-[9px] text-docka-400">{description}</p></div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
                     )}
 
-                    {organization?.slug === 'manyspace' && (
-                        <SlackIntegrationSettings organization={organization} />
+                    {activeScope === 'business' && selectedOrganization?.slug === 'asterysko' && (
+                        <AsteryskoSettingsView
+                            key={`${selectedOrganization.id}-business`}
+                            organization={selectedOrganization}
+                            embedded
+                            initialTab="notifications"
+                            visibleTabs={['notifications', 'crm_rules', 'plans', 'portal']}
+                        />
                     )}
+
+                    {activeScope === 'brands' && selectedOrganization?.slug === 'asterysko' && (
+                        <AsteryskoSettingsView
+                            key={`${selectedOrganization.id}-brands`}
+                            organization={selectedOrganization}
+                            embedded
+                            initialTab="rpi"
+                            visibleTabs={['rpi', 'scout_ai']}
+                        />
+                    )}
+
+                    {activeScope !== 'dashboard' && selectedOrganization?.slug !== 'asterysko' && (
+                        <div className="rounded-2xl border-2 border-dashed border-docka-200 bg-docka-50/30 px-6 py-12 text-center dark:border-zinc-800 dark:bg-zinc-900/30">
+                            <Building2 size={28} className="mx-auto mb-3 text-docka-300" />
+                            <h3 className="text-sm font-bold text-docka-900 dark:text-zinc-100">Configurações específicas ainda não cadastradas</h3>
+                            <p className="mx-auto mt-2 max-w-md text-xs text-docka-500">A área {activeScope === 'business' ? 'de negócio' : 'de marcas'} de {selectedOrganization?.name} aparecerá aqui quando houver módulos próprios para esse dashboard.</p>
+                        </div>
+                    )}
+
+                    {activeScope === 'dashboard' && selectedOrganization?.slug === 'manyspace' && (
+                        <>
+                            <SlackIntegrationSettings organization={selectedOrganization} />
 
                     {/* Global Identity */}
                     <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
@@ -181,6 +250,8 @@ const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization, org
                             </div>
                         </div>
                     </div>
+                        </>
+                    )}
                 </div>
             </div>
         </DashboardPage>
