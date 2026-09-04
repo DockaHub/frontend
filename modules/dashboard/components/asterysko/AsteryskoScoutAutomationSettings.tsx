@@ -12,6 +12,7 @@ import {
     RefreshCw,
     Save,
     ShieldCheck,
+    X,
     XCircle,
 } from 'lucide-react';
 import api from '../../../../services/api';
@@ -30,6 +31,7 @@ interface ScoutAutomationSettings {
     states?: string[];
     customPrompt?: string | null;
     maxCompaniesPerRun?: number;
+    maxCompaniesPerDay?: number;
     autoCrm?: boolean;
 }
 
@@ -189,6 +191,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
     const { addToast } = useToast();
     const [status, setStatus] = useState<ScoutStatus | null>(null);
     const [settings, setSettings] = useState<ScoutAutomationSettings | null>(null);
+    const [citiesInput, setCitiesInput] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -204,6 +207,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
             const response = await api.get<ScoutStatus>('/asterysko/scout-ai/status', { headers });
             setStatus(response.data);
             setSettings(response.data.automation.settings);
+            setCitiesInput((response.data.automation.settings.cities || []).join(', '));
         } catch (requestError: any) {
             setError(getRequestError(requestError, 'Não foi possível carregar o estado do Scout AI.'));
         } finally {
@@ -216,6 +220,26 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         const interval = window.setInterval(() => void load(true), 30_000);
         return () => window.clearInterval(interval);
     }, [load]);
+
+    const handleCityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setCitiesInput(val);
+        if (!settings) return;
+        const parsed = val.split(',').map(s => s.trim()).filter(Boolean);
+        setSettings({ ...settings, cities: parsed });
+    };
+
+    const handleCityInputBlur = () => {
+        if (!settings) return;
+        setCitiesInput((settings.cities || []).join(', '));
+    };
+
+    const handleRemoveCity = (cityToRemove: string) => {
+        if (!settings) return;
+        const updated = (settings.cities || []).filter(c => c.toLowerCase() !== cityToRemove.toLowerCase());
+        setSettings({ ...settings, cities: updated });
+        setCitiesInput(updated.join(', '));
+    };
 
     const save = async () => {
         if (!settings) return;
@@ -234,6 +258,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                 states: settings.states,
                 customPrompt: settings.customPrompt,
                 maxCompaniesPerRun: settings.maxCompaniesPerRun,
+                maxCompaniesPerDay: settings.maxCompaniesPerDay,
                 autoCrm: settings.autoCrm,
             }, { headers });
             addToast({
@@ -565,23 +590,39 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                                 </select>
                                 <span className="mt-1 block text-[10px] text-zinc-400">O próximo ciclo só começa depois que o anterior terminar.</span>
                             </label>
-                            <label>
+                            <div>
                                 <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">Máximo de ciclos por dia</span>
-                                <input
-                                    type="number"
-                                    min={1}
-                                    max={24}
-                                    value={settings.maxRunsPerDay}
-                                    onChange={event => setSettings({
-                                        ...settings,
-                                        maxRunsPerDay: Math.min(24, Math.max(1, Number(event.target.value))),
-                                    })}
-                                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
-                                />
-                                <span className="mt-1 block text-[10px] text-zinc-400">
-                                    Hoje: {status.automation.automaticRunsToday} ciclo(s). O limite reinicia à meia-noite.
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                    {[24, 48, 96, 144, 288].map(cycles => (
+                                        <button
+                                            key={cycles}
+                                            type="button"
+                                            onClick={() => setSettings({ ...settings, maxRunsPerDay: cycles })}
+                                            className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-colors ${
+                                                settings.maxRunsPerDay === cycles
+                                                    ? 'bg-[#0412dd] text-white'
+                                                    : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                            }`}
+                                        >
+                                            {cycles}
+                                        </button>
+                                    ))}
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={288}
+                                        value={settings.maxRunsPerDay}
+                                        onChange={event => setSettings({
+                                            ...settings,
+                                            maxRunsPerDay: Math.min(288, Math.max(1, Number(event.target.value))),
+                                        })}
+                                        className="w-20 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs text-center font-bold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                    />
+                                </div>
+                                <span className="block text-[10px] text-zinc-400">
+                                    Hoje: {status.automation.automaticRunsToday} ciclo(s). Até 288 ciclos/dia (a cada 5-10 min). Reinicia à meia-noite.
                                 </span>
-                            </label>
+                            </div>
                         </div>
                     )}
 
@@ -612,13 +653,13 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         </div>
                     </div>
 
-                    {/* Volume de Leads por Ciclo */}
+                    {/* Volume de Leads por Ciclo e Limite Diário */}
                     <div className="grid gap-5 md:grid-cols-2">
                         <div>
                             <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">
-                                Leads por ciclo (Meta de Captação)
+                                Leads por ciclo (Meta por Ciclo)
                             </span>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                                 {[10, 25, 50, 100].map(vol => (
                                     <button
                                         key={vol}
@@ -648,37 +689,90 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                             <span className="mt-1 block text-[10px] text-zinc-400">Capacidade por ciclo: até {Math.max(status.limits.companiesPerRun, 100)} leads.</span>
                         </div>
 
-                        {/* Auto-CRM Switch */}
-                        <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
-                            <div>
-                                <span className="block text-xs font-bold text-zinc-900 dark:text-white">Auto-CRM</span>
-                                <span className="mt-0.5 block text-[11px] text-zinc-500">Enviar leads qualificados diretamente para o CRM</span>
+                        <div>
+                            <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                                Limite diário de leads (Meta Diária Total)
+                            </span>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {[100, 250, 500, 1000, 2000].map(limit => (
+                                    <button
+                                        key={limit}
+                                        type="button"
+                                        onClick={() => setSettings({ ...settings, maxCompaniesPerDay: limit })}
+                                        className={`rounded-lg px-2.5 py-1.5 text-xs font-bold transition-colors ${
+                                            (settings.maxCompaniesPerDay || 500) === limit
+                                                ? 'bg-[#0412dd] text-white'
+                                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                        }`}
+                                    >
+                                        {limit}
+                                    </button>
+                                ))}
+                                <input
+                                    type="number"
+                                    min={10}
+                                    max={5000}
+                                    value={settings.maxCompaniesPerDay || 500}
+                                    onChange={e => setSettings({
+                                        ...settings,
+                                        maxCompaniesPerDay: Math.min(5000, Math.max(10, Number(e.target.value)))
+                                    })}
+                                    className="w-20 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-center font-bold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                />
                             </div>
-                            <input
-                                type="checkbox"
-                                checked={Boolean(settings.autoCrm)}
-                                onChange={e => setSettings({ ...settings, autoCrm: e.target.checked })}
-                                className="h-5 w-5 rounded accent-[#0412dd] cursor-pointer"
-                            />
+                            <span className="mt-1 block text-[10px] text-zinc-400">Limite máximo diário de prospecção: até 5.000 leads/dia.</span>
                         </div>
+                    </div>
+
+                    {/* Auto-CRM Switch */}
+                    <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                        <div>
+                            <span className="block text-xs font-bold text-zinc-900 dark:text-white">Auto-CRM</span>
+                            <span className="mt-0.5 block text-[11px] text-zinc-500">Enviar leads qualificados diretamente para o CRM</span>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={Boolean(settings.autoCrm)}
+                            onChange={e => setSettings({ ...settings, autoCrm: e.target.checked })}
+                            className="h-5 w-5 rounded accent-[#0412dd] cursor-pointer"
+                        />
                     </div>
 
                     {/* Cidades e Regiões de Prospecção */}
                     <div>
                         <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">
-                            Cidades alvo (separadas por vírgula)
+                            Cidades alvo (digite e separe com vírgulas)
                         </span>
                         <input
                             type="text"
                             placeholder="Fortaleza, São Paulo, Rio de Janeiro, Belo Horizonte, Curitiba..."
-                            value={(settings.cities || []).join(', ')}
-                            onChange={e => setSettings({
-                                ...settings,
-                                cities: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                            })}
+                            value={citiesInput}
+                            onChange={handleCityInputChange}
+                            onBlur={handleCityInputBlur}
                             className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-xs text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
                         />
-                        <span className="mt-1 block text-[10px] text-zinc-400">Deixe em branco para usar a abrangência geral.</span>
+                        <span className="mt-1 block text-[10px] text-zinc-400">Você pode digitar vírgulas normalmente ou colar uma lista de cidades. Deixe em branco para usar a abrangência geral.</span>
+
+                        {settings.cities && settings.cities.length > 0 && (
+                            <div className="mt-2.5 flex flex-wrap gap-1.5">
+                                {settings.cities.map(city => (
+                                    <span
+                                        key={city}
+                                        className="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"
+                                    >
+                                        {city}
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveCity(city)}
+                                            className="ml-0.5 text-blue-500 hover:text-blue-800 dark:hover:text-blue-200"
+                                            title={`Remover ${city}`}
+                                        >
+                                            <X size={12} />
+                                        </button>
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Prompt Customizado de Prospecção */}

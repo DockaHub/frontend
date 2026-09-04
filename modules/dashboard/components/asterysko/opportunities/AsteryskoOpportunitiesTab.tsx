@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Plus, Search, RefreshCw, Send, AlertOctagon,
-    ChevronLeft, ChevronRight, Eye, Loader2, Zap, X
+    ChevronLeft, ChevronRight, Eye, Loader2, Zap, X, Trash2
 } from 'lucide-react';
 import api from '../../../../../services/api';
 import { AsteryskoNewOpportunityModal } from './AsteryskoNewOpportunityModal';
@@ -59,9 +59,10 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
     const [isEngineModalOpen, setIsEngineModalOpen] = useState(false);
     const [actionTargetOpp, setActionTargetOpp] = useState<AsteryskoOpportunity | null>(null);
 
-    // Seleção em lote para envio ao CRM
+    // Seleção em lote para envio ao CRM ou exclusão
     const [selectedOppIds, setSelectedOppIds] = useState<string[]>([]);
     const [batchSending, setBatchSending] = useState(false);
+    const [batchDeleting, setBatchDeleting] = useState(false);
     const [batchFeedback, setBatchFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
     const toggleSelectOpp = (id: string) => {
@@ -110,6 +111,88 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
             });
         } finally {
             setBatchSending(false);
+        }
+    };
+
+    const handleBatchDelete = async () => {
+        if (selectedOppIds.length === 0) return;
+        const confirmMsg = `Tem certeza que deseja excluir permanentemente as ${selectedOppIds.length} oportunidade(s) selecionada(s)? Esta ação não pode ser desfeita.`;
+        if (!window.confirm(confirmMsg)) return;
+
+        setBatchDeleting(true);
+        setBatchFeedback(null);
+        try {
+            const res = await api.post('/asterysko/opportunities/batch-delete', {
+                opportunityIds: selectedOppIds,
+            }, {
+                headers: organizationId ? { 'x-organization-id': organizationId } : undefined,
+            });
+            setBatchFeedback({
+                type: 'success',
+                message: res.data.message || `${res.data.deletedCount || selectedOppIds.length} oportunidade(s) excluída(s) com sucesso!`,
+            });
+            setSelectedOppIds([]);
+            opportunitiesCache.clear();
+            opportunityCountsCache.clear();
+            await loadData(true);
+        } catch (err: any) {
+            setBatchFeedback({
+                type: 'error',
+                message: err?.response?.data?.error || err?.message || 'Falha ao excluir oportunidades selecionadas.',
+            });
+        } finally {
+            setBatchDeleting(false);
+        }
+    };
+
+    const handleDeleteOpportunity = async (opp: AsteryskoOpportunity) => {
+        const name = opp.brandName || opp.companyName || 'esta oportunidade';
+        const confirmMsg = `Tem certeza que deseja excluir permanentemente "${name}"? Esta ação não pode ser desfeita.`;
+        if (!window.confirm(confirmMsg)) return;
+
+        try {
+            await api.delete(`/asterysko/opportunities/${opp.id}`, {
+                headers: organizationId ? { 'x-organization-id': organizationId } : undefined,
+            });
+            setBatchFeedback({
+                type: 'success',
+                message: `Oportunidade "${name}" excluída com sucesso!`,
+            });
+            setSelectedOppIds(prev => prev.filter(id => id !== opp.id));
+            opportunitiesCache.clear();
+            opportunityCountsCache.clear();
+            await loadData(true);
+        } catch (err: any) {
+            setBatchFeedback({
+                type: 'error',
+                message: err?.response?.data?.error || err?.message || 'Falha ao excluir oportunidade.',
+            });
+        }
+    };
+
+    const handleCleanFixtures = async () => {
+        if (!window.confirm('Deseja excluir permanentemente todas as oportunidades fictícias/de teste (Fixture) geradas no ambiente?')) return;
+        setBatchDeleting(true);
+        setBatchFeedback(null);
+        try {
+            const res = await api.post('/asterysko/opportunities/clean-fixtures', {}, {
+                headers: organizationId ? { 'x-organization-id': organizationId } : undefined,
+            });
+            setBatchFeedback({
+                type: 'success',
+                message: res.data.message || `${res.data.deletedCount} oportunidade(s) de teste removida(s) com sucesso!`,
+            });
+            setSelectedOppIds([]);
+            opportunitiesCache.clear();
+            opportunityCountsCache.clear();
+            await loadData(true);
+        } catch (err: any) {
+            setBatchFeedback({
+                type: 'error',
+                message: err?.response?.data?.error || err?.message || 'Falha ao limpar oportunidades de teste.',
+            });
+        } finally {
+            setBatchDeleting(false);
         }
     };
 
@@ -233,6 +316,13 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                 return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">{status}</span>;
         }
     };
+
+    const hasFixtureItems = items.some(opp => 
+        /fixture/i.test(opp.brandName || '') || 
+        /fixture/i.test(opp.companyName || '') || 
+        /fixture/i.test(opp.tradeName || '') ||
+        opp.sourceType === 'manual_fixture'
+    );
 
     return (
         <div className="space-y-6">
@@ -392,14 +482,44 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                         </button>
                         <button
                             type="button"
+                            onClick={() => void handleBatchDelete()}
+                            disabled={batchDeleting || batchSending}
+                            className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 cursor-pointer transition-colors"
+                        >
+                            {batchDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                            Excluir Selecionadas
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => void handleBatchSendToCrm()}
-                            disabled={batchSending}
+                            disabled={batchSending || batchDeleting}
                             className="inline-flex items-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50 cursor-pointer"
                         >
                             {batchSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                             Enviar Selecionadas ao CRM
                         </button>
                     </div>
+                </div>
+            )}
+
+            {hasFixtureItems && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/90 p-4 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/25 dark:text-amber-200 shadow-sm">
+                    <div className="flex items-center gap-2.5">
+                        <AlertOctagon size={18} className="text-amber-600 flex-shrink-0" />
+                        <div>
+                            <p className="font-bold">Empresas fictícias de teste detectadas</p>
+                            <p className="text-[11px] text-amber-700 dark:text-amber-300">Identificamos empresas "Fixture" criadas indevidamente por testes anteriores.</p>
+                        </div>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => void handleCleanFixtures()}
+                        disabled={batchDeleting}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-rose-600 px-4 py-2 text-xs font-bold text-white hover:bg-rose-700 disabled:opacity-50 transition-colors cursor-pointer shadow-sm"
+                    >
+                        {batchDeleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                        Excluir Todas as Empresas Fixture
+                    </button>
                 </div>
             )}
 
@@ -544,6 +664,13 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                                                     title="Ver Detalhes"
                                                 >
                                                     <Eye size={16} />
+                                                </button>
+                                                <button
+                                                    onClick={() => void handleDeleteOpportunity(opp)}
+                                                    className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                                    title="Excluir Permanentemente"
+                                                >
+                                                    <Trash2 size={16} />
                                                 </button>
                                             </div>
                                         </td>

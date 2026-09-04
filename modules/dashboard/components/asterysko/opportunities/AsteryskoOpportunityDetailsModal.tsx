@@ -226,6 +226,23 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
         }
     };
 
+    const handleDelete = async () => {
+        if (!opportunity || !organizationId) return;
+        const name = opportunity.brandName || opportunity.companyName || 'esta oportunidade';
+        if (!window.confirm(`Tem certeza de que deseja excluir permanentemente "${name}"? Esta ação não pode ser desfeita.`)) return;
+        try {
+            await api.delete(
+                `/asterysko/opportunities/${opportunity.id}`,
+                { headers: { 'x-organization-id': organizationId } },
+            );
+            alert('Oportunidade excluída com sucesso.');
+            onUpdate();
+            onClose();
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Falha ao excluir oportunidade.');
+        }
+    };
+
     const handleToggleDoNotContact = async () => {
         if (!opportunity || !organizationId) return;
         const newDoNotContact = !opportunity.doNotContact;
@@ -695,12 +712,20 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                                             {opportunity.doNotContact ? <ShieldCheck size={14} /> : <ShieldOff size={14} />}
                                             {opportunity.doNotContact ? 'Remover restrição "Não Contatar"' : 'Marcar como "Não Contatar"'}
                                         </button>
-                                        <button
-                                            onClick={handleArchive}
-                                            className="text-xs font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center gap-1 cursor-pointer"
-                                        >
-                                            <Archive size={14} /> Arquivar Oportunidade
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={handleArchive}
+                                                className="text-xs font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 flex items-center gap-1 cursor-pointer transition-colors"
+                                            >
+                                                <Archive size={14} /> Arquivar Oportunidade
+                                            </button>
+                                            <button
+                                                onClick={handleDelete}
+                                                className="text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 flex items-center gap-1 cursor-pointer transition-colors"
+                                            >
+                                                <Trash2 size={14} /> Excluir Oportunidade
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
