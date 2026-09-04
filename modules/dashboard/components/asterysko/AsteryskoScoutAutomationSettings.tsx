@@ -10,6 +10,7 @@ import {
     Loader2,
     Play,
     RefreshCw,
+    RotateCcw,
     Save,
     ShieldCheck,
     X,
@@ -287,6 +288,8 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                 cities: settings.cities && settings.cities.length > 0 ? settings.cities : ['Fortaleza'],
                 states: settings.states && settings.states.length > 0 ? settings.states : ['CE'],
                 segments: settings.segments && settings.segments.length > 0 ? settings.segments : ['clínicas de estética'],
+                desiredSignals: ['empresa ou marca ativa', 'website próprio', 'página de contato', 'atividade comercial real'],
+                exclusions: ['grandes marcas', 'multinacionais', 'grandes redes de franquias', 'órgãos públicos'],
                 maxCompanies: settings.maxCompaniesPerRun || 50,
                 minimumConfidence: 70,
                 customPrompt: settings.customPrompt || null,
@@ -314,19 +317,17 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         try {
             setResettingCircuit(true);
             setError(null);
-            await api.post('/asterysko/scout-ai/reset-circuit', {}, {
-                headers: { 'x-organization-id': organizationId },
-            });
+            await api.post('/asterysko/scout-ai/reset-circuit', {}, { headers });
             addToast({
                 type: 'success',
-                title: 'Circuit Breaker',
-                message: 'O circuito foi resetado com sucesso.',
+                title: 'Ciclo Reiniciado',
+                message: 'O ciclo do Scout AI foi destravado e reativado com sucesso.',
             });
             await load(true);
         } catch (requestError: any) {
-            const message = getRequestError(requestError, 'Falha ao resetar o circuit breaker.');
+            const message = getRequestError(requestError, 'Falha ao reiniciar o ciclo do Scout AI.');
             setError(message);
-            addToast({ type: 'error', title: 'Circuit Breaker', message });
+            addToast({ type: 'error', title: 'Scout AI', message });
         } finally {
             setResettingCircuit(false);
         }
@@ -406,15 +407,27 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                             </p>
                         </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => void load()}
-                        disabled={loading}
-                        className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-                    >
-                        <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                        Atualizar
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => void handleResetCircuit()}
+                            disabled={resettingCircuit}
+                            className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 cursor-pointer transition-colors shadow-sm"
+                            title="Destravar e reiniciar o ciclo do Scout AI imediatamente"
+                        >
+                            {resettingCircuit ? <Loader2 size={14} className="animate-spin" /> : <RotateCcw size={14} />}
+                            Reiniciar Ciclo
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void load()}
+                            disabled={loading}
+                            className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer"
+                        >
+                            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                            Atualizar
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
