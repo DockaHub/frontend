@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     AlertTriangle,
     Bot,
@@ -75,7 +75,7 @@ const DEFAULT_EXCLUDED_BRANDS = [
     "Pão de Açúcar", "Droga Raia", "Drogasil", "Pague Menos", "Hapvida", "Unimed"
 ];
 
-export const AsteryskoScoutAiTab: React.FC = () => {
+export const AsteryskoScoutAiTab: React.FC<{ organizationId?: string }> = ({ organizationId }) => {
     const [status, setStatus] = useState<ScoutStatus | null>(null);
     const [profile, setProfile] = useState<ScoutSearchProfile | null>(null);
     const [loading, setLoading] = useState(true);
@@ -91,16 +91,36 @@ export const AsteryskoScoutAiTab: React.FC = () => {
     const [newSegmentInput, setNewSegmentInput] = useState('');
     const [newExcludedInput, setNewExcludedInput] = useState('');
 
+    const headers = useMemo(() => (
+        organizationId ? { 'x-organization-id': organizationId } : undefined
+    ), [organizationId]);
+
     const load = useCallback(async () => {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.get<ScoutStatus>('/asterysko/scout-ai/status');
+            const response = await api.get<ScoutStatus>('/asterysko/scout-ai/status', { headers });
             setStatus(response.data);
-            const loadedProfile = response.data.profile;
+            const loadedProfile: ScoutSearchProfile = response.data.profile || {
+                cities: ['Fortaleza'],
+                states: ['CE'],
+                segments: ['Clínicas e Saúde', 'Startups e Tecnologia'],
+                excludedCompanies: [...DEFAULT_EXCLUDED_BRANDS],
+                desiredSignals: [],
+                exclusions: [],
+                customInstructions: '',
+                minConfidence: 65,
+                maxCompaniesPerRun: 10,
+            };
             // Ensure excludedCompanies has defaults if empty
             if (!loadedProfile.excludedCompanies || loadedProfile.excludedCompanies.length === 0) {
                 loadedProfile.excludedCompanies = [...DEFAULT_EXCLUDED_BRANDS];
+            }
+            if (!Array.isArray(loadedProfile.desiredSignals)) {
+                loadedProfile.desiredSignals = [];
+            }
+            if (!Array.isArray(loadedProfile.exclusions)) {
+                loadedProfile.exclusions = [];
             }
             setProfile(loadedProfile);
         } catch (requestError: unknown) {
@@ -108,7 +128,7 @@ export const AsteryskoScoutAiTab: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [headers]);
 
     useEffect(() => { void load(); }, [load]);
 
@@ -118,7 +138,14 @@ export const AsteryskoScoutAiTab: React.FC = () => {
         setError(null);
         setSuccessMsg(null);
         try {
-            const res = await api.post('/asterysko/scout-ai/run', { profile });
+            const payload = {
+                profile: {
+                    ...profile,
+                    desiredSignals: Array.isArray(profile.desiredSignals) ? profile.desiredSignals : [],
+                    exclusions: Array.isArray(profile.exclusions) ? profile.exclusions : [],
+                },
+            };
+            const res = await api.post('/asterysko/scout-ai/run', payload, { headers });
             setSuccessMsg(res.data?.message || 'Execução do Scout AI concluída com sucesso!');
             await load();
         } catch (requestError: unknown) {
@@ -132,7 +159,7 @@ export const AsteryskoScoutAiTab: React.FC = () => {
         setPromotingId(sourceItemId);
         setError(null);
         try {
-            await api.post(`/asterysko/scout-ai/source-items/${sourceItemId}/promote-review`);
+            await api.post(`/asterysko/scout-ai/source-items/${sourceItemId}/promote-review`, {}, { headers });
             await load();
         } catch (requestError: unknown) {
             setError(getApiErrorMessage(requestError, 'SourceItem ainda não pode ser promovido para revisão.'));

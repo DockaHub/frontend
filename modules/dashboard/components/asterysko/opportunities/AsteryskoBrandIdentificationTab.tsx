@@ -8,7 +8,7 @@ import {
     ItemsResponse
 } from './asteryskoApiTypes';
 
-export const AsteryskoBrandIdentificationTab: React.FC = () => {
+export const AsteryskoBrandIdentificationTab: React.FC<{ organizationId?: string }> = ({ organizationId }) => {
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<BrandIdentificationItem[]>([]);
     const [counts, setCounts] = useState<BrandIdentificationCounts>({});
@@ -20,15 +20,17 @@ export const AsteryskoBrandIdentificationTab: React.FC = () => {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
+            const headers = organizationId ? { 'x-organization-id': organizationId } : undefined;
             const [listRes, countsRes] = await Promise.all([
                 api.get<ItemsResponse<BrandIdentificationItem>>('/asterysko/brand-identifications', {
                     params: {
                         page,
                         limit: 15,
                         status: activeStatus
-                    }
+                    },
+                    headers,
                 }),
-                api.get<BrandIdentificationCounts>('/asterysko/brand-identifications/counts')
+                api.get<BrandIdentificationCounts>('/asterysko/brand-identifications/counts', { headers })
             ]);
 
             setItems(listRes.data.items || []);
@@ -38,7 +40,7 @@ export const AsteryskoBrandIdentificationTab: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [page, activeStatus]);
+    }, [page, activeStatus, organizationId]);
 
     useEffect(() => {
         loadData();

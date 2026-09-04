@@ -745,6 +745,7 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
             <AsteryskoEngineModal
                 isOpen={isEngineModalOpen}
                 onClose={() => setIsEngineModalOpen(false)}
+                organizationId={organizationId}
             />
         </div>
     );

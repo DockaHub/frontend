@@ -10,9 +10,10 @@ import {
 
 interface AsteryskoTrademarkScreeningTabProps {
     onOpenRadar?: (brandName: string, nclClass: string) => void;
+    organizationId?: string;
 }
 
-export const AsteryskoTrademarkScreeningTab: React.FC<AsteryskoTrademarkScreeningTabProps> = ({ onOpenRadar }) => {
+export const AsteryskoTrademarkScreeningTab: React.FC<AsteryskoTrademarkScreeningTabProps> = ({ onOpenRadar, organizationId }) => {
     const [screenings, setScreenings] = useState<TrademarkScreening[]>([]);
     const [counts, setCounts] = useState<TrademarkCounts | null>(null);
     const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export const AsteryskoTrademarkScreeningTab: React.FC<AsteryskoTrademarkScreenin
     const fetchData = async () => {
         setLoading(true);
         try {
+            const headers = organizationId ? { 'x-organization-id': organizationId } : undefined;
             const [listRes, countRes] = await Promise.all([
                 api.get<ItemsResponse<TrademarkScreening>>('/asterysko/trademark-screenings', {
                     params: {
@@ -33,9 +35,10 @@ export const AsteryskoTrademarkScreeningTab: React.FC<AsteryskoTrademarkScreenin
                         limit: 15,
                         risk: riskFilter || undefined,
                         search: searchTerm || undefined
-                    }
+                    },
+                    headers,
                 }),
-                api.get<TrademarkCounts>('/asterysko/trademark-screenings/counts')
+                api.get<TrademarkCounts>('/asterysko/trademark-screenings/counts', { headers })
             ]);
 
             setScreenings(listRes.data.items || []);
@@ -60,8 +63,9 @@ export const AsteryskoTrademarkScreeningTab: React.FC<AsteryskoTrademarkScreenin
     const handleTriggerRun = async (dryRun: boolean) => {
         try {
             setRunning(true);
+            const headers = organizationId ? { 'x-organization-id': organizationId } : undefined;
             const endpoint = dryRun ? '/asterysko/trademark-screenings/dry-run' : '/asterysko/trademark-screenings/run';
-            await api.post(endpoint, {});
+            await api.post(endpoint, {}, { headers });
             fetchData();
         } catch (err) {
             console.error('Failed to trigger screening run', err);

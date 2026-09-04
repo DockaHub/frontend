@@ -9,7 +9,7 @@ import {
     getApiErrorMessage
 } from './asteryskoApiTypes';
 
-export const AsteryskoBusinessContactEnrichmentTab: React.FC = () => {
+export const AsteryskoBusinessContactEnrichmentTab: React.FC<{ organizationId?: string }> = ({ organizationId }) => {
     const [loading, setLoading] = useState(false);
     const [attempts, setAttempts] = useState<ContactEnrichmentAttempt[]>([]);
     const [counts, setCounts] = useState<ContactCountsResponse | null>(null);
@@ -25,15 +25,17 @@ export const AsteryskoBusinessContactEnrichmentTab: React.FC = () => {
         setLoading(true);
         setLoadError(null);
         try {
+            const headers = organizationId ? { 'x-organization-id': organizationId } : undefined;
             const [listRes, countsRes] = await Promise.all([
                 api.get<ContactAttemptListResponse>('/asterysko/business-contact-enrichments', {
                     params: {
                         page,
                         limit: 15,
                         status: activeStatus !== 'all' ? activeStatus : undefined,
-                    }
+                    },
+                    headers,
                 }),
-                api.get<ContactCountsResponse>('/asterysko/business-contact-enrichments/counts')
+                api.get<ContactCountsResponse>('/asterysko/business-contact-enrichments/counts', { headers })
             ]);
 
             setAttempts(listRes.data.attempts ?? []);
@@ -44,7 +46,7 @@ export const AsteryskoBusinessContactEnrichmentTab: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [page, activeStatus]);
+    }, [page, activeStatus, organizationId]);
 
     useEffect(() => {
         loadData();
@@ -58,7 +60,8 @@ export const AsteryskoBusinessContactEnrichmentTab: React.FC = () => {
     const handleReprocess = async (id: string) => {
         setActionLoading(id);
         try {
-            await api.post(`/asterysko/business-contact-enrichments/${id}/reprocess`);
+            const headers = organizationId ? { 'x-organization-id': organizationId } : undefined;
+            await api.post(`/asterysko/business-contact-enrichments/${id}/reprocess`, {}, { headers });
             await loadData();
         } catch (error: unknown) {
             alert(getApiErrorMessage(error, 'Erro ao reprocessar tentativa'));

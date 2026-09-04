@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
     X, Activity, Database, Play, AlertTriangle,
     RefreshCw, ToggleRight, ToggleLeft, Loader2,
@@ -10,6 +10,7 @@ import { AsteryskoTrademarkScreeningTab } from './AsteryskoTrademarkScreeningTab
 import { AsteryskoBusinessContactEnrichmentTab } from './AsteryskoBusinessContactEnrichmentTab';
 import { AsteryskoDecisionMakerEnrichmentTab } from './AsteryskoDecisionMakerEnrichmentTab';
 import { AsteryskoScoutAiTab } from './AsteryskoScoutAiTab';
+import { AsteryskoScoutAutomationSettings } from '../AsteryskoScoutAutomationSettings';
 import { Bot, Mail, UserRoundSearch } from 'lucide-react';
 import {
     getApiErrorMessage,
@@ -24,6 +25,7 @@ interface AsteryskoEngineModalProps {
     isOpen: boolean;
     onClose: () => void;
     onOpenRadar?: (brandName: string, nclClass: string) => void;
+    organizationId?: string;
 }
 
 type Tab = 'overview' | 'scout' | 'sources' | 'runs' | 'brands' | 'trademark' | 'channels' | 'decision-makers' | 'failures';
@@ -68,7 +70,7 @@ const RunStatusBadge: React.FC<{ status: string }> = ({ status }) => {
     );
 };
 
-export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOpen, onClose, onOpenRadar }) => {
+export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOpen, onClose, onOpenRadar, organizationId }) => {
     const [activeTab, setActiveTab] = useState<Tab>('overview');
     const [loading, setLoading] = useState(false);
     const [stats, setStats] = useState<IngestionStats | null>(null);
@@ -78,41 +80,45 @@ export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOp
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
 
+    const reqHeaders = useMemo(() => (
+        organizationId ? { headers: { 'x-organization-id': organizationId } } : undefined
+    ), [organizationId]);
+
     const loadStats = useCallback(async () => {
         try {
-            const res = await api.get<IngestionStats>('/asterysko/ingestion/stats');
+            const res = await api.get<IngestionStats>('/asterysko/ingestion/stats', reqHeaders);
             setStats(res.data);
         } catch (error: unknown) {
             setLoadError(getApiErrorMessage(error, 'Erro ao carregar métricas do motor.'));
         }
-    }, []);
+    }, [reqHeaders]);
 
     const loadSources = useCallback(async () => {
         try {
-            const res = await api.get<IngestionSource[]>('/asterysko/ingestion/sources');
+            const res = await api.get<IngestionSource[]>('/asterysko/ingestion/sources', reqHeaders);
             setSources(res.data || []);
         } catch (error: unknown) {
             setLoadError(getApiErrorMessage(error, 'Erro ao carregar fontes do motor.'));
         }
-    }, []);
+    }, [reqHeaders]);
 
     const loadRuns = useCallback(async () => {
         try {
-            const res = await api.get<ItemsResponse<IngestionRun>>('/asterysko/ingestion/runs?limit=30');
+            const res = await api.get<ItemsResponse<IngestionRun>>('/asterysko/ingestion/runs?limit=30', reqHeaders);
             setRuns(res.data.items || []);
         } catch (error: unknown) {
             setLoadError(getApiErrorMessage(error, 'Erro ao carregar execuções do motor.'));
         }
-    }, []);
+    }, [reqHeaders]);
 
     const loadFailures = useCallback(async () => {
         try {
-            const res = await api.get<ItemsResponse<IngestionFailure>>('/asterysko/ingestion/items?status=failed&limit=30');
+            const res = await api.get<ItemsResponse<IngestionFailure>>('/asterysko/ingestion/items?status=failed&limit=30', reqHeaders);
             setFailures(res.data.items || []);
         } catch (error: unknown) {
             setLoadError(getApiErrorMessage(error, 'Erro ao carregar falhas do motor.'));
         }
-    }, []);
+    }, [reqHeaders]);
 
     const loadAll = useCallback(async () => {
         setLoading(true);
@@ -131,7 +137,7 @@ export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOp
             const endpoint = dryRun
                 ? `/asterysko/ingestion/sources/${sourceId}/dry-run`
                 : `/asterysko/ingestion/sources/${sourceId}/run`;
-            await api.post(endpoint);
+            await api.post(endpoint, {}, reqHeaders);
             setTimeout(() => { loadRuns(); loadStats(); }, 1500);
         } catch (error: unknown) {
             alert(getApiErrorMessage(error, 'Erro ao iniciar execução.'));
@@ -146,7 +152,7 @@ export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOp
             const endpoint = currentStatus === 'paused'
                 ? `/asterysko/ingestion/sources/${sourceId}/resume`
                 : `/asterysko/ingestion/sources/${sourceId}/pause`;
-            await api.put(endpoint);
+            await api.put(endpoint, {}, reqHeaders);
             await loadSources();
         } catch (error: unknown) {
             alert(getApiErrorMessage(error, 'Erro ao alterar status da fonte.'));
@@ -293,7 +299,7 @@ export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOp
                     )}
 
                     {activeTab === 'scout' && (
-                        <AsteryskoScoutAiTab />
+                        <AsteryskoScoutAutomationSettings organizationId={organizationId} />
                     )}
 
                     {/* ─── FONTES ─── */}
@@ -382,22 +388,22 @@ export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOp
 
                     {/* ─── IDENTIFICAÇÃO DE MARCAS ─── */}
                     {activeTab === 'brands' && (
-                        <AsteryskoBrandIdentificationTab />
+                        <AsteryskoBrandIdentificationTab organizationId={organizationId} />
                     )}
 
                     {/* ─── ANÁLISE MARCÁRIA ─── */}
                     {activeTab === 'trademark' && (
-                        <AsteryskoTrademarkScreeningTab onOpenRadar={onOpenRadar} />
+                        <AsteryskoTrademarkScreeningTab onOpenRadar={onOpenRadar} organizationId={organizationId} />
                     )}
 
                     {/* ─── CANAIS EMPRESARIAIS (FASE 2.5A) ─── */}
                     {activeTab === 'channels' && (
-                        <AsteryskoBusinessContactEnrichmentTab />
+                        <AsteryskoBusinessContactEnrichmentTab organizationId={organizationId} />
                     )}
 
                     {/* ─── POSSÍVEIS DECISORES (FASE 2.5B) ─── */}
                     {activeTab === 'decision-makers' && (
-                        <AsteryskoDecisionMakerEnrichmentTab />
+                        <AsteryskoDecisionMakerEnrichmentTab organizationId={organizationId} />
                     )}
 
                     {/* ─── FALHAS ─── */}
