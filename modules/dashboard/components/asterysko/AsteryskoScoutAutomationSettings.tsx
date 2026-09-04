@@ -161,6 +161,12 @@ const friendlyScoutError = (value?: string | null): string | null => {
     if (/^search_(?:failed|incomplete|empty)/i.test(value)) {
         return 'A pesquisa web não foi concluída. Nenhum resultado parcial foi persistido.';
     }
+    if (/Já existe uma execução do Scout AI em andamento/i.test(value)) {
+        return 'Uma rodada anterior tentou iniciar enquanto outra ainda finalizava. O lock já foi liberado e o robô executará normalmente no próximo horário.';
+    }
+    if (/Ciclo reiniciado manualmente/i.test(value) || /Conflito de execução anterior resolvido/i.test(value)) {
+        return 'Ciclo destravado e reiniciado com sucesso. O robô está pronto para a próxima execução.';
+    }
     return value;
 };
 
@@ -168,6 +174,9 @@ const runFeedback = (run: ScoutRunLog): string => {
     if (run.errorSummary || run.automation.interruptionReason) {
         return friendlyScoutError(run.errorSummary || run.automation.interruptionReason)
             || 'A execução terminou com uma interrupção.';
+    }
+    if (run.status === 'cancelled') {
+        return 'Rodada anterior cancelada/reiniciada. O robô está livre.';
     }
     if (run.status === 'running') return 'Pesquisa em andamento. Os números serão atualizados automaticamente.';
     if (run.discovery.uniqueCandidates > 0 && run.discovery.websitesConfirmed === 0) {
@@ -410,6 +419,16 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                     <div className="flex flex-wrap items-center gap-2">
                         <button
                             type="button"
+                            onClick={() => void handleRunNow()}
+                            disabled={runningNow || loading}
+                            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer transition-colors shadow-sm"
+                            title="Disparar uma rodada de prospecção do Scout AI agora"
+                        >
+                            {runningNow ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                            {runningNow ? 'Executando...' : 'Executar Agora'}
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => void handleResetCircuit()}
                             disabled={resettingCircuit}
                             className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300 cursor-pointer transition-colors shadow-sm"
@@ -483,13 +502,24 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                 )}
 
                 {lastRun && !status.automation.circuitOpen && (
-                    <div className={`mt-4 rounded-xl border p-3 text-xs ${
-                        lastRun.errorSummary
-                            ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300'
-                            : 'border-blue-100 bg-blue-50 text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300'
-                    }`}>
-                        <strong>Feedback da última rodada:</strong> {runFeedback(lastRun)}
-                    </div>
+                    (() => {
+                        const feedbackText = runFeedback(lastRun);
+                        const isResolvedOrCancelled = lastRun.status === 'cancelled'
+                            || /liberado|reiniciado com sucesso|pronto para a próxima|Uma rodada anterior tentou iniciar/i.test(feedbackText);
+                        const isError = Boolean(lastRun.errorSummary) && !isResolvedOrCancelled;
+
+                        return (
+                            <div className={`mt-4 rounded-xl border p-3 text-xs ${
+                                isError
+                                    ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300'
+                                    : isResolvedOrCancelled
+                                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300'
+                                        : 'border-blue-100 bg-blue-50 text-blue-800 dark:border-blue-900/40 dark:bg-blue-950/20 dark:text-blue-300'
+                            }`}>
+                                <strong>Feedback da última rodada:</strong> {feedbackText}
+                            </div>
+                        );
+                    })()
                 )}
             </div>
 
