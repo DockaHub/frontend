@@ -8,6 +8,7 @@ import {
     Clock3,
     Coins,
     Loader2,
+    Play,
     RefreshCw,
     Save,
     ShieldCheck,
@@ -247,6 +248,38 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
             addToast({ type: 'error', title: 'Scout AI', message });
         } finally {
             setSaving(false);
+        }
+    };
+
+    const [runningNow, setRunningNow] = useState(false);
+
+    const handleRunNow = async () => {
+        if (!settings) return;
+        setRunningNow(true);
+        setError(null);
+        try {
+            const profile = {
+                cities: settings.cities && settings.cities.length > 0 ? settings.cities : ['Fortaleza'],
+                states: settings.states && settings.states.length > 0 ? settings.states : ['CE'],
+                segments: settings.segments && settings.segments.length > 0 ? settings.segments : ['clínicas de estética'],
+                maxCompanies: settings.maxCompaniesPerRun || 50,
+                minimumConfidence: 70,
+                customPrompt: settings.customPrompt || null,
+                autoCrm: Boolean(settings.autoCrm),
+            };
+            const response = await api.post('/asterysko/scout-ai/run', { profile }, { headers });
+            addToast({
+                type: 'success',
+                title: 'Scout AI Concluído',
+                message: response.data?.message || 'Ciclo de captação de leads executado com sucesso!',
+            });
+            await load(true);
+        } catch (requestError: any) {
+            const message = getRequestError(requestError, 'Falha ao executar o ciclo do Scout AI.');
+            setError(message);
+            addToast({ type: 'error', title: 'Scout AI', message });
+        } finally {
+            setRunningNow(false);
         }
     };
 
@@ -522,6 +555,8 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                                     onChange={event => setSettings({ ...settings, intervalMinutes: Number(event.target.value) })}
                                     className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
                                 >
+                                    <option value={10}>A cada 10 minutos (Rápido)</option>
+                                    <option value={15}>A cada 15 minutos</option>
                                     <option value={30}>A cada 30 minutos</option>
                                     <option value={60}>A cada 1 hora</option>
                                     <option value={120}>A cada 2 horas</option>
@@ -601,16 +636,16 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                                 <input
                                     type="number"
                                     min={1}
-                                    max={status.limits.companiesPerRun}
+                                    max={Math.max(status.limits.companiesPerRun, 100)}
                                     value={settings.maxCompaniesPerRun || 25}
                                     onChange={e => setSettings({
                                         ...settings,
-                                        maxCompaniesPerRun: Math.min(status.limits.companiesPerRun, Math.max(1, Number(e.target.value)))
+                                        maxCompaniesPerRun: Math.min(Math.max(status.limits.companiesPerRun, 100), Math.max(1, Number(e.target.value)))
                                     })}
                                     className="w-20 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-center font-bold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
                                 />
                             </div>
-                            <span className="mt-1 block text-[10px] text-zinc-400">Máximo configurado no servidor: {status.limits.companiesPerRun} leads por ciclo.</span>
+                            <span className="mt-1 block text-[10px] text-zinc-400">Capacidade por ciclo: até {Math.max(status.limits.companiesPerRun, 100)} leads.</span>
                         </div>
 
                         {/* Auto-CRM Switch */}
@@ -667,19 +702,31 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                             <span className="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-800">até {status.limits.companiesPerRun} oportunidades</span>
                             <span className="rounded-full bg-zinc-100 px-2.5 py-1 dark:bg-zinc-800">concorrência {status.safety.concurrency}</span>
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => void save()}
-                            disabled={
-                                saving
-                                || (settings.mode === 'scheduled' && settings.weekdays.length === 0)
-                                || settings.segments.length === 0
-                            }
-                            className="inline-flex items-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                            Salvar programação
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => void handleRunNow()}
+                                disabled={runningNow || saving || settings.segments.length === 0}
+                                className="inline-flex items-center gap-2 rounded-xl border border-[#0412dd] bg-blue-50 px-4 py-2.5 text-xs font-bold text-[#0412dd] hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-950/40 dark:text-blue-300 cursor-pointer"
+                                title="Executar um ciclo de captação imediatamente usando as configurações atuais"
+                            >
+                                {runningNow ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+                                {runningNow ? 'Executando ciclo...' : 'Executar Ciclo Agora'}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void save()}
+                                disabled={
+                                    saving
+                                    || (settings.mode === 'scheduled' && settings.weekdays.length === 0)
+                                    || settings.segments.length === 0
+                                }
+                                className="inline-flex items-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
+                            >
+                                {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                                Salvar programação
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -368,12 +368,12 @@ export const AsteryskoScoutAiTab: React.FC = () => {
                             <input
                                 type="number"
                                 min={1}
-                                max={status.limits.companiesPerRun}
+                                max={Math.max(status.limits.companiesPerRun, 100)}
                                 value={profile.maxCompanies}
-                                onChange={(e) => setProfile({ ...profile, maxCompanies: Math.min(status.limits.companiesPerRun, Math.max(1, Number(e.target.value))) })}
+                                onChange={(e) => setProfile({ ...profile, maxCompanies: Math.min(Math.max(status.limits.companiesPerRun, 100), Math.max(1, Number(e.target.value))) })}
                                 className="w-20 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-center text-zinc-800 outline-none focus:border-blue-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-200"
                             />
-                            <span className="text-[11px] text-zinc-400">máx. {status.limits.companiesPerRun}</span>
+                            <span className="text-[11px] text-zinc-400">máx. {Math.max(status.limits.companiesPerRun, 100)}</span>
                         </div>
                     </div>
                 </div>
