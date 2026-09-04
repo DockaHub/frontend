@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Plus, Search, RefreshCw, Send, AlertOctagon,
-    ChevronLeft, ChevronRight, Eye, Loader2, Zap
+    ChevronLeft, ChevronRight, Eye, Loader2, Zap, X
 } from 'lucide-react';
 import api from '../../../../../services/api';
 import { AsteryskoNewOpportunityModal } from './AsteryskoNewOpportunityModal';
@@ -58,6 +58,60 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
     const [isSendToCrmOpen, setIsSendToCrmOpen] = useState(false);
     const [isEngineModalOpen, setIsEngineModalOpen] = useState(false);
     const [actionTargetOpp, setActionTargetOpp] = useState<AsteryskoOpportunity | null>(null);
+
+    // Seleção em lote para envio ao CRM
+    const [selectedOppIds, setSelectedOppIds] = useState<string[]>([]);
+    const [batchSending, setBatchSending] = useState(false);
+    const [batchFeedback, setBatchFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+    const toggleSelectOpp = (id: string) => {
+        setSelectedOppIds(prev =>
+            prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+        );
+    };
+
+    const isAllSelected = items.length > 0 && items.every(opp => selectedOppIds.includes(opp.id));
+
+    const toggleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedOppIds(prev => prev.filter(id => !items.some(opp => opp.id === id)));
+        } else {
+            const newIds = items.map(opp => opp.id).filter(id => !selectedOppIds.includes(id));
+            setSelectedOppIds(prev => [...prev, ...newIds]);
+        }
+    };
+
+    const clearSelection = () => {
+        setSelectedOppIds([]);
+    };
+
+    const handleBatchSendToCrm = async () => {
+        if (selectedOppIds.length === 0) return;
+        setBatchSending(true);
+        setBatchFeedback(null);
+        try {
+            const res = await api.post('/asterysko/opportunities/batch-send-to-crm', {
+                opportunityIds: selectedOppIds,
+            }, {
+                headers: organizationId ? { 'x-organization-id': organizationId } : undefined,
+            });
+            setBatchFeedback({
+                type: 'success',
+                message: `${res.data.sentCount} oportunidade(s) enviada(s) com sucesso ao CRM!`,
+            });
+            setSelectedOppIds([]);
+            opportunitiesCache.clear();
+            opportunityCountsCache.clear();
+            await loadData(true);
+        } catch (err: any) {
+            setBatchFeedback({
+                type: 'error',
+                message: err?.response?.data?.error || err?.message || 'Falha ao enviar lote de oportunidades ao CRM.',
+            });
+        } finally {
+            setBatchSending(false);
+        }
+    };
 
     const loadData = useCallback(async (force = false) => {
         if (!organizationId) {
@@ -317,13 +371,67 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                 </div>
             </div>
 
+            {/* Batch Action Toolbar */}
+            {selectedOppIds.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/90 p-4 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/30">
+                    <div className="flex items-center gap-2">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0412dd] text-xs font-bold text-white">
+                            {selectedOppIds.length}
+                        </span>
+                        <span className="text-xs font-bold text-zinc-900 dark:text-white">
+                            oportunidade(s) selecionada(s)
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={clearSelection}
+                            className="rounded-xl px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-white/60 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer"
+                        >
+                            Limpar seleção
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => void handleBatchSendToCrm()}
+                            disabled={batchSending}
+                            className="inline-flex items-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50 cursor-pointer"
+                        >
+                            {batchSending ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                            Enviar Selecionadas ao CRM
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {batchFeedback && (
+                <div className={`flex items-center justify-between rounded-xl border p-3.5 text-xs ${
+                    batchFeedback.type === 'success'
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300'
+                        : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300'
+                }`}>
+                    <span>{batchFeedback.message}</span>
+                    <button type="button" onClick={() => setBatchFeedback(null)} className="text-zinc-400 hover:text-zinc-700">
+                        <X size={14} />
+                    </button>
+                </div>
+            )}
+
             {/* Table */}
             <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-zinc-50/80 dark:bg-zinc-900/80 border-b border-zinc-100 dark:border-zinc-800 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
-                                <th className="py-3.5 px-4">Marca & Empresa</th>
+                                <th className="py-3.5 pl-4 pr-1 w-10">
+                                    <input
+                                        type="checkbox"
+                                        checked={isAllSelected}
+                                        onChange={toggleSelectAll}
+                                        className="h-4 w-4 rounded accent-[#0412dd] cursor-pointer"
+                                        title="Selecionar todas desta página"
+                                    />
+                                </th>
+                                <th className="py-3.5 px-3">Marca & Empresa</th>
                                 <th className="py-3.5 px-4">Segmento</th>
                                 <th className="py-3.5 px-4">Localização</th>
                                 <th className="py-3.5 px-4 text-center">Proteção</th>
@@ -337,14 +445,14 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                         <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60 text-xs">
                             {loading ? (
                                 <tr>
-                                    <td colSpan={9} className="py-12 text-center text-zinc-400">
+                                    <td colSpan={10} className="py-12 text-center text-zinc-400">
                                         <Loader2 size={20} className="animate-spin text-[#0412dd] mx-auto mb-2" />
                                         Carregando oportunidades...
                                     </td>
                                 </tr>
                             ) : items.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="py-12 text-center text-zinc-400">
+                                    <td colSpan={10} className="py-12 text-center text-zinc-400">
                                         <p className="font-semibold text-zinc-700 dark:text-zinc-300">Nenhuma oportunidade encontrada</p>
                                         <p className="text-xs mt-0.5">Cadastre uma nova oportunidade ou ajuste os filtros acima.</p>
                                     </td>
@@ -357,8 +465,18 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                                         onMouseEnter={() => prefetchOpportunitySummary(opp.id, organizationId)}
                                         className="hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 transition-colors cursor-pointer"
                                     >
+                                        {/* Checkbox de seleção */}
+                                        <td className="py-3.5 pl-4 pr-1" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedOppIds.includes(opp.id)}
+                                                onChange={() => toggleSelectOpp(opp.id)}
+                                                className="h-4 w-4 rounded accent-[#0412dd] cursor-pointer"
+                                            />
+                                        </td>
+
                                         {/* Marca & Empresa */}
-                                        <td className="py-3.5 px-4">
+                                        <td className="py-3.5 px-3">
                                             <div className="font-bold text-zinc-900 dark:text-white text-sm">
                                                 {opp.brandName}
                                             </div>

@@ -152,6 +152,8 @@ export interface ScoutSearchProfile {
     exclusions: string[];
     maxCompanies: number;
     minimumConfidence: number;
+    customPrompt?: string | null;
+    autoCrm?: boolean;
 }
 
 export interface ScoutRun {
@@ -178,6 +180,7 @@ export interface ScoutStatus {
     provider: string;
     model: string;
     autoPipeline: boolean;
+    defaultPrompt?: string;
     safety: {
         autoCrm: boolean;
         autoSend: boolean;
@@ -195,6 +198,14 @@ export interface ScoutStatus {
         minimumWebsiteConfidence: number;
         inputTokensPerRun: number;
         outputTokensPerRun: number;
+    };
+    automation?: {
+        availableSegments?: string[];
+        defaultCity?: string;
+        defaultState?: string;
+        cities?: string[];
+        states?: string[];
+        segments?: string[];
     };
     profile: ScoutSearchProfile;
     recentRuns: ScoutRun[];

@@ -25,6 +25,11 @@ interface ScoutAutomationSettings {
     maxRunsPerDay: number;
     segments: string[];
     timezone: 'America/Fortaleza';
+    cities?: string[];
+    states?: string[];
+    customPrompt?: string | null;
+    maxCompaniesPerRun?: number;
+    autoCrm?: boolean;
 }
 
 interface ScoutRunLog {
@@ -224,6 +229,11 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                 intervalMinutes: settings.intervalMinutes,
                 maxRunsPerDay: settings.maxRunsPerDay,
                 segments: settings.segments,
+                cities: settings.cities,
+                states: settings.states,
+                customPrompt: settings.customPrompt,
+                maxCompaniesPerRun: settings.maxCompaniesPerRun,
+                autoCrm: settings.autoCrm,
             }, { headers });
             addToast({
                 type: 'success',
@@ -565,6 +575,89 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                                 );
                             })}
                         </div>
+                    </div>
+
+                    {/* Volume de Leads por Ciclo */}
+                    <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                            <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                                Leads por ciclo (Meta de Captação)
+                            </span>
+                            <div className="flex items-center gap-2">
+                                {[10, 25, 50, 100].map(vol => (
+                                    <button
+                                        key={vol}
+                                        type="button"
+                                        onClick={() => setSettings({ ...settings, maxCompaniesPerRun: vol })}
+                                        className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-colors ${
+                                            (settings.maxCompaniesPerRun || 25) === vol
+                                                ? 'bg-[#0412dd] text-white'
+                                                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
+                                        }`}
+                                    >
+                                        {vol}
+                                    </button>
+                                ))}
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={status.limits.companiesPerRun}
+                                    value={settings.maxCompaniesPerRun || 25}
+                                    onChange={e => setSettings({
+                                        ...settings,
+                                        maxCompaniesPerRun: Math.min(status.limits.companiesPerRun, Math.max(1, Number(e.target.value)))
+                                    })}
+                                    className="w-20 rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs text-center font-bold text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                />
+                            </div>
+                            <span className="mt-1 block text-[10px] text-zinc-400">Máximo configurado no servidor: {status.limits.companiesPerRun} leads por ciclo.</span>
+                        </div>
+
+                        {/* Auto-CRM Switch */}
+                        <div className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-950">
+                            <div>
+                                <span className="block text-xs font-bold text-zinc-900 dark:text-white">Auto-CRM</span>
+                                <span className="mt-0.5 block text-[11px] text-zinc-500">Enviar leads qualificados diretamente para o CRM</span>
+                            </div>
+                            <input
+                                type="checkbox"
+                                checked={Boolean(settings.autoCrm)}
+                                onChange={e => setSettings({ ...settings, autoCrm: e.target.checked })}
+                                className="h-5 w-5 rounded accent-[#0412dd] cursor-pointer"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Cidades e Regiões de Prospecção */}
+                    <div>
+                        <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                            Cidades alvo (separadas por vírgula)
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Fortaleza, São Paulo, Rio de Janeiro, Belo Horizonte, Curitiba..."
+                            value={(settings.cities || []).join(', ')}
+                            onChange={e => setSettings({
+                                ...settings,
+                                cities: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                            })}
+                            className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-xs text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                        />
+                        <span className="mt-1 block text-[10px] text-zinc-400">Deixe em branco para usar a abrangência geral.</span>
+                    </div>
+
+                    {/* Prompt Customizado de Prospecção */}
+                    <div>
+                        <span className="mb-2 block text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                            Diretrizes & Prompt Customizado do Scout AI
+                        </span>
+                        <textarea
+                            rows={3}
+                            placeholder="Instruções adicionais ou filtros para orientar a busca da IA..."
+                            value={settings.customPrompt || ''}
+                            onChange={e => setSettings({ ...settings, customPrompt: e.target.value })}
+                            className="w-full font-mono rounded-xl border border-zinc-200 bg-white p-3 text-xs text-zinc-900 outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                        />
                     </div>
 
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
