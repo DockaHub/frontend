@@ -978,6 +978,8 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         </div>
                     </div>
                 </div>
+            </div>
+
             {/* Seção Receita Federal — Novos CNPJs */}
             <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-b from-blue-50/40 to-white p-5 shadow-sm dark:border-blue-900/40 dark:from-blue-950/20 dark:to-zinc-900">
                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100 pb-4 dark:border-blue-900/30">
