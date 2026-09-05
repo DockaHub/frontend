@@ -21,6 +21,7 @@ import {
     Upload,
     X,
     XCircle,
+    Zap,
 } from 'lucide-react';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -142,6 +143,9 @@ interface RfStats {
         id: string;
         enabled: boolean;
         status: string;
+        schedule?: string | null;
+        batchSize?: number | null;
+        maxItemsPerRun?: number | null;
         lastRunAt?: string | null;
         nextRunAt?: string | null;
     } | null;
@@ -231,6 +235,9 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
     const [runningRfBatch, setRunningRfBatch] = useState(false);
     const [showImportModal, setShowImportModal] = useState(false);
     const [customCnpjsInput, setCustomCnpjsInput] = useState('');
+    const [rfBatchSize, setRfBatchSize] = useState<number>(20);
+    const [savingRfSource, setSavingRfSource] = useState(false);
+    const [rfSchedule, setRfSchedule] = useState<string>('0 */2 * * *');
 
     const headers = useMemo(() => (
         organizationId ? { 'x-organization-id': organizationId } : undefined
@@ -251,6 +258,12 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         try {
             const rfResponse = await api.get<RfStats>('/asterysko/scout-rf/stats', { headers });
             setRfStats(rfResponse.data);
+            if (rfResponse.data.source?.batchSize) {
+                setRfBatchSize(rfResponse.data.source.batchSize);
+            }
+            if (rfResponse.data.source?.schedule) {
+                setRfSchedule(rfResponse.data.source.schedule);
+            }
         } catch {
             // endpoint opcional enquanto sincroniza
         } finally {
@@ -390,14 +403,15 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         }
     };
 
-    const handleRunRfBatch = async () => {
+    const handleRunRfBatch = async (size?: number) => {
+        const batchSizeToUse = size || rfBatchSize || 20;
         setRunningRfBatch(true);
         try {
-            const response = await api.post('/asterysko/scout-rf/run-batch', {}, { headers });
+            const response = await api.post('/asterysko/scout-rf/run-batch', { batchSize: batchSizeToUse }, { headers });
             addToast({
                 type: 'success',
                 title: 'Lote Receita Federal',
-                message: response.data?.message || 'Lote de novos CNPJs iniciado com sucesso no pipeline de validação!',
+                message: response.data?.message || `Lote de ${batchSizeToUse} CNPJs iniciado com sucesso no pipeline de validação!`,
             });
             await load(true);
         } catch (err: any) {
@@ -408,18 +422,77 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         }
     };
 
-    const handleEnsureRfSource = async () => {
+    const handleToggleRfAuto = async (enabled: boolean) => {
+        setSavingRfSource(true);
         try {
-            await api.post('/asterysko/scout-rf/ensure-source', {}, { headers });
+            await api.post('/asterysko/scout-rf/ensure-source', {
+                enabled,
+                schedule: rfSchedule,
+                batchSize: rfBatchSize,
+            }, { headers });
             addToast({
                 type: 'success',
-                title: 'Fonte RF Ativada',
-                message: 'A fonte automática de novos CNPJs da Receita Federal foi ativada.',
+                title: enabled ? 'Piloto Automático RF Ativado' : 'Piloto Automático RF Pausado',
+                message: enabled
+                    ? `Captação e enriquecimento contínuo ativado (lotes de ${rfBatchSize}, ciclo ${rfSchedule === '0 * * * *' ? 'a cada 1h' : rfSchedule === '0 */4 * * *' ? 'a cada 4h' : 'a cada 2h'}).`
+                    : 'A captação contínua da Receita Federal foi pausada.',
             });
             await load(true);
         } catch (err: any) {
-            const message = getRequestError(err, 'Falha ao ativar fonte RF.');
+            const message = getRequestError(err, 'Falha ao alterar status do piloto automático RF.');
             addToast({ type: 'error', title: 'Receita Federal', message });
+        } finally {
+            setSavingRfSource(false);
+        }
+    };
+
+    const handleScheduleChange = async (newSchedule: string) => {
+        setRfSchedule(newSchedule);
+        if (rfStats?.source?.enabled) {
+            setSavingRfSource(true);
+            try {
+                await api.post('/asterysko/scout-rf/ensure-source', {
+                    enabled: true,
+                    schedule: newSchedule,
+                    batchSize: rfBatchSize,
+                }, { headers });
+                addToast({
+                    type: 'success',
+                    title: 'Frequência Atualizada',
+                    message: `Ciclo alterado para ${newSchedule === '0 * * * *' ? 'a cada 1h' : newSchedule === '0 */4 * * *' ? 'a cada 4h' : 'a cada 2h'}.`,
+                });
+                await load(true);
+            } catch (err: any) {
+                const message = getRequestError(err, 'Falha ao atualizar frequência RF.');
+                addToast({ type: 'error', title: 'Receita Federal', message });
+            } finally {
+                setSavingRfSource(false);
+            }
+        }
+    };
+
+    const handleBatchSizeChange = async (newBatchSize: number) => {
+        setRfBatchSize(newBatchSize);
+        if (rfStats?.source?.enabled) {
+            setSavingRfSource(true);
+            try {
+                await api.post('/asterysko/scout-rf/ensure-source', {
+                    enabled: true,
+                    schedule: rfSchedule,
+                    batchSize: newBatchSize,
+                }, { headers });
+                addToast({
+                    type: 'success',
+                    title: 'Tamanho de Lote Atualizado',
+                    message: `Novo tamanho de lote por ciclo: ${newBatchSize} CNPJs.`,
+                });
+                await load(true);
+            } catch (err: any) {
+                const message = getRequestError(err, 'Falha ao atualizar lote da RF.');
+                addToast({ type: 'error', title: 'Receita Federal', message });
+            } finally {
+                setSavingRfSource(false);
+            }
         }
     };
 
@@ -1007,18 +1080,43 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         <div className="flex items-center gap-2">
                             <Building2 size={18} className="text-[#0412dd]" />
                             <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-                                Captação por CNPJ — Receita Federal & CNPJá
+                                Captação por CNPJ — Receita Federal & BrasilAPI
                             </h3>
                             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
                                 100% Gratuito
                             </span>
+                            {rfStats?.source?.enabled && (
+                                <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-[10px] font-bold text-blue-800 dark:bg-blue-950/70 dark:text-blue-300">
+                                    <Zap size={10} className="text-blue-600 fill-blue-600" />
+                                    Piloto Automático 24/7 Ativo
+                                </span>
+                            )}
                         </div>
                         <p className="mt-1 text-xs text-zinc-500">
-                            Monitora e ingere novos CNPJs abertos no Ceará (Fortaleza e região metropolitana) com CNAEs estratégicos, enriquecidos com sócios e contatos via CNPJá Open API.
+                            Monitora e ingere novos CNPJs abertos no Ceará com CNAEs estratégicos ampliados (Publicidade, Tech, Clínicas, Varejo/Moda, Restaurantes, Cursos, etc.), enriquecidos com sócios e contatos via Receita Federal & BrasilAPI.
                         </p>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
+                        {/* Seletor de tamanho de lote */}
+                        <div className="flex items-center rounded-xl border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900">
+                            <span className="px-2 text-[11px] font-semibold text-zinc-400">Lote:</span>
+                            {[20, 50, 100].map(size => (
+                                <button
+                                    key={size}
+                                    type="button"
+                                    onClick={() => void handleBatchSizeChange(size)}
+                                    className={`rounded-lg px-2.5 py-1 text-xs font-bold transition-all cursor-pointer ${
+                                        rfBatchSize === size
+                                            ? 'bg-[#0412dd] text-white shadow-xs'
+                                            : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                                    }`}
+                                >
+                                    {size}
+                                </button>
+                            ))}
+                        </div>
+
                         <button
                             type="button"
                             onClick={() => void handleSyncRf()}
@@ -1029,6 +1127,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                             {syncingRf ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
                             {syncingRf ? 'Sincronizando RF...' : 'Sincronizar Base RF'}
                         </button>
+
                         <button
                             type="button"
                             onClick={() => setShowImportModal(prev => !prev)}
@@ -1039,15 +1138,16 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                             <Upload size={13} />
                             Importar CNPJs
                         </button>
+
                         <button
                             type="button"
-                            onClick={() => void handleRunRfBatch()}
+                            onClick={() => void handleRunRfBatch(rfBatchSize)}
                             disabled={syncingRf || runningRfBatch || (rfStats?.pending ?? 0) === 0}
                             className="inline-flex items-center gap-1.5 rounded-xl bg-[#0412dd] px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer transition-colors shadow-xs"
-                            title="Executa o enriquecimento do próximo lote de 20 CNPJs pendentes e envia para análise de marca e contatos"
+                            title={`Executa o enriquecimento do próximo lote de ${rfBatchSize} CNPJs pendentes e envia para análise de marca e contatos`}
                         >
                             {runningRfBatch ? <Loader2 size={13} className="animate-spin" /> : <Play size={13} />}
-                            {runningRfBatch ? 'Processando...' : 'Processar Lote RF (20)'}
+                            {runningRfBatch ? 'Processando...' : `Processar Lote RF (${rfBatchSize})`}
                         </button>
                     </div>
                 </div>
@@ -1130,24 +1230,118 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         <span className="mt-1 block text-xs font-bold text-zinc-700 dark:text-zinc-300">
                             {formatDateTime(rfStats?.lastImportAt)}
                         </span>
-                        <span className="text-[10px] text-zinc-400">base dadosabertos.rfb</span>
+                        <span className="text-[10px] text-zinc-400">base Receita Federal</span>
                     </div>
                 </div>
 
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-500">
-                    <span className="flex items-center gap-1.5">
-                        <Sparkles size={12} className="text-blue-500" />
-                        CNAEs monitorados: publicidade, design, tecnologia, gestão empresarial e produção audiovisual no CE.
-                    </span>
-                    {!rfStats?.source && (
-                        <button
-                            type="button"
-                            onClick={() => void handleEnsureRfSource()}
-                            className="font-bold text-[#0412dd] underline hover:text-blue-800 dark:text-blue-400 cursor-pointer"
-                        >
-                            Ativar fonte automática de 4 em 4 horas
-                        </button>
+                {/* Piloto Automático 24/7 & Configuração Contínua */}
+                <div className="mt-4 rounded-xl border border-blue-100 bg-white/80 p-4 dark:border-blue-900/30 dark:bg-zinc-900/80">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                            <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                                rfStats?.source?.enabled
+                                    ? 'bg-blue-100 text-[#0412dd] dark:bg-blue-950/60 dark:text-blue-400'
+                                    : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800'
+                            }`}>
+                                <Zap size={20} />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h4 className="text-xs font-bold text-zinc-900 dark:text-white">
+                                        Piloto Automático em Segundo Plano (24/7)
+                                    </h4>
+                                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                        rfStats?.source?.enabled
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                                            : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
+                                    }`}>
+                                        <span className={`h-1.5 w-1.5 rounded-full ${rfStats?.source?.enabled ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'}`} />
+                                        {rfStats?.source?.enabled ? 'Ativo (Autônomo)' : 'Inativo (Manual)'}
+                                    </span>
+                                </div>
+                                <p className="text-[11px] text-zinc-500">
+                                    O motor roda continuamente em background sem você precisar clicar: processa {rfBatchSize} CNPJs por ciclo e reabastece leads automaticamente quando a fila esvaziar.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            {/* Seletor de Frequência */}
+                            <div className="flex items-center gap-1 text-xs">
+                                <span className="text-[11px] font-semibold text-zinc-400">Ciclo:</span>
+                                <select
+                                    value={rfSchedule}
+                                    onChange={(e) => void handleScheduleChange(e.target.value)}
+                                    disabled={savingRfSource}
+                                    className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 shadow-xs focus:border-[#0412dd] focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 cursor-pointer"
+                                >
+                                    <option value="0 * * * *">A cada 1 hora</option>
+                                    <option value="0 */2 * * *">A cada 2 horas (Recomendado)</option>
+                                    <option value="0 */4 * * *">A cada 4 horas</option>
+                                    <option value="0 */6 * * *">A cada 6 horas</option>
+                                    <option value="0 8,14,20 * * *">3x ao dia (08h, 14h, 20h)</option>
+                                </select>
+                            </div>
+
+                            {/* Botão de Toggle */}
+                            <button
+                                type="button"
+                                onClick={() => void handleToggleRfAuto(!rfStats?.source?.enabled)}
+                                disabled={savingRfSource}
+                                className={`inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                                    rfStats?.source?.enabled
+                                        ? 'border border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300'
+                                        : 'bg-[#0412dd] text-white hover:bg-blue-800'
+                                }`}
+                            >
+                                {savingRfSource ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+                                {rfStats?.source?.enabled ? 'Desativar Piloto' : 'Ativar Piloto Automático'}
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Status da Próxima Execução */}
+                    {rfStats?.source?.enabled && (
+                        <div className="mt-3 flex flex-wrap items-center gap-4 border-t border-blue-100/60 pt-2.5 text-[11px] text-zinc-500 dark:border-blue-900/20">
+                            <span>
+                                <strong>Próxima execução:</strong> {formatDateTime(rfStats?.source?.nextRunAt)}
+                            </span>
+                            <span>
+                                <strong>Última execução:</strong> {formatDateTime(rfStats?.source?.lastRunAt)}
+                            </span>
+                            <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                                ✓ Auto-refill ativado: reabastece novos CNPJs automaticamente
+                            </span>
+                        </div>
                     )}
+                </div>
+
+                {/* Badges de CNAEs monitorados expandidos */}
+                <div className="mt-4 pt-3 border-t border-blue-100/80 dark:border-blue-900/30">
+                    <span className="text-[11px] font-bold text-zinc-700 dark:text-zinc-300 block mb-1.5">
+                        Setores & CNAEs Monitorados no Ceará (Ampliados):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                        {[
+                            'Marketing & Publicidade',
+                            'Tecnologia & Software',
+                            'Design & Audiovisual',
+                            'Varejo, Moda & Vestuário',
+                            'Gastronomia & Restaurantes',
+                            'Clínicas Médicas & Odontologia',
+                            'Estética & Salões',
+                            'Cursos & Treinamentos',
+                            'Arquitetura & Engenharia',
+                            'Consultorias & Serviços',
+                        ].map((badge) => (
+                            <span
+                                key={badge}
+                                className="inline-flex items-center rounded-md bg-blue-100/70 px-2 py-0.5 text-[10px] font-semibold text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
+                            >
+                                {badge}
+                            </span>
+                        ))}
+                    </div>
                 </div>
             </div>
 
