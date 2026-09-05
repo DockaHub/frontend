@@ -12,11 +12,13 @@ import {
     Download,
     Loader2,
     Play,
+    Plus,
     RefreshCw,
     RotateCcw,
     Save,
     ShieldCheck,
     Sparkles,
+    Upload,
     X,
     XCircle,
 } from 'lucide-react';
@@ -227,6 +229,8 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
     const [rfStats, setRfStats] = useState<RfStats | null>(null);
     const [syncingRf, setSyncingRf] = useState(false);
     const [runningRfBatch, setRunningRfBatch] = useState(false);
+    const [showImportModal, setShowImportModal] = useState(false);
+    const [customCnpjsInput, setCustomCnpjsInput] = useState('');
 
     const headers = useMemo(() => (
         organizationId ? { 'x-organization-id': organizationId } : undefined
@@ -349,18 +353,34 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
         }
     };
 
-    const handleSyncRf = async () => {
+    const handleSyncRf = async (customCnpjs?: string) => {
         setSyncingRf(true);
         try {
-            const response = await api.post('/asterysko/scout-rf/sync', {
+            const payload: any = {
                 windowDays: 180,
                 targetUfs: ['CE'],
-            }, { headers });
-            addToast({
-                type: 'success',
-                title: 'Receita Federal',
-                message: response.data?.message || 'Sincronização com a base da Receita Federal concluída com sucesso!',
-            });
+            };
+            if (customCnpjs?.trim()) {
+                payload.cnpjs = customCnpjs.trim();
+            }
+
+            const response = await api.post('/asterysko/scout-rf/sync', payload, { headers });
+
+            if (response.data?.status === 'error') {
+                addToast({
+                    type: 'error',
+                    title: 'Receita Federal',
+                    message: response.data?.message || 'Falha ao sincronizar com a base da Receita Federal.',
+                });
+            } else {
+                addToast({
+                    type: 'success',
+                    title: 'Receita Federal',
+                    message: response.data?.message || 'Sincronização com a base da Receita Federal concluída com sucesso!',
+                });
+                setShowImportModal(false);
+                setCustomCnpjsInput('');
+            }
             await load(true);
         } catch (err: any) {
             const message = getRequestError(err, 'Falha ao sincronizar com a base da Receita Federal.');
@@ -1004,10 +1024,20 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                             onClick={() => void handleSyncRf()}
                             disabled={syncingRf || runningRfBatch}
                             className="inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-bold text-[#0412dd] hover:bg-blue-50 disabled:opacity-50 dark:border-blue-900 dark:bg-zinc-900 dark:text-blue-300 cursor-pointer transition-colors shadow-xs"
-                            title="Baixar arquivos de estabelecimentos recentes da Receita Federal e filtrar leads para Fortaleza"
+                            title="Sincronizar novos estabelecimentos do Ceará com CNAEs estratégicos"
                         >
                             {syncingRf ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
                             {syncingRf ? 'Sincronizando RF...' : 'Sincronizar Base RF'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowImportModal(prev => !prev)}
+                            disabled={syncingRf || runningRfBatch}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 cursor-pointer transition-colors shadow-xs"
+                            title="Colar ou importar lista personalizada de CNPJs"
+                        >
+                            <Upload size={13} />
+                            Importar CNPJs
                         </button>
                         <button
                             type="button"
@@ -1021,6 +1051,53 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                         </button>
                     </div>
                 </div>
+
+                {/* Painel expansível de importação manual de CNPJs */}
+                {showImportModal && (
+                    <div className="mt-4 rounded-xl border border-blue-200 bg-white p-4 shadow-sm dark:border-blue-900/60 dark:bg-zinc-900/90">
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                            <span className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                                <Plus size={14} className="text-[#0412dd]" />
+                                Inserir / Colar Lista de CNPJs para Captura
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setShowImportModal(false)}
+                                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                        <p className="text-[11px] text-zinc-500 mb-2">
+                            Cole um ou mais CNPJs (formatados ou apenas dígitos, separados por linha, vírgula ou espaço). Eles serão adicionados à fila de enriquecimento automático via Receita Federal e CNPJá.
+                        </p>
+                        <textarea
+                            rows={3}
+                            value={customCnpjsInput}
+                            onChange={(e) => setCustomCnpjsInput(e.target.value)}
+                            placeholder="Exemplo:&#10;58.237.211/0001-22&#10;64.809.299/0001-02, 62.523.908/0001-37"
+                            className="w-full rounded-lg border border-zinc-200 bg-zinc-50 p-2.5 font-mono text-xs text-zinc-900 focus:border-[#0412dd] focus:bg-white focus:outline-none dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100"
+                        />
+                        <div className="mt-3 flex items-center justify-end gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setShowImportModal(false)}
+                                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800 cursor-pointer"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void handleSyncRf(customCnpjsInput)}
+                                disabled={syncingRf || !customCnpjsInput.trim()}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-[#0412dd] px-4 py-1.5 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50 cursor-pointer shadow-xs"
+                            >
+                                {syncingRf ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                                {syncingRf ? 'Importando...' : 'Confirmar Importação'}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Métricas e Resumo da Base RF */}
                 <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
