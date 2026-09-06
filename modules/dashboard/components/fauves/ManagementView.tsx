@@ -24,6 +24,8 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
     const [categorySlug, setCategorySlug] = useState('');
     const [categoryIcon, setCategoryIcon] = useState('Music');
     const [categoryColor, setCategoryColor] = useState('indigo');
+    const [categoryDescription, setCategoryDescription] = useState('');
+    const [categoryImageUrl, setCategoryImageUrl] = useState('');
 
     // Slide form state
     const [slideTitle, setSlideTitle] = useState('');
@@ -245,6 +247,40 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 mb-2">Descrição Editorial (Hero & SEO)</label>
+                            <textarea
+                                value={categoryDescription}
+                                onChange={(e) => setCategoryDescription(e.target.value)}
+                                rows={3}
+                                className="w-full px-3 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:border-amber-500 text-docka-900 dark:text-zinc-100 resize-none"
+                                placeholder="Ex: De festivais de techno a festas intimistas, descubra os melhores eventos de música eletrônica da cidade..."
+                            />
+                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-1">Texto descritivo exibido no cabeçalho da categoria e indexado no Google.</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 mb-2">Imagem / Badge da Categoria (Estilo Luma)</label>
+                            <input
+                                value={categoryImageUrl}
+                                onChange={(e) => setCategoryImageUrl(e.target.value)}
+                                className="w-full px-3 py-2.5 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-amber-100 dark:focus:ring-amber-900/30 focus:border-amber-500 text-docka-900 dark:text-zinc-100"
+                                placeholder="https://exemplo.com/badge-arte-cultura.jpg"
+                            />
+                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-1">URL da ilustração ou foto circular que aparece no destaque lateral da categoria.</p>
+                            {categoryImageUrl && (
+                                <div className="mt-3 flex items-center gap-3 p-3 bg-docka-50 dark:bg-zinc-800/60 rounded-xl border border-docka-200 dark:border-zinc-700">
+                                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-500 flex-shrink-0 shadow-sm">
+                                        <img src={categoryImageUrl} alt="Prévia da Categoria" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-docka-800 dark:text-zinc-200">Prévia do Badge Circular</p>
+                                        <p className="text-[11px] text-docka-500 dark:text-zinc-400">Esta arte estampará o hero da página /eventos/{categorySlug || 'categoria'}</p>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
@@ -564,7 +600,18 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                 <div className="flex gap-2">
                     {config.btn && (
                         <button
-                            onClick={() => setIsModalOpen(true)}
+                            onClick={() => {
+                                setEditingItem(null);
+                                if (type === 'categories') {
+                                    setCategoryName('');
+                                    setCategorySlug('');
+                                    setCategoryIcon('Music');
+                                    setCategoryColor('indigo');
+                                    setCategoryDescription('');
+                                    setCategoryImageUrl('');
+                                }
+                                setIsModalOpen(true);
+                            }}
                             className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 shadow-sm transition-colors flex items-center gap-2"
                         >
                             <Plus size={16} /> {config.btn}
@@ -704,12 +751,33 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                     ) : type === 'categories' ? (
                                         <>
                                             <td className="px-6 py-4">
-                                                <div className="font-medium text-docka-900 dark:text-zinc-100">{row.col1}</div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border border-docka-200 dark:border-zinc-700 bg-docka-100 dark:bg-zinc-800 flex-shrink-0 shadow-sm">
+                                                        {row.imageUrl ? (
+                                                            <img src={row.imageUrl} alt="" className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <span className="text-xs font-black text-docka-700 dark:text-zinc-300">
+                                                                {(row.name || row.col1 || 'C').substring(0, 2).toUpperCase()}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="font-semibold text-docka-900 dark:text-zinc-100">{row.name || row.col1}</div>
+                                                        {row.description && (
+                                                            <div className="text-xs text-docka-400 dark:text-zinc-500 line-clamp-1 max-w-xs">{row.description}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4">
-                                                <code className="text-xs font-mono text-docka-500 dark:text-zinc-400 bg-docka-50 dark:bg-zinc-800 px-2 py-0.5 rounded">{row.col2}</code>
+                                                <code className="text-xs font-mono text-docka-500 dark:text-zinc-400 bg-docka-50 dark:bg-zinc-800 px-2 py-0.5 rounded">/eventos/{row.slug || row.col2}</code>
                                             </td>
-                                            <td className="px-6 py-4 text-docka-600 dark:text-zinc-400 text-sm">{row.col3}</td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10" style={{ backgroundColor: row.color?.startsWith('#') ? row.color : undefined }} />
+                                                    <span className="text-xs text-docka-600 dark:text-zinc-400 font-medium">{row.icon || 'Music'}</span>
+                                                </div>
+                                            </td>
                                             <td className="px-6 py-4">
                                                 <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                                                     Ativa
@@ -734,9 +802,12 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                                                 <button
                                                                     onClick={() => {
                                                                         setEditingItem(row);
-                                                                        setCategoryName(row.col1);
-                                                                        setCategorySlug(row.col2);
-                                                                        setCategoryIcon('Music');
+                                                                        setCategoryName(row.name || row.col1 || '');
+                                                                        setCategorySlug(row.slug || row.col2 || '');
+                                                                        setCategoryIcon(row.icon || 'Music');
+                                                                        setCategoryColor(row.color || 'indigo');
+                                                                        setCategoryDescription(row.description || '');
+                                                                        setCategoryImageUrl(row.imageUrl || '');
                                                                         setIsModalOpen(true);
                                                                         setOpenDropdownId(null);
                                                                     }}
@@ -935,7 +1006,14 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                     } else if (type === 'ads') {
                                         console.log('Saving announcement:', { title: adTitle });
                                     } else if (type === 'categories') {
-                                        const payload = { name: categoryName, slug: categorySlug, icon: categoryIcon, color: categoryColor };
+                                        const payload = {
+                                            name: categoryName,
+                                            slug: categorySlug,
+                                            icon: categoryIcon,
+                                            color: categoryColor,
+                                            description: categoryDescription,
+                                            imageUrl: categoryImageUrl
+                                        };
                                         if (editingItem) {
                                             await fauvesService.updateCategory(editingItem.id, payload);
                                         } else {

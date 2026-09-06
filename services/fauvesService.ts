@@ -649,6 +649,20 @@ export const fauvesService = {
         }
     },
 
+    getCategories: async () => {
+        try {
+            const response = await fauvesApi.get('docka/categories');
+            return response.data?.items || response.data || [];
+        } catch (error) {
+            try {
+                const response = await fauvesApi.get('categories');
+                return response.data?.items || response.data || [];
+            } catch (e) {
+                return [];
+            }
+        }
+    },
+
     createCategory: async (data: any) => {
         const response = await fauvesApi.post('docka/categories', data);
         return response.data;

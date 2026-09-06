@@ -37,10 +37,20 @@ const EventImporter: React.FC<EventImporterProps> = ({ onSuccess, onClose }) => 
     locationCity: '',
     producer: '',
     image: '',
-    externalUrl: ''
+    externalUrl: '',
+    categoryId: ''
   });
 
   const [existingOrgs, setExistingOrgs] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    fauvesService.getCategories()
+      .then(cats => {
+        if (Array.isArray(cats)) setCategories(cats);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (step === 'edit') {
@@ -177,6 +187,36 @@ const EventImporter: React.FC<EventImporterProps> = ({ onSuccess, onClose }) => 
                   <datalist id="existing-orgs">
                     {existingOrgs.map(org => <option key={org.id} value={org.name} />)}
                   </datalist>
+                </div>
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-wider text-docka-400">Categoria Fauves (Curadoria & SEO) *</label>
+                <select
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                  className="w-full px-3 h-10 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm focus:ring-2 focus:ring-amber-100 dark:focus:ring-zinc-600 outline-none text-docka-900 dark:text-zinc-100"
+                >
+                  <option value="">Selecione uma categoria (ex: Música Eletrônica, Forró...)</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name || cat.col1} {cat.slug ? `(/eventos/${cat.slug})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-wider text-docka-400">Link da Bilheteria Externa (Sympla, Ingresse, Shotgun, etc) *</label>
+                <div className="relative">
+                  <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-docka-400" />
+                  <input
+                    type="text"
+                    value={formData.externalUrl}
+                    onChange={(e) => setFormData({ ...formData, externalUrl: e.target.value })}
+                    placeholder="https://www.sympla.com.br/evento/..."
+                    className="w-full pl-9 pr-3 h-10 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm focus:ring-2 focus:ring-amber-100 dark:focus:ring-zinc-600 outline-none text-docka-900 dark:text-zinc-100"
+                  />
                 </div>
               </div>
 

@@ -494,6 +494,7 @@ const EventForm: React.FC<{
         categoryId: initialData?.categoryId || '',
         organizationId: initialData?.organizationId || initialData?.organization?.id || '',
         externalUrl: initialData?.externalUrl || '',
+        isExternal: Boolean(initialData?.isExternal || initialData?.externalUrl),
         lineup: initialData?.artists?.map((a: any) => a.artist) || initialData?.lineup || []
     });
 
@@ -586,10 +587,15 @@ const EventForm: React.FC<{
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const payload = {
+                ...formData,
+                isExternal: Boolean(formData.isExternal || formData.externalUrl),
+                organizationId: formData.organizationId || undefined,
+            };
             if (initialData?.id) {
-                await fauvesService.updateEvent(initialData.id, formData);
+                await fauvesService.updateEvent(initialData.id, payload);
             } else {
-                await fauvesService.createEvent(formData);
+                await fauvesService.createEvent(payload);
             }
             onSuccess();
         } catch (error) {
@@ -632,18 +638,46 @@ const EventForm: React.FC<{
                 </div>
 
                 <div>
-                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Categoria</label>
+                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Categoria Fauves</label>
                     <select value={formData.categoryId} onChange={(e) => setFormData({...formData, categoryId: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100">
-                        <option value="">Selecione</option>
-                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.col1}</option>)}
+                        <option value="">Selecione uma Categoria</option>
+                        {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name || cat.col1}</option>)}
                     </select>
                 </div>
                 <div>
-                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Organização</label>
+                    <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Organização / Produtora</label>
                     <select value={formData.organizationId} onChange={(e) => setFormData({...formData, organizationId: e.target.value})} className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100">
-                        <option value="">Selecione</option>
+                        <option value="">Sem organização (Curadoria Fauves)</option>
                         {organizations.sort((a,b) => a.name.localeCompare(b.name)).map(org => <option key={org.id} value={org.id}>{org.name}</option>)}
                     </select>
+                </div>
+
+                <div className="col-span-2 p-3 bg-docka-50 dark:bg-zinc-800/60 rounded-xl border border-docka-200 dark:border-zinc-700 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <label className="text-xs font-bold text-docka-800 dark:text-zinc-200 block">Evento Externo / Curadoria Fauves</label>
+                            <p className="text-[11px] text-docka-400 dark:text-zinc-500">Ao ativar, o evento abrirá diretamente a bilheteria externa (Sympla, Ingresse, Shotgun, etc).</p>
+                        </div>
+                        <input
+                            type="checkbox"
+                            checked={formData.isExternal}
+                            onChange={(e) => setFormData({ ...formData, isExternal: e.target.checked })}
+                            className="w-4 h-4 rounded text-amber-600 focus:ring-amber-500 cursor-pointer"
+                        />
+                    </div>
+
+                    {(formData.isExternal || formData.externalUrl) && (
+                        <div>
+                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Link da Bilheteria Externa *</label>
+                            <input
+                                type="text"
+                                value={formData.externalUrl}
+                                onChange={(e) => setFormData({ ...formData, externalUrl: e.target.value, isExternal: true })}
+                                placeholder="https://www.sympla.com.br/evento/..."
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100 outline-none focus:ring-2 focus:ring-amber-100"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 <div className="col-span-2 relative">
