@@ -7,6 +7,7 @@ interface Props {
     onClose: () => void;
     onSuccess: () => void;
     organizationId?: string;
+    initialStage?: string;
 }
 
 interface ClientOption {
@@ -18,13 +19,27 @@ interface ClientOption {
 }
 
 const CRM_STAGES = [
-    { id: 'leads', label: 'Novos leads' },
-    { id: 'contato_iniciado', label: 'Contato iniciado' },
-    { id: 'em_conversa', label: 'Em conversa' },
-    { id: 'preparation', label: 'Diagnóstico' },
-    { id: 'viability', label: 'Viabilidade' },
-    { id: 'proposta', label: 'Proposta' },
-    { id: 'contract', label: 'Contrato' }
+    // Comercial
+    { id: 'leads', label: 'Novos leads', group: 'Comercial' },
+    { id: 'contato_iniciado', label: 'Contato iniciado', group: 'Comercial' },
+    { id: 'em_conversa', label: 'Em conversa', group: 'Comercial' },
+    { id: 'preparation', label: 'Diagnóstico', group: 'Comercial' },
+    { id: 'viability', label: 'Viabilidade', group: 'Comercial' },
+    { id: 'proposta', label: 'Proposta', group: 'Comercial' },
+    { id: 'contract', label: 'Contrato', group: 'Comercial' },
+
+    // Onboarding
+    { id: 'service_payment', label: 'Pagamento do Serviço', group: 'Onboarding' },
+    { id: 'documentation', label: 'Procuração e Documentos', group: 'Onboarding' },
+    { id: 'federal_fee', label: 'Taxa Federal (GRU)', group: 'Onboarding' },
+    { id: 'ready_to_file', label: 'A Protocolar', group: 'Onboarding' },
+
+    // Processual
+    { id: 'filed', label: 'Protocolado (RPI)', group: 'Processual (Em Andamento)' },
+    { id: 'examination', label: 'Exame de Mérito', group: 'Processual (Em Andamento)' },
+    { id: 'opposition', label: 'Oposição / Exigência', group: 'Processual (Em Andamento)' },
+    { id: 'granted', label: 'Deferida', group: 'Processual (Em Andamento)' },
+    { id: 'won', label: 'Concluído', group: 'Processual (Em Andamento)' },
 ];
 
 const INITIAL_FORM = {
@@ -53,7 +68,7 @@ const Field = ({ label, locked, children }: { label: string; locked?: boolean; c
 
 const inputClass = 'w-full bg-transparent border-none outline-none font-sans text-[13px] font-semibold text-black dark:text-white placeholder:text-[#ccc] disabled:text-[#8f8f8f] disabled:cursor-not-allowed';
 
-const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, organizationId }) => {
+const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, organizationId, initialStage }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [loadingOptions, setLoadingOptions] = useState(false);
     const [plans, setPlans] = useState<any[]>([]);
@@ -65,7 +80,8 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
 
     useEffect(() => {
         if (!isOpen) return;
-        setFormData(INITIAL_FORM);
+        const defaultStatus = initialStage || 'leads';
+        setFormData({ ...INITIAL_FORM, status: defaultStatus });
         setFeedback('');
         setClientMenuOpen(false);
         setLoadingOptions(true);
@@ -199,7 +215,47 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
 
                     <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Organização do atendimento</h3></div>
                     <Field label="Responsável comercial"><select className={`${inputClass} appearance-none`} value={formData.assignedUserId} onChange={event => setFormData(current => ({ ...current, assignedUserId: event.target.value }))}><option value="">Selecione uma pessoa da equipe Asterysko</option>{members.map(member => <option key={member.id} value={member.id}>{member.name} {member.email ? `— ${member.email}` : ''}</option>)}</select></Field>
-                    <Field label="Etapa inicial do CRM"><select className={`${inputClass} appearance-none`} value={formData.status} onChange={event => setFormData(current => ({ ...current, status: event.target.value }))}>{CRM_STAGES.map(stage => <option key={stage.id} value={stage.id}>{stage.label}</option>)}</select>{formData.status === 'contract' && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">Ao cadastrar, o cliente e o processo serão provisionados e o contrato será enviado por e-mail, WhatsApp e portal.</p>}</Field>
+                    <Field label="Etapa inicial do CRM">
+                        <select className={`${inputClass} appearance-none cursor-pointer`} value={formData.status} onChange={event => setFormData(current => ({ ...current, status: event.target.value }))}>
+                            <optgroup label="Comercial" className="font-semibold text-black dark:text-white">
+                                <option value="leads">Novos leads</option>
+                                <option value="contato_iniciado">Contato iniciado</option>
+                                <option value="em_conversa">Em conversa</option>
+                                <option value="preparation">Diagnóstico</option>
+                                <option value="viability">Viabilidade</option>
+                                <option value="proposta">Proposta</option>
+                                <option value="contract">Contrato</option>
+                            </optgroup>
+                            <optgroup label="Onboarding" className="font-semibold text-black dark:text-white">
+                                <option value="service_payment">Pagamento do Serviço</option>
+                                <option value="documentation">Procuração e Documentos</option>
+                                <option value="federal_fee">Taxa Federal (GRU)</option>
+                                <option value="ready_to_file">A Protocolar</option>
+                            </optgroup>
+                            <optgroup label="Processual (Clientes Antigos / Em Andamento)" className="font-semibold text-black dark:text-white">
+                                <option value="filed">Protocolado (RPI)</option>
+                                <option value="examination">Exame de Mérito</option>
+                                <option value="opposition">Oposição / Exigência</option>
+                                <option value="granted">Deferida</option>
+                                <option value="won">Concluído</option>
+                            </optgroup>
+                        </select>
+                        {formData.status === 'contract' && (
+                            <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+                                Ao cadastrar em Contrato, o cliente e o processo serão provisionados e o contrato será enviado por e-mail, WhatsApp e portal.
+                            </p>
+                        )}
+                        {['service_payment', 'documentation', 'federal_fee', 'ready_to_file'].includes(formData.status) && (
+                            <p className="mt-2 text-xs text-indigo-700 dark:text-indigo-300">
+                                Etapa de Onboarding: o cliente e processo serão provisionados diretamente nesta fase operacional (ideal para clientes em implantação).
+                            </p>
+                        )}
+                        {['filed', 'examination', 'opposition', 'granted', 'won'].includes(formData.status) && (
+                            <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-300">
+                                Etapa Processual: ideal para migrar clientes antigos que já possuem processos em andamento ou deferidos no INPI.
+                            </p>
+                        )}
+                    </Field>
                     <Field label="Origem do lead"><select className={`${inputClass} appearance-none`} value={formData.leadOrigin} onChange={event => setFormData(current => ({ ...current, leadOrigin: event.target.value }))}>{['Instagram', 'Site', 'Indicação', 'Prospecção ativa', 'Outros'].map(option => <option key={option}>{option}</option>)}</select></Field>
                     <Field label="Prioridade"><select className={`${inputClass} appearance-none`} value={formData.priority} onChange={event => setFormData(current => ({ ...current, priority: event.target.value }))}><option value="low">Baixa</option><option value="medium">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></Field>
                     <Field label="Observações internas"><textarea rows={3} className={`${inputClass} resize-none`} value={formData.internalNotes} placeholder="Contexto comercial e próximos passos" onChange={event => setFormData(current => ({ ...current, internalNotes: event.target.value }))} /></Field>
@@ -207,8 +263,16 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                 </form>
 
                 <div className="shrink-0 bg-white p-6 dark:bg-zinc-950">
-                    <button form="asterysko-new-lead-form" type="submit" disabled={isLoading || loadingOptions} className="flex h-12 w-full items-center justify-center rounded-lg bg-[#0412dd] text-[13px] font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]">
-                        {isLoading ? (formData.status === 'contract' ? 'Criando acesso e enviando contrato...' : 'Cadastrando...') : loadingOptions ? 'Carregando opções...' : 'Cadastrar lead'}
+                    <button form="asterysko-new-lead-form" type="submit" disabled={isLoading || loadingOptions} className="flex h-12 w-full items-center justify-center rounded-lg bg-[#0412dd] text-[13px] font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff] cursor-pointer">
+                        {isLoading
+                            ? (formData.status === 'contract'
+                                ? 'Criando acesso e enviando contrato...'
+                                : ['service_payment', 'documentation', 'federal_fee', 'ready_to_file', 'filed', 'examination', 'opposition', 'granted', 'won'].includes(formData.status)
+                                    ? 'Provisionando cliente e processo...'
+                                    : 'Cadastrando...')
+                            : loadingOptions
+                                ? 'Carregando opções...'
+                                : 'Cadastrar lead'}
                     </button>
                 </div>
             </div>

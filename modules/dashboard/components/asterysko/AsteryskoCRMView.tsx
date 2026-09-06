@@ -254,16 +254,18 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                             <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
                             <span className="hidden sm:inline">Atualizar</span>
                         </button>
-                        {/* Button Novo Lead ONLY in Commercial Tab */}
-                        {activeTab === 'commercial' && <button
-                            onClick={() => setIsLeadModalOpen(true)}
-                            className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 text-black dark:text-white font-sans text-xs font-semibold px-4 h-[32px] rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
-                        >
-                            <div className="bg-[#0412dd] dark:bg-[#3b48ff] rounded-full p-0.5 mr-2">
-                                <Plus size={10} className="text-white" strokeWidth={3} />
-                            </div>
-                            Novo lead
-                        </button>}
+                        {/* Button Novo Lead in all operational tabs */}
+                        {activeTab !== 'opportunities' && (
+                            <button
+                                onClick={() => setIsLeadModalOpen(true)}
+                                className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 text-black dark:text-white font-sans text-xs font-semibold px-4 h-[32px] rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm cursor-pointer"
+                            >
+                                <div className="bg-[#0412dd] dark:bg-[#3b48ff] rounded-full p-0.5 mr-2">
+                                    <Plus size={10} className="text-white" strokeWidth={3} />
+                                </div>
+                                Novo lead
+                            </button>
+                        )}
                     </div>
                 </div>
 
@@ -425,6 +427,13 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                     void fetchDeals(true);
                 }}
                 organizationId={organization?.id}
+                initialStage={
+                    activeTab === 'onboarding' 
+                        ? 'service_payment' 
+                        : activeTab === 'processual' 
+                            ? 'filed' 
+                            : 'leads'
+                }
             />
 
             <AsteryskoDealDetailsModal
