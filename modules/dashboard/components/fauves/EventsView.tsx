@@ -473,7 +473,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
     );
 };
 
-const EventForm: React.FC<{
+export const EventForm: React.FC<{
     initialData?: any;
     onCancel: () => void;
     onSuccess: () => void;

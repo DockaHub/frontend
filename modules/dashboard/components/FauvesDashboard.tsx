@@ -6,7 +6,7 @@ import { FauvesToastProvider } from './fauves/FauvesUI';
 
 const FauvesOverviewView = React.lazy(() => import('./fauves/FauvesOverviewView'));
 const FauvesOrganizationsView = React.lazy(() => import('./fauves/FauvesOrganizationsView'));
-const FauvesEventsAdminView = React.lazy(() => import('./fauves/FauvesEventsAdminView'));
+const FauvesEventsHub = React.lazy(() => import('./fauves/FauvesEventsHub'));
 const FauvesFinanceAdminView = React.lazy(() => import('./fauves/FauvesFinanceAdminView'));
 const FauvesAuditSettingsView = React.lazy(() => import('./fauves/FauvesAuditSettingsView'));
 const ManagementView = React.lazy(() => import('./fauves/ManagementView'));
@@ -29,7 +29,7 @@ const FauvesDashboard: React.FC<FauvesDashboardProps> = ({ activeView, user }) =
         switch (activeView) {
             case 'overview': return <FauvesOverviewView userName={userName} />;
             case 'organizations': return <FauvesOrganizationsView />;
-            case 'events': return <FauvesEventsAdminView />;
+            case 'events': return <FauvesEventsHub />;
             case 'users': return <ManagementView type="users" />;
             case 'finance': return <FauvesFinanceAdminView />;
             case 'helpdesk':
