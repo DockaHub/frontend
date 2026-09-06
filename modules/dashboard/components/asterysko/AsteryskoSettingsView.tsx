@@ -33,6 +33,15 @@ interface Plan {
     active: boolean;
 }
 
+interface InpiBulkProgress {
+    active: boolean;
+    total: number;
+    completed: number;
+    skipped: number;
+    failed: number;
+    currentFile: string;
+}
+
 const ASTERYSKO_SETTINGS_TABS: Array<{
     id: AsteryskoSettingsTab;
     label: string;
@@ -63,6 +72,8 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
     const [saving, setSaving] = useState(false);
     const [inpiHistory, setInpiHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+    const [inpiBulkProgress, setInpiBulkProgress] = useState<InpiBulkProgress | null>(null);
+    const cancelInpiBulkRef = React.useRef(false);
     const { addToast } = useToast();
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -119,6 +130,92 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
         } finally {
             setLoadingHistory(false);
         }
+    };
+
+    const waitForInpiProcessing = async (logId: string) => {
+        while (true) {
+            const response = await api.get(`/asterysko/inpi/history/${logId}`);
+            const status = response.data?.status;
+            setInpiHistory((current) => {
+                const exists = current.some((item) => item.id === logId);
+                return exists
+                    ? current.map((item) => item.id === logId ? response.data : item)
+                    : [response.data, ...current].slice(0, 50);
+            });
+            if (status === 'COMPLETED' || status === 'FAILED') return response.data;
+            await new Promise((resolve) => window.setTimeout(resolve, 4000));
+        }
+    };
+
+    const sortRpiFiles = async (files: File[]) => {
+        const indexed = await Promise.all(files.map(async (file) => {
+            const prefix = await file.slice(0, 512 * 1024).text();
+            const revistaTag = prefix.match(/<revista\b[^>]*>/i)?.[0] || '';
+            const officialNumber = Number(revistaTag.match(/\bnumero\s*=\s*["'](\d+)["']/i)?.[1] || 0);
+            return { file, officialNumber };
+        }));
+        return indexed
+            .sort((a, b) => a.officialNumber - b.officialNumber || a.file.name.localeCompare(b.file.name))
+            .map(({ file }) => file);
+    };
+
+    const handleRpiUpload = async (selectedFiles: FileList | null, importMode: 'LIVE' | 'RADAR_ONLY') => {
+        const rawFiles = Array.from(selectedFiles || []);
+        if (rawFiles.length === 0 || inpiBulkProgress?.active) return;
+        const files = await sortRpiFiles(rawFiles);
+
+        cancelInpiBulkRef.current = false;
+        const batchId = `rpi-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        let completed = 0;
+        let skipped = 0;
+        let failed = 0;
+        setInpiBulkProgress({ active: true, total: files.length, completed, skipped, failed, currentFile: files[0].name });
+
+        addToast({
+            type: 'success',
+            title: importMode === 'RADAR_ONLY' ? 'Carga histórica iniciada' : 'Upload iniciado',
+            message: importMode === 'RADAR_ONLY'
+                ? `${files.length} XML(s) serão enviados em ordem e sem notificações retroativas.`
+                : `Enviando ${files[0].name} ao servidor.`
+        });
+
+        for (const file of files) {
+            if (cancelInpiBulkRef.current) break;
+            setInpiBulkProgress({ active: true, total: files.length, completed, skipped, failed, currentFile: file.name });
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('importMode', importMode);
+                formData.append('batchId', batchId);
+
+                const response = await api.post('/asterysko/inpi/parse', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+
+                if (response.data?.duplicate && response.data?.status === 'COMPLETED') {
+                    skipped += 1;
+                } else {
+                    const result = await waitForInpiProcessing(response.data.logId);
+                    if (result.status === 'COMPLETED') completed += 1;
+                    else failed += 1;
+                }
+            } catch (err: any) {
+                console.error(err);
+                failed += 1;
+            }
+
+            setInpiBulkProgress({ active: true, total: files.length, completed, skipped, failed, currentFile: file.name });
+            await fetchInpiHistory();
+        }
+
+        const cancelled = cancelInpiBulkRef.current;
+        setInpiBulkProgress({ active: false, total: files.length, completed, skipped, failed, currentFile: '' });
+        addToast({
+            type: failed > 0 ? 'error' : 'success',
+            title: cancelled ? 'Carga interrompida' : 'Carga finalizada',
+            message: `${completed} processada(s), ${skipped} já existente(s) e ${failed} com falha. Para retomar, selecione os XMLs novamente; os concluídos serão ignorados.`
+        });
     };
 
     const fetchPlans = async () => {
@@ -1567,45 +1664,78 @@ const WhatsAppCard: React.FC = () => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {/* Upload Box */}
                                         <div>
-                                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Processar Revista (XML)</label>
-                                            <div
-                                                onClick={() => document.getElementById('rpi-upload')?.click()}
-                                                className="w-full flex flex-col items-center justify-center p-6 border-2 border-dashed border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-800/50 cursor-pointer transition-colors"
-                                            >
-                                                <Upload size={24} className="text-docka-400 dark:text-zinc-500 mb-2" />
-                                                <p className="text-sm font-bold text-docka-700 dark:text-zinc-300">Clique para selecionar o XML</p>
-                                                <p className="text-xs text-docka-500 dark:text-zinc-500 mt-1 text-center">Formato XML • limite de 150MB<br />O processamento rodará em segundo plano.</p>
+                                            <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Importar Revistas (XML)</label>
+                                            <div className="grid gap-3 sm:grid-cols-2">
+                                                <button
+                                                    type="button"
+                                                    disabled={Boolean(inpiBulkProgress?.active)}
+                                                    onClick={() => document.getElementById('rpi-live-upload')?.click()}
+                                                    className="flex min-h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-docka-200 p-4 text-center transition-colors hover:bg-docka-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-zinc-700 dark:hover:bg-zinc-800/50"
+                                                >
+                                                    <Upload size={22} className="mb-2 text-docka-400 dark:text-zinc-500" />
+                                                    <span className="text-sm font-bold text-docka-700 dark:text-zinc-300">RPI atual</span>
+                                                    <span className="mt-1 text-xs text-docka-500 dark:text-zinc-500">1 XML com atualização e notificações</span>
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    disabled={Boolean(inpiBulkProgress?.active)}
+                                                    onClick={() => document.getElementById('rpi-bulk-upload')?.click()}
+                                                    className="flex min-h-32 flex-col items-center justify-center rounded-xl border-2 border-dashed border-blue-200 bg-blue-50/40 p-4 text-center transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-blue-900/50 dark:bg-blue-950/10 dark:hover:bg-blue-950/20"
+                                                >
+                                                    <RefreshCw size={22} className="mb-2 text-blue-500" />
+                                                    <span className="text-sm font-bold text-blue-700 dark:text-blue-300">Acervo histórico em massa</span>
+                                                    <span className="mt-1 text-xs text-blue-600/80 dark:text-blue-400">Vários XMLs para o Radar, sem alertas antigos</span>
+                                                </button>
                                             </div>
                                             <input
-                                                id="rpi-upload"
+                                                id="rpi-live-upload"
                                                 type="file"
                                                 className="hidden"
                                                 accept=".xml"
-                                                onChange={async (e) => {
-                                                    const file = e.target.files?.[0];
-                                                    if (!file) return;
-
-                                                    try {
-                                                        const formData = new FormData();
-                                                        formData.append('file', file);
-                                                        formData.append('rpiNumber', file.name.replace(/[^0-9]/g, '') || String(Date.now()));
-
-                                                        addToast({ type: 'success', title: 'Upload Iniciado', message: `Enviando ${file.name} ao servidor...` });
-
-                                                        await api.post('/asterysko/inpi/parse', formData, {
-                                                            headers: { 'Content-Type': 'multipart/form-data' }
-                                                        });
-
-                                                        addToast({ type: 'success', title: 'Processamento Iniciado', message: 'A RPI está alimentando o Radar da Marca e cruzando os processos internos em segundo plano.' });
-                                                    } catch (err: any) {
-                                                        console.error(err);
-                                                        addToast({ type: 'error', title: 'Falha no Envio', message: err.response?.data?.error || 'Erro ao comunicar com a API.' });
-                                                    } finally {
-                                                        e.target.value = '';
-                                                        setTimeout(fetchInpiHistory, 1500);
-                                                    }
+                                                onChange={(e) => {
+                                                    void handleRpiUpload(e.target.files, 'LIVE');
+                                                    e.target.value = '';
                                                 }}
                                             />
+                                            <input
+                                                id="rpi-bulk-upload"
+                                                type="file"
+                                                multiple
+                                                className="hidden"
+                                                accept=".xml"
+                                                onChange={(e) => {
+                                                    void handleRpiUpload(e.target.files, 'RADAR_ONLY');
+                                                    e.target.value = '';
+                                                }}
+                                            />
+                                            <p className="mt-2 text-xs text-docka-500 dark:text-zinc-500">Até 150 MB por XML. O número e a data são lidos do conteúdo oficial, não do nome do arquivo.</p>
+
+                                            {inpiBulkProgress && (
+                                                <div className="mt-4 rounded-xl border border-docka-200 bg-docka-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+                                                    <div className="flex items-center justify-between gap-3 text-xs font-bold text-docka-700 dark:text-zinc-300">
+                                                        <span>{inpiBulkProgress.active ? `Processando ${inpiBulkProgress.currentFile}` : 'Última carga'}</span>
+                                                        <span>{inpiBulkProgress.completed + inpiBulkProgress.skipped + inpiBulkProgress.failed}/{inpiBulkProgress.total}</span>
+                                                    </div>
+                                                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-docka-200 dark:bg-zinc-700">
+                                                        <div
+                                                            className="h-full rounded-full bg-blue-600 transition-all"
+                                                            style={{ width: `${inpiBulkProgress.total ? ((inpiBulkProgress.completed + inpiBulkProgress.skipped + inpiBulkProgress.failed) / inpiBulkProgress.total) * 100 : 0}%` }}
+                                                        />
+                                                    </div>
+                                                    <div className="mt-2 flex items-center justify-between text-xs text-docka-500 dark:text-zinc-400">
+                                                        <span>{inpiBulkProgress.completed} concluída(s) • {inpiBulkProgress.skipped} ignorada(s) • {inpiBulkProgress.failed} falha(s)</span>
+                                                        {inpiBulkProgress.active && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => { cancelInpiBulkRef.current = true; }}
+                                                                className="font-bold text-red-600 hover:text-red-700 dark:text-red-400"
+                                                            >
+                                                                Parar após esta RPI
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Legacy Credentials info */}
@@ -1644,9 +1774,11 @@ const WhatsAppCard: React.FC = () => {
                                                         <div className="flex flex-col">
                                                             <span className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                                                 RPI {log.rpiNumber}
+                                                                {log.status === 'QUEUED' && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Na fila</span>}
                                                                 {log.status === 'PROCESSING' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
                                                                 {log.status === 'COMPLETED' && <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
                                                                 {log.status === 'FAILED' && <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 rounded-full font-bold">Falhou</span>}
+                                                                {log.importMode === 'RADAR_ONLY' && <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-bold text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">Histórico</span>}
                                                             </span>
                                                             <span className="text-xs text-docka-500 uppercase mt-1">
                                                                 Data da Edição: {log.rpiDate ? new Date(log.rpiDate).toLocaleDateString('pt-BR') : 'N/A'} • {log.fileName || ''}
