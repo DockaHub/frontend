@@ -4,6 +4,7 @@ import api, { getBackendUrl } from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewProcessModal from './AsteryskoNewProcessModal';
 import AsteryskoEditProcessModal from './AsteryskoEditProcessModal';
+import AsteryskoDealDetailsModal from './AsteryskoDealDetailsModal';
 
 const ProcessBrandLogo: React.FC<{ logoUrl?: string; brandName: string }> = ({ logoUrl, brandName }) => {
     const [imgError, setImgError] = useState(false);
@@ -43,6 +44,8 @@ const ProcessBrandLogo: React.FC<{ logoUrl?: string; brandName: string }> = ({ l
 
 interface Process {
     id: string;
+    dealId?: string;
+    dealStatus?: string;
     inpiProcessNumber?: string;
     status: string;
     procurator?: string;
@@ -144,6 +147,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
     const [selectedClient, setSelectedClient] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<'ACTIVE' | 'ARCHIVED' | 'ALL'>('ACTIVE');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [selectedDealForModal, setSelectedDealForModal] = useState<{ id: string } | null>(null);
 
     const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -320,9 +324,19 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                             return (
                                 <div key={process.id} className="grid grid-cols-12 px-10 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors items-center relative group">
                                     
-                                    <div className="col-span-3 flex items-center gap-3 pr-4">
+                                    <div 
+                                        onClick={() => {
+                                            if (process.dealId) {
+                                                setSelectedDealForModal({ id: process.dealId });
+                                            } else {
+                                                setEditingProcess(process);
+                                            }
+                                        }}
+                                        className="col-span-3 flex items-center gap-3 pr-4 cursor-pointer group-hover:text-[#0412dd] dark:group-hover:text-blue-400"
+                                        title="Abrir Ficha Completa & Documentos"
+                                    >
                                         <ProcessBrandLogo logoUrl={process.brand?.logoUrl} brandName={brandName} />
-                                        <span className="text-[13px] font-medium text-black dark:text-white truncate">
+                                        <span className="text-[13px] font-medium text-black dark:text-white truncate group-hover:underline">
                                             {brandName}
                                         </span>
                                     </div>
@@ -365,7 +379,22 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
 
                                         {/* Dropdown Menu */}
                                         {openMenuId === process.id && (
-                                            <div className="absolute right-0 mt-1 w-52 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                                            <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                                                <button
+                                                    onClick={() => {
+                                                        setOpenMenuId(null);
+                                                        if (process.dealId) {
+                                                            setSelectedDealForModal({ id: process.dealId });
+                                                        } else {
+                                                            setEditingProcess(process);
+                                                        }
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-xs font-semibold text-[#0412dd] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2.5 transition-colors"
+                                                >
+                                                    <FileText size={14} className="text-[#0412dd] dark:text-blue-400" />
+                                                    Ficha Completa & Documentos
+                                                </button>
+
                                                 <button
                                                     onClick={() => {
                                                         setOpenMenuId(null);
@@ -374,7 +403,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                                     className="w-full px-4 py-2 text-left text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 flex items-center gap-2.5 transition-colors"
                                                 >
                                                     <Edit3 size={14} className="text-zinc-500" />
-                                                    Editar Processo
+                                                    Editar Dados Rápidos
                                                 </button>
 
                                                 <button
@@ -540,6 +569,21 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Modal Ficha Completa do Processo / CRM Deal com Documentos */}
+            {selectedDealForModal && (
+                <AsteryskoDealDetailsModal
+                    isOpen={Boolean(selectedDealForModal)}
+                    card={selectedDealForModal}
+                    onClose={() => {
+                        setSelectedDealForModal(null);
+                        fetchProcesses();
+                    }}
+                    onUpdate={() => {
+                        fetchProcesses();
+                    }}
+                />
             )}
         </div>
     );
