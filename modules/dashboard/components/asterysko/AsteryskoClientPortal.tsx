@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, ChevronRight, Copy, CreditCard, Download, ExternalLink, FileText, QrCode, Upload, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronRight, Clock3, Copy, CreditCard, Download, ExternalLink, FileText, Landmark, LockKeyhole, QrCode, Upload, X } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
@@ -15,7 +15,7 @@ interface AsteryskoClientPortalProps {
 }
 
 type PortalView = 'home' | 'details' | 'profile' | 'contracts' | 'new-registration';
-type ProcessTab = 'details' | 'payments' | 'documents';
+type ProcessTab = 'formalization' | 'details' | 'payments' | 'documents';
 type ProfileFieldKey = 'identity' | 'document' | 'rg' | 'email' | 'phone' | 'address';
 
 interface ProfileFieldConfig {
@@ -287,6 +287,30 @@ const hasSubmittedProxy = (process: any) => {
     return Boolean(process?.proxySignedUrl) || ['UPLOADED', 'SIGNED', 'VALIDATED', 'APPROVED'].includes(status);
 };
 
+const hasSignedContract = (process: any) => {
+    const status = String(process?.contractSignStatus || '').toUpperCase();
+    return Boolean(process?.contractSignDate) || ['SIGNED', 'ASSINADO', 'COMPLETED'].includes(status);
+};
+
+const isPostFormalization = (process: any) => [
+    'FILED', 'PROTOCOL', 'EXAMINATION', 'EXAM_MERIT', 'OPPOSITION', 'GRANTED', 'WON', 'ARCHIVED'
+].includes(String(process?.status || '').toUpperCase());
+
+const hasSubmittedGruReceipt = (process: any) => {
+    const status = String(process?.gruStatus || '').toUpperCase();
+    return Boolean(process?.gruReceiptUrl) || ['UPLOADED', 'RECEIPT_UPLOADED', 'PAID'].includes(status) || isPostFormalization(process);
+};
+
+const getFormalizationStep = (process: any) => {
+    if (!hasSignedContract(process)) return 0;
+    if (!hasConfirmedPayment(process)) return 1;
+    if (!hasSubmittedProxy(process)) return 2;
+    if (!hasSubmittedGruReceipt(process)) return 3;
+    return 4;
+};
+
+const FORMALIZATION_STEPS = ['Contrato', 'Honorários', 'Procuração', 'GRU', 'Finalizado'] as const;
+
 const getTimelineIcon = (item: any) => {
     const searchable = `${item?.type || ''} ${item?.code || ''} ${item?.title || ''}`.toLowerCase();
     if (/contract|contrato/.test(searchable)) return TIMELINE_ICONS.contract_signed;
@@ -304,7 +328,7 @@ const getInitialView = (): PortalView => {
 
 const getInitialProcessTab = (): ProcessTab => {
     const requestedTab = new URLSearchParams(window.location.search).get('tab');
-    return requestedTab === 'payments' || requestedTab === 'documents' ? requestedTab : 'details';
+    return requestedTab === 'formalization' || requestedTab === 'payments' || requestedTab === 'documents' ? requestedTab : 'formalization';
 };
 
 const BackButton = ({ onClick }: { onClick: () => void }) => (
@@ -315,6 +339,7 @@ const BackButton = ({ onClick }: { onClick: () => void }) => (
 
 const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab: ProcessTab) => void }) => {
     const tabs: Array<{ id: ProcessTab; label: string; icon: string }> = [
+        { id: 'formalization', label: 'Formalização', icon: 'processo_detalhes-imgMdiSign.svg' },
         { id: 'details', label: 'Detalhes', icon: 'processo_detalhes-imgGgDetailsMore.svg' },
         { id: 'payments', label: 'Pagamentos', icon: 'processo_detalhes-imgFluentPayment16Regular.svg' },
         { id: 'documents', label: 'Documentos', icon: 'processo_detalhes-imgGroup1.svg' },
@@ -376,6 +401,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [proxyFeedback, setProxyFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [gruReceiptUploading, setGruReceiptUploading] = useState(false);
     const [gruFeedback, setGruFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+    const [gruCodeCopied, setGruCodeCopied] = useState(false);
     const pageRef = useRef<HTMLDivElement | null>(null);
     const proxyUploadInputRef = useRef<HTMLInputElement | null>(null);
     const gruReceiptInputRef = useRef<HTMLInputElement | null>(null);
@@ -561,12 +587,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const processDetailRows = getProcessDetailRows(selectedProcess);
     const invoices = financials.invoices as any[];
     const contracts = financials.contracts as any[];
-    const pendingContracts = contracts.filter(contract => {
-        const status = String(contract.status || contract.signatureStatus || contract.contractSignStatus).toUpperCase();
-        return status === 'PENDING' || status === 'PENDENTE' || status.includes('AGUARD');
-    });
-    const pendingProxyProcesses = displayedProcesses.filter(process => hasConfirmedPayment(process) && !hasSubmittedProxy(process));
+    const pendingFormalizationProcesses = displayedProcesses.filter(process => getFormalizationStep(process) < FORMALIZATION_STEPS.length - 1);
     const selectedProcessPaymentConfirmed = hasConfirmedPayment(selectedProcess);
+    const selectedProcessContractSigned = hasSignedContract(selectedProcess);
     const selectedProcessProxySubmitted = hasSubmittedProxy(selectedProcess);
     const selectedProcessProxyStatus = String(selectedProcess?.proxySignStatus || 'PENDING').toUpperCase();
     const subscription = subscriptionContext?.subscription;
@@ -578,6 +601,23 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const federalFeeStatus = String(selectedProcess?.gruStatus || federalFeeInvoice?.status || 'PENDING').toUpperCase();
     const federalFeeAvailable = Boolean(selectedProcess?.gruUrl || federalFeeInvoice?.officialBoletoUrl);
     const federalFeeReceiptSubmitted = Boolean(selectedProcess?.gruReceiptUrl) || ['UPLOADED', 'RECEIPT_UPLOADED', 'PAID'].includes(federalFeeStatus);
+    const formalizationStep = isPostFormalization(selectedProcess) || federalFeeReceiptSubmitted ? 4
+        : !selectedProcessContractSigned ? 0
+            : !selectedProcessPaymentConfirmed ? 1
+                : !selectedProcessProxySubmitted ? 2
+                    : 3;
+    const formalizationComplete = formalizationStep === FORMALIZATION_STEPS.length - 1;
+    const selectedContract = contracts.find(contract => String(contract.processId || '') === selectedProcessId)
+        || contracts.find(contract => String(contract.brandName || '').trim().toLowerCase() === brandName.trim().toLowerCase());
+    const serviceInvoice = processInvoices.find(invoice => String(invoice.type || '').toUpperCase() !== 'TAX');
+    const serviceAmount = getValue(
+        serviceInvoice?.amount,
+        serviceInvoice?.value,
+        subscriptionContext?.firstPaymentAmount,
+        selectedProcess?.firstPaymentAmount,
+        selectedProcess?.recurringAmount
+    );
+    const federalFeeCode = String(getValue(selectedProcess?.gruBarcode, federalFeeInvoice?.officialBoletoCode));
     const displayedPaymentHistory = subscriptionMatchesSelectedProcess && subscription
         ? [
             ...processInvoices.filter(invoice => String(invoice.type || '').toUpperCase() === 'TAX'),
@@ -691,13 +731,13 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
     const openProcess = (process: any) => {
         setSelectedProcess(process);
-        setProcessTab('details');
+        setProcessTab(getFormalizationStep(process) < FORMALIZATION_STEPS.length - 1 ? 'formalization' : 'details');
         navigateView('details');
     };
 
-    const openProcessDocuments = (process: any) => {
+    const openProcessFormalization = (process: any) => {
         setSelectedProcess(process);
-        setProcessTab('documents');
+        setProcessTab('formalization');
         setProxyFeedback(null);
         navigateView('details');
     };
@@ -1035,6 +1075,35 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         window.setTimeout(() => setPixCopied(false), 1800);
     };
 
+    const copyGruCode = async () => {
+        if (!federalFeeCode) return;
+        await navigator.clipboard?.writeText(federalFeeCode);
+        setGruCodeCopied(true);
+        window.setTimeout(() => setGruCodeCopied(false), 1800);
+    };
+
+    const downloadFederalFee = () => {
+        const url = selectedProcess?.gruUrl
+            ? `/api/asterysko/processes/${selectedProcessId}/gru/download`
+            : federalFeeInvoice?.officialBoletoUrl;
+        if (url) download(url, `Guia_INPI_${brandName.replace(/\s+/g, '_')}.pdf`);
+    };
+
+    const startServicePayment = () => {
+        if (subscriptionLoading || selectedProcessPaymentConfirmed) return;
+        setSubscriptionFeedback(null);
+        if (subscriptionContext?.eligible) {
+            const requiresSetupRetry = subscription && RETRYABLE_SUBSCRIPTION_SETUP_STATUSES.has(subscriptionStatus);
+            openPaymentSheet(subscription && !requiresSetupRetry ? 'payment-method' : 'setup');
+            return;
+        }
+        if (subscriptionContext?.oneTimePaymentConfigured) {
+            void startOneTimePixPayment();
+            return;
+        }
+        if (serviceInvoice) void openPaymentReceipt(serviceInvoice);
+    };
+
     const signOut = () => {
         logout();
         onExit();
@@ -1089,21 +1158,27 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         {error && <p className="ast-empty-note" role="status">{error}</p>}
 
-                        {pendingContracts.length > 0 && (
-                            <button className="ast-contract-alert" type="button" onClick={() => openContractForSignature(pendingContracts[0])}>
-                                <span className="ast-contract-alert__icon"><FileText size={22} /></span>
-                                <span><small>Ação necessária</small><strong>Seu contrato está pronto para assinatura</strong><em>Revise os dados e assine para liberar a próxima etapa do processo.</em></span>
-                                <span className="ast-contract-alert__action">Assinar agora <ChevronRight size={18} /></span>
-                            </button>
-                        )}
-
-                        {pendingProxyProcesses.length > 0 && (
-                            <button className="ast-contract-alert ast-proxy-alert" type="button" onClick={() => openProcessDocuments(pendingProxyProcesses[0])}>
-                                <span className="ast-contract-alert__icon"><FileText size={22} /></span>
-                                <span><small>Ação necessária</small><strong>Assine sua procuração no Gov.br</strong><em>Baixe o documento preenchido e envie a versão assinada para continuarmos seu processo no INPI.</em></span>
-                                <span className="ast-contract-alert__action">Ver documento <ChevronRight size={18} /></span>
-                            </button>
-                        )}
+                        {pendingFormalizationProcesses.length > 0 && (() => {
+                            const process = pendingFormalizationProcesses[0];
+                            const step = getFormalizationStep(process);
+                            const titles = [
+                                'Seu contrato está pronto para assinatura',
+                                'Escolha a forma de pagamento dos honorários',
+                                'Assine sua procuração no Gov.br',
+                                process.gruUrl ? 'A GRU está pronta para pagamento' : 'Estamos preparando a sua GRU'
+                            ];
+                            return (
+                                <button className="ast-contract-alert" type="button" onClick={() => openProcessFormalization(process)}>
+                                    <span className="ast-contract-alert__icon"><FileText size={22} /></span>
+                                    <span>
+                                        <small>Formalização · etapa {step + 1} de 5</small>
+                                        <strong>{titles[step]}</strong>
+                                        <em>Continue de onde parou para liberarmos o protocolo da sua marca.</em>
+                                    </span>
+                                    <span className="ast-contract-alert__action">Continuar <ChevronRight size={18} /></span>
+                                </button>
+                            );
+                        })()}
 
                         <div className="ast-home-dashboard">
                             <div className="ast-home-primary">
@@ -1315,6 +1390,153 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         </header>
 
                         <ProcessTabs active={processTab} onChange={setProcessTab} />
+
+                        {processTab === 'formalization' && (
+                            <div key="formalization" className="ast-formalization ast-tab-transition">
+                                <section className="ast-formalization__tracker" aria-label="Progresso da formalização">
+                                    <div className="ast-formalization__tracker-heading">
+                                        <span>
+                                            <small>Formalização do processo</small>
+                                            <strong>{formalizationComplete ? 'Tudo enviado' : `Etapa ${formalizationStep + 1} de 5`}</strong>
+                                        </span>
+                                        <em>{formalizationComplete ? '100%' : `${Math.round((formalizationStep / 4) * 100)}%`}</em>
+                                    </div>
+                                    <ol>
+                                        {FORMALIZATION_STEPS.map((label, index) => {
+                                            const done = formalizationComplete ? index <= formalizationStep : index < formalizationStep;
+                                            const active = index === formalizationStep;
+                                            return (
+                                                <li key={label} className={done ? 'is-done' : active ? 'is-active' : ''} aria-current={active ? 'step' : undefined}>
+                                                    <span>{done ? <Check size={13} /> : index + 1}</span>
+                                                    <small>{label}</small>
+                                                </li>
+                                            );
+                                        })}
+                                    </ol>
+                                </section>
+
+                                {formalizationStep === 0 && (
+                                    <section className="ast-formalization__card">
+                                        <span className="ast-formalization__icon"><FileText size={26} /></span>
+                                        <small>Etapa 1 · Contrato</small>
+                                        <h2>Revise e assine seu contrato</h2>
+                                        <p>Confira os dados, condições e escopo do serviço. Depois do aceite, uma cópia em PDF ficará anexada ao seu processo.</p>
+                                        <button className="ast-formalization__primary" type="button" onClick={() => openContractForSignature(selectedContract || { url: selectedProcess?.contractUrl })} disabled={!selectedContract && !selectedProcess?.contractUrl}>
+                                            <FileText size={18} /> Abrir contrato para assinatura
+                                        </button>
+                                    </section>
+                                )}
+
+                                {formalizationStep === 1 && (
+                                    <section className="ast-formalization__card">
+                                        <span className="ast-formalization__icon"><CreditCard size={26} /></span>
+                                        <small>Etapa 2 · Honorários</small>
+                                        <h2>Conclua o pagamento dos honorários</h2>
+                                        <p>Esse pagamento é referente aos serviços da Asterysko. A taxa federal do INPI será disponibilizada separadamente nas próximas etapas.</p>
+                                        <dl className="ast-formalization__summary">
+                                            <div><dt>Marca</dt><dd>{brandName}</dd></div>
+                                            <div><dt>Valor</dt><dd>{formatCurrency(serviceAmount)}</dd></div>
+                                            <div><dt>Modalidade</dt><dd>{subscriptionContext?.eligible ? 'Plano mensal' : 'Pagamento único'}</dd></div>
+                                        </dl>
+                                        {subscriptionFeedback && <p className={`ast-profile-feedback ast-profile-feedback--${subscriptionFeedback.type}`} role="status">{subscriptionFeedback.message}</p>}
+                                        {oneTimePix?.processId === selectedProcessId || subscription?.pixQrCodePayload ? (
+                                            <div className="ast-formalization__pix">
+                                                {(oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage) && (
+                                                    <img
+                                                        src={String(oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage).startsWith('data:')
+                                                            ? String(oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage)
+                                                            : `data:image/png;base64,${oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage}`}
+                                                        alt="QR Code para pagamento dos honorários"
+                                                    />
+                                                )}
+                                                <span><strong>Pix pronto para pagamento</strong><small>A confirmação aparecerá automaticamente.</small></span>
+                                                <button type="button" onClick={() => void copyPixCode()}>{pixCopied ? <Check size={17} /> : <Copy size={17} />}{pixCopied ? 'Copiado' : 'Copiar Pix'}</button>
+                                            </div>
+                                        ) : (
+                                            <button className="ast-formalization__primary" type="button" onClick={startServicePayment} disabled={subscriptionLoading || oneTimePaymentSubmitting || (!subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !serviceInvoice)}>
+                                                <QrCode size={18} /> {subscriptionLoading ? 'Carregando cobrança...' : oneTimePaymentSubmitting ? 'Preparando Pix...' : 'Escolher forma de pagamento'}
+                                            </button>
+                                        )}
+                                        {!subscriptionLoading && !subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !serviceInvoice && (
+                                            <p className="ast-formalization__waiting"><Clock3 size={17} /> A cobrança está sendo preparada pela nossa equipe.</p>
+                                        )}
+                                    </section>
+                                )}
+
+                                {formalizationStep === 2 && (
+                                    <section className="ast-formalization__card">
+                                        <span className="ast-formalization__icon"><FileText size={26} /></span>
+                                        <small>Etapa 3 · Procuração</small>
+                                        <h2>Assine a procuração pelo Gov.br</h2>
+                                        <p>O documento já será gerado com seus dados. Baixe, assine eletronicamente no Gov.br e envie aqui a versão assinada.</p>
+                                        <ol className="ast-formalization__instructions">
+                                            <li><span>1</span>Baixe a procuração preenchida</li>
+                                            <li><span>2</span>Assine eletronicamente no Gov.br</li>
+                                            <li><span>3</span>Envie o arquivo assinado abaixo</li>
+                                        </ol>
+                                        <div className="ast-formalization__actions">
+                                            <button type="button" disabled={proxyDownloading} onClick={() => void downloadProxyTemplate()}><Download size={18} />{proxyDownloading ? 'Gerando...' : 'Baixar procuração'}</button>
+                                            <button className="ast-formalization__primary" type="button" disabled={proxyUploading} onClick={() => proxyUploadInputRef.current?.click()}><Upload size={18} />{proxyUploading ? 'Enviando...' : 'Enviar procuração assinada'}</button>
+                                        </div>
+                                        <input ref={proxyUploadInputRef} className="ast-visually-hidden" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" onChange={uploadSignedProxy} />
+                                        {proxyFeedback && <p className={`ast-profile-feedback ast-profile-feedback--${proxyFeedback.type}`} role="status">{proxyFeedback.message}</p>}
+                                    </section>
+                                )}
+
+                                {formalizationStep === 3 && !federalFeeAvailable && (
+                                    <section className="ast-formalization__card ast-formalization__card--waiting">
+                                        <span className="ast-formalization__icon"><Clock3 size={26} /></span>
+                                        <small>Etapa 4 · GRU</small>
+                                        <h2>Estamos preparando a guia do INPI</h2>
+                                        <p>Recebemos sua procuração. Nossa equipe está emitindo a GRU oficial e ela aparecerá automaticamente aqui com o valor, vencimento e documento original.</p>
+                                        <p className="ast-formalization__waiting"><Clock3 size={17} /> Você não precisa enviar nada neste momento.</p>
+                                    </section>
+                                )}
+
+                                {formalizationStep === 3 && federalFeeAvailable && (
+                                    <section className="ast-formalization__card">
+                                        <span className="ast-formalization__icon"><Landmark size={26} /></span>
+                                        <small>Etapa 4 · Taxa federal</small>
+                                        <h2>Pague a GRU oficial do INPI</h2>
+                                        <p>Esta taxa é paga diretamente ao Governo Federal e não faz parte dos honorários da Asterysko. Após o pagamento, envie o comprovante.</p>
+                                        <dl className="ast-formalization__summary">
+                                            <div><dt>Serviço</dt><dd>{getValue(federalFeeInvoice?.description, 'Pedido de registro de marca')}</dd></div>
+                                            <div><dt>Valor</dt><dd>{formatCurrency(getValue(federalFeeInvoice?.value, federalFeeInvoice?.amount))}</dd></div>
+                                            <div><dt>Vencimento</dt><dd>{formatDate(federalFeeInvoice?.dueDate)}</dd></div>
+                                        </dl>
+                                        {federalFeeCode && (
+                                            <button className="ast-formalization__code" type="button" onClick={() => void copyGruCode()}>
+                                                <span><small>Código ou linha digitável</small><strong>{federalFeeCode}</strong></span>
+                                                <em>{gruCodeCopied ? <Check size={17} /> : <Copy size={17} />}{gruCodeCopied ? 'Copiado' : 'Copiar'}</em>
+                                            </button>
+                                        )}
+                                        <div className="ast-formalization__actions">
+                                            <button type="button" onClick={downloadFederalFee}><Download size={18} />Baixar GRU original</button>
+                                            <button className="ast-formalization__primary" type="button" disabled={gruReceiptUploading} onClick={() => gruReceiptInputRef.current?.click()}><Upload size={18} />{gruReceiptUploading ? 'Enviando...' : 'Enviar comprovante'}</button>
+                                        </div>
+                                        <input ref={gruReceiptInputRef} className="ast-visually-hidden" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" onChange={uploadFederalFeeReceipt} />
+                                        {gruFeedback && <p className={`ast-profile-feedback ast-profile-feedback--${gruFeedback.type}`} role="status">{gruFeedback.message}</p>}
+                                    </section>
+                                )}
+
+                                {formalizationComplete && (
+                                    <section className="ast-formalization__card ast-formalization__card--complete">
+                                        <span className="ast-formalization__complete-icon"><CheckCircle2 size={34} /></span>
+                                        <small>Formalização concluída</small>
+                                        <h2>Recebemos tudo o que precisamos</h2>
+                                        <p>{federalFeeStatus === 'PAID' || isPostFormalization(selectedProcess)
+                                            ? 'A documentação e o pagamento da taxa foram confirmados. Você pode acompanhar os próximos andamentos neste portal.'
+                                            : 'O comprovante da GRU foi anexado ao processo e está aguardando conferência da nossa equipe. Avisaremos assim que o pagamento for confirmado.'}</p>
+                                        <div className="ast-formalization__complete-actions">
+                                            <button type="button" onClick={() => setProcessTab('documents')}><FileText size={18} />Ver documentos</button>
+                                            <button type="button" onClick={() => setProcessTab('details')}>Acompanhar processo <ChevronRight size={18} /></button>
+                                        </div>
+                                    </section>
+                                )}
+
+                                <p className="ast-formalization__security"><LockKeyhole size={14} />Seu progresso é salvo automaticamente. Você pode fechar e continuar depois pelo mesmo portal.</p>
+                            </div>
+                        )}
 
                         {processTab === 'details' && (
                             <div key="details" className="ast-process-content ast-process-content--details ast-tab-transition">
