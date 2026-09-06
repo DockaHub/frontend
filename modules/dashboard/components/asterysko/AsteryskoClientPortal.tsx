@@ -75,8 +75,19 @@ interface PaymentReceiptData {
 }
 
 type PaymentSheet = 'setup' | 'due-date' | 'payment-method' | null;
+type SubscriptionPaymentMethod = 'PIX' | 'CREDIT_CARD';
 
 const RETRYABLE_SUBSCRIPTION_SETUP_STATUSES = new Set(['SETUP_FAILED', 'CANCELLED']);
+
+interface CardDraft {
+    holderName: string;
+    number: string;
+    expiryMonth: string;
+    expiryYear: string;
+    ccv: string;
+}
+
+const EMPTY_CARD: CardDraft = { holderName: '', number: '', expiryMonth: '', expiryYear: '', ccv: '' };
 
 const ASSET_ROOT = '/assets/asterysko';
 const AsteryskoPdfViewer = React.lazy(() => import('./AsteryskoPdfViewer'));
@@ -352,7 +363,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [subscriptionContext, setSubscriptionContext] = useState<any>(null);
     const [subscriptionLoading, setSubscriptionLoading] = useState(false);
     const [paymentSheet, setPaymentSheet] = useState<PaymentSheet>(null);
+    const [subscriptionMethod, setSubscriptionMethod] = useState<SubscriptionPaymentMethod>('PIX');
     const [subscriptionDueDay, setSubscriptionDueDay] = useState(Math.min(new Date().getDate(), 28));
+    const [cardDraft, setCardDraft] = useState<CardDraft>(EMPTY_CARD);
     const [subscriptionSubmitting, setSubscriptionSubmitting] = useState(false);
     const [oneTimePaymentSubmitting, setOneTimePaymentSubmitting] = useState(false);
     const [oneTimePix, setOneTimePix] = useState<{ processId: string; payload: string; encodedImage?: string | null } | null>(null);
@@ -928,7 +941,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const openPaymentSheet = (sheet: Exclude<PaymentSheet, null>) => {
         setSubscriptionFeedback(null);
         setPixCopied(false);
+        setCardDraft(EMPTY_CARD);
         setSubscriptionDueDay(Number(subscription?.dueDay || Math.min(new Date().getDate(), 28)));
+        setSubscriptionMethod(sheet === 'payment-method' && subscription?.paymentMethod === 'PIX' ? 'CREDIT_CARD' : 'PIX');
         setPaymentSheet(sheet);
     };
 
@@ -979,8 +994,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 await api.patch(`/asterysko/portal/subscriptions/${processId}/due-date`, { dueDay: subscriptionDueDay });
             } else {
                 const payload = {
-                    paymentMethod: 'PIX',
-                    dueDay: subscriptionDueDay
+                    paymentMethod: subscriptionMethod,
+                    dueDay: subscriptionDueDay,
+                    ...(subscriptionMethod === 'CREDIT_CARD' ? { creditCard: cardDraft } : {})
                 };
                 if (paymentSheet === 'payment-method') {
                     await api.put(`/asterysko/portal/subscriptions/${processId}/payment-method`, payload);
@@ -989,12 +1005,17 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 }
             }
             await fetchSubscriptionContext(processId, false);
+            setCardDraft(EMPTY_CARD);
             setPaymentSheet(null);
             setSubscriptionFeedback({
                 type: 'success',
                 message: paymentSheet === 'due-date'
                         ? 'Solicitação de novo vencimento registrada.'
-                        : 'Escaneie o QR Code abaixo para pagar via Pix.'
+                        : subscriptionMethod === 'PIX'
+                            ? 'Escaneie o QR Code abaixo para pagar via Pix.'
+                            : paymentSheet === 'payment-method'
+                                ? 'Novo cartão registrado. A cobrança pendente está sendo processada.'
+                                : 'Cartão cadastrado e assinatura mensal configurada com sucesso.'
             });
         } catch (actionError: any) {
             setSubscriptionFeedback({
@@ -1376,7 +1397,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                                 )}
                                                 {subscription.paymentMethodChangeAllowed && (
                                                     <button type="button" onClick={() => openPaymentSheet('payment-method')}>
-                                                        Regularizar com Pix <ChevronRight size={18} />
+                                                        Regularizar pagamento <ChevronRight size={18} />
                                                     </button>
                                                 )}
                                             </div>
@@ -1597,10 +1618,15 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                         </div>
                                     )}
                                     <div className="ast-payment-methods" role="radiogroup" aria-label="Forma de pagamento">
-                                        <button className="ast-payment-method--active" type="button" aria-checked="true">
+                                        <button className={subscriptionMethod === 'PIX' ? 'ast-payment-method--active' : ''} type="button" role="radio" aria-checked={subscriptionMethod === 'PIX'} onClick={() => setSubscriptionMethod('PIX')}>
                                             <QrCode size={21} />
                                             <span><strong>Pix</strong><small>Pagamento por QR Code ou copia e cola</small></span>
-                                            <i><Check size={14} /></i>
+                                            <i>{subscriptionMethod === 'PIX' && <Check size={14} />}</i>
+                                        </button>
+                                        <button className={subscriptionMethod === 'CREDIT_CARD' ? 'ast-payment-method--active' : ''} type="button" role="radio" aria-checked={subscriptionMethod === 'CREDIT_CARD'} onClick={() => setSubscriptionMethod('CREDIT_CARD')}>
+                                            <CreditCard size={21} />
+                                            <span><strong>Cartão de crédito</strong><small>Salvo para cobrança mensal no vencimento</small></span>
+                                            <i>{subscriptionMethod === 'CREDIT_CARD' && <Check size={14} />}</i>
                                         </button>
                                     </div>
 
@@ -1613,18 +1639,49 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                         </label>
                                     )}
 
-                                    <div className="ast-payment-form__pix">
-                                        <QrCode size={30} />
-                                        <div><strong>Você continuará dentro do portal</strong><p>Geraremos o QR Code e o código copia e cola aqui. Cada mensalidade será paga via Pix, sem autorização de débito automático.</p></div>
-                                    </div>
+                                    {subscriptionMethod === 'CREDIT_CARD' ? (
+                                        <>
+                                            <div className="ast-card-fields">
+                                                <label className="ast-payment-field ast-card-fields__wide">
+                                                    <span>Nome impresso no cartão</span>
+                                                    <input required autoComplete="cc-name" value={cardDraft.holderName} onChange={event => setCardDraft(current => ({ ...current, holderName: event.target.value }))} />
+                                                </label>
+                                                <label className="ast-payment-field ast-card-fields__wide">
+                                                    <span>Número do cartão</span>
+                                                    <input required inputMode="numeric" autoComplete="cc-number" maxLength={23} value={cardDraft.number} onChange={event => setCardDraft(current => ({ ...current, number: event.target.value }))} />
+                                                </label>
+                                                <label className="ast-payment-field">
+                                                    <span>Mês</span>
+                                                    <input required inputMode="numeric" autoComplete="cc-exp-month" placeholder="MM" maxLength={2} value={cardDraft.expiryMonth} onChange={event => setCardDraft(current => ({ ...current, expiryMonth: event.target.value }))} />
+                                                </label>
+                                                <label className="ast-payment-field">
+                                                    <span>Ano</span>
+                                                    <input required inputMode="numeric" autoComplete="cc-exp-year" placeholder="AAAA" maxLength={4} value={cardDraft.expiryYear} onChange={event => setCardDraft(current => ({ ...current, expiryYear: event.target.value }))} />
+                                                </label>
+                                                <label className="ast-payment-field">
+                                                    <span>CVV</span>
+                                                    <input required inputMode="numeric" autoComplete="cc-csc" maxLength={4} value={cardDraft.ccv} onChange={event => setCardDraft(current => ({ ...current, ccv: event.target.value }))} />
+                                                </label>
+                                            </div>
+                                            <div className="ast-payment-form__pix">
+                                                <CreditCard size={30} />
+                                                <div><strong>Cobrança mensal automática</strong><p>O cartão será cadastrado com segurança no Asaas e usado todos os meses na data de vencimento escolhida.</p></div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="ast-payment-form__pix">
+                                            <QrCode size={30} />
+                                            <div><strong>Você continuará dentro do portal</strong><p>Geraremos o QR Code e o código copia e cola aqui. Cada mensalidade será paga via Pix, sem autorização de débito automático.</p></div>
+                                        </div>
+                                    )}
                                 </>
                             )}
 
                             {subscriptionFeedback?.type === 'error' && <p className="ast-payment-form__error">{subscriptionFeedback.message}</p>}
                             <button className="ast-payment-form__submit" type="submit" disabled={subscriptionSubmitting}>
-                                {subscriptionSubmitting ? 'Processando com segurança...' : paymentSheet === 'due-date' ? 'Confirmar novo vencimento' : 'Gerar QR Code Pix'}
+                                {subscriptionSubmitting ? 'Processando com segurança...' : paymentSheet === 'due-date' ? 'Confirmar novo vencimento' : subscriptionMethod === 'PIX' ? 'Gerar QR Code Pix' : 'Cadastrar cartão'}
                             </button>
-                            <p className="ast-payment-form__security">O pagamento é concluído com segurança no aplicativo do seu banco.</p>
+                            <p className="ast-payment-form__security">{subscriptionMethod === 'PIX' ? 'O pagamento é concluído com segurança no aplicativo do seu banco.' : 'Os dados do cartão são enviados diretamente ao Asaas e não são armazenados pela Asterysko.'}</p>
                         </form>
                     </section>
                 </div>
