@@ -396,6 +396,55 @@
     flex: 0 0 auto;
 }
 
+.ast-sign-jump {
+    position: fixed;
+    right: 50%;
+    bottom: max(18px, env(safe-area-inset-bottom));
+    z-index: 140;
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    gap: 11px;
+    padding: 9px 18px 9px 13px;
+    border: 1px solid rgba(255, 255, 255, .24);
+    border-radius: 999px;
+    background: var(--ast-sign-blue);
+    box-shadow: 0 14px 38px rgba(26, 31, 211, .34);
+    color: #fff;
+    cursor: pointer;
+    transform: translateX(50%);
+    animation: ast-sign-jump-in 220ms ease-out both;
+}
+
+.ast-sign-jump > svg {
+    width: 34px;
+    height: 34px;
+    padding: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .15);
+}
+
+.ast-sign-jump span,
+.ast-sign-jump small {
+    display: block;
+    text-align: left;
+}
+
+.ast-sign-jump span {
+    font-size: 12px;
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.ast-sign-jump small {
+    margin-bottom: 2px;
+    color: rgba(255, 255, 255, .72);
+    font-size: 9px;
+    font-weight: 650;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
 .ast-sign-button-spinner,
 .ast-sign-spinner {
     display: inline-block;
@@ -548,6 +597,11 @@
 
 @keyframes ast-sign-spin {
     to { transform: rotate(360deg); }
+}
+
+@keyframes ast-sign-jump-in {
+    from { opacity: 0; transform: translate(50%, 10px); }
+    to { opacity: 1; transform: translate(50%, 0); }
 }
 
 @media (max-width: 1160px) {
@@ -703,6 +757,13 @@
         font-size: 12.5px !important;
         line-height: 1.4;
     }
+
+    .ast-sign-jump {
+        width: calc(100% - 32px);
+        max-width: 390px;
+        justify-content: center;
+        bottom: max(12px, env(safe-area-inset-bottom));
+    }
 }
 
 @media print {
@@ -717,6 +778,7 @@
     .ast-sign-toc,
     .ast-sign-action-column,
     .ast-sign-success,
+    .ast-sign-jump,
     .ast-sign-legal-note {
         display: none !important;
     }

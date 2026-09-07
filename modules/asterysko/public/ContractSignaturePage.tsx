@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, Check, CheckCircle2, Download, FileCheck2, LockKeyhole, Menu, ShieldCheck, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, Check, CheckCircle2, Download, FileCheck2, LockKeyhole, Menu, ShieldCheck, X } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import './ContractSignaturePage.css';
@@ -18,6 +18,7 @@ type ContractDeal = {
     signedByIP?: string;
     signedByUserAgent?: string;
     signatureData?: string;
+    legallyRectified?: boolean;
     pdfUrl?: string;
 };
 
@@ -50,6 +51,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     const [deal, setDeal] = useState<ContractDeal | null>(null);
     const [contractHtml, setContractHtml] = useState('');
     const [version, setVersion] = useState('');
+    const [rectificationVersion, setRectificationVersion] = useState('');
     const [acknowledgementLabels, setAcknowledgementLabels] = useState<string[]>([]);
     const [acknowledgements, setAcknowledgements] = useState<boolean[]>([]);
     const [signatureName, setSignatureName] = useState('');
@@ -61,7 +63,9 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     const [readProgress, setReadProgress] = useState(0);
     const [activeSection, setActiveSection] = useState('contract-summary');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [signaturePanelVisible, setSignaturePanelVisible] = useState(false);
     const pageRef = useRef<HTMLDivElement | null>(null);
+    const signaturePanelRef = useRef<HTMLElement | null>(null);
     const { addToast } = useToast();
 
     const fetchDeal = useCallback(async (showLoading = true) => {
@@ -74,6 +78,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             setDeal(nextDeal);
             setContractHtml(response.data.html || '');
             setVersion(response.data.version || '');
+            setRectificationVersion(response.data.rectificationVersion || '');
             setAcknowledgementLabels(labels);
             setAcknowledgements(current => current.length === labels.length ? current : labels.map(() => false));
             setPdfUrl(response.data.pdfUrl || nextDeal?.pdfUrl || '');
@@ -110,6 +115,18 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
         return () => page.removeEventListener('scroll', onScroll);
     }, [loading, contractHtml]);
 
+    useEffect(() => {
+        const page = pageRef.current;
+        const panel = signaturePanelRef.current;
+        if (!page || !panel || loading || signed) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => setSignaturePanelVisible(entry.isIntersecting),
+            { root: page, threshold: 0.15 }
+        );
+        observer.observe(panel);
+        return () => observer.disconnect();
+    }, [loading, signed, contractHtml]);
+
     const allAcknowledged = acknowledgementLabels.length > 0 && acknowledgements.every(Boolean);
     const canSign = allAcknowledged && signatureName.trim().length >= 3 && !signing;
     const signedDate = useMemo(() => deal?.signedAt ? new Date(deal.signedAt).toLocaleString('pt-BR') : '', [deal?.signedAt]);
@@ -117,6 +134,11 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     const goToSection = (id: string) => {
         pageRef.current?.querySelector<HTMLElement>(`#${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         setMobileMenuOpen(false);
+    };
+
+    const goToSignature = () => {
+        signaturePanelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.setTimeout(() => signaturePanelRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }), 550);
     };
 
     const toggleAcknowledgement = (index: number) => {
@@ -202,21 +224,21 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                     {signed && (
                         <section className="ast-sign-success" aria-live="polite">
                             <CheckCircle2 size={26} />
-                            <div><strong>Contrato assinado e anexado ao processo</strong><p>O documento foi congelado em PDF com os dados e as evidências deste aceite.</p></div>
+                            <div><strong>{deal?.legallyRectified ? 'Contrato assinado com dados cadastrais retificados' : 'Contrato assinado e anexado ao processo'}</strong><p>{deal?.legallyRectified ? 'A via original e seu hash permanecem preservados junto da cópia retificada.' : 'O documento foi congelado em PDF com os dados e as evidências deste aceite.'}</p></div>
                             <a href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={17} />Baixar PDF</a>
                         </section>
                     )}
                     <div className="ast-sign-paper" dangerouslySetInnerHTML={{ __html: contractHtml }} />
-                    <p className="ast-sign-legal-note">Versão do documento: {version}. Recomendamos guardar uma cópia do PDF assinado.</p>
+                    <p className="ast-sign-legal-note">Versão aceita: {version}{rectificationVersion ? ` · Retificação cadastral: ${rectificationVersion}` : ''}. Recomendamos guardar uma cópia do PDF assinado.</p>
                 </div>
 
-                <aside className="ast-sign-action-column">
+                <aside className="ast-sign-action-column" ref={signaturePanelRef}>
                     {signed ? (
                         <section className="ast-sign-certificate">
                             <div className="ast-sign-certificate__icon"><ShieldCheck size={26} /></div>
                             <small>Concluído</small>
                             <h2>Assinatura confirmada</h2>
-                            <dl><div><dt>Assinante</dt><dd>{getSignerName(deal)}</dd></div><div><dt>Data e hora</dt><dd>{signedDate}</dd></div><div><dt>Versão</dt><dd>{version}</dd></div></dl>
+                            <dl><div><dt>Assinante</dt><dd>{getSignerName(deal)}</dd></div><div><dt>Data e hora</dt><dd>{signedDate}</dd></div><div><dt>Versão</dt><dd>{version}{rectificationVersion ? ` · ${rectificationVersion}` : ''}</dd></div></dl>
                             <a className="ast-sign-primary" href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={18} />Baixar contrato em PDF</a>
                             <button className="ast-sign-secondary" type="button" onClick={() => window.location.assign(`/portal?view=details&tab=formalization${deal?.processId ? `&processId=${encodeURIComponent(deal.processId)}` : ''}`)}>Continuar formalização</button>
                         </section>
@@ -243,6 +265,13 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                     )}
                 </aside>
             </main>
+
+            {!signed && !signaturePanelVisible && (
+                <button className="ast-sign-jump" type="button" onClick={goToSignature}>
+                    <ArrowDown size={18} aria-hidden="true" />
+                    <span><small>Quer agilizar?</small>Ir direto para a assinatura</span>
+                </button>
+            )}
         </div>
     );
 };
