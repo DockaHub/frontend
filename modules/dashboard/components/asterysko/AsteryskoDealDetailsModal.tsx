@@ -549,6 +549,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
     const [isAdvancingStage, setIsAdvancingStage] = useState(false);
     const [isSendingContract, setIsSendingContract] = useState(false);
+    const [isConfirmingGru, setIsConfirmingGru] = useState(false);
     const [showExaminationBranchModal, setShowExaminationBranchModal] = useState(false);
 
     const handleSendContractReminder = async () => {
@@ -598,6 +599,46 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             alert(error.response?.data?.error || 'Falha ao avançar estágio.');
         } finally {
             setIsAdvancingStage(false);
+        }
+    };
+
+    const handleConfirmGruPayment = async () => {
+        const processId = currentDeal?.processId || currentDeal?.process?.id;
+        if (!processId) {
+            alert('Este negócio não possui um processo vinculado.');
+            return;
+        }
+
+        const hasReceipt = Boolean(currentDeal?.process?.gruReceiptUrl);
+        const confirmationText = hasReceipt
+            ? 'Confirma que o comprovante foi validado e o pagamento da GRU foi confirmado pelo INPI?'
+            : 'Confirma que o pagamento da GRU foi verificado diretamente no INPI?';
+        if (!window.confirm(`${confirmationText}\n\nO processo será movido para “A Protocolar” e o cliente será notificado.`)) return;
+
+        try {
+            setIsConfirmingGru(true);
+            const response = await api.post(`/asterysko/processes/${processId}/approve-stage`, {
+                stage: 'gru',
+                notify: true
+            });
+            const notifications = response.data?.notifications;
+            const channelLabel = (status: string | undefined) => status === 'sent'
+                ? 'enviado'
+                : status === 'failed'
+                    ? 'falhou'
+                    : 'não enviado';
+            const channelSummary = notifications
+                ? ` WhatsApp: ${channelLabel(notifications.whatsapp?.status)}; e-mail: ${channelLabel(notifications.email?.status)}; portal: ${channelLabel(notifications.portal?.status)}.`
+                : '';
+            alert(`Pagamento da GRU confirmado. O processo avançou para “A Protocolar”.${channelSummary}`);
+            await Promise.all([fetchDetails(), fetchInvoices()]);
+            onUpdate?.();
+        } catch (error: any) {
+            console.error('Failed to confirm GRU payment', error);
+            alert(error.response?.data?.error || 'Não foi possível confirmar o pagamento da GRU.');
+            if (error.response?.status === 409) await fetchDetails();
+        } finally {
+            setIsConfirmingGru(false);
         }
     };
 
@@ -894,7 +935,23 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             : 'Não informada');
     const priority = currentDeal?.priority === 'high' ? 'Alta' : currentDeal?.priority === 'low' ? 'Baixa' : 'Normal';
     const assignedUser = currentDeal?.assignedUser?.name || currentDeal?.assignedUserName || 'Sem dono';
-    const nextActionInfo = getNextAction(currentDeal?.status);
+    const isGruStage = currentDeal?.status === 'federal_fee';
+    const gruReceiptUploaded = Boolean(currentDeal?.process?.gruReceiptUrl)
+        || String(currentDeal?.process?.gruStatus || '').toUpperCase() === 'UPLOADED';
+    const gruPaymentConfirmed = String(currentDeal?.process?.gruStatus || '').toUpperCase() === 'PAID';
+    const nextActionInfo = isGruStage
+        ? gruReceiptUploaded
+            ? {
+                title: 'Validar pagamento da GRU',
+                desc: 'O cliente enviou o comprovante da taxa federal. Confira o documento e valide a compensação no INPI.',
+                realBehavior: 'A confirmação registra a homologação no histórico e move o processo para A Protocolar.'
+            }
+            : {
+                title: 'Aguardar pagamento da GRU',
+                desc: 'Acompanhe o envio do comprovante pelo cliente ou consulte a compensação diretamente no INPI.',
+                realBehavior: 'Quando o INPI confirmar o pagamento, registre a homologação para liberar o protocolo.'
+            }
+        : getNextAction(currentDeal?.status);
 
     // Financial totals
     const serviceInvoices = invoices.filter(inv => String(inv.type || '').toUpperCase() !== 'TAX');
@@ -1055,6 +1112,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         const isStageChange = type === 'status_change' || content.toLowerCase().includes('etapa') || content.toLowerCase().includes('estágio') || content.toLowerCase().includes('criado');
         const isInvoice = type === 'notification_sent' || content.toLowerCase().includes('fatura') || content.toLowerCase().includes('pagamento');
         const isFile = type === 'file_upload' || content.toLowerCase().includes('anexad') || content.toLowerCase().includes('upload');
+        const hasNotificationMetadata = Boolean(meta.whatsappStatus || meta.emailStatus || meta.portalStatus);
 
         const dispatches: Array<{
             type: 'whatsapp' | 'email' | 'app';
@@ -1066,7 +1124,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
         if (isStageChange || isInvoice || isFile) {
             const isWaFailed = meta.whatsappStatus === 'failed';
-            const isWaSent = meta.whatsappStatus === 'sent' || (!meta.whatsappStatus && !isWaFailed);
+            const isWaSent = meta.whatsappStatus === 'sent' || (!hasNotificationMetadata && !isWaFailed);
 
             if (isWaFailed) {
                 dispatches.push({
@@ -1085,19 +1143,23 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 });
             }
 
-            dispatches.push({
-                type: 'email',
-                label: 'E-mail Transacional',
-                mockupTitle: `E-mail Transacional: ${content}`,
-                mockupText: `Notificação de Atualização do Registro de Marca:\n\nPrezado(a) ${clientName},\n\nInformamos que houve uma movimentação no seu processo de registro de marca "${dealTitle}".\n\nResumo da Ação: ${content}\nEtapa Atual: ${getStatusLabel(status)}\n\nVocê pode consultar seus documentos e recibos diretamente na sua área do cliente no portal da Asterysko.\n\nAtenciosamente,\nEquipe Asterysko Registro de Marcas`
-            });
+            if (meta.emailStatus === 'sent' || !hasNotificationMetadata) {
+                dispatches.push({
+                    type: 'email',
+                    label: 'E-mail Transacional',
+                    mockupTitle: `E-mail Transacional: ${content}`,
+                    mockupText: `Notificação de Atualização do Registro de Marca:\n\nPrezado(a) ${clientName},\n\nInformamos que houve uma movimentação no seu processo de registro de marca "${dealTitle}".\n\nResumo da Ação: ${content}\nEtapa Atual: ${getStatusLabel(status)}\n\nVocê pode consultar seus documentos e recibos diretamente na sua área do cliente no portal da Asterysko.\n\nAtenciosamente,\nEquipe Asterysko Registro de Marcas`
+                });
+            }
 
-            dispatches.push({
-                type: 'app',
-                label: 'App Push',
-                mockupTitle: `Push App: ${dealTitle}`,
-                mockupText: `Atualização no seu processo "${dealTitle}": ${content}.`
-            });
+            if (meta.portalStatus === 'sent' || !hasNotificationMetadata) {
+                dispatches.push({
+                    type: 'app',
+                    label: 'App Push',
+                    mockupTitle: `Push App: ${dealTitle}`,
+                    mockupText: `Atualização no seu processo "${dealTitle}": ${content}.`
+                });
+            }
         }
 
         return dispatches;
@@ -1616,12 +1678,18 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 Responsável: <span className="font-bold text-black dark:text-white">{assignedUser}</span>
                                             </p>
                                             <button 
-                                                onClick={() => currentDeal?.status === 'contract' && !currentDeal?.signedAt ? handleSendContractReminder() : handleAdvanceStage()}
-                                                disabled={isAdvancingStage || isSendingContract}
+                                                onClick={() => isGruStage
+                                                    ? handleConfirmGruPayment()
+                                                    : currentDeal?.status === 'contract' && !currentDeal?.signedAt
+                                                        ? handleSendContractReminder()
+                                                        : handleAdvanceStage()}
+                                                disabled={isAdvancingStage || isSendingContract || isConfirmingGru || gruPaymentConfirmed}
                                                 className="bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[12px] font-bold px-4 py-2 rounded-full hover:bg-blue-800 transition-colors flex items-center gap-1.5 cursor-pointer"
                                             >
-                                                {(isAdvancingStage || isSendingContract) && <Loader2 size={14} className="animate-spin" />}
-                                                {currentDeal?.status === 'contract' && !currentDeal?.signedAt
+                                                {(isAdvancingStage || isSendingContract || isConfirmingGru) && <Loader2 size={14} className="animate-spin" />}
+                                                {isGruStage
+                                                    ? (gruReceiptUploaded ? 'Validar e confirmar GRU' : 'Confirmar pagamento no INPI')
+                                                    : currentDeal?.status === 'contract' && !currentDeal?.signedAt
                                                     ? (currentDeal?.processId ? 'Cobrar assinatura' : 'Disponibilizar contrato')
                                                     : 'Concluir e Avançar'}
                                             </button>
@@ -2847,12 +2915,18 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         {currentPhase === 'commercial' ? 'Arquivar lead' : currentPhase === 'onboarding' ? 'Cancelar atendimento' : 'Arquivar processo'}
                     </button>
                     <button 
-                        onClick={() => currentDeal?.status === 'contract' && !currentDeal?.signedAt ? handleSendContractReminder() : handleAdvanceStage()}
-                        disabled={isAdvancingStage || isSendingContract}
+                        onClick={() => isGruStage
+                            ? handleConfirmGruPayment()
+                            : currentDeal?.status === 'contract' && !currentDeal?.signedAt
+                                ? handleSendContractReminder()
+                                : handleAdvanceStage()}
+                        disabled={isAdvancingStage || isSendingContract || isConfirmingGru || gruPaymentConfirmed}
                         className="flex-1 max-w-[400px] ml-4 h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[14px] font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        {(isAdvancingStage || isSendingContract) ? <Loader2 size={18} className="animate-spin" /> : null}
-                        {currentDeal?.status === 'contract' && !currentDeal?.signedAt
+                        {(isAdvancingStage || isSendingContract || isConfirmingGru) ? <Loader2 size={18} className="animate-spin" /> : null}
+                        {isGruStage
+                            ? (gruReceiptUploaded ? 'Validar e confirmar pagamento da GRU' : 'Confirmar pagamento no INPI')
+                            : currentDeal?.status === 'contract' && !currentDeal?.signedAt
                             ? (currentDeal?.processId ? 'Cobrar assinatura' : 'Disponibilizar e enviar contrato')
                             : currentPhase === 'commercial' ? 'Avançar etapa comercial' : currentPhase === 'onboarding' ? 'Concluir pendência e avançar' : 'Atualizar andamento'}
                     </button>
