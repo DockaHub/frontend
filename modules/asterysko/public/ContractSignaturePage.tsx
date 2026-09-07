@@ -60,12 +60,15 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     const [signing, setSigning] = useState(false);
     const [signed, setSigned] = useState(false);
     const [pdfUrl, setPdfUrl] = useState('');
-    const [readProgress, setReadProgress] = useState(0);
     const [activeSection, setActiveSection] = useState('contract-summary');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [signaturePanelVisible, setSignaturePanelVisible] = useState(false);
     const pageRef = useRef<HTMLDivElement | null>(null);
+    const progressBarRef = useRef<HTMLSpanElement | null>(null);
+    const progressLabelRef = useRef<HTMLElement | null>(null);
     const signaturePanelRef = useRef<HTMLElement | null>(null);
+    const readProgressRef = useRef(0);
+    const activeSectionRef = useRef('contract-summary');
     const { addToast } = useToast();
 
     const fetchDeal = useCallback(async (showLoading = true) => {
@@ -99,20 +102,54 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     useEffect(() => {
         const page = pageRef.current;
         if (!page || loading) return;
-        const onScroll = () => {
+        let animationFrame: number | null = null;
+        let sectionOffsets: Array<{ id: string; top: number }> = [];
+
+        const measureSections = () => {
+            sectionOffsets = CHAPTERS.flatMap(([id]) => {
+                const element = page.querySelector<HTMLElement>(`#${id}`);
+                return element ? [{ id, top: element.offsetTop }] : [];
+            });
+        };
+
+        const updateScrollState = () => {
+            animationFrame = null;
             const max = page.scrollHeight - page.clientHeight;
-            setReadProgress(max > 0 ? Math.min(100, Math.round((page.scrollTop / max) * 100)) : 100);
+            const nextProgress = max > 0 ? Math.min(100, Math.round((page.scrollTop / max) * 100)) : 100;
+            if (progressBarRef.current) progressBarRef.current.style.transform = `scaleX(${nextProgress / 100})`;
+            if (readProgressRef.current !== nextProgress) {
+                readProgressRef.current = nextProgress;
+                if (progressLabelRef.current) progressLabelRef.current.textContent = `${nextProgress}% revisado`;
+            }
+
             const marker = page.scrollTop + 150;
             let current = 'contract-summary';
-            CHAPTERS.forEach(([id]) => {
-                const element = page.querySelector<HTMLElement>(`#${id}`);
-                if (element && element.offsetTop <= marker) current = id;
-            });
-            setActiveSection(current);
+            for (const section of sectionOffsets) {
+                if (section.top > marker) break;
+                current = section.id;
+            }
+            if (activeSectionRef.current !== current) {
+                activeSectionRef.current = current;
+                setActiveSection(current);
+            }
         };
-        onScroll();
+
+        const onScroll = () => {
+            if (animationFrame === null) animationFrame = window.requestAnimationFrame(updateScrollState);
+        };
+        const onResize = () => {
+            measureSections();
+            onScroll();
+        };
+        measureSections();
+        updateScrollState();
         page.addEventListener('scroll', onScroll, { passive: true });
-        return () => page.removeEventListener('scroll', onScroll);
+        window.addEventListener('resize', onResize, { passive: true });
+        return () => {
+            page.removeEventListener('scroll', onScroll);
+            window.removeEventListener('resize', onResize);
+            if (animationFrame !== null) window.cancelAnimationFrame(animationFrame);
+        };
     }, [loading, contractHtml]);
 
     useEffect(() => {
@@ -194,7 +231,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
 
     return (
         <div className={`ast-sign ${signed ? 'ast-sign--signed' : ''}`} ref={pageRef}>
-            <div className="ast-sign-progress" aria-hidden="true"><span style={{ width: `${readProgress}%` }} /></div>
+            <div className="ast-sign-progress" aria-hidden="true"><span ref={progressBarRef} /></div>
             <header className="ast-sign-header">
                 <div className="ast-sign-header__inner">
                     <button className="ast-sign-icon-button" type="button" onClick={() => window.location.assign('/portal?view=contracts')} aria-label="Voltar aos contratos"><ArrowLeft size={19} /></button>
@@ -216,7 +253,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             <main className="ast-sign-layout">
                 <aside className="ast-sign-toc" aria-label="Índice do contrato">
                     <span>Leitura</span>
-                    <strong>{readProgress}% revisado</strong>
+                    <strong ref={progressLabelRef}>0% revisado</strong>
                     <nav>{CHAPTERS.map(([id, label]) => <button key={id} type="button" className={activeSection === id ? 'is-active' : ''} onClick={() => goToSection(id)}><span />{label}</button>)}</nav>
                 </aside>
 
@@ -269,7 +306,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             {!signed && !signaturePanelVisible && (
                 <button className="ast-sign-jump" type="button" onClick={goToSignature}>
                     <ArrowDown size={18} aria-hidden="true" />
-                    <span><small>Quer agilizar?</small>Ir direto para a assinatura</span>
+                    <span>Ir para a assinatura</span>
                 </button>
             )}
         </div>

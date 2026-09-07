@@ -37,7 +37,9 @@
     display: block;
     height: 100%;
     background: var(--ast-sign-blue);
-    transition: width 100ms linear;
+    transform: scaleX(0);
+    transform-origin: left center;
+    will-change: transform;
 }
 
 .ast-sign-header {
@@ -402,10 +404,10 @@
     bottom: max(18px, env(safe-area-inset-bottom));
     z-index: 140;
     display: flex;
-    min-height: 54px;
+    min-height: 46px;
     align-items: center;
-    gap: 11px;
-    padding: 9px 18px 9px 13px;
+    gap: 8px;
+    padding: 7px 15px 7px 9px;
     border: 1px solid rgba(255, 255, 255, .24);
     border-radius: 999px;
     background: var(--ast-sign-blue);
@@ -417,32 +419,20 @@
 }
 
 .ast-sign-jump > svg {
-    width: 34px;
-    height: 34px;
-    padding: 8px;
+    width: 30px;
+    height: 30px;
+    padding: 7px;
     border-radius: 50%;
     background: rgba(255, 255, 255, .15);
 }
 
-.ast-sign-jump span,
-.ast-sign-jump small {
+.ast-sign-jump span {
     display: block;
     text-align: left;
-}
-
-.ast-sign-jump span {
     font-size: 12px;
     font-weight: 750;
     line-height: 1.2;
-}
-
-.ast-sign-jump small {
-    margin-bottom: 2px;
-    color: rgba(255, 255, 255, .72);
-    font-size: 9px;
-    font-weight: 650;
-    letter-spacing: .07em;
-    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .ast-sign-button-spinner,
@@ -620,6 +610,11 @@
 }
 
 @media (max-width: 820px) {
+    .ast-sign-header {
+        background: #fff;
+        backdrop-filter: none;
+    }
+
     .ast-sign-header__inner {
         width: calc(100% - 24px);
         height: 60px;
@@ -642,6 +637,7 @@
     }
 
     .ast-sign-paper {
+        overflow: visible;
         border-right: 0;
         border-left: 0;
         border-radius: 0;
@@ -759,9 +755,8 @@
     }
 
     .ast-sign-jump {
-        width: calc(100% - 32px);
-        max-width: 390px;
-        justify-content: center;
+        width: auto;
+        max-width: calc(100% - 32px);
         bottom: max(12px, env(safe-area-inset-bottom));
     }
 }
