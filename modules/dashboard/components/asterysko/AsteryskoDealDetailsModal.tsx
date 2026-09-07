@@ -706,7 +706,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 endpoint = `/asterysko/processes/${processId}/logo`;
             }
 
-            await api.post(endpoint, formData, {
+            const response = await api.post(endpoint, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 }
@@ -716,7 +716,14 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 setGruAmount('');
                 setGruDueDate('');
                 setGruBarcode('');
-                alert('Guia publicada como cobrança federal separada. O cliente foi notificado para pagar diretamente ao INPI.');
+                const whatsappStatus = response.data?.notifications?.whatsapp?.status;
+                const emailStatus = response.data?.notifications?.email?.status;
+                const channelLabel = (status: string | undefined) => status === 'sent'
+                    ? 'enviado'
+                    : status === 'failed'
+                        ? 'falhou'
+                        : 'não enviado';
+                alert(`Guia publicada como cobrança federal separada. WhatsApp: ${channelLabel(whatsappStatus)}. E-mail: ${channelLabel(emailStatus)}.`);
             } else if (uploadType === 'certificate') {
                 alert('🏆 Certificado de Registro enviado com sucesso! O processo foi alterado para CONCLUÍDO e as notificações foram disparadas ao cliente por WhatsApp, E-mail e Portal.');
             } else if (uploadType === 'logo') {
