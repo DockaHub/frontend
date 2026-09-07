@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot, Monitor } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -8,7 +8,7 @@ import OrganizationIconSettings from '../../../../components/OrganizationIconSet
 import DashboardPage from '../../../../components/DashboardPage';
 import { AsteryskoScoutAutomationSettings } from './AsteryskoScoutAutomationSettings';
 
-export type AsteryskoSettingsTab = 'notifications' | 'crm_rules' | 'rpi' | 'scout_ai' | 'plans' | 'portal';
+export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'scout_ai' | 'plans' | 'portal';
 
 interface AsteryskoSettingsViewProps {
     onOpenClientPortal?: () => void;
@@ -48,6 +48,7 @@ const ASTERYSKO_SETTINGS_TABS: Array<{
     icon: React.ComponentType<{ size?: number }>;
 }> = [
     { id: 'notifications', label: 'Conexões & Notificações', icon: Smartphone },
+    { id: 'emails', label: 'E-mails', icon: Mail },
     { id: 'crm_rules', label: 'Fluxo do Negócio', icon: CheckSquare },
     { id: 'rpi', label: 'Marcas & RPI', icon: Shield },
     { id: 'scout_ai', label: 'Scout AI', icon: Bot },
@@ -1099,6 +1100,176 @@ const NotificationTemplatesManager: React.FC = () => {
     );
 };
 
+interface AsteryskoEmailPreview {
+    kind: string;
+    name: string;
+    stage: string;
+    description: string;
+    subject: string;
+    html: string;
+    text: string;
+}
+
+const EmailTemplatesVisualManager: React.FC = () => {
+    const [templates, setTemplates] = useState<AsteryskoEmailPreview[]>([]);
+    const [selectedKind, setSelectedKind] = useState('');
+    const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+    const [visualStandard, setVisualStandard] = useState('Asterysko 2026');
+    const [loadingPreviews, setLoadingPreviews] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const loadPreviews = async () => {
+            try {
+                setLoadingPreviews(true);
+                setLoadError(false);
+                const response = await api.get('/asterysko/email-templates/previews');
+                if (!mounted) return;
+
+                const loadedTemplates = Array.isArray(response.data?.templates)
+                    ? response.data.templates
+                    : [];
+                setTemplates(loadedTemplates);
+                setVisualStandard(response.data?.visualStandard || 'Asterysko 2026');
+                setSelectedKind((current) => current || loadedTemplates[0]?.kind || '');
+            } catch (error) {
+                console.error('Erro ao carregar prévias dos e-mails:', error);
+                if (mounted) setLoadError(true);
+            } finally {
+                if (mounted) setLoadingPreviews(false);
+            }
+        };
+
+        loadPreviews();
+        return () => { mounted = false; };
+    }, []);
+
+    const selectedTemplate = templates.find((template) => template.kind === selectedKind) || templates[0];
+    const stages = templates.reduce<string[]>((result, template) => (
+        result.includes(template.stage) ? result : [...result, template.stage]
+    ), []);
+
+    return (
+        <div className="space-y-6 animate-in fade-in duration-300">
+            <div className="overflow-hidden rounded-2xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <div className="border-b border-docka-100 bg-gradient-to-br from-[#0412dd]/[0.06] via-white to-white px-6 py-6 dark:border-zinc-800 dark:from-[#4150ff]/10 dark:via-zinc-900 dark:to-zinc-900">
+                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                        <div>
+                            <div className="mb-2 flex items-center gap-2">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0412dd] text-white shadow-sm">
+                                    <Mail size={17} />
+                                </div>
+                                <span className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#0412dd] dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-300">
+                                    {visualStandard}
+                                </span>
+                            </div>
+                            <h2 className="text-lg font-bold text-docka-900 dark:text-zinc-100">Modelos de e-mail</h2>
+                            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-docka-500 dark:text-zinc-400">
+                                Confira a aparência exata dos e-mails enviados aos clientes. Cabeçalho, tipografia, botões e rodapé seguem o mesmo padrão visual em todas as etapas.
+                            </p>
+                        </div>
+                        {!loadingPreviews && !loadError && (
+                            <div className="flex shrink-0 items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                <Check size={14} /> {templates.length} modelos padronizados
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {loadingPreviews ? (
+                    <div className="flex min-h-80 items-center justify-center gap-2 text-sm text-docka-500 dark:text-zinc-400">
+                        <RefreshCw size={17} className="animate-spin" /> Carregando modelos...
+                    </div>
+                ) : loadError ? (
+                    <div className="flex min-h-80 flex-col items-center justify-center px-6 text-center">
+                        <AlertCircle size={28} className="mb-3 text-amber-500" />
+                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100">Não foi possível carregar as prévias</p>
+                        <p className="mt-1 text-xs text-docka-500 dark:text-zinc-400">Atualize a página para tentar novamente.</p>
+                    </div>
+                ) : (
+                    <div className="grid min-h-[760px] lg:grid-cols-[280px_minmax(0,1fr)]">
+                        <aside className="border-b border-docka-100 bg-docka-50/40 p-3 dark:border-zinc-800 dark:bg-zinc-950/20 lg:border-b-0 lg:border-r">
+                            <div className="max-h-[720px] space-y-4 overflow-y-auto pr-1">
+                                {stages.map((stage) => (
+                                    <div key={stage}>
+                                        <p className="mb-1.5 px-2 text-[10px] font-bold uppercase tracking-wider text-docka-400 dark:text-zinc-500">{stage}</p>
+                                        <div className="space-y-1">
+                                            {templates.filter((template) => template.stage === stage).map((template) => {
+                                                const isSelected = selectedTemplate?.kind === template.kind;
+                                                return (
+                                                    <button
+                                                        key={template.kind}
+                                                        type="button"
+                                                        onClick={() => setSelectedKind(template.kind)}
+                                                        className={`w-full rounded-xl border px-3 py-3 text-left transition-all ${isSelected
+                                                            ? 'border-[#0412dd]/25 bg-white shadow-sm ring-1 ring-[#0412dd]/10 dark:bg-zinc-800'
+                                                            : 'border-transparent hover:border-docka-200 hover:bg-white dark:hover:border-zinc-700 dark:hover:bg-zinc-800/70'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-start gap-2.5">
+                                                            <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg ${isSelected ? 'bg-[#0412dd] text-white' : 'bg-docka-100 text-docka-500 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                                                <Mail size={12} />
+                                                            </span>
+                                                            <span>
+                                                                <span className={`block text-xs font-bold ${isSelected ? 'text-[#0412dd] dark:text-blue-300' : 'text-docka-800 dark:text-zinc-200'}`}>{template.name}</span>
+                                                                <span className="mt-0.5 block text-[10px] leading-relaxed text-docka-400 dark:text-zinc-500">{template.description}</span>
+                                                            </span>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </aside>
+
+                        {selectedTemplate && (
+                            <section className="min-w-0 bg-zinc-100/80 dark:bg-zinc-950/50">
+                                <div className="flex flex-col gap-3 border-b border-docka-200 bg-white px-5 py-4 dark:border-zinc-800 dark:bg-zinc-900 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="min-w-0">
+                                        <p className="text-[10px] font-bold uppercase tracking-wide text-docka-400 dark:text-zinc-500">Assunto</p>
+                                        <p className="truncate text-sm font-bold text-docka-900 dark:text-zinc-100">{selectedTemplate.subject}</p>
+                                    </div>
+                                    <div className="flex shrink-0 rounded-xl border border-docka-200 bg-docka-50 p-1 dark:border-zinc-700 dark:bg-zinc-800">
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewMode('desktop')}
+                                            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors ${previewMode === 'desktop' ? 'bg-white text-[#0412dd] shadow-sm dark:bg-zinc-700 dark:text-blue-300' : 'text-docka-500 dark:text-zinc-400'}`}
+                                        >
+                                            <Monitor size={13} /> Desktop
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPreviewMode('mobile')}
+                                            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[10px] font-bold transition-colors ${previewMode === 'mobile' ? 'bg-white text-[#0412dd] shadow-sm dark:bg-zinc-700 dark:text-blue-300' : 'text-docka-500 dark:text-zinc-400'}`}
+                                        >
+                                            <Smartphone size={13} /> Celular
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto p-4 sm:p-6">
+                                    <div className={`mx-auto overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xl transition-all duration-300 dark:border-zinc-700 ${previewMode === 'mobile' ? 'w-[360px] max-w-full' : 'w-full max-w-[660px]'}`}>
+                                        <iframe
+                                            key={`${selectedTemplate.kind}-${previewMode}`}
+                                            title={`Prévia do e-mail ${selectedTemplate.name}`}
+                                            srcDoc={selectedTemplate.html}
+                                            sandbox="allow-popups"
+                                            className="block h-[650px] w-full border-0 bg-white"
+                                        />
+                                    </div>
+                                </div>
+                            </section>
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
 // Standalone CrmStageTaskManager component outside parent render scope
 const CrmStageTaskManager: React.FC = () => {
     const { addToast } = useToast();
@@ -1598,7 +1769,7 @@ const WhatsAppCard: React.FC = () => {
 
     const settingsContent = (
         <>
-            <div className="animate-in fade-in duration-500 max-w-4xl mx-auto pb-20">
+            <div className={`animate-in fade-in duration-500 mx-auto pb-20 ${activeSettingsTab === 'emails' ? 'max-w-6xl' : 'max-w-4xl'}`}>
                 {!embedded && <p className="text-docka-500 dark:text-zinc-400 text-sm mb-6 -mt-2">Preferências do escritório, integração WhatsApp, tabela de planos e portal do cliente.</p>}
 
                 {/* SETTINGS TABS NAVIGATION */}
@@ -1632,6 +1803,10 @@ const WhatsAppCard: React.FC = () => {
                             {/* WhatsApp Templates Section */}
                             <NotificationTemplatesManager />
                         </div>
+                    )}
+
+                    {activeSettingsTab === 'emails' && (
+                        <EmailTemplatesVisualManager />
                     )}
 
                     {activeSettingsTab === 'scout_ai' && (
