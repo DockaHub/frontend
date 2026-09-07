@@ -438,10 +438,18 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     };
 
     useEffect(() => {
-        const urlToken = new URLSearchParams(window.location.search).get('token');
+        const initialParams = new URLSearchParams(window.location.search);
+        const urlToken = initialParams.get('token');
+        const requestedProcessId = initialParams.get('processId');
         if (urlToken) {
             localStorage.setItem('token', urlToken);
-            window.history.replaceState({}, document.title, window.location.pathname);
+            initialParams.delete('token');
+            const preservedSearch = initialParams.toString();
+            window.history.replaceState(
+                {},
+                document.title,
+                `${window.location.pathname}${preservedSearch ? `?${preservedSearch}` : ''}${window.location.hash}`
+            );
         }
 
         const fetchData = async () => {
@@ -478,7 +486,6 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     });
                 });
                 const loadedProcesses = Array.from(processMap.values());
-                const requestedProcessId = new URLSearchParams(window.location.search).get('processId');
                 setProcesses(loadedProcesses);
                 setSelectedProcess(loadedProcesses.find(process => String(process.id) === requestedProcessId) || loadedProcesses[0] || null);
                 setError('');
@@ -514,10 +521,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         const processId = String(selectedProcess?.id || '');
         const waitingForPix = Boolean(subscriptionContext?.subscription?.pixQrCodePayload)
             || oneTimePix?.processId === processId;
-        if (!processId || !waitingForPix) return;
+        const waitingForManualConfirmation = hasSignedContract(selectedProcess) && !hasConfirmedPayment(selectedProcess);
+        if (!processId || (!waitingForPix && !waitingForManualConfirmation)) return;
         const interval = window.setInterval(() => void fetchSubscriptionContext(processId, false), 3_000);
         return () => window.clearInterval(interval);
-    }, [selectedProcess?.id, subscriptionContext?.subscription?.pixQrCodePayload, oneTimePix?.processId]);
+    }, [selectedProcess?.id, selectedProcess?.contractSignStatus, selectedProcess?.contractSignDate, selectedProcess?.paymentStatus, subscriptionContext?.subscription?.pixQrCodePayload, oneTimePix?.processId]);
 
     useEffect(() => () => {
         if (viewTimer.current) window.clearTimeout(viewTimer.current);
