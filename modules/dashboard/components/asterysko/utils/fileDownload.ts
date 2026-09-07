@@ -14,6 +14,29 @@ export const resolveFileUrl = (url: string): string => {
 };
 
 /**
+ * Downloads data already loaded by the application. Using a generic binary MIME
+ * type prevents mobile browsers from replacing the current page with a PDF preview.
+ */
+export const forceDownloadBlob = (data: BlobPart, fileName: string) => {
+    const blob = new Blob([data], { type: 'application/octet-stream' });
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.style.display = 'none';
+    link.href = blobUrl;
+    link.download = fileName;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+
+    // Safari may process the click after the current task finishes.
+    window.setTimeout(() => {
+        if (document.body.contains(link)) document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+    }, 10_000);
+};
+
+/**
  * Triggers an automatic file download in the browser without opening a new tab.
  */
 export const forceDownloadFile = async (rawUrl: string, defaultFileName: string = 'documento.pdf') => {

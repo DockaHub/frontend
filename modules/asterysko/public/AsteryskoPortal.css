@@ -977,12 +977,12 @@
   .ast-onboarding-nav {
     top: 8px;
     height: 58px;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 102px minmax(0, 1fr) 38px;
+    gap: 10px;
     margin-bottom: 16px;
     border-radius: 18px;
     padding: 7px 8px 7px 14px;
   }
-  .ast-onboarding-nav > span { display: none; }
   .ast-onboarding-nav__brand img { width: 102px; }
   .ast-onboarding-nav__exit { width: 38px; height: 38px; }
 }

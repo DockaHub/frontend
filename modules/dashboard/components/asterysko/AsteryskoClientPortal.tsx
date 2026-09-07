@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Check, CheckCircle2, ChevronRight, Clock3, Copy, CreditCard, Download, ExternalLink, FileText, Landmark, LockKeyhole, QrCode, Upload, X } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
-import { forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
+import { forceDownloadBlob, forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
 import AsteryskoAnimatedMark from '../../../asterysko/public/AsteryskoAnimatedMark';
 import { useSystemBarColor } from '../../../asterysko/public/useSystemBarColor';
 import NewTrademarkWizard from './NewTrademarkWizard';
@@ -874,14 +874,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             setProxyDownloading(true);
             setProxyFeedback(null);
             const response = await api.get(`/asterysko/processes/${processId}/proxy/download-pdf`, { responseType: 'blob' });
-            const blobUrl = window.URL.createObjectURL(response.data);
-            const link = document.createElement('a');
-            link.href = blobUrl;
-            link.download = `Procuracao_${brandName.replace(/\s+/g, '_')}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.setTimeout(() => window.URL.revokeObjectURL(blobUrl), 300);
+            forceDownloadBlob(response.data, `Procuracao_${brandName.replace(/\s+/g, '_')}.pdf`);
         } catch (downloadError: any) {
             let message = 'Não foi possível gerar a procuração. Confira seus dados e tente novamente.';
             const errorBody = downloadError.response?.data;
@@ -920,7 +913,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             setProxyFeedback(null);
             const formData = new FormData();
             formData.append('file', file);
-            const response = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData);
+            const response = await api.post(`/asterysko/processes/${processId}/proxy/upload`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             const patch = {
                 proxySignedUrl: response.data?.proxySignedUrl,
                 proxySignStatus: response.data?.proxySignStatus || 'UPLOADED'
@@ -959,7 +954,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             setGruFeedback(null);
             const formData = new FormData();
             formData.append('file', file);
-            const response = await api.post(`/asterysko/processes/${processId}/gru/receipt`, formData);
+            const response = await api.post(`/asterysko/processes/${processId}/gru/receipt`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             const patch = {
                 gruReceiptUrl: response.data?.process?.gruReceiptUrl,
                 gruStatus: response.data?.process?.gruStatus || 'UPLOADED'
@@ -1256,9 +1253,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 <button className="ast-contract-alert" type="button" onClick={() => openProcessFormalization(process)}>
                                     <span className="ast-contract-alert__icon"><FileText size={22} /></span>
                                     <span>
-                                        <small>Formalização · etapa {step + 1} de 5</small>
+                                        <small>{process.brandName} · formalização · etapa {step + 1} de 5</small>
                                         <strong>{titles[step]}</strong>
-                                        <em>Continue de onde parou para liberarmos o protocolo da sua marca.</em>
+                                        <em>Continue o processo da marca {process.brandName} para liberarmos o protocolo.</em>
                                     </span>
                                     <span className="ast-contract-alert__action">Continuar <ChevronRight size={18} /></span>
                                 </button>
