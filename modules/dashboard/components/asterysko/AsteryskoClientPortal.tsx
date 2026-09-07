@@ -310,7 +310,7 @@ const getFormalizationStep = (process: any) => {
     return 4;
 };
 
-const FORMALIZATION_STEPS = ['Contrato', 'Honorários', 'Procuração', 'GRU', 'Finalizado'] as const;
+const FORMALIZATION_STEPS = ['Contrato', 'Pagamento', 'Procuração', 'GRU', 'Finalizado'] as const;
 
 const getTimelineIcon = (item: any) => {
     const searchable = `${item?.type || ''} ${item?.code || ''} ${item?.title || ''}`.toLowerCase();
@@ -393,6 +393,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [oneTimePix, setOneTimePix] = useState<{ processId: string; payload: string; encodedImage?: string | null } | null>(null);
     const [subscriptionFeedback, setSubscriptionFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [pixCopied, setPixCopied] = useState(false);
+    const [paymentChoiceConfirmed, setPaymentChoiceConfirmed] = useState(false);
     const [proxyUploading, setProxyUploading] = useState(false);
     const [proxyDownloading, setProxyDownloading] = useState(false);
     const [proxyFeedback, setProxyFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -623,6 +624,14 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const displayedPaymentHistory = unfilteredPaymentHistory.filter(invoice => formalizationComplete || String(invoice.type || '').toUpperCase() !== 'TAX');
     const subscriptionStatus = String(subscription?.status || '').toUpperCase();
     const subscriptionMethodLabel = subscription?.paymentMethod === 'CREDIT_CARD' ? 'Cartão de crédito' : 'Pix';
+
+    useEffect(() => {
+        if (!selectedProcessId) {
+            setPaymentChoiceConfirmed(false);
+            return;
+        }
+        setPaymentChoiceConfirmed(sessionStorage.getItem(`ast-onboarding-payment-choice:${selectedProcessId}`) === 'confirmed');
+    }, [selectedProcessId]);
 
     useEffect(() => {
         if (!onboarding || formalizationStep !== 3 || federalFeeAvailable || !selectedProcessId) return;
@@ -1049,6 +1058,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             const pixQrCode = response.data?.pixQrCode;
             if (!pixQrCode?.payload) throw new Error('PIX_QR_CODE_NOT_CREATED');
             setOneTimePix({ processId, payload: pixQrCode.payload, encodedImage: pixQrCode.encodedImage });
+            sessionStorage.setItem(`ast-onboarding-payment-choice:${processId}`, 'confirmed');
+            setPaymentChoiceConfirmed(true);
             setPaymentReceipt(null);
         } catch (paymentError: any) {
             setSubscriptionFeedback({
@@ -1097,6 +1108,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 }
             }
             await fetchSubscriptionContext(processId, false);
+            if (paymentSheet !== 'due-date') {
+                sessionStorage.setItem(`ast-onboarding-payment-choice:${processId}`, 'confirmed');
+                setPaymentChoiceConfirmed(true);
+            }
             setCardDraft(EMPTY_CARD);
             setPaymentSheet(null);
             setSubscriptionFeedback({
@@ -1225,7 +1240,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             const step = getFormalizationStep(process);
                             const titles = [
                                 'Seu contrato está pronto para assinatura',
-                                'Escolha a forma de pagamento dos honorários',
+                                'Escolha como pagar sua assinatura',
                                 'Assine sua procuração no Gov.br',
                                 process.gruUrl ? 'A GRU está pronta para pagamento' : 'Estamos preparando a sua GRU'
                             ];
@@ -1492,23 +1507,23 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 {formalizationStep === 1 && (
                                     <section className="ast-formalization__card">
                                         <span className="ast-formalization__icon"><CreditCard size={26} /></span>
-                                        <small>Etapa 2 · Honorários</small>
-                                        <h2>Conclua o pagamento dos honorários</h2>
-                                        <p>Esse pagamento é referente aos serviços da Asterysko. A taxa federal do INPI será disponibilizada separadamente nas próximas etapas.</p>
+                                        <small>Etapa 2 · Pagamento</small>
+                                        <h2>Conclua o pagamento</h2>
+                                        <p>Escolha como pagar sua assinatura Asterysko. A taxa federal do INPI será disponibilizada separadamente nas próximas etapas.</p>
                                         <dl className="ast-formalization__summary">
                                             <div><dt>Marca</dt><dd>{brandName}</dd></div>
                                             <div><dt>Valor</dt><dd>{formatCurrency(serviceAmount)}</dd></div>
-                                            <div><dt>Modalidade</dt><dd>{subscriptionContext?.eligible ? 'Plano mensal' : 'Pagamento único'}</dd></div>
+                                            <div><dt>Modalidade</dt><dd>{subscriptionContext?.eligible ? 'Assinatura mensal' : 'Pagamento único'}</dd></div>
                                         </dl>
                                         {subscriptionFeedback && <p className={`ast-profile-feedback ast-profile-feedback--${subscriptionFeedback.type}`} role="status">{subscriptionFeedback.message}</p>}
-                                        {oneTimePix?.processId === selectedProcessId || subscription?.pixQrCodePayload ? (
+                                        {paymentChoiceConfirmed && (oneTimePix?.processId === selectedProcessId || subscription?.pixQrCodePayload) ? (
                                             <div className="ast-formalization__pix">
                                                 {(oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage) && (
                                                     <img
                                                         src={String(oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage).startsWith('data:')
                                                             ? String(oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage)
                                                             : `data:image/png;base64,${oneTimePix?.encodedImage || subscription?.pixQrCodeEncodedImage}`}
-                                                        alt="QR Code para pagamento dos honorários"
+                                                        alt="QR Code para pagamento da assinatura"
                                                     />
                                                 )}
                                                 <span><strong>Pix pronto para pagamento</strong><small>A confirmação aparecerá automaticamente.</small></span>
@@ -1516,7 +1531,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                             </div>
                                         ) : (
                                             <button className="ast-formalization__primary" type="button" onClick={startServicePayment} disabled={subscriptionLoading || oneTimePaymentSubmitting || (!subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !serviceInvoice)}>
-                                                <QrCode size={18} /> {subscriptionLoading ? 'Carregando cobrança...' : oneTimePaymentSubmitting ? 'Preparando Pix...' : 'Escolher forma de pagamento'}
+                                                <CreditCard size={18} /> {subscriptionLoading ? 'Carregando cobrança...' : oneTimePaymentSubmitting ? 'Preparando pagamento...' : 'Escolher forma de pagamento'}
                                             </button>
                                         )}
                                         {!subscriptionLoading && !subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !serviceInvoice && (
@@ -1560,7 +1575,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                         <span className="ast-formalization__icon"><Landmark size={26} /></span>
                                         <small>Etapa 4 · Taxa federal</small>
                                         <h2>Pague a GRU oficial do INPI</h2>
-                                        <p>Esta taxa é paga diretamente ao Governo Federal e não faz parte dos honorários da Asterysko. Após o pagamento, envie o comprovante.</p>
+                                        <p>Esta taxa é paga diretamente ao Governo Federal e não faz parte da assinatura Asterysko. Após o pagamento, envie o comprovante.</p>
                                         <dl className="ast-formalization__summary">
                                             <div><dt>Serviço</dt><dd>{getValue(federalFeeInvoice?.description, 'Pedido de registro de marca')}</dd></div>
                                             <div><dt>Valor</dt><dd>{formatCurrency(getValue(federalFeeInvoice?.value, federalFeeInvoice?.amount))}</dd></div>
@@ -1796,9 +1811,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     <section className="ast-payment-sheet__panel" onClick={event => event.stopPropagation()}>
                         <header className="ast-payment-sheet__header">
                             <div>
-                                <small>{paymentSheet === 'setup' ? 'Pagamento da fatura' : 'Assinatura Asterysko'}</small>
+                                <small>{paymentSheet === 'setup' ? 'Pagamento da assinatura' : 'Assinatura Asterysko'}</small>
                                 <h2 id="ast-payment-sheet-title">
-                                    {paymentSheet === 'due-date' ? 'Alterar vencimento' : paymentSheet === 'payment-method' ? 'Regularizar pagamento' : 'Pagar mensalidade'}
+                                    {paymentSheet === 'due-date' ? 'Alterar vencimento' : onboarding ? 'Escolha como pagar' : paymentSheet === 'payment-method' ? 'Regularizar pagamento' : 'Pagar mensalidade'}
                                 </h2>
                             </div>
                             <button type="button" disabled={subscriptionSubmitting} onClick={() => setPaymentSheet(null)} aria-label="Fechar"><X size={21} /></button>
