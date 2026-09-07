@@ -47,6 +47,11 @@ const getSignerName = (deal: ContractDeal | null) => {
     return value.replace(/^Assinado digitalmente por\s+/i, '').split('|')[0].trim() || deal?.contactName || 'Cliente';
 };
 
+const ContractPaper = React.memo<{ html: string }>(({ html }) => (
+    <div className="ast-sign-paper" dangerouslySetInnerHTML={{ __html: html }} />
+));
+ContractPaper.displayName = 'ContractPaper';
+
 export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ dealId }) => {
     const [deal, setDeal] = useState<ContractDeal | null>(null);
     const [contractHtml, setContractHtml] = useState('');
@@ -86,18 +91,18 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             setAcknowledgements(current => current.length === labels.length ? current : labels.map(() => false));
             setPdfUrl(response.data.pdfUrl || nextDeal?.pdfUrl || '');
             setSigned(Boolean(nextDeal?.signedAt || nextDeal?.status === 'contract_signed'));
-            if (!signatureName && nextDeal?.contactName) setSignatureName(nextDeal.contactName);
+            if (nextDeal?.contactName) setSignatureName(current => current || nextDeal.contactName || '');
         } catch (error: any) {
             console.error('Error fetching contract', error);
             setLoadError(error?.response?.data?.error || 'Não foi possível carregar este contrato.');
         } finally {
             if (showLoading) setLoading(false);
         }
-    }, [dealId, signatureName]);
+    }, [dealId]);
 
     useEffect(() => {
         void fetchDeal();
-    }, [dealId]);
+    }, [fetchDeal]);
 
     useEffect(() => {
         const page = pageRef.current;
@@ -265,7 +270,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                             <a href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={17} />Baixar PDF</a>
                         </section>
                     )}
-                    <div className="ast-sign-paper" dangerouslySetInnerHTML={{ __html: contractHtml }} />
+                    <ContractPaper html={contractHtml} />
                     <p className="ast-sign-legal-note">Versão aceita: {version}{rectificationVersion ? ` · Retificação cadastral: ${rectificationVersion}` : ''}. Recomendamos guardar uma cópia do PDF assinado.</p>
                 </div>
 
