@@ -107,6 +107,9 @@ const DEFAULT_DOCUMENTS = [
 const PROCESS_STATUS_LABELS: Record<string, string> = {
     WAITING_CONTRACT: 'Aguardando assinatura do contrato',
     WAITING_PAYMENT: 'Aguardando pagamento',
+    WAITING_DOCS: 'Aguardando documentação',
+    WAITING_GRU: 'Aguardando pagamento da GRU',
+    READY_TO_FILE: 'Protocolando',
     NEW: 'Processo iniciado',
     STARTED: 'Processo iniciado',
     FILED: 'Protocolo realizado',
@@ -1643,7 +1646,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     <h2 className="ast-card-title">Andamento</h2>
                                     <div className="ast-timeline-card__body">
                                         {(Array.isArray(selectedProcess?.timeline) ? selectedProcess.timeline : []).map((item: any, index: number) => (
-                                            <div className="ast-timeline-row" key={item.id || `${item.title}-${index}`}>
+                                            <div className={`ast-timeline-row ${item.completed === false ? 'ast-timeline-row--pending' : 'ast-timeline-row--completed'}`} key={item.id || `${item.title}-${index}`}>
                                                 <span className="ast-timeline-row__icon"><img src={`${ASSET_ROOT}/${getTimelineIcon(item)}`} alt="" /></span>
                                                 <div className="ast-timeline-row__details">
                                                     <span className="ast-timeline-row__copy"><strong>{item.title}</strong><small>{item.description}</small></span>

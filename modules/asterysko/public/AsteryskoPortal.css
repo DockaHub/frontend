@@ -1159,7 +1159,8 @@
   background: var(--ast-green);
 }
 
-.ast-timeline-row:first-child .ast-timeline-row__icon { background: #f1f1f1; }
+.ast-timeline-row--pending .ast-timeline-row__icon { background: #f1f1f1; }
+.ast-timeline-row--completed .ast-timeline-row__icon { background: var(--ast-green); }
 .ast-timeline-row__icon img { width: 30px; height: 30px; }
 .ast-timeline-row strong { display: block; font-size: 12px; font-weight: 400; }
 .ast-timeline-row small { display: block; margin-top: 3px; color: #909090; font-size: 10px; }

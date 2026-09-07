@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, FileText, Plus, MoreVertical, Clock, DollarSign, Calendar, UploadCloud, CreditCard, Receipt, Send, Loader2, Eye, Edit2, Trash2, ExternalLink, Copy, CheckCircle2, MessageCircle, Mail, Bell, Smartphone, User, ShieldCheck, AlertTriangle, Download, ImageIcon, Building2, MapPin, Search } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
@@ -550,7 +550,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const [isAdvancingStage, setIsAdvancingStage] = useState(false);
     const [isSendingContract, setIsSendingContract] = useState(false);
     const [isConfirmingGru, setIsConfirmingGru] = useState(false);
+    const [isValidatingProxy, setIsValidatingProxy] = useState(false);
     const [showExaminationBranchModal, setShowExaminationBranchModal] = useState(false);
+    const protocolReceiptInputRef = useRef<HTMLInputElement>(null);
 
     const handleSendContractReminder = async () => {
         if (!currentDeal?.id) return;
@@ -639,6 +641,41 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             if (error.response?.status === 409) await fetchDetails();
         } finally {
             setIsConfirmingGru(false);
+        }
+    };
+
+    const handleValidateProxy = async () => {
+        const processId = currentDeal?.processId || currentDeal?.process?.id;
+        if (!processId) {
+            alert('Este negócio não possui um processo vinculado.');
+            return;
+        }
+        if (!window.confirm('Confirma que a procuração assinada foi conferida e está válida? O cliente será notificado.')) return;
+
+        try {
+            setIsValidatingProxy(true);
+            const response = await api.post(`/asterysko/processes/${processId}/approve-stage`, {
+                stage: 'proxy',
+                notify: true
+            });
+            const notifications = response.data?.notifications;
+            const channelLabel = (status: string | undefined) => status === 'sent'
+                ? 'enviado'
+                : status === 'failed'
+                    ? 'falhou'
+                    : 'não enviado';
+            const channelSummary = notifications
+                ? ` WhatsApp: ${channelLabel(notifications.whatsapp?.status)}; e-mail: ${channelLabel(notifications.email?.status)}; portal: ${channelLabel(notifications.portal?.status)}.`
+                : '';
+            alert(`Procuração validada e registrada no histórico.${channelSummary}`);
+            await fetchDetails();
+            onUpdate?.();
+        } catch (error: any) {
+            console.error('Failed to validate proxy', error);
+            alert(error.response?.data?.error || 'Não foi possível validar a procuração.');
+            if (error.response?.status === 409) await fetchDetails();
+        } finally {
+            setIsValidatingProxy(false);
         }
     };
 
@@ -767,6 +804,8 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 alert(`Guia publicada como cobrança federal separada. WhatsApp: ${channelLabel(whatsappStatus)}. E-mail: ${channelLabel(emailStatus)}.`);
             } else if (uploadType === 'certificate') {
                 alert('🏆 Certificado de Registro enviado com sucesso! O processo foi alterado para CONCLUÍDO e as notificações foram disparadas ao cliente por WhatsApp, E-mail e Portal.');
+            } else if (uploadType === 'protocol') {
+                alert('Recibo enviado. O processo foi confirmado como Protocolado no INPI.');
             } else if (uploadType === 'logo') {
                 alert('Logotipo da marca atualizado com sucesso!');
             } else {
@@ -936,6 +975,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const priority = currentDeal?.priority === 'high' ? 'Alta' : currentDeal?.priority === 'low' ? 'Baixa' : 'Normal';
     const assignedUser = currentDeal?.assignedUser?.name || currentDeal?.assignedUserName || 'Sem dono';
     const isGruStage = currentDeal?.status === 'federal_fee';
+    const isReadyToFileStage = currentDeal?.status === 'ready_to_file';
+    const proxyAwaitingValidation = Boolean(currentDeal?.process?.proxySignedUrl)
+        && String(currentDeal?.process?.proxySignStatus || '').toUpperCase() === 'UPLOADED';
     const gruReceiptUploaded = Boolean(currentDeal?.process?.gruReceiptUrl)
         || String(currentDeal?.process?.gruStatus || '').toUpperCase() === 'UPLOADED';
     const gruPaymentConfirmed = String(currentDeal?.process?.gruStatus || '').toUpperCase() === 'PAID';
@@ -951,7 +993,13 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 desc: 'Acompanhe o envio do comprovante pelo cliente ou consulte a compensação diretamente no INPI.',
                 realBehavior: 'Quando o INPI confirmar o pagamento, registre a homologação para liberar o protocolo.'
             }
-        : getNextAction(currentDeal?.status);
+        : isReadyToFileStage
+            ? {
+                title: 'Protocolar pedido no INPI',
+                desc: 'O cliente já concluiu a formalização. Faça o protocolo no INPI e envie o recibo emitido pelo órgão.',
+                realBehavior: 'O portal mostra Protocolando. Somente o envio do recibo mudará o processo para Protocolado.'
+            }
+            : getNextAction(currentDeal?.status);
 
     // Financial totals
     const serviceInvoices = invoices.filter(inv => String(inv.type || '').toUpperCase() !== 'TAX');
@@ -1656,6 +1704,30 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         <div className="flex flex-col lg:flex-row min-h-full w-full max-w-full overflow-x-hidden">
                             {/* Left Column (Main) */}
                             <div className="flex-1 min-w-0 border-r border-[#e5e5e5] dark:border-zinc-800 p-6 lg:p-8 pb-16 flex flex-col gap-8 max-w-full overflow-x-hidden">
+                                {proxyAwaitingValidation && (
+                                    <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/20">
+                                        <div className="flex items-start gap-3">
+                                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                                <ShieldCheck size={19} />
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <h3 className="text-[14px] font-bold text-amber-950 dark:text-amber-100">Procuração aguardando validação</h3>
+                                                <p className="mt-1 text-[11.5px] leading-relaxed text-amber-800 dark:text-amber-300">
+                                                    O cliente enviou a procuração assinada. Confira o arquivo e confirme a validade para concluir esse marco no portal.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={handleValidateProxy}
+                                            disabled={isValidatingProxy}
+                                            className="ml-auto flex items-center gap-1.5 rounded-full bg-amber-700 px-4 py-2 text-[11px] font-bold text-white transition-colors hover:bg-amber-800 disabled:opacity-50"
+                                        >
+                                            {isValidatingProxy ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                                            Validar procuração
+                                        </button>
+                                    </div>
+                                )}
                                 
                                 {/* Próxima Ação */}
                                 <div>
@@ -1680,15 +1752,19 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                             <button 
                                                 onClick={() => isGruStage
                                                     ? handleConfirmGruPayment()
+                                                    : isReadyToFileStage
+                                                        ? protocolReceiptInputRef.current?.click()
                                                     : currentDeal?.status === 'contract' && !currentDeal?.signedAt
                                                         ? handleSendContractReminder()
                                                         : handleAdvanceStage()}
-                                                disabled={isAdvancingStage || isSendingContract || isConfirmingGru || gruPaymentConfirmed}
+                                                disabled={isAdvancingStage || isSendingContract || isConfirmingGru || isValidatingProxy || (isGruStage && gruPaymentConfirmed) || uploadingFile}
                                                 className="bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[12px] font-bold px-4 py-2 rounded-full hover:bg-blue-800 transition-colors flex items-center gap-1.5 cursor-pointer"
                                             >
                                                 {(isAdvancingStage || isSendingContract || isConfirmingGru) && <Loader2 size={14} className="animate-spin" />}
                                                 {isGruStage
                                                     ? (gruReceiptUploaded ? 'Validar e confirmar GRU' : 'Confirmar pagamento no INPI')
+                                                    : isReadyToFileStage
+                                                        ? 'Enviar recibo de protocolo'
                                                     : currentDeal?.status === 'contract' && !currentDeal?.signedAt
                                                     ? (currentDeal?.processId ? 'Cobrar assinatura' : 'Disponibilizar contrato')
                                                     : 'Concluir e Avançar'}
@@ -2326,7 +2402,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                     <input type="file" className="hidden" onChange={(e) => { handleFileUpload(e.target.files?.[0], 'gru_receipt'); setShowUploadMenu(false); }} />
                                                 </label>
                                                 <label className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
-                                                    <span>Recibo de Protocolo (Privado - Time)</span>
+                                                    <span>Recibo de Protocolo (Público)</span>
                                                     <input type="file" className="hidden" onChange={(e) => { handleFileUpload(e.target.files?.[0], 'protocol'); setShowUploadMenu(false); }} />
                                                 </label>
                                                 <label className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer">
@@ -2416,7 +2492,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     setIsDragging(false);
                                     const droppedFile = e.dataTransfer.files?.[0];
                                     if (droppedFile) {
-                                        const type = prompt('Selecione o tipo de arquivo:\n1 = Procuração Assinada\n2 = Guia GRU\n3 = Comprovante GRU\n4 = Recibo de Protocolo (Privado)\n5 = Certificado', '1');
+                                        const type = prompt('Selecione o tipo de arquivo:\n1 = Procuração Assinada\n2 = Guia GRU\n3 = Comprovante GRU\n4 = Recibo de Protocolo (Público)\n5 = Certificado', '1');
                                         const typeMap: Record<string, string> = { '1': 'proxy', '2': 'gru', '3': 'gru_receipt', '4': 'protocol', '5': 'certificate' };
                                         if (type && typeMap[type]) {
                                             handleFileUpload(droppedFile, typeMap[type]);
@@ -2442,7 +2518,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         { label: '+ Procuração', type: 'proxy' },
                                         { label: '+ Guia GRU', type: 'gru' },
                                         { label: '+ Comprovante GRU', type: 'gru_receipt' },
-                                        { label: '+ Recibo de Protocolo (Privado)', type: 'protocol' },
+                                        { label: '+ Recibo de Protocolo (Público)', type: 'protocol' },
                                         { label: '+ Certificado', type: 'certificate' },
                                     ].map(btn => (
                                         <label key={btn.type} className="bg-white dark:bg-zinc-800 border border-[#e5e5e5] dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-750 transition-colors shadow-xs cursor-pointer">
@@ -2907,6 +2983,17 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                 </div>
 
                 {/* Footer */}
+                <input
+                    ref={protocolReceiptInputRef}
+                    type="file"
+                    accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                    className="hidden"
+                    onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) void handleFileUpload(file, 'protocol');
+                        event.target.value = '';
+                    }}
+                />
                 <div className="bg-white dark:bg-zinc-950 border-t border-[#e5e5e5] dark:border-zinc-800 p-6 flex items-center justify-between shrink-0 z-10">
                     <button 
                         onClick={handleArchiveLead}
@@ -2917,15 +3004,19 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                     <button 
                         onClick={() => isGruStage
                             ? handleConfirmGruPayment()
+                            : isReadyToFileStage
+                                ? protocolReceiptInputRef.current?.click()
                             : currentDeal?.status === 'contract' && !currentDeal?.signedAt
                                 ? handleSendContractReminder()
                                 : handleAdvanceStage()}
-                        disabled={isAdvancingStage || isSendingContract || isConfirmingGru || gruPaymentConfirmed}
+                        disabled={isAdvancingStage || isSendingContract || isConfirmingGru || isValidatingProxy || (isGruStage && gruPaymentConfirmed) || uploadingFile}
                         className="flex-1 max-w-[400px] ml-4 h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[14px] font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                         {(isAdvancingStage || isSendingContract || isConfirmingGru) ? <Loader2 size={18} className="animate-spin" /> : null}
                         {isGruStage
                             ? (gruReceiptUploaded ? 'Validar e confirmar pagamento da GRU' : 'Confirmar pagamento no INPI')
+                            : isReadyToFileStage
+                                ? 'Enviar recibo e confirmar protocolo'
                             : currentDeal?.status === 'contract' && !currentDeal?.signedAt
                             ? (currentDeal?.processId ? 'Cobrar assinatura' : 'Disponibilizar e enviar contrato')
                             : currentPhase === 'commercial' ? 'Avançar etapa comercial' : currentPhase === 'onboarding' ? 'Concluir pendência e avançar' : 'Atualizar andamento'}
