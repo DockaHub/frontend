@@ -327,23 +327,19 @@ const getInitialView = (): PortalView => {
     return requestedView === 'details' || requestedView === 'profile' || requestedView === 'contracts' || requestedView === 'new-registration' ? requestedView : 'home';
 };
 
-const getInitialProcessTab = (): ProcessTab => {
-    const requestedTab = new URLSearchParams(window.location.search).get('tab');
-    return requestedTab === 'formalization' || requestedTab === 'payments' || requestedTab === 'documents' ? requestedTab : 'formalization';
-};
-
 const BackButton = ({ onClick }: { onClick: () => void }) => (
     <button className="ast-round-button" type="button" onClick={onClick} aria-label="Voltar">
         <ArrowLeft size={20} strokeWidth={1.8} />
     </button>
 );
 
-const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab: ProcessTab) => void }) => {
+const ProcessTabs = ({ active, onChange, formalizationComplete }: { active: ProcessTab; onChange: (tab: ProcessTab) => void; formalizationComplete: boolean }) => {
     const tabs: Array<{ id: ProcessTab; label: string; icon: string }> = [
-        { id: 'formalization', label: 'Formalização', icon: 'processo_detalhes-imgMdiSign.svg' },
         { id: 'details', label: 'Detalhes', icon: 'processo_detalhes-imgGgDetailsMore.svg' },
-        { id: 'payments', label: 'Pagamentos', icon: 'processo_detalhes-imgFluentPayment16Regular.svg' },
-        { id: 'documents', label: 'Documentos', icon: 'processo_detalhes-imgGroup1.svg' },
+        ...(formalizationComplete ? [
+            { id: 'payments' as ProcessTab, label: 'Pagamentos', icon: 'processo_detalhes-imgFluentPayment16Regular.svg' },
+            { id: 'documents' as ProcessTab, label: 'Documentos', icon: 'processo_detalhes-imgGroup1.svg' },
+        ] : []),
     ];
 
     return (
@@ -367,7 +363,7 @@ const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab:
 export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, onboarding = false }) => {
     const { user, logout } = useAuth();
     const [view, setView] = useState<PortalView>(() => onboarding ? 'details' : getInitialView());
-    const [processTab, setProcessTab] = useState<ProcessTab>(() => onboarding ? 'formalization' : getInitialProcessTab());
+    const [processTab, setProcessTab] = useState<ProcessTab>(() => onboarding ? 'formalization' : 'details');
     const [clientData, setClientData] = useState<any>(null);
     const [processes, setProcesses] = useState<any[]>([]);
     const [financials, setFinancials] = useState<any>({ invoices: [], contracts: [] });
@@ -592,7 +588,6 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const selectedProcessPaymentConfirmed = hasConfirmedPayment(selectedProcess);
     const selectedProcessContractSigned = hasSignedContract(selectedProcess);
     const selectedProcessProxySubmitted = hasSubmittedProxy(selectedProcess);
-    const selectedProcessProxyStatus = String(selectedProcess?.proxySignStatus || 'PENDING').toUpperCase();
     const subscription = subscriptionContext?.subscription;
     const subscriptionInvoices = Array.isArray(subscriptionContext?.invoices) ? subscriptionContext.invoices : [];
     const selectedProcessId = String(selectedProcess?.id || '');
@@ -619,14 +614,69 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         selectedProcess?.recurringAmount
     );
     const federalFeeCode = String(getValue(selectedProcess?.gruBarcode, federalFeeInvoice?.officialBoletoCode));
-    const displayedPaymentHistory = subscriptionMatchesSelectedProcess && subscription
+    const unfilteredPaymentHistory = subscriptionMatchesSelectedProcess && subscription
         ? [
             ...processInvoices.filter(invoice => String(invoice.type || '').toUpperCase() === 'TAX'),
             ...subscriptionInvoices
         ]
         : processInvoices;
+    const displayedPaymentHistory = unfilteredPaymentHistory.filter(invoice => formalizationComplete || String(invoice.type || '').toUpperCase() !== 'TAX');
     const subscriptionStatus = String(subscription?.status || '').toUpperCase();
     const subscriptionMethodLabel = subscription?.paymentMethod === 'CREDIT_CARD' ? 'Cartão de crédito' : 'Pix';
+
+    useEffect(() => {
+        if (!onboarding || formalizationStep !== 3 || federalFeeAvailable || !selectedProcessId) return;
+        let cancelled = false;
+
+        const refreshFederalFee = async () => {
+            try {
+                const [dashboardResponse, financialResponse] = await Promise.all([
+                    api.get('/asterysko/portal/dashboard'),
+                    api.get('/asterysko/portal/financials'),
+                ]);
+                if (cancelled) return;
+
+                let refreshedProcess: any = null;
+                dashboardResponse.data?.client?.brands?.some((brand: any) => brand.processes?.some((process: any) => {
+                    if (String(process.id) !== selectedProcessId) return false;
+                    refreshedProcess = {
+                        ...process,
+                        brandName: brand.name,
+                        brandLogo: brand.logoUrl,
+                        presentation: process.presentation || brand.presentation,
+                        nclClasses: process.nclClasses?.length ? process.nclClasses : brand.nclClasses,
+                        nature: process.nature || brand.nature,
+                        brandType: process.brandType || brand.brandType,
+                        holders: process.holders || brand.holders,
+                        nclSpecification: process.nclSpecification || brand.nclSpecification,
+                    };
+                    return true;
+                }));
+
+                if (refreshedProcess) {
+                    setSelectedProcess((current: any) => String(current?.id || '') === selectedProcessId ? { ...current, ...refreshedProcess } : current);
+                    setProcesses(current => current.map(process => String(process.id) === selectedProcessId ? { ...process, ...refreshedProcess } : process));
+                    if (refreshedProcess.gruUrl) {
+                        setGruFeedback({ type: 'success', message: 'A GRU foi disponibilizada. Você já pode seguir com o pagamento.' });
+                    }
+                }
+
+                setFinancials({
+                    invoices: Array.isArray(financialResponse.data?.invoices) ? financialResponse.data.invoices : [],
+                    contracts: Array.isArray(financialResponse.data?.contracts) ? financialResponse.data.contracts : [],
+                });
+            } catch (refreshError) {
+                console.error('Error refreshing federal fee availability:', refreshError);
+            }
+        };
+
+        void refreshFederalFee();
+        const interval = window.setInterval(() => void refreshFederalFee(), 10_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(interval);
+        };
+    }, [onboarding, formalizationStep, federalFeeAvailable, selectedProcessId]);
 
     const profileValues: Record<string, string> = {
         name: getProfileValue(getValue(clientData?.name, user?.name)),
@@ -731,16 +781,17 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     };
 
     const openProcess = (process: any) => {
+        if (getFormalizationStep(process) < FORMALIZATION_STEPS.length - 1) {
+            window.location.assign(`/onboarding?processId=${encodeURIComponent(String(process.id))}`);
+            return;
+        }
         setSelectedProcess(process);
-        setProcessTab(getFormalizationStep(process) < FORMALIZATION_STEPS.length - 1 ? 'formalization' : 'details');
+        setProcessTab('details');
         navigateView('details');
     };
 
     const openProcessFormalization = (process: any) => {
-        setSelectedProcess(process);
-        setProcessTab('formalization');
-        setProxyFeedback(null);
-        navigateView('details');
+        window.location.assign(`/onboarding?processId=${encodeURIComponent(String(process.id))}`);
     };
 
     const goHome = () => {
@@ -1400,7 +1451,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             <h1 id="ast-process-title">{brandName}</h1>
                         </header>}
 
-                        {!onboarding && <ProcessTabs active={processTab} onChange={setProcessTab} />}
+                        {!onboarding && <ProcessTabs active={processTab} onChange={setProcessTab} formalizationComplete={formalizationComplete} />}
 
                         {processTab === 'formalization' && (
                             <div key="formalization" className="ast-formalization ast-tab-transition">
@@ -1685,44 +1736,6 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     </article>
                                 )}
 
-                                {federalFeeAvailable && federalFeeStatus !== 'PAID' && !federalFeeReceiptSubmitted && (
-                                    <article className="ast-proxy-task ast-federal-fee-task">
-                                        <div className="ast-proxy-task__heading">
-                                            <span className="ast-proxy-task__icon"><FileText size={24} /></span>
-                                            <span><small>Pagamento ao Governo Federal</small><h2>Taxa oficial do INPI</h2></span>
-                                        </div>
-                                        <p>Esta guia foi emitida pelo INPI e não faz parte da mensalidade da Asterysko. Faça o pagamento diretamente ao Governo Federal e envie o comprovante.</p>
-                                        {federalFeeInvoice && (
-                                            <div className="ast-payment-card__copy">
-                                                <p>Valor da guia: <strong>{formatCurrency(federalFeeInvoice.value || federalFeeInvoice.amount)}</strong></p>
-                                                <p>Vencimento: <strong>{formatDate(federalFeeInvoice.dueDate)}</strong></p>
-                                            </div>
-                                        )}
-                                        <div className="ast-proxy-task__actions">
-                                            <button type="button" onClick={() => download(`/api/asterysko/processes/${selectedProcessId}/gru/download`, `Guia_INPI_${brandName.replace(/\s+/g, '_')}.pdf`)}>
-                                                <Download size={18} /> Baixar guia oficial
-                                            </button>
-                                            <button className="ast-proxy-task__upload" type="button" disabled={gruReceiptUploading} onClick={() => gruReceiptInputRef.current?.click()}>
-                                                <Upload size={18} /> {gruReceiptUploading ? 'Enviando...' : 'Enviar comprovante'}
-                                            </button>
-                                        </div>
-                                        <input ref={gruReceiptInputRef} className="ast-visually-hidden" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" onChange={uploadFederalFeeReceipt} />
-                                    </article>
-                                )}
-
-                                {federalFeeAvailable && federalFeeReceiptSubmitted && federalFeeStatus !== 'PAID' && (
-                                    <article className="ast-proxy-received">
-                                        <span><Check size={19} /></span>
-                                        <div>
-                                            <small>Aguardando validação</small>
-                                            <strong>Comprovante da taxa do INPI recebido</strong>
-                                            <p>Nossa equipe verificará o pagamento antes de liberar o processo para protocolo.</p>
-                                        </div>
-                                    </article>
-                                )}
-
-                                {gruFeedback && <p className={`ast-profile-feedback ast-profile-feedback--${gruFeedback.type}`} role="status">{gruFeedback.message}</p>}
-
                                 <article className="ast-history-card">
                                     <h2 className="ast-card-title">Histórico de pagamento</h2>
                                     {paymentReceiptError && <p className="ast-history-card__error" role="alert">{paymentReceiptError}</p>}
@@ -1750,51 +1763,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                         {processTab === 'documents' && (
                             <div key="documents" className="ast-document-list ast-process-content--documents ast-tab-transition">
-                                {selectedProcessPaymentConfirmed && !selectedProcessProxySubmitted && (
-                                    <article className="ast-proxy-task">
-                                        <div className="ast-proxy-task__heading">
-                                            <span className="ast-proxy-task__icon"><FileText size={24} /></span>
-                                            <span><small>Documento pendente</small><h2>Procuração para o INPI</h2></span>
-                                        </div>
-                                        <p>A procuração já será gerada com seus dados. Conclua os três passos abaixo para enviarmos o pedido ao INPI.</p>
-                                        <ol className="ast-proxy-task__steps">
-                                            <li><span>1</span><strong>Baixe a procuração preenchida</strong></li>
-                                            <li><span>2</span><strong>Assine eletronicamente pelo Gov.br</strong></li>
-                                            <li><span>3</span><strong>Envie aqui o arquivo assinado</strong></li>
-                                        </ol>
-                                        <div className="ast-proxy-task__actions">
-                                            <button type="button" disabled={proxyDownloading} onClick={() => void downloadProxyTemplate()}><Download size={18} /> {proxyDownloading ? 'Gerando...' : 'Baixar procuração'}</button>
-                                            <button className="ast-proxy-task__upload" type="button" disabled={proxyUploading} onClick={() => proxyUploadInputRef.current?.click()}>
-                                                <Upload size={18} /> {proxyUploading ? 'Enviando...' : 'Enviar documento assinado'}
-                                            </button>
-                                        </div>
-                                        <input
-                                            ref={proxyUploadInputRef}
-                                            className="ast-visually-hidden"
-                                            type="file"
-                                            accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
-                                            onChange={uploadSignedProxy}
-                                        />
-                                    </article>
-                                )}
-
-                                {selectedProcessPaymentConfirmed && selectedProcessProxySubmitted && (
-                                    <article className="ast-proxy-received">
-                                        <span><Check size={19} /></span>
-                                        <div>
-                                            <small>{selectedProcessProxyStatus === 'UPLOADED' ? 'Aguardando validação' : 'Documento validado'}</small>
-                                            <strong>Procuração assinada recebida</strong>
-                                            <p>{selectedProcessProxyStatus === 'UPLOADED' ? 'Nossa equipe verificará o arquivo antes de anexá-lo ao processo do INPI.' : 'A procuração está pronta para uso no processo.'}</p>
-                                        </div>
-                                    </article>
-                                )}
-
-                                {proxyFeedback && (
-                                    <p className={`ast-profile-feedback ast-profile-feedback--${proxyFeedback.type}`} role="status">{proxyFeedback.message}</p>
-                                )}
-
                                 {DEFAULT_DOCUMENTS.map(document => {
-                                    if (document.key === 'powerOfAttorney' && !selectedProcessProxySubmitted) return null;
+                                    if (['powerOfAttorney', 'gru', 'gruReceipt'].includes(document.key) && !formalizationComplete) return null;
                                     const url = String(getDocumentUrl(document) || '');
                                     if (!url) return null;
                                     const fileName = getDocumentFileName(document.name, url, document.key === 'logo');
