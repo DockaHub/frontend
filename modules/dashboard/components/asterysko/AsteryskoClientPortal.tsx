@@ -12,6 +12,7 @@ interface AsteryskoClientPortalProps {
     onExit: () => void;
     theme?: 'light' | 'dark';
     onToggleTheme?: () => void;
+    onboarding?: boolean;
 }
 
 type PortalView = 'home' | 'details' | 'profile' | 'contracts' | 'new-registration';
@@ -363,10 +364,10 @@ const ProcessTabs = ({ active, onChange }: { active: ProcessTab; onChange: (tab:
     );
 };
 
-export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit }) => {
+export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ onExit, onboarding = false }) => {
     const { user, logout } = useAuth();
-    const [view, setView] = useState<PortalView>(getInitialView);
-    const [processTab, setProcessTab] = useState<ProcessTab>(getInitialProcessTab);
+    const [view, setView] = useState<PortalView>(() => onboarding ? 'details' : getInitialView());
+    const [processTab, setProcessTab] = useState<ProcessTab>(() => onboarding ? 'formalization' : getInitialProcessTab());
     const [clientData, setClientData] = useState<any>(null);
     const [processes, setProcesses] = useState<any[]>([]);
     const [financials, setFinancials] = useState<any>({ invoices: [], contracts: [] });
@@ -409,7 +410,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const menuTimer = useRef<number | null>(null);
     const subscriptionRequestRef = useRef(0);
 
-    useSystemBarColor(view === 'details' ? '#ffffff' : '#f3f3f3');
+    useSystemBarColor(onboarding ? '#f3f3f3' : view === 'details' ? '#ffffff' : '#f3f3f3');
 
     const fetchSubscriptionContext = async (processId: string, showLoading = true) => {
         const requestId = ++subscriptionRequestRef.current;
@@ -1122,9 +1123,19 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     }
 
     return (
-        <div className="ast-page" ref={pageRef}>
+        <div className={`ast-page ${onboarding ? 'ast-page--onboarding' : ''}`} ref={pageRef}>
             <main className="ast-portal__stage">
-                <header className="ast-desktop-nav" aria-label="Navegação principal do portal">
+                {onboarding && (
+                    <header className="ast-onboarding-nav">
+                        <button className="ast-onboarding-nav__brand" type="button" onClick={() => window.location.assign('/portal')} aria-label="Ir para o portal">
+                            <img src="/assets/asterysko/contract-wordmark.svg" alt="Asterysko" />
+                        </button>
+                        <span><small>Onboarding</small><strong>{brandName}</strong></span>
+                        <button className="ast-onboarding-nav__exit" type="button" onClick={() => window.location.assign('/portal')} aria-label="Fechar onboarding"><X size={20} /></button>
+                    </header>
+                )}
+
+                {!onboarding && <header className="ast-desktop-nav" aria-label="Navegação principal do portal">
                     <button className="ast-desktop-nav__brand" type="button" onClick={goHome} aria-label="Ir para o início">
                         <img src={`${ASSET_ROOT}/brand-mark.svg`} alt="" />
                         <span><strong>Asterysko</strong><small>Portal do cliente</small></span>
@@ -1141,7 +1152,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         <span><strong>{firstName}</strong><small>Menu e suporte</small></span>
                         <img src={`${ASSET_ROOT}/home-imgJamMenu.svg`} alt="" />
                     </button>
-                </header>
+                </header>}
 
                 <div key={view} className={`ast-view-shell ${viewLeaving ? 'ast-view-shell--leaving' : 'ast-view-shell--entering'}`}>
                 {view === 'home' && (
@@ -1379,17 +1390,17 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 )}
 
                 {view === 'details' && (
-                    <section className="ast-process-page" aria-labelledby="ast-process-title">
-                        <header className="ast-process-hero">
+                    <section className={`ast-process-page ${onboarding ? 'ast-process-page--onboarding' : ''}`} aria-labelledby="ast-process-title">
+                        {!onboarding && <header className="ast-process-hero">
                             <div className="ast-process-hero__back"><BackButton onClick={goHome} /></div>
                             <div className="ast-process-hero__meta">
                                 <span className="ast-status-pill">{getProcessStatusLabel(selectedProcess?.status)}</span>
                                 {selectedProcess?.inpiProcessNumber && <span className="ast-process-number">Processo INPI {selectedProcess.inpiProcessNumber}</span>}
                             </div>
                             <h1 id="ast-process-title">{brandName}</h1>
-                        </header>
+                        </header>}
 
-                        <ProcessTabs active={processTab} onChange={setProcessTab} />
+                        {!onboarding && <ProcessTabs active={processTab} onChange={setProcessTab} />}
 
                         {processTab === 'formalization' && (
                             <div key="formalization" className="ast-formalization ast-tab-transition">
@@ -1528,8 +1539,14 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                             ? 'A documentação e o pagamento da taxa foram confirmados. Você pode acompanhar os próximos andamentos neste portal.'
                                             : 'O comprovante da GRU foi anexado ao processo e está aguardando conferência da nossa equipe. Avisaremos assim que o pagamento for confirmado.'}</p>
                                         <div className="ast-formalization__complete-actions">
-                                            <button type="button" onClick={() => setProcessTab('documents')}><FileText size={18} />Ver documentos</button>
-                                            <button type="button" onClick={() => setProcessTab('details')}>Acompanhar processo <ChevronRight size={18} /></button>
+                                            {onboarding ? (
+                                                <button type="button" onClick={() => window.location.assign(`/portal?view=details&tab=details&processId=${encodeURIComponent(selectedProcessId)}`)}>Ir para o portal <ChevronRight size={18} /></button>
+                                            ) : (
+                                                <>
+                                                    <button type="button" onClick={() => setProcessTab('documents')}><FileText size={18} />Ver documentos</button>
+                                                    <button type="button" onClick={() => setProcessTab('details')}>Acompanhar processo <ChevronRight size={18} /></button>
+                                                </>
+                                            )}
                                         </div>
                                     </section>
                                 )}

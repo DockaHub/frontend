@@ -117,7 +117,7 @@ const AppContent: React.FC = () => {
   // Enforce Routing by Role
   useEffect(() => {
     if (!resolvingDomain && isAuthenticated && user) {
-      const isPublicPath = location.pathname.startsWith('/portal') || location.pathname.startsWith('/sign');
+      const isPublicPath = location.pathname.startsWith('/portal') || location.pathname.startsWith('/sign') || location.pathname.startsWith('/onboarding');
       
       // If client is in admin dashboard area, force to portal
       if (user.role === 'CLIENT' && !isPublicPath) {
@@ -349,6 +349,9 @@ const AppContent: React.FC = () => {
       const dealId = location.pathname.split('/')[2];
       return <ContractSignaturePage dealId={dealId} />;
     }
+    if (location.pathname.startsWith('/onboarding')) {
+      return <AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />;
+    }
     // Tenant domain (e.g. cliente.asterysko.com) — NUNCA mostrar a tela da Manyways
     if (isTenantDomain || location.pathname.startsWith('/portal')) {
       return <AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />;
@@ -382,6 +385,7 @@ const AppContent: React.FC = () => {
       <CallOverlay />
       {!location.pathname.startsWith('/portal') && 
        !location.pathname.startsWith('/sign') && 
+       !location.pathname.startsWith('/onboarding') &&
        !location.pathname.startsWith('/dashboard') && 
        !location.pathname.startsWith('/login') &&
        !location.pathname.startsWith('/auth') && (
@@ -435,6 +439,7 @@ const AppContent: React.FC = () => {
             navigate('/dashboard');
           }} />} />
           <Route path="/asterysko" element={<AsteryskoLayout />} />
+          <Route path="/onboarding/*" element={<AsteryskoClientPortal onboarding theme={theme} onToggleTheme={toggleTheme} onExit={() => navigate('/portal')} />} />
           <Route path="/portal/*" element={<AsteryskoClientPortal theme={theme} onToggleTheme={toggleTheme} onExit={() => navigate('/')} />} />
 
           {/* Default & Security Routes */}

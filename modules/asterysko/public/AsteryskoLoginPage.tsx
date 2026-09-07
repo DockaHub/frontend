@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { api } from '../../../services/api';
 import AsteryskoAnimatedMark from './AsteryskoAnimatedMark';
@@ -30,6 +30,7 @@ const formatPhoneMask = (value: string) => {
 
 export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { refreshUser } = useAuth();
     const [step, setStep] = useState<LoginStep>('selection');
     const [loginType, setLoginType] = useState<LoginType>('phone');
@@ -124,7 +125,10 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                 refreshUser(),
                 new Promise(resolve => window.setTimeout(resolve, 1050)),
             ]);
-            navigate('/portal', { replace: true });
+            const destination = location.pathname.startsWith('/onboarding')
+                ? `${location.pathname}${location.search}`
+                : '/portal';
+            navigate(destination, { replace: true });
         } catch (verifyError: any) {
             setPortalLoading(false);
             setError(verifyError.response?.data?.error || 'Código de acesso inválido ou expirado.');

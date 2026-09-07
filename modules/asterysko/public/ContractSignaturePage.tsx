@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowLeft, Check, CheckCircle2, Download, FileCheck2, LockKeyhole, Menu, ShieldCheck, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, Check, CheckCircle2, ChevronRight, Download, FileCheck2, LockKeyhole, Menu, ShieldCheck, X } from 'lucide-react';
 import { api } from '../../../services/api';
 import { useToast } from '../../../context/ToastContext';
 import './ContractSignaturePage.css';
@@ -183,6 +183,11 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
         window.setTimeout(() => signaturePanelRef.current?.querySelector<HTMLInputElement>('input')?.focus({ preventScroll: true }), 550);
     };
 
+    const continueOnboarding = () => {
+        const processQuery = deal?.processId ? `?processId=${encodeURIComponent(deal.processId)}` : '';
+        window.location.assign(`/onboarding${processQuery}`);
+    };
+
     const toggleAcknowledgement = (index: number) => {
         setAcknowledgements(current => current.map((value, itemIndex) => itemIndex === index ? !value : value));
     };
@@ -202,8 +207,6 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             setSigned(true);
             setDeal(response.data?.deal || deal);
             setPdfUrl(response.data?.deal?.pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`);
-            await fetchDeal(false);
-            pageRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
             addToast({ type: 'success', title: 'Contrato assinado', message: 'O PDF foi gerado e anexado ao seu processo.' });
         } catch (error: any) {
             console.error('Error signing contract', error);
@@ -263,13 +266,6 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                 </aside>
 
                 <div className="ast-sign-document-column">
-                    {signed && (
-                        <section className="ast-sign-success" aria-live="polite">
-                            <CheckCircle2 size={26} />
-                            <div><strong>{deal?.legallyRectified ? 'Contrato assinado com dados cadastrais retificados' : 'Contrato assinado e anexado ao processo'}</strong><p>{deal?.legallyRectified ? 'A via original e seu hash permanecem preservados junto da cópia retificada.' : 'O documento foi congelado em PDF com os dados e as evidências deste aceite.'}</p></div>
-                            <a href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={17} />Baixar PDF</a>
-                        </section>
-                    )}
                     <ContractPaper html={contractHtml} />
                     <p className="ast-sign-legal-note">Versão aceita: {version}{rectificationVersion ? ` · Retificação cadastral: ${rectificationVersion}` : ''}. Recomendamos guardar uma cópia do PDF assinado.</p>
                 </div>
@@ -282,7 +278,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                             <h2>Assinatura confirmada</h2>
                             <dl><div><dt>Assinante</dt><dd>{getSignerName(deal)}</dd></div><div><dt>Data e hora</dt><dd>{signedDate}</dd></div><div><dt>Versão</dt><dd>{version}{rectificationVersion ? ` · ${rectificationVersion}` : ''}</dd></div></dl>
                             <a className="ast-sign-primary" href={pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`} download><Download size={18} />Baixar contrato em PDF</a>
-                            <button className="ast-sign-secondary" type="button" onClick={() => window.location.assign(`/portal?view=details&tab=formalization${deal?.processId ? `&processId=${encodeURIComponent(deal.processId)}` : ''}`)}>Continuar formalização</button>
+                            <button className="ast-sign-secondary" type="button" onClick={continueOnboarding}>Continuar formalização</button>
                         </section>
                     ) : (
                         <section className="ast-sign-form" aria-labelledby="ast-sign-form-title">
@@ -313,6 +309,19 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                     <ArrowDown size={18} aria-hidden="true" />
                     <span>Ir para a assinatura</span>
                 </button>
+            )}
+
+            {signed && (
+                <aside className="ast-sign-complete-float" role="status" aria-live="polite">
+                    <span className="ast-sign-complete-float__icon"><CheckCircle2 size={20} aria-hidden="true" /></span>
+                    <span className="ast-sign-complete-float__copy">
+                        <strong>Contrato assinado</strong>
+                        <small>Etapa 1 de 5 concluída</small>
+                    </span>
+                    <button type="button" onClick={continueOnboarding}>
+                        Continuar <ChevronRight size={18} aria-hidden="true" />
+                    </button>
+                </aside>
             )}
         </div>
     );
