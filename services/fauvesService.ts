@@ -133,7 +133,7 @@ export const fauvesService = {
                     ...ev,
                     id: ev.id,
                     title: ev.name || ev.title || 'Sem título',
-                    date: ev.startDate ? new Date(ev.startDate).toLocaleDateString('pt-BR') : (ev.date || '-'),
+                    date: ev.startDate ? new Date(ev.startDate).toLocaleDateString('pt-BR', { timeZone: ev.timezone || 'America/Sao_Paulo' }) : (ev.date || '-'),
                     location: ev.locationCity ? `${ev.locationCity}, ${ev.locationUf}` : (ev.location || '-'),
                     status: ev.status || (ev.isPublished ? 'published' : 'draft'),
                     organizationName: ev.organization?.name || ev.organizationName || 'Sem produtora',
@@ -543,12 +543,8 @@ export const fauvesService = {
     },
 
     createEvent: async (eventData: any) => {
-        try {
-            const response = await fauvesApi.post('event', eventData);
-            return response.data;
-        } catch (error: any) {
-            throw error;
-        }
+        const response = await fauvesApi.post('docka/event', eventData);
+        return response.data;
     },
 
     updateEvent: async (id: string, eventData: any) => {

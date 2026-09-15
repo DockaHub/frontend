@@ -1,14 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Search, RotateCw, Plus, TrendingUp, Calendar, MapPin, ChevronLeft, Eye, ShoppingCart, CheckCircle2, Loader2, ExternalLink, Link as LinkIcon } from 'lucide-react';
+import { Search, RotateCw, Plus, TrendingUp, Calendar, MapPin, ChevronLeft, Eye, ShoppingCart, CheckCircle2, Loader2, ExternalLink, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { FauvesEvent } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
 import EventImporter from './EventImporter';
+import EventEditorForm from './EventEditorForm';
 
 // Add props interface
 interface EventsViewProps {
     initialEventId?: string;
 }
+
+const formatEventDateTime = (value: string | undefined, timezone?: string) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleString('pt-BR', {
+        timeZone: timezone || 'America/Sao_Paulo',
+        dateStyle: 'short',
+        timeStyle: 'short',
+    });
+};
 
 const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
     const [events, setEvents] = useState<FauvesEvent[]>([]);
@@ -106,6 +118,27 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
 
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
+    const handleEventSaved = async () => {
+        setIsCreateModalOpen(false);
+        setIsEditModalOpen(false);
+        await fetchEvents();
+        if (!selectedEvent?.id) return;
+        try {
+            const updatedEvent = await fauvesService.getEvent(selectedEvent.id);
+            setFullEvent(updatedEvent);
+            setSelectedEvent((current) => current ? {
+                ...current,
+                ...updatedEvent,
+                title: updatedEvent.name || updatedEvent.title || current.title,
+                date: updatedEvent.startDate
+                    ? new Date(updatedEvent.startDate).toLocaleDateString('pt-BR', { timeZone: updatedEvent.timezone || 'America/Sao_Paulo' })
+                    : current.date,
+            } : current);
+        } catch (error) {
+            console.error('Failed to refresh event after saving:', error);
+        }
+    };
+
     // Main Content Rendering
     return (
         <div className="animate-in fade-in duration-300 pb-12">
@@ -127,7 +160,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                             >
                                 <Plus size={14} /> Editar Evento
                             </button>
-                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded border ${(fullEvent || selectedEvent)?.status === 'published' || (fullEvent || selectedEvent)?.status === 'active' ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-docka-100 text-docka-600 border-docka-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'}`}>
+                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded border ${(fullEvent || selectedEvent)?.isPublished || ['published', 'active', 'publicado'].includes(String((fullEvent || selectedEvent)?.status || '').toLowerCase()) ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-docka-100 text-docka-600 border-docka-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'}`}>
                                 {(fullEvent || selectedEvent)?.status || 'Rascunho'}
                             </span>
                         </div>
@@ -137,7 +170,14 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                     <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm mb-6 flex flex-col md:flex-row gap-6">
                         {/* Image */}
                         <div className="w-full md:w-48 h-48 bg-docka-100 dark:bg-zinc-800 rounded-lg overflow-hidden shrink-0 border border-docka-200 dark:border-zinc-700">
-                            <img src={(fullEvent || selectedEvent).image} className="w-full h-full object-cover" alt="Cover" />
+                            {(fullEvent || selectedEvent).image ? (
+                                <img src={(fullEvent || selectedEvent).image} className="w-full h-full object-cover" alt="Capa do evento" />
+                            ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-docka-400 dark:text-zinc-500">
+                                    <ImageIcon size={30} />
+                                    <span className="text-xs font-medium">Sem capa</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Info */}
@@ -170,7 +210,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                         <div>
                                             <p className="text-xs font-bold text-docka-700 dark:text-zinc-300">Data de Início</p>
                                             <p className="text-xs text-docka-500 dark:text-zinc-400">
-                                                {(fullEvent || selectedEvent).startDate ? new Date((fullEvent || selectedEvent).startDate).toLocaleString('pt-BR') : (fullEvent || selectedEvent).date}
+                                                {(fullEvent || selectedEvent).startDate ? formatEventDateTime((fullEvent || selectedEvent).startDate, (fullEvent || selectedEvent).timezone) : (fullEvent || selectedEvent).date}
                                             </p>
                                         </div>
                                     </div>
@@ -179,7 +219,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                         <div>
                                             <p className="text-xs font-bold text-docka-700 dark:text-zinc-300">Data de Término</p>
                                             <p className="text-xs text-docka-500 dark:text-zinc-400">
-                                                {(fullEvent || selectedEvent).endDate ? new Date((fullEvent || selectedEvent).endDate).toLocaleString('pt-BR') : '-'}
+                                                {formatEventDateTime((fullEvent || selectedEvent).endDate, (fullEvent || selectedEvent).timezone)}
                                             </p>
                                         </div>
                                     </div>
@@ -187,7 +227,10 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                         <MapPin size={14} className="mt-0.5 text-docka-400" />
                                         <div>
                                             <p className="text-xs font-bold text-docka-700 dark:text-zinc-300">Local</p>
-                                            <p className="text-xs text-docka-500 dark:text-zinc-400">{(fullEvent || selectedEvent).locationCity ? `${(fullEvent || selectedEvent).locationCity} - ${(fullEvent || selectedEvent).locationUf}` : ((fullEvent || selectedEvent).location || '-')}</p>
+                                            <p className="text-xs text-docka-500 dark:text-zinc-400">
+                                                {(fullEvent || selectedEvent).locationName || (fullEvent || selectedEvent).locationAddress || (fullEvent || selectedEvent).location || '-'}
+                                                {(fullEvent || selectedEvent).locationCity && <span className="block">{(fullEvent || selectedEvent).locationCity} - {(fullEvent || selectedEvent).locationUf}</span>}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -386,10 +429,10 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                         onClick={() => setSelectedEvent(event)}
                                         className="group bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:shadow-lg hover:border-docka-300 dark:hover:border-zinc-700 transition-all cursor-pointer flex flex-col"
                                     >
-                                        <div className="h-40 bg-docka-100 dark:bg-zinc-800 relative overflow-hidden">
+                                        <div className="aspect-square bg-docka-100 dark:bg-zinc-800 relative overflow-hidden">
                                             <img src={event.image || 'https://placehold.co/600x400?text=Sem+Capa'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" alt={event.title} />
                                             <div className="absolute top-2 left-2">
-                                                <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider ${event.status === 'published' ? 'bg-emerald-500 text-white' : 'bg-docka-600 text-white'}`}>
+                                                <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider ${event.isPublished || ['published', 'active', 'publicado'].includes(String(event.status).toLowerCase()) ? 'bg-emerald-500 text-white' : 'bg-docka-600 text-white'}`}>
                                                     {event.status}
                                                 </span>
                                             </div>
@@ -402,6 +445,9 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                             <h3 className="font-bold text-docka-900 dark:text-zinc-100 mb-1 line-clamp-2">{event.title}</h3>
                                             <div className="flex items-center text-xs text-docka-500 dark:text-zinc-400">
                                                 <Calendar size={12} className="mr-1.5" /> {event.date}
+                                            </div>
+                                            <div className="flex items-center text-xs text-docka-500 dark:text-zinc-400 mt-1">
+                                                <MapPin size={12} className="mr-1.5 shrink-0" /> <span className="truncate">{event.locationName || event.locationAddress || event.location || 'Local não definido'}</span>
                                             </div>
                                             <div className="mt-auto pt-4 flex justify-between items-center text-xs text-docka-400 dark:text-zinc-500">
                                                 <span className="flex items-center gap-1"><Eye size={12} /> {event.stats?.views || 0}</span>
@@ -439,21 +485,21 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
             )}
 
             {/* MODALS - Rendered in a common area so they are accessible from both views */}
-            <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Criar Novo Evento" size="lg">
-                <EventForm 
+            <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Criar Novo Evento" size="2xl">
+                <EventEditorForm
                     onCancel={() => setIsCreateModalOpen(false)} 
-                    onSuccess={() => { setIsCreateModalOpen(false); fetchEvents(); }}
+                    onSuccess={handleEventSaved}
                     categories={categories}
                     organizations={organizations}
                 />
             </Modal>
 
-            <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Editar Evento" size="lg">
+            <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Editar Evento" size="2xl">
                 {selectedEvent && (
-                    <EventForm 
+                    <EventEditorForm
                         initialData={fullEvent || selectedEvent}
                         onCancel={() => setIsEditModalOpen(false)} 
-                        onSuccess={() => { setIsEditModalOpen(false); fetchEvents(); }}
+                        onSuccess={handleEventSaved}
                         categories={categories}
                         organizations={organizations}
                     />
