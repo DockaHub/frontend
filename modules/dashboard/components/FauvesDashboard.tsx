@@ -13,6 +13,7 @@ const ManagementView = React.lazy(() => import('./fauves/ManagementView'));
 const SupportView = React.lazy(() => import('./fauves/SupportView'));
 const LeadsView = React.lazy(() => import('./fauves/LeadsView'));
 const ReportsView = React.lazy(() => import('./fauves/ReportsView'));
+const FauvesCitiesView = React.lazy(() => import('./fauves/FauvesCitiesView'));
 
 interface FauvesDashboardProps {
     user: User;
@@ -41,6 +42,7 @@ const FauvesDashboard: React.FC<FauvesDashboardProps> = ({ activeView, user }) =
             case 'leads': return <LeadsView />;
             case 'reports': return <ReportsView />;
             case 'categories': return <ManagementView type="categories" />;
+            case 'cities': return <FauvesCitiesView />;
             default: return <PlaceholderView title={`Fauves ${activeView}`} icon={LayoutTemplate} description="Esta área ainda não está disponível para a operação." />;
         }
     };

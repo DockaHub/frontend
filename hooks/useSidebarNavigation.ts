@@ -2,7 +2,7 @@ import {
     LayoutDashboard, Ticket, CreditCard, Mic2, Users,
     BarChart3, Settings, Headphones, FolderOpen,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
-    Network, Search, Trophy, Wallet
+    Network, Search, Trophy, Wallet, MapPinned
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization } from '../types';
@@ -90,6 +90,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'helpdesk', label: 'Suporte', icon: Headphones },
                 { id: 'reports', label: 'Relatórios', icon: BarChart3 },
                 { id: 'categories', label: 'Categorias', icon: FolderOpen },
+                { id: 'cities', label: 'Cidades', icon: MapPinned },
                 { id: 'artists', label: 'Artistas', icon: Mic2 },
                 { id: 'settings', label: 'Configurações', icon: Settings },
             ];
@@ -187,7 +188,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
             }
 
             // Regras para Conteúdo/Operacional (Geral)
-            if (['content', 'events', 'artists', 'properties'].includes(item.id.toLowerCase())) {
+            if (['content', 'events', 'artists', 'categories', 'cities', 'properties'].includes(item.id.toLowerCase())) {
                 return perms.canAccessContent !== false;
             }
 

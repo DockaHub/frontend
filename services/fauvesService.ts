@@ -674,6 +674,31 @@ export const fauvesService = {
         return response.data;
     },
 
+    getCities: async () => {
+        const response = await fauvesApi.get('docka/cities');
+        return response.data?.items || [];
+    },
+
+    createCity: async (data: any) => {
+        const response = await fauvesApi.post('docka/cities', data);
+        return response.data;
+    },
+
+    updateCity: async (id: string, data: any) => {
+        const response = await fauvesApi.put(`docka/city/${id}`, data);
+        return response.data;
+    },
+
+    deactivateCity: async (id: string) => {
+        const response = await fauvesApi.delete(`docka/city/${id}`);
+        return response.data;
+    },
+
+    uploadCityImage: async (dataUrl: string, filename: string) => {
+        const response = await fauvesApi.post('docka/cities/upload-image', { dataUrl, filename });
+        return response.data as { ok: boolean; url: string };
+    },
+
     getUserDetails: async (id: string) => {
         const endpoints = [
             `docka/users/${id}`, // Primary integration endpoint (Enriched)
