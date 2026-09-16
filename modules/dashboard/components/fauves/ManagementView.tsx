@@ -1,9 +1,20 @@
 
-import React, { useState, useEffect } from 'react';
-import { Search, Plus, Link as LinkIcon, Loader2, RotateCw, MoreHorizontal, Pencil, Music, Mic2, Guitar, Headphones, Mic, Volume2, Disc, Film, Palette, Utensils, Plane, Globe, Trash2, Ban, CreditCard } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, Plus, Link as LinkIcon, Loader2, RotateCw, MoreHorizontal, Pencil, Globe, Trash2, Ban, CreditCard } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
 import FauvesUserDetails from './FauvesUserDetails';
+import { CATEGORY_ICON_OPTIONS, getCategoryIcon } from './categoryIcons';
+
+const normalizeIconSearch = (value: string) => value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+const CategoryIconGlyph = ({ name, size = 18 }: { name?: string | null; size?: number }) => {
+    const Icon = getCategoryIcon(name);
+    return <Icon size={size} />;
+};
 
 interface ManagementViewProps {
     type: 'users' | 'artists' | 'categories' | 'ads' | 'slides';
@@ -26,6 +37,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
     const [categoryColor, setCategoryColor] = useState('indigo');
     const [categoryDescription, setCategoryDescription] = useState('');
     const [categoryImageUrl, setCategoryImageUrl] = useState('');
+    const [categoryIconSearch, setCategoryIconSearch] = useState('');
 
     // Slide form state
     const [slideTitle, setSlideTitle] = useState('');
@@ -61,6 +73,19 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
     const [totalPages, setTotalPages] = useState(1);
     const [totalItems, setTotalItems] = useState(0);
     const itemsPerPage = 10;
+
+    const groupedCategoryIcons = useMemo(() => {
+        const query = normalizeIconSearch(categoryIconSearch.trim());
+        const filtered = query
+            ? CATEGORY_ICON_OPTIONS.filter((option) => normalizeIconSearch(
+                `${option.label} ${option.name} ${option.group} ${option.keywords || ''}`,
+            ).includes(query))
+            : CATEGORY_ICON_OPTIONS;
+        return filtered.reduce<Record<string, typeof CATEGORY_ICON_OPTIONS>>((groups, option) => {
+            (groups[option.group] ||= []).push(option);
+            return groups;
+        }, {});
+    }, [categoryIconSearch]);
 
     const config = {
         users: {
@@ -135,21 +160,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
     const renderModalContent = () => {
         switch (type) {
             case 'categories':
-                const iconOptions = [
-                    { name: 'Music', icon: Music },
-                    { name: 'Mic2', icon: Mic2 },
-                    { name: 'Guitar', icon: Guitar },
-                    { name: 'Headphones', icon: Headphones },
-                    { name: 'Mic', icon: Mic },
-                    { name: 'Volume2', icon: Volume2 },
-                    { name: 'Disc', icon: Disc },
-                    { name: 'Film', icon: Film },
-                    { name: 'Palette', icon: Palette },
-                    { name: 'Utensils', icon: Utensils },
-                    { name: 'Plane', icon: Plane },
-                ];
-
-                const SelectedIcon = iconOptions.find(opt => opt.name === categoryIcon)?.icon || Music;
+                const SelectedIcon = getCategoryIcon(categoryIcon);
 
                 return (
                     <div className="space-y-4">
@@ -206,21 +217,44 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto pr-1">
-                                {iconOptions.map(({ name, icon: Icon }) => (
-                                    <button
-                                        key={name}
-                                        type="button"
-                                        onClick={() => setCategoryIcon(name)}
-                                        className={`aspect-square flex items-center justify-center rounded-lg border-2 transition-all ${categoryIcon === name
-                                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/30'
-                                            : 'border-docka-200 dark:border-zinc-700 bg-white dark:bg-zinc-900'
-                                            }`}
-                                    >
-                                        <Icon size={18} className={categoryIcon === name ? 'text-teal-600' : 'text-docka-400'} />
-                                    </button>
-                                ))}
+                            <div className="relative mb-3">
+                                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" />
+                                <input
+                                    value={categoryIconSearch}
+                                    onChange={(event) => setCategoryIconSearch(event.target.value)}
+                                    className="w-full rounded-lg border border-docka-200 bg-white py-2.5 pl-9 pr-3 text-sm text-docka-900 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                                    placeholder="Buscar: família, livros, jogos, tecnologia, corrida…"
+                                />
                             </div>
+
+                            <div className="max-h-80 overflow-y-auto rounded-xl border border-docka-200 bg-docka-50/50 p-3 pr-2 dark:border-zinc-700 dark:bg-zinc-950/40">
+                                {Object.keys(groupedCategoryIcons).length ? Object.entries(groupedCategoryIcons).map(([group, options]) => (
+                                    <div key={group} className="mb-5 last:mb-0">
+                                        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.12em] text-docka-400 dark:text-zinc-500">{group}</p>
+                                        <div className="grid grid-cols-4 gap-2 sm:grid-cols-5 lg:grid-cols-6">
+                                            {options.map(({ name, label, Icon }) => (
+                                                <button
+                                                    key={name}
+                                                    type="button"
+                                                    onClick={() => setCategoryIcon(name)}
+                                                    title={label}
+                                                    aria-label={`Selecionar ícone ${label}`}
+                                                    className={`flex h-16 min-w-0 flex-col items-center justify-center gap-1 rounded-lg border px-1 transition-all ${categoryIcon === name
+                                                        ? 'border-teal-500 bg-teal-50 text-teal-700 shadow-sm dark:bg-teal-900/30 dark:text-teal-300'
+                                                        : 'border-docka-200 bg-white text-docka-500 hover:border-teal-300 hover:text-teal-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400'
+                                                        }`}
+                                                >
+                                                    <Icon size={19} />
+                                                    <span className="w-full truncate text-center text-[9px] font-semibold">{label}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <p className="py-12 text-center text-sm text-docka-400 dark:text-zinc-500">Nenhum ícone encontrado.</p>
+                                )}
+                            </div>
+                            <p className="mt-2 text-[10px] text-docka-400 dark:text-zinc-500">{CATEGORY_ICON_OPTIONS.length} opções organizadas por tema.</p>
                         </div>
 
                         <div>
@@ -609,6 +643,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                     setCategoryColor('indigo');
                                     setCategoryDescription('');
                                     setCategoryImageUrl('');
+                                    setCategoryIconSearch('');
                                 }
                                 setIsModalOpen(true);
                             }}
@@ -756,9 +791,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                                         {row.imageUrl ? (
                                                             <img src={row.imageUrl} alt="" className="w-full h-full object-cover" />
                                                         ) : (
-                                                            <span className="text-xs font-black text-docka-700 dark:text-zinc-300">
-                                                                {(row.name || row.col1 || 'C').substring(0, 2).toUpperCase()}
-                                                            </span>
+                                                            <span className="text-docka-700 dark:text-zinc-300"><CategoryIconGlyph name={row.icon} size={18} /></span>
                                                         )}
                                                     </div>
                                                     <div className="min-w-0">
@@ -775,6 +808,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <span className="w-3.5 h-3.5 rounded-full border border-black/10 dark:border-white/10" style={{ backgroundColor: row.color?.startsWith('#') ? row.color : undefined }} />
+                                                    <span className="text-docka-500 dark:text-zinc-400"><CategoryIconGlyph name={row.icon} size={15} /></span>
                                                     <span className="text-xs text-docka-600 dark:text-zinc-400 font-medium">{row.icon || 'Music'}</span>
                                                 </div>
                                             </td>
@@ -808,6 +842,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                                                         setCategoryColor(row.color || 'indigo');
                                                                         setCategoryDescription(row.description || '');
                                                                         setCategoryImageUrl(row.imageUrl || '');
+                                                                        setCategoryIconSearch('');
                                                                         setIsModalOpen(true);
                                                                         setOpenDropdownId(null);
                                                                     }}
@@ -972,6 +1007,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                     setIsModalOpen(false);
                     setEditingItem(null);
                     setCategoryName(''); setCategorySlug(''); setCategoryIcon('Music'); setCategoryColor('indigo');
+                    setCategoryIconSearch('');
                     setSlideTitle(''); setSlideImage(''); setSlideUF('Universal (todos)'); setSlideOrder('0');
                     setSlideLinkType('Sem link'); setSlideExternalUrl(''); setSlideSearchEvent('');
                     setIsSlideActive(true); setShowSlideTitle(false);
@@ -979,6 +1015,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                     setAdLink(''); setAdLinkText('Saiba mais'); setAdIsActive(true); setAdOrder('0'); setAdStartDate(''); setAdEndDate('');
                 }}
                 title={editingItem ? (type === 'users' ? 'Detalhes do Usuário' : type === 'slides' ? 'Editar slide' : type === 'ads' ? 'Editar Anúncio' : 'Editar categoria') : (type === 'slides' ? 'Novo Slide' : type === 'ads' ? 'Novo Anúncio' : `Criar ${config.btn?.replace('Novo ', '').replace('Nova ', '')}`)}
+                size={type === 'categories' ? 'xl' : 'md'}
                 footer={type === 'users' ? null : (
                     <>
                         <button
@@ -986,6 +1023,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                 setIsModalOpen(false);
                                 setEditingItem(null);
                                 setCategoryName(''); setCategorySlug(''); setCategoryIcon('Music'); setCategoryColor('indigo');
+                                setCategoryIconSearch('');
                                 setSlideTitle(''); setSlideImage(''); setSlideUF('Universal (todos)'); setSlideOrder('0');
                                 setSlideLinkType('Sem link'); setSlideExternalUrl(''); setSlideSearchEvent('');
                                 setIsSlideActive(true); setShowSlideTitle(false);
