@@ -733,7 +733,11 @@
   color: #fff;
   scroll-snap-align: start;
   overflow: hidden;
+  text-decoration: none;
 }
+
+.ast-benefit-card--linked { cursor: pointer; }
+.ast-benefit-card--linked:focus-visible { outline: 3px solid var(--ast-blue); outline-offset: 3px; }
 
 .ast-benefit-card__image {
   position: absolute;

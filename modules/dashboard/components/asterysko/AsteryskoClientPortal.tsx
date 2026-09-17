@@ -75,6 +75,15 @@ interface PaymentReceiptData {
     } | null;
 }
 
+interface PortalBenefit {
+    id: string;
+    title: string;
+    description?: string | null;
+    badge?: string | null;
+    imageUrl?: string | null;
+    linkUrl?: string | null;
+}
+
 type PaymentSheet = 'setup' | 'due-date' | 'payment-method' | null;
 type SubscriptionPaymentMethod = 'PIX' | 'CREDIT_CARD';
 
@@ -370,6 +379,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [clientData, setClientData] = useState<any>(null);
     const [processes, setProcesses] = useState<any[]>([]);
     const [financials, setFinancials] = useState<any>({ invoices: [], contracts: [] });
+    const [benefits, setBenefits] = useState<PortalBenefit[]>([]);
     const [selectedProcess, setSelectedProcess] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -465,7 +475,9 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 const client = dashboardResponse.data?.client;
                 const invoices = financialResponse.data?.invoices;
                 const contracts = financialResponse.data?.contracts;
+                const portalBenefits = dashboardResponse.data?.benefits;
                 setClientData(client || null);
+                setBenefits(Array.isArray(portalBenefits) ? portalBenefits : []);
                 setFinancials({
                     invoices: Array.isArray(invoices) ? invoices : [],
                     contracts: Array.isArray(contracts) ? contracts : [],
@@ -1321,23 +1333,42 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                             </aside>
                         </div>
 
-                        <section className="ast-benefits" aria-labelledby="ast-benefits-title">
-                            <div className="ast-home-section-title">
-                                <div><span>Ecossistema Asterysko</span><h2 id="ast-benefits-title">Mais benefícios</h2></div>
-                            </div>
-                            <div className="ast-benefit-row">
-                                {[0, 1, 2].map(index => (
-                                    <article className="ast-benefit-card" key={index}>
-                                        <img className="ast-benefit-card__image" src={`${ASSET_ROOT}/home-imgImage1.png`} alt="Notebook exibindo o Allyo" />
-                                        <div className="ast-benefit-card__shade">
-                                            <span className="ast-benefit-card__tag">Teste grátis</span>
-                                            <h3>Allyo</h3>
-                                            <p>Time criativo do seu time criativo</p>
-                                        </div>
-                                    </article>
-                                ))}
-                            </div>
-                        </section>
+                        {benefits.length > 0 && (
+                            <section className="ast-benefits" aria-labelledby="ast-benefits-title">
+                                <div className="ast-home-section-title">
+                                    <div><span>Ecossistema Asterysko</span><h2 id="ast-benefits-title">Mais benefícios</h2></div>
+                                </div>
+                                <div className="ast-benefit-row">
+                                    {benefits.map(benefit => {
+                                        const content = (
+                                            <>
+                                                {benefit.imageUrl && <img className="ast-benefit-card__image" src={benefit.imageUrl} alt="" />}
+                                                <div className="ast-benefit-card__shade">
+                                                    {benefit.badge && <span className="ast-benefit-card__tag">{benefit.badge}</span>}
+                                                    <h3>{benefit.title}</h3>
+                                                    {benefit.description && <p>{benefit.description}</p>}
+                                                </div>
+                                            </>
+                                        );
+
+                                        return benefit.linkUrl ? (
+                                            <a
+                                                className="ast-benefit-card ast-benefit-card--linked"
+                                                key={benefit.id}
+                                                href={benefit.linkUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                aria-label={`${benefit.title} (abre em nova aba)`}
+                                            >
+                                                {content}
+                                            </a>
+                                        ) : (
+                                            <article className="ast-benefit-card" key={benefit.id}>{content}</article>
+                                        );
+                                    })}
+                                </div>
+                            </section>
+                        )}
 
                         <img className="ast-home-burst" src={`${ASSET_ROOT}/home-imgGroup26.svg`} alt="" aria-hidden="true" />
                     </section>

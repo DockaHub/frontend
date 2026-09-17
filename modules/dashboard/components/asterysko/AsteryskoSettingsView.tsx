@@ -33,6 +33,17 @@ interface Plan {
     active: boolean;
 }
 
+interface PortalBenefit {
+    id: string;
+    title: string;
+    description: string | null;
+    badge: string | null;
+    imageUrl: string | null;
+    linkUrl: string | null;
+    active: boolean;
+    sortOrder: number;
+}
+
 interface InpiBulkProgress {
     active: boolean;
     total: number;
@@ -71,6 +82,11 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState<Partial<Plan> | null>(null);
     const [saving, setSaving] = useState(false);
+    const [portalBenefits, setPortalBenefits] = useState<PortalBenefit[]>([]);
+    const [loadingBenefits, setLoadingBenefits] = useState(false);
+    const [benefitModalOpen, setBenefitModalOpen] = useState(false);
+    const [selectedBenefit, setSelectedBenefit] = useState<Partial<PortalBenefit> | null>(null);
+    const [benefitSaving, setBenefitSaving] = useState(false);
     const [inpiHistory, setInpiHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [inpiBulkProgress, setInpiBulkProgress] = useState<InpiBulkProgress | null>(null);
@@ -109,8 +125,10 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
             fetchPlans();
         } else if (activeSettingsTab === 'rpi') {
             fetchInpiHistory();
+        } else if (activeSettingsTab === 'portal') {
+            fetchPortalBenefits();
         }
-    }, [activeSettingsTab]);
+    }, [activeSettingsTab, organization?.id]);
 
     useEffect(() => {
         const allowedTabs = visibleTabsKey === 'all'
@@ -275,6 +293,93 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
         } catch (error) {
             console.error('Error deleting plan:', error);
             addToast({ type: 'error', title: 'Erro', message: 'Não foi possível excluir o plano.' });
+        }
+    };
+
+    const fetchPortalBenefits = async () => {
+        if (!organization?.id) return;
+        try {
+            setLoadingBenefits(true);
+            const response = await api.get(`/asterysko/portal-benefits/${organization.id}`);
+            setPortalBenefits(Array.isArray(response.data) ? response.data : []);
+        } catch (error) {
+            console.error('Error fetching portal benefits:', error);
+            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível carregar os benefícios do portal.' });
+        } finally {
+            setLoadingBenefits(false);
+        }
+    };
+
+    const openNewBenefit = () => {
+        const nextOrder = portalBenefits.reduce((highest, benefit) => Math.max(highest, benefit.sortOrder), -1) + 1;
+        setSelectedBenefit({ active: true, sortOrder: nextOrder, title: '', description: '', badge: '', imageUrl: '', linkUrl: '' });
+        setBenefitModalOpen(true);
+    };
+
+    const savePortalBenefit = async () => {
+        if (!organization?.id || !selectedBenefit?.title?.trim()) {
+            addToast({ type: 'error', title: 'Campo obrigatório', message: 'Informe o título do benefício.' });
+            return;
+        }
+
+        const payload = {
+            title: selectedBenefit.title.trim(),
+            description: selectedBenefit.description?.trim() || null,
+            badge: selectedBenefit.badge?.trim() || null,
+            imageUrl: selectedBenefit.imageUrl?.trim() || null,
+            linkUrl: selectedBenefit.linkUrl?.trim() || null,
+            active: selectedBenefit.active !== false,
+            sortOrder: Number(selectedBenefit.sortOrder || 0)
+        };
+
+        try {
+            setBenefitSaving(true);
+            if (selectedBenefit.id) {
+                await api.put(`/asterysko/portal-benefits/${organization.id}/${selectedBenefit.id}`, payload);
+            } else {
+                await api.post(`/asterysko/portal-benefits/${organization.id}`, payload);
+            }
+            addToast({
+                type: 'success',
+                title: 'Benefício salvo',
+                message: selectedBenefit.id ? 'As alterações já estão disponíveis no portal.' : 'O benefício foi adicionado ao portal.'
+            });
+            setBenefitModalOpen(false);
+            setSelectedBenefit(null);
+            await fetchPortalBenefits();
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro ao salvar', message: error.response?.data?.error || 'Não foi possível salvar o benefício.' });
+        } finally {
+            setBenefitSaving(false);
+        }
+    };
+
+    const togglePortalBenefit = async (benefit: PortalBenefit) => {
+        if (!organization?.id) return;
+        try {
+            await api.put(`/asterysko/portal-benefits/${organization.id}/${benefit.id}`, {
+                ...benefit,
+                active: !benefit.active
+            });
+            setPortalBenefits(current => current.map(item => item.id === benefit.id ? { ...item, active: !item.active } : item));
+            addToast({
+                type: 'success',
+                title: benefit.active ? 'Benefício ocultado' : 'Benefício ativado',
+                message: benefit.active ? 'Ele não será mais exibido aos clientes.' : 'Ele já está visível no portal do cliente.'
+            });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro', message: error.response?.data?.error || 'Não foi possível alterar o benefício.' });
+        }
+    };
+
+    const deletePortalBenefit = async (benefit: PortalBenefit) => {
+        if (!organization?.id || !window.confirm(`Excluir o benefício "${benefit.title}"?`)) return;
+        try {
+            await api.delete(`/asterysko/portal-benefits/${organization.id}/${benefit.id}`);
+            setPortalBenefits(current => current.filter(item => item.id !== benefit.id));
+            addToast({ type: 'success', title: 'Benefício excluído', message: 'O benefício foi removido permanentemente.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro', message: error.response?.data?.error || 'Não foi possível excluir o benefício.' });
         }
     };
 
@@ -1975,6 +2080,7 @@ const WhatsAppCard: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     )}
 
@@ -2208,11 +2314,191 @@ const WhatsAppCard: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
+
+                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex flex-wrap justify-between items-center gap-3">
+                                    <div>
+                                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Benefícios do cliente</h3>
+                                        <p className="mt-1 text-xs text-docka-500 dark:text-zinc-400">Somente benefícios ativos aparecem na página inicial do portal.</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={openNewBenefit}
+                                        disabled={!organization}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+                                    >
+                                        <Plus size={16} /> Novo benefício
+                                    </button>
+                                </div>
+
+                                <div className="p-6">
+                                    {loadingBenefits ? (
+                                        <div className="py-8 text-center text-xs text-docka-400">Carregando benefícios...</div>
+                                    ) : portalBenefits.length === 0 ? (
+                                        <div className="rounded-xl border-2 border-dashed border-docka-200 dark:border-zinc-700 px-5 py-8 text-center">
+                                            <p className="text-sm font-bold text-docka-800 dark:text-zinc-200">Nenhum benefício cadastrado</p>
+                                            <p className="mt-1 text-xs text-docka-500 dark:text-zinc-400">A seção de benefícios está totalmente oculta no painel do cliente.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {portalBenefits.map(benefit => (
+                                                <div key={benefit.id} className="flex flex-col gap-4 rounded-xl border border-docka-200 dark:border-zinc-700 p-4 sm:flex-row sm:items-center">
+                                                    <div className="h-16 w-full sm:w-24 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-slate-700 to-slate-950">
+                                                        {benefit.imageUrl && <img src={benefit.imageUrl} alt="" className="h-full w-full object-cover" />}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex flex-wrap items-center gap-2">
+                                                            <strong className="truncate text-sm text-docka-900 dark:text-zinc-100">{benefit.title}</strong>
+                                                            {benefit.badge && <span className="rounded bg-docka-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-bold text-docka-600 dark:text-zinc-300">{benefit.badge}</span>}
+                                                            <span className="text-[10px] text-docka-400">Ordem {benefit.sortOrder}</span>
+                                                        </div>
+                                                        <p className="mt-1 truncate text-xs text-docka-500 dark:text-zinc-400">{benefit.description || 'Sem descrição'}</p>
+                                                    </div>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button
+                                                            type="button"
+                                                            role="switch"
+                                                            aria-checked={benefit.active}
+                                                            aria-label={`${benefit.active ? 'Desativar' : 'Ativar'} ${benefit.title}`}
+                                                            onClick={() => togglePortalBenefit(benefit)}
+                                                            className={`relative h-6 w-11 rounded-full transition-colors ${benefit.active ? 'bg-emerald-500' : 'bg-zinc-300 dark:bg-zinc-700'}`}
+                                                        >
+                                                            <span className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${benefit.active ? 'translate-x-5' : 'translate-x-0'}`} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => { setSelectedBenefit({ ...benefit }); setBenefitModalOpen(true); }}
+                                                            className="p-2 text-docka-500 hover:text-blue-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-950/30 rounded-lg"
+                                                            aria-label={`Editar ${benefit.title}`}
+                                                        >
+                                                            <Edit2 size={16} />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => deletePortalBenefit(benefit)}
+                                                            className="p-2 text-docka-500 hover:text-red-600 hover:bg-red-50 dark:text-zinc-400 dark:hover:bg-red-950/30 rounded-lg"
+                                                            aria-label={`Excluir ${benefit.title}`}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 
                 </div>
             </div>
+
+            <Modal
+                isOpen={benefitModalOpen}
+                onClose={() => { if (!benefitSaving) setBenefitModalOpen(false); }}
+                title={selectedBenefit?.id ? 'Editar benefício' : 'Novo benefício'}
+                size="md"
+                footer={
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setBenefitModalOpen(false)}
+                            disabled={benefitSaving}
+                            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg disabled:opacity-50"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={savePortalBenefit}
+                            disabled={benefitSaving}
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-50"
+                        >
+                            {benefitSaving ? 'Salvando...' : 'Salvar benefício'}
+                        </button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Título *</label>
+                        <input
+                            value={selectedBenefit?.title || ''}
+                            onChange={event => setSelectedBenefit(current => ({ ...current, title: event.target.value }))}
+                            maxLength={120}
+                            placeholder="Ex: Consultoria financeira"
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Descrição</label>
+                        <textarea
+                            value={selectedBenefit?.description || ''}
+                            onChange={event => setSelectedBenefit(current => ({ ...current, description: event.target.value }))}
+                            maxLength={300}
+                            rows={3}
+                            placeholder="Explique brevemente o benefício oferecido."
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Selo</label>
+                            <input
+                                value={selectedBenefit?.badge || ''}
+                                onChange={event => setSelectedBenefit(current => ({ ...current, badge: event.target.value }))}
+                                maxLength={60}
+                                placeholder="Ex: 20% de desconto"
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Ordem</label>
+                            <input
+                                type="number"
+                                min={0}
+                                max={9999}
+                                value={selectedBenefit?.sortOrder ?? 0}
+                                onChange={event => setSelectedBenefit(current => ({ ...current, sortOrder: Number(event.target.value) }))}
+                                className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">URL da imagem</label>
+                        <input
+                            type="url"
+                            value={selectedBenefit?.imageUrl || ''}
+                            onChange={event => setSelectedBenefit(current => ({ ...current, imageUrl: event.target.value }))}
+                            placeholder="https://..."
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Link ao clicar</label>
+                        <input
+                            type="url"
+                            value={selectedBenefit?.linkUrl || ''}
+                            onChange={event => setSelectedBenefit(current => ({ ...current, linkUrl: event.target.value }))}
+                            placeholder="https://..."
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <label className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 dark:border-zinc-700 p-4 cursor-pointer">
+                        <span>
+                            <strong className="block text-sm text-slate-900 dark:text-zinc-100">Benefício ativo</strong>
+                            <small className="text-xs text-slate-500 dark:text-zinc-400">Exibir este cartão para os clientes.</small>
+                        </span>
+                        <input
+                            type="checkbox"
+                            checked={selectedBenefit?.active !== false}
+                            onChange={event => setSelectedBenefit(current => ({ ...current, active: event.target.checked }))}
+                            className="h-4 w-4"
+                        />
+                    </label>
+                </div>
+            </Modal>
 
             {/* MODAL: ADD/EDIT FEE */}
             <Modal
