@@ -4,6 +4,7 @@ import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewClientModal from './AsteryskoNewClientModal';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
+import { formatActivityContent, formatActivityMetadata, formatActivitySource } from './utils/activityPresentation';
 
 interface Client {
     id: string;
@@ -193,7 +194,7 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                     <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                         <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 p-4"><small className="text-zinc-500">Presença</small><strong className={`mt-1 block text-sm ${activityData.presence?.online ? 'text-emerald-600' : 'text-zinc-700 dark:text-zinc-200'}`}>{activityData.presence?.online ? '● Online agora' : 'Offline'}</strong></div>
                                         <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 p-4"><small className="text-zinc-500">Último acesso</small><strong className="mt-1 block text-sm text-zinc-800 dark:text-white">{activityData.presence?.lastSeenAt ? new Date(activityData.presence.lastSeenAt).toLocaleString('pt-BR') : 'Nunca acessou'}</strong></div>
-                                        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 p-4"><small className="text-zinc-500">Canal</small><strong className="mt-1 block text-sm text-zinc-800 dark:text-white">{activityData.presence?.session?.sourceChannel === 'whatsapp' ? 'WhatsApp' : activityData.presence?.session?.sourceChannel === 'email' ? 'E-mail' : activityData.presence?.session?.sourceChannel || '—'}</strong></div>
+                                        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 p-4"><small className="text-zinc-500">Canal de acesso</small><strong className="mt-1 block text-sm text-zinc-800 dark:text-white">{formatActivitySource(activityData.presence?.session?.sourceChannel) || '—'}</strong></div>
                                     </section>
 
                                     {activityData.sessions?.length > 0 && (
@@ -214,16 +215,31 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                     <section>
                                         <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Linha do tempo</h4>
                                         <div className="border-l-2 border-zinc-200 dark:border-zinc-700 ml-3 space-y-4">
-                                            {activityData.activities?.length ? activityData.activities.map((event: any) => (
-                                                <article key={event.id} className="relative pl-6">
-                                                    <span className="absolute -left-[7px] top-2 h-3 w-3 rounded-full bg-[#0412dd] ring-4 ring-white dark:ring-zinc-900" />
-                                                    <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
-                                                        <strong className="text-sm text-black dark:text-white">{event.content}</strong>
-                                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500"><Clock3 size={12} />{new Date(event.createdAt).toLocaleString('pt-BR')}{event.sourceChannel && <span>· {event.sourceChannel === 'whatsapp' ? 'WhatsApp' : event.sourceChannel === 'email' ? 'E-mail' : event.sourceChannel}</span>}</div>
-                                                        {event.metadata && <div className="mt-2 flex flex-wrap gap-1">{Object.entries(event.metadata).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).slice(0, 6).map(([key, value]) => <span key={key} className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-1 text-[10px] text-zinc-600 dark:text-zinc-300">{key}: {String(value)}</span>)}</div>}
-                                                    </div>
-                                                </article>
-                                            )) : <p className="pl-6 text-sm text-zinc-500">Nenhuma atividade registrada.</p>}
+                                            {activityData.activities?.length ? activityData.activities.map((event: any) => {
+                                                const details = formatActivityMetadata(event.metadata);
+                                                return (
+                                                    <article key={event.id} className="relative pl-6">
+                                                        <span className="absolute -left-[7px] top-2 h-3 w-3 rounded-full bg-[#0412dd] ring-4 ring-white dark:ring-zinc-900" />
+                                                        <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+                                                            <strong className="text-sm text-black dark:text-white">{formatActivityContent(event.content)}</strong>
+                                                            <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500">
+                                                                <Clock3 size={12} />
+                                                                {new Date(event.createdAt).toLocaleString('pt-BR')}
+                                                                {event.sourceChannel && <span>· Origem: {formatActivitySource(event.sourceChannel)}</span>}
+                                                            </div>
+                                                            {details.length > 0 && (
+                                                                <div className="mt-2 flex flex-wrap gap-1.5">
+                                                                    {details.map(detail => (
+                                                                        <span key={detail.key} className="rounded-lg bg-zinc-100 px-2.5 py-1.5 text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                                                                            <span className="text-zinc-500 dark:text-zinc-400">{detail.label}:</span> {detail.value}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </article>
+                                                );
+                                            }) : <p className="pl-6 text-sm text-zinc-500">Nenhuma atividade registrada.</p>}
                                         </div>
                                     </section>
                                 </div>
