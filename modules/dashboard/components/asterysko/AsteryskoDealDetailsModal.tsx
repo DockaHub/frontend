@@ -5,6 +5,7 @@ import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 import { forceDownloadFile } from './utils/fileDownload';
 import { getPhaseForStage, getStagesForPhase } from './config/crmConfig';
 import { useAuth } from '../../../../context/AuthContext';
+import { formatActivityContent, formatActivityMetadata, formatActivitySource } from './utils/activityPresentation';
 
 // Resolve uma URL relativa ou absoluta para uma URL completa de imagem/arquivo
 const resolveUrl = (rawUrl: string | undefined | null): string => {
@@ -1177,15 +1178,15 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             if (isWaFailed) {
                 dispatches.push({
                     type: 'whatsapp',
-                    label: 'WhatsApp Falhou',
+                    label: 'Falha no WhatsApp',
                     isError: true,
-                    mockupTitle: `🔴 Falha no Envio do WhatsApp`,
+                    mockupTitle: `🔴 Falha ao enviar pelo WhatsApp`,
                     mockupText: `ERRO DE ENVIO / CONEXÃO DO WHATSAPP:\n\n${meta.whatsappError || 'O WhatsApp estava desconectado ou a sessão expirou no momento do avanço de etapa.'}\n\nMensagem que tentou enviar:\n"${meta.whatsappMessageSent || `Olá ${clientName}! Atualização na etapa ${getStatusLabel(status)}.`}"\n\nAção Recomendada: Acesse a página de Configurações no menu lateral para reconectar o WhatsApp via QR Code.`
                 });
             } else if (isWaSent) {
                 dispatches.push({
                     type: 'whatsapp',
-                    label: 'WhatsApp Enviado',
+                    label: 'WhatsApp enviado',
                     mockupTitle: `WhatsApp: ${content}`,
                     mockupText: meta.whatsappMessageSent || `Olá ${clientName}! Seu processo de registro da marca "${dealTitle}" teve uma atualização importante na etapa "${getStatusLabel(status)}". Acompanhe todos os detalhes diretamente na sua área do cliente.`
                 });
@@ -1194,8 +1195,8 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             if (meta.emailStatus === 'sent' || !hasNotificationMetadata) {
                 dispatches.push({
                     type: 'email',
-                    label: 'E-mail Transacional',
-                    mockupTitle: `E-mail Transacional: ${content}`,
+                    label: 'E-mail enviado',
+                    mockupTitle: `E-mail enviado: ${content}`,
                     mockupText: `Notificação de Atualização do Registro de Marca:\n\nPrezado(a) ${clientName},\n\nInformamos que houve uma movimentação no seu processo de registro de marca "${dealTitle}".\n\nResumo da Ação: ${content}\nEtapa Atual: ${getStatusLabel(status)}\n\nVocê pode consultar seus documentos e recibos diretamente na sua área do cliente no portal da Asterysko.\n\nAtenciosamente,\nEquipe Asterysko Registro de Marcas`
                 });
             }
@@ -1203,8 +1204,8 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             if (meta.portalStatus === 'sent' || !hasNotificationMetadata) {
                 dispatches.push({
                     type: 'app',
-                    label: 'App Push',
-                    mockupTitle: `Push App: ${dealTitle}`,
+                    label: 'Aviso no portal',
+                    mockupTitle: `Aviso no portal: ${dealTitle}`,
                     mockupText: `Atualização no seu processo "${dealTitle}": ${content}.`
                 });
             }
@@ -1226,7 +1227,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         {/* Close bar */}
                         <div className="w-full flex justify-between items-center text-white px-2">
                             <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                                <ShieldCheck size={16} className="text-green-400" /> Mockup de Notificação Real Disparada
+                                <ShieldCheck size={16} className="text-green-400" /> Prévia da comunicação enviada
                             </span>
                             <button 
                                 onClick={() => setActiveNotificationMockup(null)}
@@ -2817,8 +2818,8 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         <div className="p-8 pb-16 max-w-3xl mx-auto min-h-full">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h3 className="font-season text-[24px] font-[420] text-black dark:text-white">Linha do Tempo e Log de Notificações</h3>
-                                    <p className="text-[13px] text-[#666] dark:text-zinc-400">Histórico completo de auditoria do processo e disparos de comunicação.</p>
+                                    <h3 className="font-season text-[24px] font-[420] text-black dark:text-white">Histórico de atividades</h3>
+                                    <p className="text-[13px] text-[#666] dark:text-zinc-400">Acompanhe, em ordem, tudo o que aconteceu neste atendimento.</p>
                                 </div>
                                 <div className={`rounded-full px-3 py-1.5 text-xs font-bold ${currentDeal?.portalPresence?.online ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}>
                                     {currentDeal?.portalPresence?.online
@@ -2842,9 +2843,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         });
 
                                         const dispatches = getNotificationDispatchesForActivity(event);
-                                        const activityDetails = Object.entries(event.metadata || {})
-                                            .filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value))
-                                            .slice(0, 6);
+                                        const activityDetails = formatActivityMetadata(event.metadata);
 
                                         return (
                                             <div key={idx} className="relative pl-8 group">
@@ -2855,7 +2854,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 <div className="bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 p-5 rounded-2xl shadow-xs flex flex-col gap-3">
                                                     <div>
                                                         <h4 className="text-[14px] font-bold text-black dark:text-white leading-snug mb-1">
-                                                            {event.content}
+                                                            {formatActivityContent(event.content)}
                                                         </h4>
                                                         <div className="flex items-center gap-2 text-[11.5px] text-zinc-500 dark:text-zinc-400 font-medium">
                                                             <span className="flex items-center gap-1">
@@ -2866,8 +2865,12 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                         </div>
                                                         {(event.sourceChannel || activityDetails.length > 0) && (
                                                             <div className="mt-2 flex flex-wrap gap-1.5">
-                                                                {event.sourceChannel && <span className="rounded-md bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300">Origem: {event.sourceChannel === 'whatsapp' ? 'WhatsApp' : event.sourceChannel === 'email' ? 'E-mail' : event.sourceChannel}</span>}
-                                                                {activityDetails.map(([key, value]) => <span key={key} className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{key}: {String(value)}</span>)}
+                                                                {event.sourceChannel && <span className="rounded-lg bg-indigo-50 px-2.5 py-1.5 text-[11px] font-bold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300">Origem: {formatActivitySource(event.sourceChannel)}</span>}
+                                                                {activityDetails.map(detail => (
+                                                                    <span key={detail.key} className="rounded-lg bg-zinc-100 px-2.5 py-1.5 text-[11px] font-medium text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                                                                        <span className="text-zinc-500 dark:text-zinc-400">{detail.label}:</span> {detail.value}
+                                                                    </span>
+                                                                ))}
                                                             </div>
                                                         )}
                                                     </div>
@@ -2876,7 +2879,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                     {dispatches.length > 0 && (
                                                         <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-col gap-2">
                                                             <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                                                Notificações Disparadas (Clique para ver o mockup):
+                                                                Comunicações enviadas — clique para visualizar:
                                                             </p>
 
                                                             <div className="flex flex-wrap gap-2">
@@ -2939,7 +2942,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                             {/* Default Initial Notifications Dispatches */}
                                             <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 flex flex-col gap-2">
                                                 <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                                                    Notificações Iniciais Enviadas ao Cliente (Clique no mockup):
+                                                    Comunicações iniciais enviadas ao cliente — clique para visualizar:
                                                 </p>
 
                                                 <div className="flex flex-wrap gap-2">
