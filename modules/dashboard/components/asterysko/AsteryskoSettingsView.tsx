@@ -733,7 +733,7 @@ const NotificationTemplatesManager: React.FC = () => {
 
     return (
         <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-8">
-            <div className="p-6 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/20 dark:bg-zinc-800/20 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div className="flex flex-col items-start justify-between gap-4 border-b border-docka-100 bg-docka-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-800/20 sm:p-6 md:flex-row md:items-center">
                 <div>
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                         <MessageSquare size={16} className="text-emerald-500" /> Automação de Mensagens & Notificações
@@ -745,13 +745,13 @@ const NotificationTemplatesManager: React.FC = () => {
 
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95"
+                    className="flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 md:min-h-0 md:w-auto"
                 >
                     <Plus size={14} /> Nova Notificação
                 </button>
             </div>
 
-            <div className="flex border-b border-docka-100 dark:border-zinc-800 bg-docka-50/50 dark:bg-zinc-900/50 px-6 pt-3 gap-2 overflow-x-auto">
+            <div className="custom-scrollbar flex gap-2 overflow-x-auto border-b border-docka-100 bg-docka-50/50 px-4 pt-3 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-6">
                 <button
                     onClick={() => setActiveChannel('WHATSAPP')}
                     className={`px-4 py-2.5 rounded-t-xl font-bold text-xs flex items-center gap-2 border-b-2 transition-all ${
@@ -795,7 +795,7 @@ const NotificationTemplatesManager: React.FC = () => {
                 </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="space-y-4 p-4 sm:p-6">
                 {loading ? (
                     <div className="py-12 text-center text-docka-400 text-xs italic flex items-center justify-center gap-2">
                         <RefreshCw size={14} className="animate-spin" /> Carregando modelo de notificações...
@@ -822,7 +822,7 @@ const NotificationTemplatesManager: React.FC = () => {
                             return (
                                 <div 
                                     key={tpl.id} 
-                                    className={`p-5 border rounded-2xl transition-all duration-300 shadow-sm ${
+                                    className={`rounded-2xl border p-4 shadow-sm transition-all duration-300 sm:p-5 ${
                                         tpl.isActive 
                                             ? 'bg-white dark:bg-zinc-900 border-docka-200 dark:border-zinc-800' 
                                             : 'bg-zinc-50/60 dark:bg-zinc-900/40 border-zinc-200/60 dark:border-zinc-800/40 opacity-75'
@@ -1075,7 +1075,7 @@ const NotificationTemplatesManager: React.FC = () => {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Canal de Disparo</label>
                             <select
@@ -1499,7 +1499,7 @@ const CrmStageTaskManager: React.FC = () => {
 
     return (
         <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-6">
-            <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col justify-between gap-4 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:flex-row sm:items-center sm:px-6">
                 <div>
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                         <CheckSquare size={16} className="text-[#0412dd] dark:text-[#3b48ff]" /> Gerenciador de Tarefas por Etapa (CRM)
@@ -1510,14 +1510,14 @@ const CrmStageTaskManager: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="px-4 py-2 bg-[#0412dd] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+                    className="flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#0412dd] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 sm:min-h-0 sm:w-auto"
                 >
                     <Plus size={14} /> + Nova Tarefa
                 </button>
             </div>
 
             {/* Stages Selector Tabs */}
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
                 <div className="flex gap-2 overflow-x-auto pb-3 custom-scrollbar border-b border-docka-100 dark:border-zinc-800 mb-6">
                     {stagesList.map(st => {
                         const count = (tasksMap[st.key] || []).length;
@@ -1564,7 +1564,7 @@ const CrmStageTaskManager: React.FC = () => {
                                     </div>
                                     <button
                                         onClick={() => handleDeleteTask(task.id)}
-                                        className="p-1.5 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                                        className="rounded-lg p-1.5 text-zinc-400 opacity-100 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 lg:opacity-0 lg:group-hover:opacity-100"
                                         title="Excluir tarefa"
                                     >
                                         <Trash2 size={14} />
@@ -1756,7 +1756,7 @@ const WhatsAppCard: React.FC = () => {
 
     return (
         <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-            <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
                 <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                     <MessageSquare size={16} className="text-emerald-500" /> Conexão WhatsApp (Evolution API)
                 </h3>
@@ -1780,10 +1780,10 @@ const WhatsAppCard: React.FC = () => {
                     </button>
                 </div>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
                 {status === 'connected' ? (
                     <div className="space-y-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 rounded-full bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600">
                                     <Smartphone size={24} />
@@ -1796,7 +1796,7 @@ const WhatsAppCard: React.FC = () => {
                             <button
                                 onClick={handleDisconnect}
                                 disabled={checking}
-                                className="px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl border border-red-100 dark:border-red-900/30 transition-colors flex items-center gap-2"
+                                className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-red-100 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20 sm:min-h-0"
                             >
                                 <Power size={14} /> Desconectar
                             </button>
@@ -1804,7 +1804,7 @@ const WhatsAppCard: React.FC = () => {
 
                         <div className="pt-6 border-t border-docka-100 dark:border-zinc-800">
                             <h4 className="text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-3">Teste de Envio</h4>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row">
                                 <input 
                                     type="text" 
                                     placeholder="Número (Ex: 5511999999999)"
@@ -1815,7 +1815,7 @@ const WhatsAppCard: React.FC = () => {
                                 <button
                                     onClick={handleSendTest}
                                     disabled={sendingTest || !testNumber}
-                                    className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 disabled:opacity-50 sm:min-h-0"
                                 >
                                     {sendingTest ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}
                                     Enviar Teste
@@ -1875,18 +1875,18 @@ const WhatsAppCard: React.FC = () => {
 
     const settingsContent = (
         <>
-            <div className={`animate-in fade-in duration-500 mx-auto pb-20 ${activeSettingsTab === 'emails' ? 'max-w-6xl' : 'max-w-4xl'}`}>
+            <div className={`mx-auto pb-10 animate-in fade-in duration-500 sm:pb-20 ${activeSettingsTab === 'emails' ? 'max-w-6xl' : 'max-w-4xl'}`}>
                 {!embedded && <p className="text-docka-500 dark:text-zinc-400 text-sm mb-6 -mt-2">Preferências do escritório, integração WhatsApp, tabela de planos e portal do cliente.</p>}
 
                 {/* SETTINGS TABS NAVIGATION */}
-                <div className="flex border-b border-docka-200 dark:border-zinc-800 mb-8 bg-white dark:bg-zinc-900 rounded-2xl p-1.5 shadow-sm gap-1 overflow-x-auto">
+                <div className="custom-scrollbar mb-5 flex snap-x snap-mandatory gap-1 overflow-x-auto rounded-2xl border-b border-docka-200 bg-white p-1.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:mb-8">
                     {availableTabs.map((tab) => {
                         const TabIcon = tab.icon;
                         return (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveSettingsTab(tab.id)}
-                                className={`flex-1 min-w-[160px] py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                                className={`flex min-h-11 min-w-[145px] flex-1 snap-start items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-bold transition-all sm:min-w-[160px] sm:px-4 ${
                                     activeSettingsTab === tab.id
                                         ? 'bg-[#0412dd] text-white shadow-md'
                                         : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
@@ -1898,7 +1898,7 @@ const WhatsAppCard: React.FC = () => {
                     })}
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-5 sm:space-y-8">
                     
                     {/* TAB 1: NOTIFICATIONS & WHATSAPP */}
                     {activeSettingsTab === 'notifications' && (
@@ -2092,23 +2092,23 @@ const WhatsAppCard: React.FC = () => {
                         <div className="space-y-8 animate-in fade-in duration-300">
                             {/* Fees Table Section */}
                             <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
+                                <div className="flex flex-col items-stretch justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:flex-row sm:items-center sm:px-6">
                                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                                         <CreditCard size={16} /> Tabela de Planos Asterysko
                                     </h3>
                                     <button
                                         onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0, billingMode: 'ONE_TIME', taxChargeTiming: 'SEPARATE', active: true }); setIsModalOpen(true); }}
-                                        className="px-3 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 flex items-center gap-1.5 shadow-sm"
+                                        className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 sm:min-h-0"
                                     >
                                         <Plus size={14} /> Novo Plano
                                     </button>
                                 </div>
-                                <div className="p-6">
+                                <div className="p-4 sm:p-6">
                                     {loading ? (
                                         <div className="py-8 text-center text-docka-400 text-xs italic">Carregando honorários...</div>
                                     ) : (
-                                        <>
-                                            <table className="w-full text-sm text-left">
+                                        <div className="overflow-x-auto overscroll-x-contain">
+                                            <table className="w-full min-w-[760px] text-left text-sm">
                                                 <thead className="text-xs text-docka-500 dark:text-zinc-500 uppercase font-semibold border-b border-docka-100 dark:border-zinc-800 tracking-wider">
                                                     <tr>
                                                         <th className="pb-3 text-left">Plano / Serviço</th>
@@ -2141,7 +2141,7 @@ const WhatsAppCard: React.FC = () => {
                                                                 R$ {Number(plan.commissionOps || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                                             </td>
                                                             <td className="py-3 text-right">
-                                                                <div className="flex gap-2 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                <div className="flex justify-end gap-2 opacity-100 transition-opacity lg:opacity-0 lg:group-hover:opacity-100">
                                                                     <button
                                                                         onClick={() => { setSelectedPlan(plan); setIsModalOpen(true); }}
                                                                         className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
@@ -2165,7 +2165,7 @@ const WhatsAppCard: React.FC = () => {
                                                     )}
                                                 </tbody>
                                             </table>
-                                        </>
+                                        </div>
                                     )}
                                     <div className="mt-6 p-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-900/30 flex gap-3">
                                         <Info size={16} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
@@ -2183,27 +2183,27 @@ const WhatsAppCard: React.FC = () => {
                         <div className="space-y-8 animate-in fade-in duration-300">
                             {/* Client Portal Management */}
                             <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex justify-between items-center">
+                                <div className="flex items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
                                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                                         <Users size={16} /> Portal do Cliente
                                     </h3>
                                     <span className="text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">ATIVO</span>
                                 </div>
-                                <div className="p-6 space-y-6">
+                                <div className="space-y-6 p-4 sm:p-6">
                                     <div className="flex items-center gap-4">
                                         <div className="flex-1">
                                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Link de Acesso Geral</label>
-                                            <div className="flex gap-2">
-                                                <div className="flex-1 flex items-center bg-docka-50 dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-sm text-docka-600 dark:text-zinc-400">
+                                            <div className="flex flex-col gap-2 sm:flex-row">
+                                                <div className="flex min-w-0 flex-1 items-center rounded-xl border border-docka-200 bg-docka-50 px-3 py-2 text-sm text-docka-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
                                                     <Link size={14} className="mr-2 text-docka-400 dark:text-zinc-500" />
-                                                    portal.asterysko.com/login
+                                                    <span className="truncate">portal.asterysko.com/login</span>
                                                 </div>
                                                 <button className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400">
                                                     <Copy size={16} />
                                                 </button>
                                                 <button
                                                     onClick={onOpenClientPortal}
-                                                    className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-xl text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 flex items-center gap-2 shadow-sm transition-transform active:scale-95 cursor-pointer"
+                                                    className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-docka-900 px-4 py-2 text-sm font-medium text-white shadow-sm transition-transform active:scale-95 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white/90 sm:min-h-0"
                                                 >
                                                     <Eye size={16} /> Visualizar como Cliente
                                                 </button>
@@ -2217,7 +2217,7 @@ const WhatsAppCard: React.FC = () => {
                                         <div className="mb-6">
                                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Domínio Customizado (White-Label)</label>
                                             <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                                     <input
                                                         className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl text-sm text-docka-900 dark:text-zinc-100 focus:border-blue-500 outline-none transition-colors"
                                                         placeholder="Ex: cliente.asterysko.com"
@@ -2233,7 +2233,7 @@ const WhatsAppCard: React.FC = () => {
                                                     />
                                                     <button
                                                         onClick={handleUpdateDomain}
-                                                        className="px-4 py-2 bg-docka-100 dark:bg-zinc-800 text-docka-700 dark:text-zinc-300 rounded-xl text-sm font-bold hover:bg-docka-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                                                        className="min-h-11 rounded-xl bg-docka-100 px-4 py-2 text-sm font-bold text-docka-700 transition-colors hover:bg-docka-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 sm:min-h-0"
                                                     >
                                                         Salvar
                                                     </button>
@@ -2246,7 +2246,7 @@ const WhatsAppCard: React.FC = () => {
                                                         </h5>
                                                         <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">Adicione o registro abaixo no seu provedor de domínio (Cloudflare, Hostinger, Registro.br, etc) para ativar o redirecionamento. A propagação pode levar alguns minutos.</p>
 
-                                                        <div className="grid grid-cols-3 gap-2">
+                                                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                                                             <div>
                                                                 <span className="block text-xs uppercase font-semibold text-slate-400 dark:text-zinc-500 mb-1">Tipo</span>
                                                                 <div className="text-xs font-mono bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 px-2 py-1.5 rounded w-full text-docka-900 dark:text-zinc-100">CNAME</div>
@@ -2273,7 +2273,7 @@ const WhatsAppCard: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                             <div>
                                                 <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Cor Primária</label>
                                                 <div className="flex items-center gap-2">
@@ -2319,7 +2319,7 @@ const WhatsAppCard: React.FC = () => {
                             </div>
 
                             <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30 flex flex-wrap justify-between items-center gap-3">
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
                                     <div>
                                         <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Benefícios do cliente</h3>
                                         <p className="mt-1 text-xs text-docka-500 dark:text-zinc-400">Somente benefícios ativos aparecem na página inicial do portal.</p>
@@ -2334,7 +2334,7 @@ const WhatsAppCard: React.FC = () => {
                                     </button>
                                 </div>
 
-                                <div className="p-6">
+                                <div className="p-4 sm:p-6">
                                     {loadingBenefits ? (
                                         <div className="py-8 text-center text-xs text-docka-400">Carregando benefícios...</div>
                                     ) : portalBenefits.length === 0 ? (
@@ -2592,7 +2592,7 @@ const WhatsAppCard: React.FC = () => {
                                 Primeira cobrança e mensalidades seguintes: <strong>R$ {Number(selectedPlan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>. A GRU será emitida manualmente depois.
                             </div>
                         )}
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label className="block text-xs font-bold text-slate-500 dark:text-zinc-500 uppercase tracking-widest mb-1.5 font-mono">Valor do Plano (R$)</label>
                                 <div className="relative">
@@ -2621,7 +2621,7 @@ const WhatsAppCard: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                             <div>
                                 <label className="block text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mb-1.5 font-mono">Comissão Comercial (R$)</label>
                                 <div className="relative">

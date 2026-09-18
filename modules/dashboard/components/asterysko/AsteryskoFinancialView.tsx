@@ -165,18 +165,18 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
     });
 
     return (
-        <div className="bg-white dark:bg-zinc-950 min-h-full font-sans transition-colors duration-300 flex flex-col pb-16">
+        <div className="flex h-full min-h-0 flex-col overflow-y-auto bg-white pb-[max(1rem,env(safe-area-inset-bottom))] font-sans transition-colors duration-300 dark:bg-zinc-950 sm:pb-16">
             
             {/* CREATE INVOICE MODAL */}
             {isCreateOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
-                    <div className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-2xl shadow-2xl p-6 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-5">
-                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-0 backdrop-blur-xs animate-in fade-in sm:p-4">
+                    <div className="flex h-[100dvh] min-h-0 w-full max-w-lg flex-col gap-5 overflow-y-auto bg-white p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-2xl dark:bg-zinc-900 sm:h-auto sm:max-h-[90dvh] sm:rounded-2xl sm:border sm:border-zinc-200 sm:p-6 dark:sm:border-zinc-800">
+                        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 pb-3 dark:border-zinc-800">
                             <div className="flex items-center gap-2">
                                 <Receipt className="text-[#0412dd] dark:text-[#3b48ff]" size={20} />
                                 <h3 className="font-season text-xl font-medium text-black dark:text-white">Emitir Nova Fatura Comercial</h3>
                             </div>
-                            <button onClick={() => setIsCreateOpen(false)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
+                            <button onClick={() => setIsCreateOpen(false)} className="shrink-0 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200" aria-label="Fechar emissão de fatura">
                                 <X size={18} />
                             </button>
                         </div>
@@ -209,7 +209,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
                                     <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Valor (R$) *</label>
                                     <input 
@@ -245,17 +245,17 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="mt-auto flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                             <button 
                                 onClick={() => setIsCreateOpen(false)}
-                                className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                className="min-h-11 rounded-lg border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
                             >
                                 Cancelar
                             </button>
                             <button 
                                 onClick={handleCreateInvoice}
                                 disabled={isSubmitting}
-                                className="px-5 py-2 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                                className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-[#0412dd] px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]"
                             >
                                 {isSubmitting && <Loader2 size={14} className="animate-spin" />}
                                 Gerar Fatura & Notificar Cliente
@@ -267,11 +267,11 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
 
             {/* EDIT INVOICE MODAL */}
             {editingInvoice && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in">
-                    <div className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-2xl shadow-2xl p-6 border border-zinc-200 dark:border-zinc-800 flex flex-col gap-5">
-                        <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-0 backdrop-blur-xs animate-in fade-in sm:p-4">
+                    <div className="flex h-[100dvh] min-h-0 w-full max-w-md flex-col gap-5 overflow-y-auto bg-white p-4 pt-[max(1rem,env(safe-area-inset-top))] shadow-2xl dark:bg-zinc-900 sm:h-auto sm:max-h-[90dvh] sm:rounded-2xl sm:border sm:border-zinc-200 sm:p-6 dark:sm:border-zinc-800">
+                        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 pb-3 dark:border-zinc-800">
                             <h3 className="font-season text-xl font-medium text-black dark:text-white">Editar Fatura Comercial</h3>
-                            <button onClick={() => setEditingInvoice(null)} className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1">
+                            <button onClick={() => setEditingInvoice(null)} className="shrink-0 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-200" aria-label="Fechar edição da fatura">
                                 <X size={18} />
                             </button>
                         </div>
@@ -287,7 +287,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                                 <div>
                                     <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">Valor (R$)</label>
                                     <input 
@@ -312,17 +312,17 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="mt-auto flex shrink-0 flex-col-reverse gap-2 border-t border-zinc-100 pt-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
                             <button 
                                 onClick={() => setEditingInvoice(null)}
-                                className="px-4 py-2 border border-zinc-200 dark:border-zinc-800 text-xs font-semibold rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                                className="min-h-11 rounded-lg border border-zinc-200 px-4 py-2 text-xs font-semibold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
                             >
                                 Cancelar
                             </button>
                             <button 
                                 onClick={handleSaveInvoiceEdit}
                                 disabled={isSubmitting}
-                                className="px-5 py-2 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-xs font-bold rounded-lg hover:bg-blue-800 transition-colors"
+                                className="min-h-11 rounded-lg bg-[#0412dd] px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]"
                             >
                                 {isSubmitting && <Loader2 size={14} className="animate-spin mr-1" />}
                                 Salvar Alterações
@@ -333,7 +333,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between pt-8 px-10 pb-6 border-b border-[#e5e5e5] dark:border-zinc-800">
+            <div className="flex flex-col items-stretch gap-4 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10 lg:pb-6 lg:pt-8">
                 <div>
                     <span className="font-season text-[22px] font-[420] text-black dark:text-white">Visão Geral Financeira</span>
                     <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Gestão global de faturas, cobranças e honorários da Asterysko.</p>
@@ -341,62 +341,62 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
 
                 <button 
                     onClick={() => setIsCreateOpen(true)}
-                    className="bg-[#0412dd] dark:bg-[#3b48ff] text-white text-xs font-bold px-4 py-2.5 rounded-xl hover:bg-blue-800 transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
+                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-blue-800 dark:bg-[#3b48ff] sm:w-auto"
                 >
                     <Plus size={16} strokeWidth={3} /> Emitir Nova Fatura
                 </button>
             </div>
 
             {/* Dashboard KPI Grid */}
-            <div className="px-10 py-8 grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-3 px-4 py-5 sm:gap-4 sm:px-6 lg:grid-cols-4 lg:gap-6 lg:px-10 lg:py-8">
                 
                 {/* Total Faturado */}
-                <div className="bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 p-6 rounded-2xl shadow-xs">
+                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
                     <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-[#0412dd] dark:text-[#3b48ff] rounded-xl flex items-center justify-center mb-4">
                         <DollarSign size={20} />
                     </div>
                     <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">Total Faturado</h3>
-                    <div className="font-season text-[28px] font-[420] text-black dark:text-white leading-none">
+                    <div className="break-words font-season text-xl font-[420] leading-none text-black dark:text-white sm:text-[28px]">
                         {formatCurrency(totalBilled)}
                     </div>
                 </div>
 
                 {/* Total Recebido */}
-                <div className="bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 p-6 rounded-2xl shadow-xs">
+                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
                     <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center mb-4">
                         <CreditCard size={20} />
                     </div>
                     <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">Total Recebido</h3>
-                    <div className="font-season text-[28px] font-[420] text-green-600 dark:text-green-400 leading-none">
+                    <div className="break-words font-season text-xl font-[420] leading-none text-green-600 dark:text-green-400 sm:text-[28px]">
                         {formatCurrency(totalPaid)}
                     </div>
                 </div>
                 
                 {/* A Receber / Pendente */}
-                <div className="bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 p-6 rounded-2xl shadow-xs">
+                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
                     <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center mb-4">
                         <Clock size={20} />
                     </div>
                     <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">A Receber</h3>
-                    <div className="font-season text-[28px] font-[420] text-amber-600 dark:text-amber-400 leading-none">
+                    <div className="break-words font-season text-xl font-[420] leading-none text-amber-600 dark:text-amber-400 sm:text-[28px]">
                         {formatCurrency(totalPending)}
                     </div>
                 </div>
 
                 {/* Vencidos */}
-                <div className="bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 p-6 rounded-2xl shadow-xs">
+                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
                     <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center mb-4">
                         <AlertTriangle size={20} />
                     </div>
                     <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">Faturas Vencidas</h3>
-                    <div className="font-season text-[28px] font-[420] text-red-600 dark:text-red-400 leading-none">
+                    <div className="break-words font-season text-xl font-[420] leading-none text-red-600 dark:text-red-400 sm:text-[28px]">
                         {formatCurrency(totalOverdue)}
                     </div>
                 </div>
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="px-10 pb-4 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex flex-col items-center justify-between gap-4 px-4 pb-4 sm:px-6 md:flex-row lg:px-10">
                 {/* Search Input */}
                 <div className="relative w-full md:w-80">
                     <Search className="absolute left-3.5 top-3 text-zinc-400" size={16} />
@@ -433,11 +433,11 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
             </div>
 
             {/* Invoices Table */}
-            <div className="w-full flex-1 px-10">
-                <div className="bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 rounded-2xl overflow-hidden shadow-xs">
+            <div className="w-full flex-1 px-4 sm:px-6 lg:px-10">
+                <div className="rounded-2xl border border-[#e5e5e5] bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
                     
                     {/* Table Header */}
-                    <div className="grid grid-cols-12 px-6 py-4 border-b border-[#e5e5e5] dark:border-zinc-800 bg-[#fafafa] dark:bg-zinc-950 text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                    <div className="hidden grid-cols-12 border-b border-[#e5e5e5] bg-[#fafafa] px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 lg:grid">
                         <div className="col-span-2">Status</div>
                         <div className="col-span-3">Cliente</div>
                         <div className="col-span-3">Descrição / Serviço</div>
@@ -473,10 +473,10 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                 return (
                                     <div 
                                         key={inv.id} 
-                                        className="grid grid-cols-12 px-6 py-4 hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 transition-colors items-center text-xs"
+                                        className="grid grid-cols-2 items-center gap-3 px-4 py-4 text-xs transition-colors hover:bg-zinc-50/80 dark:hover:bg-zinc-800/40 lg:grid-cols-12 lg:gap-0 lg:px-6"
                                     >
                                         {/* Status */}
-                                        <div className="col-span-2">
+                                        <div className="order-1 col-span-1 lg:order-none lg:col-span-2">
                                             <span className={`inline-flex items-center gap-1.5 text-[10.5px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${
                                                 isPaid 
                                                     ? 'bg-green-100 text-green-700 dark:bg-green-950/40 dark:text-green-400' 
@@ -489,13 +489,13 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                         </div>
 
                                         {/* Cliente */}
-                                        <div className="col-span-3 pr-4 min-w-0">
+                                        <div className="order-3 col-span-2 min-w-0 lg:order-none lg:col-span-3 lg:pr-4">
                                             <p className="font-bold text-black dark:text-white truncate">{clientDisplayName}</p>
                                             <p className="text-[10.5px] font-mono text-zinc-400 truncate">{clientEmail}</p>
                                         </div>
 
                                         {/* Descrição */}
-                                        <div className="col-span-3 pr-4 min-w-0">
+                                        <div className="order-4 col-span-2 min-w-0 lg:order-none lg:col-span-3 lg:pr-4">
                                             <p className="font-medium text-zinc-700 dark:text-zinc-300 truncate">
                                                 {inv.description || 'Fatura de Honorários'}
                                             </p>
@@ -503,17 +503,19 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                         </div>
 
                                         {/* Vencimento */}
-                                        <div className="col-span-1 font-medium text-zinc-650 dark:text-zinc-350">
+                                        <div className="order-5 col-span-1 font-medium text-zinc-650 dark:text-zinc-350 lg:order-none">
+                                            <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Vencimento</span>
                                             {formattedDueDate}
                                         </div>
 
                                         {/* Valor */}
-                                        <div className="col-span-2 text-right font-bold text-sm text-black dark:text-white pr-2">
+                                        <div className="order-5 col-span-1 pr-0 text-right text-sm font-bold text-black dark:text-white lg:order-none lg:col-span-2 lg:pr-2">
+                                            <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Valor</span>
                                             {formattedVal}
                                         </div>
 
                                         {/* Ações */}
-                                        <div className="col-span-1 text-center relative">
+                                        <div className="relative order-2 col-span-1 text-right lg:order-none lg:text-center">
                                             <button 
                                                 onClick={(e) => {
                                                     e.stopPropagation();

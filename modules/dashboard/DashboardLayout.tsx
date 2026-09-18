@@ -7,9 +7,9 @@ import TokyonDashboard from './components/TokyonDashboard';
 import AsteryskoDashboard from './components/AsteryskoDashboard';
 import UmaChaveDashboard from './components/UmaChaveDashboard';
 import ManySpaceDashboard from './components/ManySpaceDashboard';
-import { Menu, ChevronDown } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import UnifiedSidebar from '../../components/UnifiedSidebar';
+import UnifiedSidebar, { BrandLogo } from '../../components/UnifiedSidebar';
 
 interface DashboardLayoutProps {
     currentOrg: Organization;
@@ -94,18 +94,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
         <div className="relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white transition-colors duration-300 dark:bg-zinc-950 lg:flex-row">
 
             {/* MOBILE HEADER: Only visible on small screens */}
-            <div className="z-20 flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-center justify-between border-b border-docka-200 bg-white px-4 pt-[env(safe-area-inset-top)] dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
-                <button type="button" className="flex min-w-0 items-center gap-2" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menu e trocar organização">
-                    <div className={`w-6 h-6 rounded-md ${selectedOrg?.logoColor || 'bg-blue-600'} flex items-center justify-center text-white text-[10px] font-bold`}>
-                        {selectedOrg?.name?.substring(0, 1) || 'A'}
-                    </div>
-                    <div className="flex min-w-0 items-center gap-1">
-                        <span className="max-w-[calc(100vw-7rem)] truncate text-sm font-bold text-docka-900 dark:text-zinc-100">{selectedOrg?.name || 'Asterysko'}</span>
-                        <ChevronDown size={14} className="shrink-0 text-docka-400 dark:text-zinc-500" />
-                    </div>
-                </button>
-                <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="shrink-0 rounded-md p-2 text-docka-600 hover:bg-docka-100 dark:text-zinc-400 dark:hover:bg-zinc-800" aria-label="Abrir navegação">
-                    <Menu size={20} />
+            <div className="z-20 flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-center border-b border-docka-200 bg-white px-4 pt-[env(safe-area-inset-top)] dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
+                <button type="button" className="flex min-h-11 min-w-0 flex-1 items-center gap-3 rounded-xl text-left" onClick={() => setIsMobileMenuOpen(true)} aria-label={`Abrir menu e trocar empresa. Empresa atual: ${selectedOrg?.name || 'Asterysko'}`}>
+                    <BrandLogo org={selectedOrg} size="sm" className="!h-7 !w-7 !rounded-lg" />
+                    <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-bold text-docka-900 dark:text-zinc-100">{selectedOrg?.name || 'Asterysko'}</span>
+                        <span className="flex items-center gap-1 text-[10px] font-medium text-docka-500 dark:text-zinc-400">Menu e empresas <ChevronDown size={12} /></span>
+                    </span>
                 </button>
             </div>
 

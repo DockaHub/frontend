@@ -78,8 +78,8 @@ const OrganizationIconSettings: React.FC<OrganizationIconSettingsProps> = ({ org
                 </div>
             </div>
 
-            <div className="p-6">
-                <div className="flex flex-col md:flex-row gap-8">
+            <div className="p-4 sm:p-6">
+                <div className="flex flex-col gap-6 md:flex-row md:gap-8">
                     <div className="flex-1 space-y-6">
                         {/* Cores */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -159,11 +159,11 @@ const OrganizationIconSettings: React.FC<OrganizationIconSettingsProps> = ({ org
                             </div>
                         </div>
 
-                        <div className="flex justify-end pt-2">
+                        <div className="flex justify-stretch pt-2 sm:justify-end">
                             <button
                                 onClick={handleSaveIcon}
                                 disabled={saving || !svgIcon}
-                                className="px-8 py-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-700 dark:hover:bg-blue-600 shadow-md shadow-blue-500/10 transition-all active:scale-95 disabled:opacity-50"
+                                className="min-h-11 w-full rounded-xl bg-blue-600 px-8 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-500/10 transition-all hover:bg-blue-700 active:scale-95 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600 sm:w-auto"
                             >
                                 {saving ? 'Salvando...' : 'Salvar Personalização'}
                             </button>

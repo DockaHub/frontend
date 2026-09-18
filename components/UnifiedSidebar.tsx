@@ -55,7 +55,7 @@ const getBgColorForSlug = (slug: string) => {
     }
 };
 
-const BrandLogo: React.FC<{
+export const BrandLogo: React.FC<{
     org: Organization;
     size?: 'sm' | 'md' | 'lg';
     className?: string;
@@ -73,7 +73,7 @@ const BrandLogo: React.FC<{
                 <img
                     src={logoUrl}
                     alt={org.name}
-                    className={`${dim} rounded-xl object-cover shrink-0 ${className}`}
+                    className={`${dim} shrink-0 rounded-xl bg-white object-contain dark:bg-zinc-800 ${className}`}
                 />
             );
         }
@@ -207,13 +207,13 @@ const OrgMembersStack: React.FC<{ org: Organization }> = ({ org }) => {
                                 key={member.id || i}
                                 src={avatarUrl}
                                 alt={name}
-                                className="w-4 h-4 rounded-full object-cover ring-1.5 ring-[#1e1f22] bg-zinc-700"
+                                className="h-4 w-4 rounded-full bg-zinc-100 object-cover ring-1.5 ring-white dark:bg-zinc-700 dark:ring-zinc-900"
                                 title={name}
                             />
                         ) : (
                             <div
                                 key={member.id || i}
-                                className={`w-4 h-4 rounded-full ${color} text-white text-[7.5px] font-bold flex items-center justify-center ring-1.5 ring-[#1e1f22] shrink-0`}
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${color} text-[7.5px] font-bold text-white ring-1.5 ring-white dark:ring-zinc-900`}
                                 title={name}
                             >
                                 {initial}
@@ -223,7 +223,7 @@ const OrgMembersStack: React.FC<{ org: Organization }> = ({ org }) => {
                 </div>
             ) : null}
 
-            <span className="text-[11px] text-[#9f9f9f] truncate">
+            <span className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
                 {extraMembers > 0 ? (
                     `+ ${extraMembers} ${extraMembers === 1 ? 'pessoa' : 'pessoas'}`
                 ) : totalMembers === 1 ? (
@@ -367,27 +367,37 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
         <div className={`relative flex h-full shrink-0 flex-col border-r border-[#e5e5e5] bg-white pb-[15px] pt-[15px] dark:border-zinc-800 dark:bg-zinc-950 ${className || 'w-[180px]'}`}>
 
             {/* Logo container at top left */}
-            <div className="px-6 mb-6 flex items-center justify-between relative">
-                <div className="relative group">
+            <div className="relative mb-6 flex items-center justify-between px-4 lg:px-6">
+                <div className="group relative min-w-0 flex-1">
                     {/* 3D bottom shadow layer */}
                     <div className="absolute top-[2px] left-0 w-[40px] h-[40px] bg-black/15 rounded-xl transition-transform duration-150 group-hover:translate-y-[1px]" />
                     {/* Switcher trigger button */}
-                    <button 
+                    <button
                         onClick={() => setIsOrgMenuOpen(!isOrgMenuOpen)}
-                        className="relative rounded-xl flex items-center justify-center transition-all duration-150 active:translate-y-[2px] group-hover:-translate-y-[1px] shadow-sm overflow-hidden"
+                        className="relative flex max-w-full items-center gap-3 rounded-xl text-left shadow-sm transition-all duration-150 active:translate-y-[2px] group-hover:-translate-y-[1px]"
                         title={currentOrg.name}
+                        aria-expanded={isOrgMenuOpen}
+                        aria-label={`Trocar empresa. Empresa atual: ${currentOrg.name}`}
                     >
                         <BrandLogo org={currentOrg} size="lg" />
+                        {onClose && (
+                            <span className="min-w-0 flex-1 lg:hidden">
+                                <strong className="block truncate text-sm text-zinc-900 dark:text-white">{currentOrg.name}</strong>
+                                <small className="flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                                    Trocar empresa <ChevronDown size={12} className={`transition-transform ${isOrgMenuOpen ? 'rotate-180' : ''}`} />
+                                </small>
+                            </span>
+                        )}
                     </button>
                 </div>
 
-                {/* Dark Slack-style switcher menu */}
+                {/* Organization switcher */}
                 {isOrgMenuOpen && (
                     <>
                         <div className="fixed inset-0 z-40" onClick={() => setIsOrgMenuOpen(false)} />
                         <div 
                             ref={orgMenuRef}
-                            className="absolute left-6 top-[50px] z-50 w-[min(320px,calc(100vw-3rem))] overflow-hidden rounded-xl border border-white/10 bg-[#1e1f22] p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
+                            className="absolute left-4 right-4 top-[54px] z-50 max-h-[min(70dvh,520px)] overflow-y-auto rounded-xl border border-zinc-200 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-150 dark:border-zinc-700 dark:bg-zinc-900 lg:left-6 lg:right-auto lg:w-[320px]"
                         >
                             <div className="space-y-1">
                                 {filteredAndSortedOrgs.map((org, index) => {
@@ -398,21 +408,21 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                         <React.Fragment key={org.id}>
                                             {index === 1 && filteredAndSortedOrgs.length > 1 && (
                                                 <div className="pt-2 pb-1 px-2 flex items-center gap-2">
-                                                    <span className="text-[10px] font-bold text-[#80848e] uppercase tracking-wider">Empresas do Portfólio</span>
-                                                    <div className="flex-1 h-px bg-white/10" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Empresas do portfólio</span>
+                                                    <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-700" />
                                                 </div>
                                             )}
                                             <button
                                                 onClick={() => handleSelectOrg(org)}
                                                 className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors group text-left ${
-                                                    isSelected ? 'bg-white/5' : 'hover:bg-white/10'
+                                                    isSelected ? 'bg-indigo-50 dark:bg-indigo-950/40' : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
                                                 }`}
                                             >
                                                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                                                     {/* Logo wrapper with white ring if active */}
                                                     <div 
                                                         className={`rounded-xl shrink-0 transition-transform duration-150 ${
-                                                            isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e1f22]' : 'group-hover:scale-105'
+                                                            isSelected ? 'ring-2 ring-[#0412dd] ring-offset-2 ring-offset-white dark:ring-indigo-400 dark:ring-offset-zinc-900' : 'group-hover:scale-105'
                                                         }`}
                                                     >
                                                         <BrandLogo org={org} size="md" />
@@ -421,11 +431,11 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                                     {/* Text & Member Avatar Stack */}
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex items-center gap-1.5">
-                                                            <h4 className="font-bold text-white text-[14px] leading-snug truncate">
+                                                            <h4 className="truncate text-[14px] font-bold leading-snug text-zinc-900 dark:text-white">
                                                                 {org.name}
                                                             </h4>
                                                             {isManyways && (
-                                                                <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.2 bg-white/10 text-zinc-300 rounded shrink-0">
+                                                                <span className="shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-[9px] font-extrabold uppercase text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                                                                     Mandante
                                                                 </span>
                                                             )}
@@ -434,7 +444,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                                     </div>
                                                 </div>
                                                 
-                                                <span className="text-[10px] font-medium text-[#9f9f9f] font-mono bg-white/5 px-1.5 py-0.5 rounded uppercase shrink-0">
+                                                <span className="hidden shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 lg:inline-flex">
                                                     ⌘{index + 1}
                                                 </span>
                                             </button>

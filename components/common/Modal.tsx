@@ -39,14 +39,14 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-[2px] animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-0 backdrop-blur-[2px] animate-in fade-in duration-200 sm:p-4">
       <div
         ref={modalRef}
-        className={`bg-white dark:bg-zinc-900 rounded-xl shadow-2xl w-full ${maxWidthClasses[size]} flex flex-col max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 border border-docka-200 dark:border-zinc-800`}
+        className={`flex h-[100dvh] min-h-0 w-full ${maxWidthClasses[size]} flex-col bg-white pt-[env(safe-area-inset-top)] shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300 dark:bg-zinc-900 sm:h-auto sm:max-h-[90dvh] sm:rounded-xl sm:border sm:border-docka-200 sm:pt-0 dark:sm:border-zinc-800`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-docka-100 dark:border-zinc-800 shrink-0">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-docka-100 px-4 py-4 dark:border-zinc-800 sm:px-6">
           <h3 className="text-lg font-bold text-docka-900 dark:text-zinc-100">{title}</h3>
           <button
             onClick={onClose}
@@ -57,13 +57,13 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, footer,
         </div>
 
         {/* Body */}
-        <div className="p-6 overflow-y-auto custom-scrollbar dark:text-zinc-300">
+        <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto p-4 dark:text-zinc-300 sm:p-6">
           {children}
         </div>
 
         {/* Footer */}
         {footer && (
-          <div className="px-6 py-4 bg-docka-50/50 dark:bg-zinc-950/50 border-t border-docka-100 dark:border-zinc-800 rounded-b-xl flex justify-end gap-3 shrink-0">
+          <div className="flex shrink-0 flex-wrap justify-end gap-3 border-t border-docka-100 bg-docka-50/50 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-zinc-950/50 sm:rounded-b-xl sm:px-6 sm:py-4">
             {footer}
           </div>
         )}
