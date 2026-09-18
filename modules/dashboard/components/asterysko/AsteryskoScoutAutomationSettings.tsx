@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 interface ScoutAutomationSettings {
     enabled: boolean;
@@ -1393,7 +1394,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                                                 ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300'
                                                 : 'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300'
                                     }`}>
-                                        {run.status.replace(/_/g, ' ')}
+                                        {formatStatusLabel(run.status)}
                                     </span>
                                 </div>
 
@@ -1418,7 +1419,7 @@ export const AsteryskoScoutAutomationSettings: React.FC<{ organizationId?: strin
                                     <div className="mt-2 flex flex-wrap gap-1.5">
                                         {Object.entries(run.discovery.rejectionsByReason || {}).map(([reason, count]) => (
                                             <span key={reason} className="rounded-full bg-amber-50 px-2 py-1 text-[10px] text-amber-700 dark:bg-amber-950/20 dark:text-amber-300">
-                                                {reason.replace(/_/g, ' ')}: {count}
+                                                {formatStatusLabel(reason)}: {count}
                                             </span>
                                         ))}
                                     </div>

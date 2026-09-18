@@ -4,6 +4,7 @@ import { Search, Filter, Loader2, DollarSign } from 'lucide-react';
 import { Order } from '../../../../types';
 import { fauvesService } from '../../../../services/fauvesService';
 import OrderDetailView from './OrderDetailView';
+import { formatStatusLabel } from '../../../../utils/statusPresentation';
 
 const StatusBadge = ({ status }: { status: string }) => {
     const styles = {
@@ -20,7 +21,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
     return (
         <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border ${style}`}>
-            {status}
+            {formatStatusLabel(status)}
         </span>
     );
 };

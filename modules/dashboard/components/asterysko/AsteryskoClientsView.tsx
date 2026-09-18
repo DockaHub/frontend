@@ -5,6 +5,7 @@ import { Organization } from '../../../../types';
 import AsteryskoNewClientModal from './AsteryskoNewClientModal';
 import { formatPhoneMask, sanitizePhoneForSave } from './utils/phoneMask';
 import { formatActivityContent, formatActivityMetadata, formatActivitySource } from './utils/activityPresentation';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 interface Client {
     id: string;
@@ -448,7 +449,7 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                                         return (
                                                             <div 
                                                                 key={proc.id || idx}
-                                                                title={`${proc.brand} (${proc.status})`}
+                                                                title={`${proc.brand} (${formatStatusLabel(proc.status)})`}
                                                                 className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 border-white dark:border-zinc-950 shrink-0 select-none ${colorClass}`}
                                                             >
                                                                 {initials}

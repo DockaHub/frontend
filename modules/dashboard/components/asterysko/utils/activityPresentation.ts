@@ -1,41 +1,10 @@
+import { formatStatusLabel, STATUS_LABELS } from './statusPresentation';
+
 export interface ActivityDetail {
     key: string;
     label: string;
     value: string;
 }
-
-const STATUS_LABELS: Record<string, string> = {
-    UPLOADED: 'Enviado',
-    SENT: 'Enviado',
-    RECEIVED: 'Recebido',
-    CONFIRMED: 'Confirmado',
-    RECEIVED_IN_CASH: 'Recebido em dinheiro',
-    SKIPPED: 'Não necessário',
-    FAILED: 'Falhou',
-    ERROR: 'Erro',
-    PENDING: 'Pendente',
-    WAITING_PAYMENT: 'Aguardando pagamento',
-    PAID: 'Pago',
-    REFUNDED: 'Estornado',
-    OVERDUE: 'Vencido',
-    VALIDATED: 'Validado',
-    READY_TO_FILE: 'Pronto para protocolar',
-    LEADS: 'Novo lead',
-    CONTATO_INICIADO: 'Contato iniciado',
-    EM_CONVERSA: 'Em conversa',
-    PREPARATION: 'Preparação',
-    VIABILITY: 'Viabilidade',
-    PROPOSTA: 'Proposta',
-    CONTRACT: 'Contrato',
-    SERVICE_PAYMENT: 'Pagamento do serviço',
-    DOCUMENTATION: 'Procuração e documentos',
-    FEDERAL_FEE: 'Taxa federal (GRU)',
-    FILED: 'Protocolado no INPI',
-    EXAMINATION: 'Exame de mérito',
-    OPPOSITION: 'Oposição ou exigência',
-    GRANTED: 'Deferido',
-    WON: 'Concluído',
-};
 
 const VALUE_LABELS: Record<string, string> = {
     TAX: 'Taxa federal (GRU)',
@@ -136,7 +105,7 @@ const friendlyValue = (value: unknown): string => {
     const raw = String(value ?? '').trim();
     if (!raw) return '';
     const token = normalizeToken(raw);
-    return STATUS_LABELS[token] || VALUE_LABELS[token] || raw;
+    return STATUS_LABELS[token] || VALUE_LABELS[token] || formatStatusLabel(raw, raw);
 };
 
 const friendlyDate = (value: unknown): string => {

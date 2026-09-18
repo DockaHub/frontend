@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, AlertTriangle, CheckCircle, Info, Shield, Lock, Unlock, ExternalLink, RefreshCw, Eye } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import {
     getApiErrorMessage,
     TrademarkRisk,
@@ -207,7 +208,7 @@ export const AsteryskoTrademarkDetailsModal: React.FC<AsteryskoTrademarkDetailsM
                                                 </span>
                                             </div>
                                             <p className="text-xs text-zinc-600 dark:text-zinc-400">
-                                                Titular: <strong className="font-semibold">{m.ownerName || 'INPI'}</strong> • Status: <span className="underline">{m.processStatus}</span> ({m.processStatusGroup})
+                                                Titular: <strong className="font-semibold">{m.ownerName || 'INPI'}</strong> • Status: <span className="underline">{formatStatusLabel(m.processStatus)}</span> ({formatStatusLabel(m.processStatusGroup)})
                                             </p>
                                             <p className="text-[11px] text-zinc-500 italic">{m.explanation}</p>
                                         </div>

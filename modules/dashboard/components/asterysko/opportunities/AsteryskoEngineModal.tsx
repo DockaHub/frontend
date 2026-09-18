@@ -5,6 +5,7 @@ import {
     CheckCircle2, XCircle, Zap, Sparkles, Shield
 } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import { AsteryskoBrandIdentificationTab } from './AsteryskoBrandIdentificationTab';
 import { AsteryskoTrademarkScreeningTab } from './AsteryskoTrademarkScreeningTab';
 import { AsteryskoBusinessContactEnrichmentTab } from './AsteryskoBusinessContactEnrichmentTab';
@@ -65,7 +66,7 @@ const RunStatusBadge: React.FC<{ status: string }> = ({ status }) => {
     };
     return (
         <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${map[status] || 'bg-zinc-100 dark:bg-zinc-800 text-zinc-500 border-zinc-200'}`}>
-            {labelMap[status] || status}
+            {labelMap[status] || formatStatusLabel(status)}
         </span>
     );
 };

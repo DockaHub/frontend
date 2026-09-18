@@ -4,6 +4,7 @@ import {
     ChevronLeft, ChevronRight, Eye, Loader2, Zap, X, Trash2
 } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import { AsteryskoNewOpportunityModal } from './AsteryskoNewOpportunityModal';
 import {
     AsteryskoOpportunityDetailsModal,
@@ -313,7 +314,7 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
             case 'sent_to_crm':
                 return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40">Enviada ao CRM</span>;
             default:
-                return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">{status}</span>;
+                return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">{formatStatusLabel(status)}</span>;
         }
     };
 

@@ -6,6 +6,7 @@ import { forceDownloadFile } from './utils/fileDownload';
 import { getPhaseForStage, getStagesForPhase } from './config/crmConfig';
 import { useAuth } from '../../../../context/AuthContext';
 import { formatActivityContent, formatActivityMetadata, formatActivitySource } from './utils/activityPresentation';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 // Resolve uma URL relativa ou absoluta para uma URL completa de imagem/arquivo
 const resolveUrl = (rawUrl: string | undefined | null): string => {
@@ -44,7 +45,7 @@ const getStatusLabel = (status: string) => {
     if (s === 'opposition') return 'Oposição / Exigência';
     if (s === 'granted') return 'Deferida';
     if (s === 'won') return 'Concluído';
-    return status || 'Em preparação';
+    return formatStatusLabel(status, 'Em preparação');
 };
 
 const stageTasksMap: Record<string, { id: string; title: string; due: string }[]> = {

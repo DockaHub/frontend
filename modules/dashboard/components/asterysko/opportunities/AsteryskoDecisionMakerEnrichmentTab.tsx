@@ -4,6 +4,7 @@ import {
     ShieldCheck, Unlock, UserRoundSearch, UsersRound, X,
 } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import {
     DecisionMakerAttempt, DecisionMakerAttemptList, DecisionMakerCandidate,
     DecisionMakerCounts, getApiErrorMessage,
@@ -26,7 +27,7 @@ const labels: Record<string, string> = {
     professional_named: 'Profissional identificado',
     role_only: 'Somente função',
 };
-const label = (value?: string | null) => value ? labels[value] ?? value.replace(/_/g, ' ') : '—';
+const label = (value?: string | null) => value ? labels[value] ?? formatStatusLabel(value) : '—';
 const badge = (value?: string | null) => {
     const danger = value === 'failed' || value === 'conflicting' || value === 'sensitive';
     const warning = value === 'review_required' || value === 'historical' || value === 'multiple_candidates';

@@ -5,6 +5,7 @@ import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
 import EventImporter from './EventImporter';
 import EventEditorForm from './EventEditorForm';
+import { formatStatusLabel } from '../../../../utils/statusPresentation';
 
 // Add props interface
 interface EventsViewProps {
@@ -161,7 +162,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                 <Plus size={14} /> Editar Evento
                             </button>
                             <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded border ${(fullEvent || selectedEvent)?.isPublished || ['published', 'active', 'publicado'].includes(String((fullEvent || selectedEvent)?.status || '').toLowerCase()) ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-docka-100 text-docka-600 border-docka-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'}`}>
-                                {(fullEvent || selectedEvent)?.status || 'Rascunho'}
+                                {formatStatusLabel((fullEvent || selectedEvent)?.status, 'Rascunho')}
                             </span>
                         </div>
                     </div>
@@ -433,7 +434,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                             <img src={event.image || 'https://placehold.co/600x400?text=Sem+Capa'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" alt={event.title} />
                                             <div className="absolute top-2 left-2">
                                                 <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider ${event.isPublished || ['published', 'active', 'publicado'].includes(String(event.status).toLowerCase()) ? 'bg-emerald-500 text-white' : 'bg-docka-600 text-white'}`}>
-                                                    {event.status}
+                                                    {formatStatusLabel(event.status)}
                                                 </span>
                                             </div>
                                             <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-md shadow-sm border border-white/20">

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, RotateCcw, Database, RefreshCw } from 'lucide-react';
 import api from '../../../../services/api';
 import { getApiErrorMessage } from './opportunities/asteryskoApiTypes';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 export interface FreshnessInfo {
     snapshotId?: string;
@@ -179,7 +180,7 @@ export const AsteryskoTrademarkGovernanceArea: React.FC = () => {
                                             snap.status === 'rolled_back' ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' :
                                             'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                                         }`}>
-                                            {snap.status}
+                                            {formatStatusLabel(snap.status)}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-right flex justify-end gap-2">

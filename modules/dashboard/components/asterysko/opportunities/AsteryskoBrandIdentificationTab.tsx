@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Eye, Loader2 } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import { AsteryskoBrandDetailsModal } from './AsteryskoBrandDetailsModal';
 import {
     BrandIdentificationCounts,
@@ -64,7 +65,7 @@ export const AsteryskoBrandIdentificationTab: React.FC<{ organizationId?: string
             case 'failed':
                 return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-50 text-rose-700 border border-rose-200">Falha</span>;
             default:
-                return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-zinc-100 text-zinc-600">{status}</span>;
+                return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-zinc-100 text-zinc-600">{formatStatusLabel(status)}</span>;
         }
     };
 

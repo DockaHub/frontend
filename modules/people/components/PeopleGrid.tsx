@@ -4,6 +4,7 @@ import { Contact, ContactStatus } from '../../../types';
 import { Mail, MessageSquare, MoreHorizontal, MapPin } from 'lucide-react';
 import OrgTag from '../../../components/common/OrgTag';
 import UserAvatar from '../../../components/common/UserAvatar';
+import { formatStatusLabel } from '../../../utils/statusPresentation';
 
 interface PeopleGridProps {
     contacts: Contact[];
@@ -18,7 +19,7 @@ const StatusIndicator = ({ status }: { status: ContactStatus }) => {
         busy: 'bg-red-500',
         away: 'bg-amber-500'
     };
-    return <div className={`w-2.5 h-2.5 rounded-full border border-white dark:border-zinc-900 ring-1 ring-white dark:ring-zinc-900 ${colors[status]}`} title={status} />;
+    return <div className={`w-2.5 h-2.5 rounded-full border border-white dark:border-zinc-900 ring-1 ring-white dark:ring-zinc-900 ${colors[status]}`} title={formatStatusLabel(status)} />;
 };
 
 const PeopleGrid: React.FC<PeopleGridProps> = ({ contacts, viewMode, onContactClick }) => {

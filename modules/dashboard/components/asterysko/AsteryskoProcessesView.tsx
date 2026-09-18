@@ -5,6 +5,7 @@ import { Organization } from '../../../../types';
 import AsteryskoNewProcessModal from './AsteryskoNewProcessModal';
 import AsteryskoEditProcessModal from './AsteryskoEditProcessModal';
 import AsteryskoDealDetailsModal from './AsteryskoDealDetailsModal';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 const ProcessBrandLogo: React.FC<{ logoUrl?: string; brandName: string }> = ({ logoUrl, brandName }) => {
     const [imgError, setImgError] = useState(false);
@@ -96,6 +97,13 @@ const getStatusLabelAndColor = (status: string) => {
         case 'WAITING_PAYMENT':
         case 'AGUARDANDO_PAGAMENTO':
             return { label: 'Aguardando Pagamento', color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' };
+        case 'WAITING_CONTRACT':
+            return { label: 'Aguardando contrato', color: 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' };
+        case 'WAITING_DOCS':
+        case 'WAITING_DOCUMENTS':
+            return { label: 'Aguardando documentos', color: 'bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400' };
+        case 'WAITING_GRU':
+            return { label: 'Aguardando pagamento da GRU', color: 'bg-rose-100 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400' };
         case 'PAID':
         case 'PAGO':
             return { label: 'Pago', color: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' };
@@ -135,7 +143,7 @@ const getStatusLabelAndColor = (status: string) => {
             if (l === 'granted') return { label: 'Deferido', color: 'bg-emerald-100 dark:bg-emerald-900/20 text-green-750 dark:text-green-400' };
             if (l === 'won') return { label: 'Concluído', color: 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400' };
             
-            return { label: status, color: 'bg-zinc-100 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300' };
+            return { label: formatStatusLabel(status), color: 'bg-zinc-100 dark:bg-zinc-900/50 text-zinc-700 dark:text-zinc-300' };
     }
 };
 

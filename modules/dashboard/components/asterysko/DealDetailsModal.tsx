@@ -6,6 +6,7 @@ import api, { getBackendUrl } from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { useToast } from '../../../../context/ToastContext';
 import { forceDownloadFile } from './utils/fileDownload';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 const extractInfoFromTags = (tags: any[]) => {
     const info: { cnpj?: string, address?: string, razaoSocial?: string, city?: string, state?: string, postalCode?: string } = {};
@@ -717,14 +718,14 @@ const DealDetailsModal: React.FC<DealDetailsModalProps> = ({ isOpen, onClose, de
                                     <div key={s} className="flex items-center">
                                         <div 
                                             className={`h-1.5 w-3 rounded-full transition-all duration-500 ${isActive ? 'bg-indigo-600 w-6' : isPast ? 'bg-emerald-500' : 'bg-docka-200 dark:bg-zinc-700'}`}
-                                            title={statusMap[s] || s}
+                                            title={statusMap[s] || formatStatusLabel(s)}
                                         />
                                         {idx < stagesOrder.length - 1 && <div className="mx-0.5 text-[8px] text-docka-300 opacity-30">/</div>}
                                     </div>
                                 );
                             })}
                             <span className="ml-3 text-[10px] font-bold uppercase text-indigo-600 dark:text-indigo-400 tracking-wider whitespace-nowrap">
-                                {statusMap[formData.status] || formData.status}
+                                {statusMap[formData.status] || formatStatusLabel(formData.status)}
                             </span>
                         </div>
 

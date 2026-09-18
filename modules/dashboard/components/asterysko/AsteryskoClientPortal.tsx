@@ -8,6 +8,7 @@ import { useSystemBarColor } from '../../../asterysko/public/useSystemBarColor';
 import NewTrademarkWizard from './NewTrademarkWizard';
 import '../../../asterysko/public/AsteryskoPortal.css';
 import { asteryskoActivity } from '../../../../services/asteryskoActivityService';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 interface AsteryskoClientPortalProps {
     onExit: () => void;
@@ -113,24 +114,6 @@ const DEFAULT_DOCUMENTS = [
     { name: 'Certificado de registro', key: 'certificate', fields: ['certificateUrl'], icon: 'processo_documentos-imgGroup2.svg' },
     { name: 'Logomarca', key: 'logo', fields: ['brandLogo'], icon: 'processo_documentos-imgGroup3.svg' },
 ];
-
-const PROCESS_STATUS_LABELS: Record<string, string> = {
-    WAITING_CONTRACT: 'Aguardando assinatura do contrato',
-    WAITING_PAYMENT: 'Aguardando pagamento',
-    WAITING_DOCS: 'Aguardando documentação',
-    WAITING_GRU: 'Aguardando pagamento da GRU',
-    READY_TO_FILE: 'Protocolando',
-    NEW: 'Processo iniciado',
-    STARTED: 'Processo iniciado',
-    FILED: 'Protocolo realizado',
-    PROTOCOL: 'Protocolo realizado',
-    EXAMINATION: 'Aguardando exame de mérito',
-    EXAM_MERIT: 'Aguardando exame de mérito',
-    OPPOSITION: 'Oposição ou exigência',
-    GRANTED: 'Registro concedido',
-    WON: 'Processo concluído',
-    ARCHIVED: 'Processo arquivado',
-};
 
 const PAYMENT_STATUS_LABELS: Record<string, string> = {
     PAID: 'Paga',
@@ -292,7 +275,7 @@ const getInvoicePaymentMethodLabel = (invoice: any) => {
     return 'Forma de pagamento a definir';
 };
 
-const getProcessStatusLabel = (status: unknown) => PROCESS_STATUS_LABELS[String(status || '').toUpperCase()] || 'Em andamento';
+const getProcessStatusLabel = (status: unknown) => formatStatusLabel(status, 'Em andamento');
 
 const hasConfirmedPayment = (process: any) => ['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(process?.paymentStatus || '').toUpperCase());
 
@@ -1777,7 +1760,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                         <article className={`ast-payment-card ${['PAYMENT_FAILED', 'PAYMENT_REVERSED', 'SETUP_REQUIRES_REVIEW'].includes(subscriptionStatus) ? 'ast-payment-card--failed' : ''}`}>
                                             <div className="ast-payment-card__heading">
                                                 <h2 className="ast-card-title">Assinatura mensal</h2>
-                                                <span>{SUBSCRIPTION_STATUS_LABELS[subscriptionStatus] || subscription.status}</span>
+                                                <span>{SUBSCRIPTION_STATUS_LABELS[subscriptionStatus] || formatStatusLabel(subscription.status)}</span>
                                             </div>
                                             <div className="ast-payment-card__account">
                                                 <span className="ast-payment-icon">
@@ -1864,7 +1847,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                         <button className="ast-history-row" type="button" key={invoice.id || index} onClick={() => void openPaymentReceipt(invoice)} aria-label={`Ver detalhes do pagamento de ${formatCurrency(getValue(invoice.amount, invoice.value, invoice.total, 0))}`}>
                                             <span>
                                                 <span className={`ast-history-row__status ast-history-row__status--${paymentStatus.toLowerCase()}`}>
-                                                    {PAYMENT_STATUS_LABELS[paymentStatus] || invoice.status}
+                                                    {PAYMENT_STATUS_LABELS[paymentStatus] || formatStatusLabel(invoice.status)}
                                                 </span>
                                                 <strong>{formatCurrency(getValue(invoice.amount, invoice.value, invoice.total, 0))}</strong>
                                                 <small>{getInvoicePaymentMethodLabel(invoice)} • {formatDate(getValue(invoice.paidAt, invoice.dueDate))}</small>
@@ -2074,7 +2057,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                         <div className="ast-receipt-modal__content">
                             <div className="ast-receipt-modal__summary">
                                 <span className={`ast-receipt-modal__status ast-receipt-modal__status--${String(paymentReceipt.status).toLowerCase()}`}>
-                                    {PAYMENT_STATUS_LABELS[String(paymentReceipt.status).toUpperCase()] || paymentReceipt.status}
+                                    {PAYMENT_STATUS_LABELS[String(paymentReceipt.status).toUpperCase()] || formatStatusLabel(paymentReceipt.status)}
                                 </span>
                                 <small id="ast-payment-receipt-title">{['PAID', 'RECEIVED', 'CONFIRMED'].includes(String(paymentReceipt.status).toUpperCase()) ? 'Pagamento confirmado' : 'Detalhes da cobrança'}</small>
                                 <strong>{formatCurrency(paymentReceipt.amount)}</strong>
@@ -2096,7 +2079,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                         <strong>{paymentReceipt.fiscalInvoice.number ? `NFS-e nº ${paymentReceipt.fiscalInvoice.number}` : 'NFS-e em processamento'}</strong>
                                         <p>{paymentReceipt.fiscalInvoice.status === 'AUTHORIZED' ? 'Emitida e autorizada pela prefeitura.' : paymentReceipt.fiscalInvoice.statusDescription || 'Aguardando autorização da prefeitura.'}</p>
                                     </div>
-                                    <span>{paymentReceipt.fiscalInvoice.status === 'AUTHORIZED' ? 'Emitida' : paymentReceipt.fiscalInvoice.status}</span>
+                                    <span>{paymentReceipt.fiscalInvoice.status === 'AUTHORIZED' ? 'Emitida' : formatStatusLabel(paymentReceipt.fiscalInvoice.status)}</span>
                                 </section>
                             )}
                         </div>

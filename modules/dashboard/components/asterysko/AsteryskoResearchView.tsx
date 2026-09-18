@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AlertTriangle, CheckCircle, Info, ChevronLeft } from 'lucide-react';
 import api from '../../../../services/api';
 import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 interface NclClass {
     number: number;
@@ -295,7 +296,7 @@ const AsteryskoResearchView: React.FC = () => {
                                                 </div>
                                                 <div className="col-span-4 pl-4">
                                                     <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
-                                                        {conflict.status}
+                                                        {formatStatusLabel(conflict.status)}
                                                     </span>
                                                 </div>
                                             </div>

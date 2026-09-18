@@ -7,6 +7,7 @@ import {
     CheckCircle2, XCircle, Copy
 } from 'lucide-react';
 import { Order } from '../../../../types';
+import { formatStatusLabel } from '../../../../utils/statusPresentation';
 
 interface OrderDetailViewProps {
     order: Order;
@@ -160,7 +161,7 @@ const OrderDetailView: React.FC<OrderDetailViewProps> = ({ order, onBack, onDele
                                     <div className="flex items-center gap-4 self-end md:self-center">
                                         <div className="text-right">
                                             <p className="font-bold text-docka-900 dark:text-zinc-100">{formatCurrency(ticket.price)}</p>
-                                            <span className="text-[10px] font-bold text-docka-400 uppercase tracking-wider">{ticket.status}</span>
+                                            <span className="text-[10px] font-bold text-docka-400 uppercase tracking-wider">{formatStatusLabel(ticket.status)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -275,7 +276,7 @@ const OrderDetailView: React.FC<OrderDetailViewProps> = ({ order, onBack, onDele
                                         <Clock size={14} className="text-emerald-600 dark:text-emerald-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 leading-tight">{step.status}</p>
+                                        <p className="text-sm font-bold text-docka-900 dark:text-zinc-100 leading-tight">{formatStatusLabel(step.status)}</p>
                                         <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-1">
                                             {new Date(step.date).toLocaleString('pt-BR')}
                                         </p>

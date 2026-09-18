@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Mail, CheckCircle2, XCircle, Plus, Lock, Unlock } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import {
     ContactAttemptListResponse,
     ContactCandidate,
@@ -178,7 +179,7 @@ export const AsteryskoBusinessContactDetailsModal: React.FC<AsteryskoBusinessCon
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
                             <div>
                                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Resultado Final</span>
-                                <p className="text-sm font-bold text-slate-900 mt-1 uppercase">{attempt.finalResult || attempt.status}</p>
+                                <p className="text-sm font-bold text-slate-900 mt-1 uppercase">{formatStatusLabel(attempt.finalResult || attempt.status)}</p>
                             </div>
                             <div>
                                 <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Confiança Média</span>
@@ -311,7 +312,7 @@ export const AsteryskoBusinessContactDetailsModal: React.FC<AsteryskoBusinessCon
 
                                             <div className="flex items-center space-x-4 text-xs text-slate-500">
                                                 <span>Confiança: <strong className="text-indigo-600">{cand.confidence}%</strong></span>
-                                                <span>Validação: <strong>{cand.validationStatus || 'unverifiable'}</strong></span>
+                                                <span>Validação: <strong>{formatStatusLabel(cand.validationStatus || 'unverifiable')}</strong></span>
                                                 <span>Privacidade: <strong>{cand.privacyClassification}</strong></span>
                                             </div>
                                         </div>

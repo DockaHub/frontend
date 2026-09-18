@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Eye, ImageIcon, Landmark, Loader2, Tags, Trash2, Upload, X } from 'lucide-react';
 import api, { getBackendUrl } from '../../../../services/api';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 interface Process {
     id: string;
@@ -390,7 +391,7 @@ const AsteryskoEditProcessModal: React.FC<Props> = ({ isOpen, process, onClose, 
                                     onChange={event => setFormData(current => ({ ...current, status: event.target.value }))}
                                     className={inputClass}
                                 >
-                                    {!statusIsKnown && formData.status && <option value={formData.status}>{formData.status}</option>}
+                                    {!statusIsKnown && formData.status && <option value={formData.status}>{formatStatusLabel(formData.status)}</option>}
                                     {STATUS_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
                                 </select>
                             </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Mail, RefreshCw, Eye, Shield } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import { AsteryskoBusinessContactDetailsModal } from './AsteryskoBusinessContactDetailsModal';
 import {
     ContactAttemptListResponse,
@@ -88,7 +89,7 @@ export const AsteryskoBusinessContactEnrichmentTab: React.FC<{ organizationId?: 
             case 'running':
                 return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 animate-pulse">Em Execução</span>;
             default:
-                return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">{val}</span>;
+                return <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200">{formatStatusLabel(val)}</span>;
         }
     };
 
@@ -198,7 +199,7 @@ export const AsteryskoBusinessContactEnrichmentTab: React.FC<{ organizationId?: 
                                             <div className="text-[10px] text-slate-400 font-normal">Ref: {new Date(att.createdAt).toLocaleDateString('pt-BR')}</div>
                                         </td>
                                         <td className="py-3.5 px-4 font-medium text-slate-600">
-                                            {att.websiteStatus || 'N/D'}
+                                            {att.websiteStatus ? formatStatusLabel(att.websiteStatus) : 'N/D'}
                                         </td>
                                         <td className="py-3.5 px-4">
                                             {getStatusBadge(att.status, att.finalResult)}

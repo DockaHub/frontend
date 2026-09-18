@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Scale, FileText, AlertCircle, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 import api from '../../../../services/api';
 import DashboardPage from '../../../../components/DashboardPage';
+import { formatStatusLabel } from './utils/statusPresentation';
 
 const AsteryskoOverviewView: React.FC = () => {
     const [stats, setStats] = useState<any>(null);
@@ -208,7 +209,7 @@ const AsteryskoOverviewView: React.FC = () => {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm text-docka-900 dark:text-zinc-100 font-bold leading-tight group-hover:text-black dark:group-hover:text-white transition-colors truncate">{item.brand}</p>
-                                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-1 uppercase font-bold tracking-widest opacity-80">{item.status}</p>
+                                            <p className="text-[10px] text-docka-400 dark:text-zinc-500 mt-1 uppercase font-bold tracking-widest opacity-80">{formatStatusLabel(item.status)}</p>
                                         </div>
                                         <div className="text-[10px] font-bold text-docka-300 dark:text-zinc-600 uppercase tracking-widest">Agora</div>
                                     </div>

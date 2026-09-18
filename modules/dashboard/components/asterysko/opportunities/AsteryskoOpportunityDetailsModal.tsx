@@ -5,6 +5,7 @@ import {
     Building2, Plus, Trash2, ExternalLink, Loader2, Mail, Phone
 } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 
 const DETAIL_CACHE_TTL_MS = 30_000;
 const summaryCache = new Map<string, { data: any; expiresAt: number }>();
@@ -357,7 +358,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
             case 'sent_to_crm':
                 return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40">Enviada ao CRM</span>;
             default:
-                return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">{status}</span>;
+                return <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">{formatStatusLabel(status)}</span>;
         }
     };
 

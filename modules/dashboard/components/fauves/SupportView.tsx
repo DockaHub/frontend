@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { TicketSupport } from '../../../../types';
 import { fauvesService } from '../../../../services/fauvesService';
+import { formatStatusLabel } from '../../../../utils/statusPresentation';
 
 interface SupportViewProps {
     activeSubView?: string;
@@ -250,7 +251,7 @@ const TicketsView = ({ tickets, isLoading, error }: any) => (
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-docka-100 dark:bg-zinc-800 ${t.status === 'open' ? 'text-indigo-600 dark:text-indigo-400' : 'text-emerald-600'}`}>
-                                        {t.status}
+                                        {formatStatusLabel(t.status)}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right text-xs text-docka-400">{t.date}</td>

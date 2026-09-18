@@ -10,6 +10,7 @@ import { api } from '../../../../services/api';
 import { fauvesService } from '../../../../services/fauvesService';
 import DashboardPage from '../../../../components/DashboardPage';
 import { Globe } from 'lucide-react';
+import { formatStatusLabel } from '../../../../utils/statusPresentation';
 
 const DockaEcosystemView: React.FC = () => {
     const childOrgs = ORGANIZATIONS.filter(o => o.slug !== 'docka');
@@ -133,7 +134,7 @@ const DockaEcosystemView: React.FC = () => {
 
                                     <div className="flex items-center gap-2 text-docka-600 dark:text-zinc-400">
                                         <div className={`w-2 h-2 rounded-full ${isOperational ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                                        <span className="text-[10px] font-bold uppercase tracking-wider">{status}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider">{formatStatusLabel(status)}</span>
                                     </div>
                                 </div>
 

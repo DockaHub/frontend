@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Play, RefreshCw, Search, Eye } from 'lucide-react';
 import api from '../../../../../services/api';
+import { formatStatusLabel } from '../utils/statusPresentation';
 import { AsteryskoTrademarkDetailsModal } from './AsteryskoTrademarkDetailsModal';
 import {
     ItemsResponse,
@@ -199,7 +200,7 @@ export const AsteryskoTrademarkScreeningTab: React.FC<AsteryskoTrademarkScreenin
                                             {item.matches?.[0] ? (
                                                 <div>
                                                     <span className="font-semibold">{item.matches[0].markName}</span>
-                                                    <span className="text-[10px] text-zinc-400 ml-1">({item.matches[0].processStatus})</span>
+                                                    <span className="text-[10px] text-zinc-400 ml-1">({formatStatusLabel(item.matches[0].processStatus)})</span>
                                                 </div>
                                             ) : (
                                                 <span className="text-zinc-400 font-italic">Nenhum conflito</span>

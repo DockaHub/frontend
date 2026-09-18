@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useMemo, useState } from
 import { Download, Loader2, Search } from 'lucide-react';
 import { Toaster, toast } from 'sonner';
 import Modal from '../../../../components/common/Modal';
+import { formatStatusLabel } from '../../../../utils/statusPresentation';
 
 export const currency = (value: number) => new Intl.NumberFormat('pt-BR', {
     style: 'currency', currency: 'BRL', maximumFractionDigits: 2,
@@ -64,13 +65,13 @@ export const SearchInput = ({ value, onChange, placeholder = 'Buscar…' }: { va
 export const StatusBadge = ({ value }: { value: string }) => {
     const normalized = String(value || '').toLowerCase();
     const positive = ['active', 'approved', 'paid', 'published', 'operational', 'resolved', 'verified', 'ativo', 'aprovado'].includes(normalized);
-    const danger = ['blocked', 'banned', 'canceled', 'failed', 'offline', 'rejected', 'suspended', 'bloqueado'].includes(normalized);
+    const danger = ['blocked', 'banned', 'canceled', 'cancelled', 'failed', 'error', 'offline', 'rejected', 'suspended', 'bloqueado'].includes(normalized);
     const classes = positive
         ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
         : danger
             ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300'
             : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300';
-    return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${classes}`}>{value || 'Pendente'}</span>;
+    return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${classes}`}>{formatStatusLabel(value, 'Pendente')}</span>;
 };
 
 export const Panel = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
