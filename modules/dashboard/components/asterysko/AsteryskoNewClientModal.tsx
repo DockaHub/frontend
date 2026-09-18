@@ -11,7 +11,7 @@ interface Props {
 }
 
 const InputField = ({ label, name, placeholder, value, onChange }: any) => (
-    <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 py-3 px-6">
+    <div className="flex flex-col border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
         <label className="text-[10px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-1">
             {label}
         </label>
@@ -146,14 +146,14 @@ const AsteryskoNewClientModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 dark:bg-black/40 backdrop-blur-sm transition-opacity">
-            <div className="w-[420px] bg-white dark:bg-zinc-950 m-4 rounded-[20px] shadow-2xl flex flex-col overflow-hidden animate-slide-left">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm transition-opacity dark:bg-black/40 sm:p-4">
+            <div className="flex h-full w-full max-w-[420px] flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] shadow-2xl animate-slide-left dark:bg-zinc-950 sm:h-[calc(100dvh-2rem)] sm:rounded-[20px] sm:pt-0">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
+                <div className="flex shrink-0 items-center justify-between border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6 sm:py-5">
                     <h2 className="font-season text-[22px] font-[420] text-black dark:text-white">
                         Novo cliente
                     </h2>
-                    <button onClick={onClose} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-[#9f9f9f]">
+                    <button onClick={onClose} className="rounded-lg p-2 text-[#9f9f9f] transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Fechar cadastro de cliente">
                         <X size={20} />
                     </button>
                 </div>
@@ -165,7 +165,7 @@ const AsteryskoNewClientModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, 
                     <InputField label="Whatsapp" name="phone" placeholder="(98) 99999-9999" value={formData.phone} onChange={handleChange} />
                     <InputField label="CPF" name="cpf" placeholder="000.000.000-00" value={formData.cpf} onChange={handleChange} />
 
-                    <div className="px-6 py-5">
+                    <div className="px-4 py-5 sm:px-6">
                         <h3 className="font-season text-[18px] font-[420] text-black dark:text-white">
                             Endereço
                         </h3>
@@ -176,8 +176,8 @@ const AsteryskoNewClientModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, 
                     <InputField label="Número" name="numero" placeholder="1080" value={formData.numero} onChange={handleChange} />
                     <InputField label="Bairro" name="bairro" placeholder="Meireles" value={formData.bairro} onChange={handleChange} />
                     
-                    <div className="flex border-b border-[#e5e5e5] dark:border-zinc-800">
-                        <div className="flex-1 border-r border-[#e5e5e5] dark:border-zinc-800">
+                    <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 sm:flex-row">
+                        <div className="flex-1 border-b border-[#e5e5e5] dark:border-zinc-800 sm:border-b-0 sm:border-r">
                             <InputField label="Cidade" name="cidade" placeholder="Fortaleza" value={formData.cidade} onChange={handleChange} />
                         </div>
                         <div className="flex-1">
@@ -185,7 +185,7 @@ const AsteryskoNewClientModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, 
                         </div>
                     </div>
 
-                    <div className="px-6 py-5">
+                    <div className="px-4 py-5 sm:px-6">
                         <h3 className="font-season text-[18px] font-[420] text-black dark:text-white">
                             Empresa
                         </h3>
@@ -197,7 +197,7 @@ const AsteryskoNewClientModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, 
                 </form>
 
                 {/* Footer Action */}
-                <div className="p-6 shrink-0 bg-white dark:bg-zinc-950">
+                <div className="shrink-0 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:bg-zinc-950 sm:p-6">
                     <button 
                         onClick={handleSubmit}
                         disabled={isLoading}

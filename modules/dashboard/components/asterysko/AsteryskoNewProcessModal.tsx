@@ -18,7 +18,7 @@ interface ClientOption {
 }
 
 const InputField = ({ label, name, placeholder, value, isSelect = false, options = [], type = "text", onChange }: any) => (
-    <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 py-3 px-6 relative">
+    <div className="relative flex flex-col border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
         <label className="text-[10px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-1">
             {label}
         </label>
@@ -164,14 +164,14 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
     const isProcessoExistente = formData.origem === 'Processo já existente';
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 dark:bg-black/40 backdrop-blur-sm transition-opacity">
-            <div className="w-[420px] bg-white dark:bg-zinc-950 m-4 rounded-[20px] shadow-2xl flex flex-col overflow-hidden animate-slide-left">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm transition-opacity dark:bg-black/40 sm:p-4">
+            <div className="flex h-full w-full max-w-[420px] flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] shadow-2xl animate-slide-left dark:bg-zinc-950 sm:h-[calc(100dvh-2rem)] sm:rounded-[20px] sm:pt-0">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
+                <div className="flex shrink-0 items-center justify-between border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6 sm:py-5">
                     <h2 className="font-season text-[22px] font-[420] text-black dark:text-white">
                         Novo processo
                     </h2>
-                    <button onClick={onClose} className="p-1 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-[#9f9f9f] cursor-pointer">
+                    <button onClick={onClose} className="rounded-lg p-2 text-[#9f9f9f] transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer" aria-label="Fechar cadastro de processo">
                         <X size={20} />
                     </button>
                 </div>
@@ -179,7 +179,7 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-6">
                     {/* Pesquisa ou criação de cliente */}
-                    <div className="relative border-b border-[#e5e5e5] px-6 py-3 dark:border-zinc-800">
+                    <div className="relative border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
                         <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9f9f9f]">
                             Cliente
                         </label>
@@ -232,7 +232,7 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                         )}
                     </div>
                     {existingClientSelected && (
-                        <p className="mx-6 mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                        <p className="mx-4 mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 sm:mx-6">
                             Cliente existente selecionado. O processo será vinculado a este cadastro.
                         </p>
                     )}
@@ -243,7 +243,7 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                     {/* Condicionais Mista/Figurativa */}
                     {isMistaOrFigurativa && (
                         <div className="bg-zinc-50 dark:bg-zinc-900/50 border-y border-[#e5e5e5] dark:border-zinc-800">
-                            <div className="px-6 py-3 border-b border-[#e5e5e5] dark:border-zinc-800">
+                            <div className="border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
                                 <label className="text-[10px] font-bold text-[#0412dd] dark:text-[#3b48ff] uppercase tracking-wider mb-2 block">
                                     Upload da imagem/logo
                                 </label>
@@ -271,8 +271,8 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                         <div className="bg-zinc-50 dark:bg-zinc-900/50 border-y border-[#e5e5e5] dark:border-zinc-800">
                             <InputField label="Número do processo no INPI" name="inpiProcessNumber" placeholder="Ex: 999999999" value={formData.inpiProcessNumber} onChange={handleChange} />
                             <InputField label="Número do protocolo, se houver" name="protocolNumber" placeholder="Ex: 888888888" value={formData.protocolNumber} onChange={handleChange} />
-                            <div className="flex border-b border-[#e5e5e5] dark:border-zinc-800">
-                                <div className="flex-1 border-r border-[#e5e5e5] dark:border-zinc-800">
+                            <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 sm:flex-row">
+                                <div className="flex-1 border-b border-[#e5e5e5] dark:border-zinc-800 sm:border-b-0 sm:border-r">
                                     <InputField label="Data do depósito" name="depositDate" type="date" value={formData.depositDate} onChange={handleChange} />
                                 </div>
                                 <div className="flex-1">
@@ -286,7 +286,7 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                         </div>
                     )}
 
-                    <div className="px-6 py-5">
+                    <div className="px-4 py-5 sm:px-6">
                         <h3 className="font-season text-[18px] font-[420] text-black dark:text-white">
                             Gestão interna
                         </h3>
@@ -300,7 +300,7 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                     <InputField label="Canal de origem do cliente" name="canal" placeholder="Instagram" value={formData.canal} onChange={handleChange} />
                     <InputField label="Prioridade" name="prioridade" placeholder="Normal" value={formData.prioridade} onChange={handleChange} />
                     
-                    <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 py-3 px-6">
+                    <div className="flex flex-col border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
                         <label className="text-[10px] font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">
                             Tags
                         </label>
@@ -316,7 +316,7 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                 </form>
 
                 {/* Footer Action */}
-                <div className="p-6 shrink-0 bg-white dark:bg-zinc-950">
+                <div className="shrink-0 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:bg-zinc-950 sm:p-6">
                     <button 
                         onClick={handleSubmit}
                         disabled={isLoading}

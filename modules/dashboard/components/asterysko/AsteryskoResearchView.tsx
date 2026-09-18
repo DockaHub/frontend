@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, CheckCircle, Info, ChevronLeft } from 'lucide-react';
 import api from '../../../../services/api';
-import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
 import { formatStatusLabel } from './utils/statusPresentation';
 
 interface NclClass {
@@ -113,7 +112,7 @@ const AsteryskoResearchView: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-950 min-h-full font-sans relative flex flex-col z-0 overflow-x-hidden">
+        <div className="relative z-0 flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-white pb-[env(safe-area-inset-bottom)] font-sans dark:bg-zinc-950">
             <style>{`
                 .grid-bg-overlay {
                     background-image: linear-gradient(to right, #f0f0f0 1px, transparent 1px), linear-gradient(to bottom, #f0f0f0 1px, transparent 1px);
@@ -133,56 +132,56 @@ const AsteryskoResearchView: React.FC = () => {
             />
 
             {/* Header */}
-            <div className="pt-8 px-10 relative z-10 flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <div className="relative z-10 flex min-h-[72px] shrink-0 items-center justify-between border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6 lg:border-b-0 lg:px-10 lg:pb-0 lg:pt-8">
+                <div className="flex min-w-0 items-center gap-2 sm:gap-4">
                     {results && (
-                        <button onClick={resetSearch} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-black dark:text-white">
+                        <button onClick={resetSearch} className="shrink-0 rounded-full p-2 text-black transition-colors hover:bg-zinc-100 dark:text-white dark:hover:bg-zinc-800" aria-label="Voltar para uma nova pesquisa">
                             <ChevronLeft size={20} />
                         </button>
                     )}
-                    <span className="font-season text-[22px] font-[420] text-black dark:text-white">
+                    <span className="truncate font-season text-xl font-[420] text-black dark:text-white sm:text-[22px]">
                         Radar da marca
                     </span>
                 </div>
             </div>
 
             {/* Main Content Area */}
-            <div className={`flex-1 flex flex-col ${!results ? 'items-center justify-center -mt-32' : 'px-10 py-8'}`}>
+            <div className={`flex flex-1 flex-col ${!results ? 'items-center justify-center px-4 py-10 sm:px-6 sm:py-12' : 'px-4 py-6 sm:px-6 lg:px-10 lg:py-8'}`}>
                 
                 {isLoading ? (
                     /* Radar Animation State */
-                    <div className="relative flex flex-col items-center justify-center w-[600px] h-[600px]">
+                    <div className="relative flex aspect-square w-full max-w-[600px] flex-col items-center justify-center">
                         <div className="absolute inset-0 rounded-full animate-[spin_3s_linear_infinite]" 
                              style={{
                                  background: 'conic-gradient(from 90deg at 50% 50%, rgba(4, 18, 221, 0) 0%, rgba(4, 18, 221, 0.02) 60%, rgba(4, 18, 221, 0.15) 100%)',
                                  borderRight: '2px solid rgba(4, 18, 221, 0.5)'
                              }}
                         />
-                        <div className="relative z-10 flex flex-col items-center">
-                            <span className="text-sm font-semibold text-[#0412dd] dark:text-[#3b48ff] mb-2 animate-pulse">
+                        <div className="relative z-10 flex max-w-[80%] flex-col items-center text-center">
+                            <span className="mb-2 text-xs font-semibold text-[#0412dd] animate-pulse dark:text-[#3b48ff] sm:text-sm">
                                 Buscando colidências...
                             </span>
-                            <h2 className="font-season text-5xl text-black dark:text-white tracking-tight">
+                            <h2 className="max-w-full break-words font-season text-3xl tracking-tight text-black dark:text-white sm:text-5xl">
                                 {searchName}
                             </h2>
                         </div>
                     </div>
                 ) : !results ? (
                     /* Default Search Box State */
-                    <div className="w-[600px] bg-white dark:bg-zinc-900 rounded-[16px] shadow-[0_4px_40px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_40px_rgba(0,0,0,0.4)] border border-[#0412dd]/20 dark:border-[#3b48ff]/20 p-6 flex flex-col justify-between relative z-10 transition-all duration-300">
+                    <div className="relative z-10 flex w-full max-w-[600px] flex-col justify-between rounded-2xl border border-[#0412dd]/20 bg-white p-4 shadow-[0_4px_40px_rgba(0,0,0,0.08)] transition-all duration-300 dark:border-[#3b48ff]/20 dark:bg-zinc-900 dark:shadow-[0_4px_40px_rgba(0,0,0,0.4)] sm:p-6">
                         <input
                             value={searchName}
                             onChange={(e) => setSearchName(e.target.value)}
                             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                             placeholder="Nome da marca..."
-                            className="w-full h-12 bg-transparent border-none outline-none font-sans text-xl font-medium text-black dark:text-zinc-100 placeholder:text-[#9f9f9f] mb-6"
+                            className="mb-4 h-12 w-full border-none bg-transparent font-sans text-lg font-medium text-black outline-none placeholder:text-[#9f9f9f] dark:text-zinc-100 sm:mb-6 sm:text-xl"
                         />
                         
-                        <div className="flex justify-between items-center relative">
-                            <div className="w-2/3 relative">
+                        <div className="relative flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="relative w-full sm:w-2/3">
                                 <button 
                                     onClick={() => setShowNclDropdown(!showNclDropdown)}
-                                    className="h-[36px] px-4 bg-[#f0f0f0] dark:bg-zinc-800 rounded-full flex items-center justify-between text-xs font-semibold text-[#666] dark:text-[#ccc] transition-colors hover:bg-[#e5e5e5] dark:hover:bg-zinc-700 w-full"
+                                    className="flex h-11 w-full items-center justify-between rounded-full bg-[#f0f0f0] px-4 text-xs font-semibold text-[#666] transition-colors hover:bg-[#e5e5e5] dark:bg-zinc-800 dark:text-[#ccc] dark:hover:bg-zinc-700 sm:h-[36px]"
                                 >
                                     <span className="truncate pr-2">
                                         {selectedNcl ? `NCL ${selectedNcl.number} - ${selectedNcl.description}` : 'Selecione o ramo de atividade'}
@@ -192,7 +191,7 @@ const AsteryskoResearchView: React.FC = () => {
                                 {showNclDropdown && (
                                     <>
                                         <div className="fixed inset-0 z-40" onClick={() => setShowNclDropdown(false)} />
-                                        <div className="absolute top-full left-0 mt-2 w-[400px] max-h-[300px] overflow-y-auto custom-scrollbar bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 rounded-xl shadow-xl z-50">
+                                        <div className="custom-scrollbar absolute left-0 top-full z-50 mt-2 max-h-[min(300px,50vh)] w-full overflow-y-auto rounded-xl border border-[#e5e5e5] bg-white shadow-xl dark:border-zinc-800 dark:bg-zinc-900 sm:w-[400px] sm:max-w-[calc(100vw-3rem)]">
                                             {INPI_CLASSES.map((cls) => (
                                                 <button 
                                                     key={cls.number}
@@ -211,7 +210,7 @@ const AsteryskoResearchView: React.FC = () => {
                             <button 
                                 onClick={handleSearch}
                                 disabled={!searchName.trim() || !selectedNcl}
-                                className="h-[36px] px-6 bg-[#0412dd] dark:bg-[#3b48ff] text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors hover:bg-blue-800 disabled:opacity-50 disabled:hover:bg-[#0412dd]"
+                                className="flex h-11 w-full items-center justify-center rounded-full bg-[#0412dd] px-6 text-xs font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 disabled:hover:bg-[#0412dd] dark:bg-[#3b48ff] sm:h-[36px] sm:w-auto"
                             >
                                 Analisar marca
                             </button>
@@ -219,11 +218,11 @@ const AsteryskoResearchView: React.FC = () => {
                     </div>
                 ) : (
                     /* Results State */
-                    <div className="w-full max-w-5xl mx-auto flex flex-col gap-8 pb-12 animate-fade-in-up">
+                    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 pb-8 animate-fade-in-up sm:gap-8 sm:pb-12">
                         {/* Summary Header */}
                         <div className="flex flex-col md:flex-row gap-6 items-start">
-                            <div className="flex-1 bg-white dark:bg-zinc-900 p-8 rounded-2xl border border-[#e5e5e5] dark:border-zinc-800 shadow-sm">
-                                <h2 className="font-season text-3xl font-[420] text-black dark:text-white mb-2">
+                            <div className="min-w-0 flex-1 rounded-2xl border border-[#e5e5e5] bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
+                                <h2 className="mb-2 break-words font-season text-2xl font-[420] text-black dark:text-white sm:text-3xl">
                                     {searchName}
                                 </h2>
                                 <p className="text-sm font-semibold text-[#666] dark:text-[#aaa] mb-6">
@@ -235,7 +234,7 @@ const AsteryskoResearchView: React.FC = () => {
                                 </div>
                             </div>
                             
-                            <div className={`w-full md:w-[320px] p-8 rounded-2xl border flex flex-col items-center justify-center text-center shadow-sm ${
+                            <div className={`flex w-full flex-col items-center justify-center rounded-2xl border p-5 text-center shadow-sm sm:p-8 md:w-[320px] ${
                                 results.riskLevel === 'HIGH' ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30' :
                                 results.riskLevel === 'MEDIUM' ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30' :
                                 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30'
@@ -263,8 +262,8 @@ const AsteryskoResearchView: React.FC = () => {
 
                         {/* Conflicts Table */}
                         <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-[#e5e5e5] dark:border-zinc-800 shadow-sm overflow-hidden flex flex-col">
-                            <div className="px-8 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 flex justify-between items-center bg-[#fafafa] dark:bg-zinc-900/50">
-                                <h3 className="font-semibold text-black dark:text-white">Colidências encontradas no INPI</h3>
+                            <div className="flex items-center justify-between gap-3 border-b border-[#e5e5e5] bg-[#fafafa] px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-8 sm:py-5">
+                                <h3 className="text-sm font-semibold text-black dark:text-white sm:text-base">Colidências encontradas no INPI</h3>
                                 <span className="text-xs font-bold bg-[#f0f0f0] dark:bg-zinc-800 text-[#666] dark:text-[#aaa] px-3 py-1 rounded-full">
                                     {results.conflicts.length} registros
                                 </span>
@@ -276,7 +275,7 @@ const AsteryskoResearchView: React.FC = () => {
                                 </div>
                             ) : (
                                 <div className="w-full">
-                                    <div className="grid grid-cols-12 px-8 py-4 border-b border-[#e5e5e5] dark:border-zinc-800 bg-white dark:bg-zinc-900/30">
+                                    <div className="hidden grid-cols-12 border-b border-[#e5e5e5] bg-white px-8 py-4 dark:border-zinc-800 dark:bg-zinc-900/30 md:grid">
                                         <div className="col-span-4 text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider">Marca Impeditiva</div>
                                         <div className="col-span-2 text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider">NCL</div>
                                         <div className="col-span-2 text-[11px] font-bold text-[#9f9f9f] uppercase tracking-wider">Processo</div>
@@ -284,17 +283,25 @@ const AsteryskoResearchView: React.FC = () => {
                                     </div>
                                     <div className="flex flex-col">
                                         {results.conflicts.map((conflict, i) => (
-                                            <div key={i} className="grid grid-cols-12 px-8 py-4 border-b border-[#e5e5e5] dark:border-zinc-800 items-center hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                                                <div className="col-span-4 text-[13px] font-bold text-black dark:text-white pr-4 truncate">
+                                            <div key={i} className="grid grid-cols-2 items-start gap-x-4 gap-y-4 border-b border-[#e5e5e5] px-4 py-5 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50 sm:px-6 md:grid-cols-12 md:items-center md:gap-0 md:px-8 md:py-4">
+                                                <div className="col-span-2 min-w-0 pr-8 text-[13px] font-bold text-black dark:text-white md:col-span-4 md:pr-4">
+                                                    <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-[#9f9f9f] md:hidden">Marca impeditiva</span>
+                                                    <span className="block truncate">
                                                     {conflict.brandName}
+                                                    </span>
                                                 </div>
-                                                <div className="col-span-2 text-[13px] font-semibold text-[#666] dark:text-[#ccc]">
+                                                <div className="col-span-1 text-[13px] font-semibold text-[#666] dark:text-[#ccc] md:col-span-2">
+                                                    <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-[#9f9f9f] md:hidden">Classe</span>
                                                     {conflict.nclClass}
                                                 </div>
-                                                <div className="col-span-2 text-[13px] font-medium font-mono text-[#666] dark:text-[#ccc]">
+                                                <div className="col-span-1 min-w-0 font-mono text-[13px] font-medium text-[#666] dark:text-[#ccc] md:col-span-2">
+                                                    <span className="mb-1 block font-sans text-[9px] font-bold uppercase tracking-wider text-[#9f9f9f] md:hidden">Processo</span>
+                                                    <span className="block truncate">
                                                     {conflict.processNumber || 'N/A'}
+                                                    </span>
                                                 </div>
-                                                <div className="col-span-4 pl-4">
+                                                <div className="col-span-2 md:col-span-4 md:pl-4">
+                                                    <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-[#9f9f9f] md:hidden">Status</span>
                                                     <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
                                                         {formatStatusLabel(conflict.status)}
                                                     </span>
@@ -309,10 +316,6 @@ const AsteryskoResearchView: React.FC = () => {
                     </div>
                 )}
 
-                {/* Área Administrativa de Governança da Base Marcária */}
-                <div className="w-full max-w-5xl mx-auto mt-8 pb-12">
-                    <AsteryskoTrademarkGovernanceArea />
-                </div>
             </div>
             
         </div>

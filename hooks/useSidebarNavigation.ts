@@ -106,6 +106,7 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'crm', label: 'CRM', icon: Briefcase, badgeCount: unreadLeads > 0 ? unreadLeads : undefined, badgeColor: 'bg-red-500' },
                 { id: 'performance', label: 'Minhas Metas', icon: Trophy },
                 { id: 'financial', label: 'Financeiro', icon: CreditCard },
+                { id: 'settings', label: 'Configurações', icon: Settings },
             ];
         }
 

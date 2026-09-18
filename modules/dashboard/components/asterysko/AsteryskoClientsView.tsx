@@ -166,7 +166,7 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
     };
 
     return (
-        <div className="bg-white dark:bg-zinc-950 min-h-full font-sans transition-colors duration-300 flex flex-col relative z-0">
+        <div className="relative z-0 flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-white pb-[env(safe-area-inset-bottom)] font-sans transition-colors duration-300 dark:bg-zinc-950">
             {/* Modal Novo Cliente */}
             <AsteryskoNewClientModal 
                 isOpen={isModalOpen} 
@@ -176,16 +176,16 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
             />
 
             {activityClient && (
-                <div className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => setActivityClient(null)}>
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-3xl w-full max-h-[88vh] shadow-2xl overflow-hidden flex flex-col" onClick={event => event.stopPropagation()}>
-                        <header className="flex items-center justify-between p-6 border-b border-zinc-100 dark:border-zinc-800">
-                            <div>
-                                <h3 className="font-season text-[22px] font-bold text-black dark:text-white flex items-center gap-2"><Activity size={19} className="text-[#0412dd]" />Atividades de {activityClient.name}</h3>
+                <div className="fixed inset-0 z-[130] flex items-center justify-center bg-black/60 p-0 backdrop-blur-xs sm:p-4" onClick={() => setActivityClient(null)}>
+                    <div className="flex h-full max-h-none w-full max-w-3xl flex-col overflow-hidden border border-zinc-200 bg-white pt-[env(safe-area-inset-top)] shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 sm:h-auto sm:max-h-[88vh] sm:rounded-2xl sm:pt-0" onClick={event => event.stopPropagation()}>
+                        <header className="flex items-start justify-between gap-3 border-b border-zinc-100 p-4 dark:border-zinc-800 sm:p-6">
+                            <div className="min-w-0">
+                                <h3 className="flex items-start gap-2 font-season text-lg font-bold leading-6 text-black dark:text-white sm:text-[22px]"><Activity size={19} className="mt-0.5 shrink-0 text-[#0412dd]" /><span className="break-words">Atividades de {activityClient.name}</span></h3>
                                 <p className="text-xs text-zinc-500 mt-1">Sessões, acessos e ações realizadas no Portal do Cliente.</p>
                             </div>
-                            <button onClick={() => setActivityClient(null)} className="text-zinc-400 hover:text-zinc-700"><X size={21} /></button>
+                            <button onClick={() => setActivityClient(null)} className="shrink-0 rounded-lg p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800" aria-label="Fechar histórico"><X size={21} /></button>
                         </header>
-                        <div className="overflow-y-auto p-6">
+                        <div className="overflow-y-auto p-4 sm:p-6">
                             {activityLoading ? (
                                 <div className="py-16 flex justify-center text-zinc-400"><Loader2 className="animate-spin mr-2" size={18} />Carregando histórico...</div>
                             ) : !activityData ? (
@@ -252,8 +252,8 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
 
             {/* Modal Editar Cliente */}
             {editingClient && (
-                <div className="fixed inset-0 z-[120] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                <div className="fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/60 p-3 backdrop-blur-xs sm:p-4">
+                    <div className="my-auto w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-150 dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
                         <div className="flex justify-between items-center mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
                             <h3 className="font-season text-[22px] font-bold text-black dark:text-white flex items-center gap-2">
                                 <Edit2 size={18} className="text-[#0412dd] dark:text-[#3b48ff]" /> Editar Cliente
@@ -357,17 +357,17 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                             </div>
                         </div>
 
-                        <div className="flex justify-end gap-2 pt-6 mt-6 border-t border-zinc-100 dark:border-zinc-800">
+                        <div className="mt-6 flex flex-col-reverse gap-2 border-t border-zinc-100 pt-6 dark:border-zinc-800 sm:flex-row sm:justify-end">
                             <button
                                 onClick={() => setEditingClient(null)}
-                                className="px-4 py-2 text-xs font-bold text-zinc-500 hover:text-zinc-900 cursor-pointer"
+                                className="min-h-11 rounded-xl px-4 py-2 text-xs font-bold text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900 cursor-pointer dark:hover:bg-zinc-800"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={handleSaveClient}
                                 disabled={isSavingEdit}
-                                className="px-5 py-2.5 bg-[#0412dd] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                                className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-[#0412dd] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
                             >
                                 {isSavingEdit ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                                 Salvar Alterações
@@ -378,12 +378,12 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between pt-8 px-10 pb-6 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
+            <div className="flex shrink-0 flex-col items-stretch gap-4 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10 lg:pb-6 lg:pt-8">
                 <span className="font-season text-[22px] font-[420] text-black dark:text-white">Clientes</span>
                 
                 <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 text-black dark:text-white font-sans text-xs font-semibold px-4 h-[32px] rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
+                    className="flex h-11 w-full items-center justify-center rounded-full border border-[#e5e5e5] bg-white px-4 font-sans text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-[36px] sm:w-auto"
                 >
                     <div className="bg-[#0412dd] dark:bg-[#3b48ff] rounded-full p-0.5 mr-2">
                         <Plus size={10} className="text-white" strokeWidth={3} />
@@ -395,7 +395,7 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
             {/* Table */}
             <div className="w-full flex-1">
                 {/* Table Header */}
-                <div className="grid grid-cols-12 px-10 py-4 border-b border-[#e5e5e5] dark:border-zinc-800 bg-[#fafafa] dark:bg-zinc-900/50">
+                <div className="hidden grid-cols-12 border-b border-[#e5e5e5] bg-[#fafafa] px-10 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 lg:grid">
                     <div className="col-span-3 text-sm font-semibold text-[#131f15] dark:text-zinc-200">Cliente</div>
                     <div className="col-span-3 text-sm font-semibold text-[#131f15] dark:text-zinc-200">Email</div>
                     <div className="col-span-2 text-sm font-semibold text-[#131f15] dark:text-zinc-200">Processos</div>
@@ -421,9 +421,9 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                             const extraCount = displayedProcesses.length - limit;
 
                             return (
-                                <div key={client.id} className="grid grid-cols-12 px-10 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors items-center relative group">
-                                    <div className="col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 min-w-0">
-                                        <div className="truncate">{client.company || client.name}</div>
+                                <div key={client.id} className="group relative grid grid-cols-2 items-start gap-x-4 gap-y-4 border-b border-[#e5e5e5] px-4 py-5 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50 sm:px-6 lg:grid-cols-12 lg:items-center lg:gap-0 lg:px-10">
+                                    <div className="col-span-2 min-w-0 pr-10 text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4">
+                                        <div className="truncate text-sm font-semibold lg:text-[13px] lg:font-medium">{client.company || client.name}</div>
                                         <div className={`mt-1 text-[10px] font-bold ${client.portalPresence?.online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
                                             {client.portalPresence?.online
                                                 ? `● Online · ${client.portalPresence.sourceChannel === 'whatsapp' ? 'WhatsApp' : client.portalPresence.sourceChannel === 'email' ? 'E-mail' : 'Portal'}`
@@ -432,12 +432,14 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                                     : 'Nunca acessou o portal'}
                                         </div>
                                     </div>
-                                    <div className="col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 truncate">
-                                        {client.email}
+                                    <div className="col-span-2 min-w-0 text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4">
+                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">E-mail</span>
+                                        <span className="block truncate">{client.email || 'Não informado'}</span>
                                     </div>
                                     
                                     {/* Processes Overlapping Avatars */}
-                                    <div className="col-span-2 flex items-center pr-4">
+                                    <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 lg:justify-start lg:pr-4">
+                                        <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Processos</span>
                                         {displayedProcesses.length === 0 ? (
                                             <span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">Nenhum</span>
                                         ) : (
@@ -472,51 +474,54 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                         )}
                                     </div>
 
-                                    <div className="col-span-2 text-[13px] font-medium text-black dark:text-white pr-4">
+                                    <div className="col-span-1 text-[13px] font-medium text-black dark:text-white lg:col-span-2 lg:pr-4">
+                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Cadastrado</span>
                                         {client.createdAt ? new Date(client.createdAt).toLocaleDateString('pt-BR') : '12/12/2022'}
                                     </div>
-                                    <div className="col-span-2 text-[13px] font-medium text-black dark:text-white pr-8 truncate">
-                                        {client.owner || 'Levy Câmara'}
+                                    <div className="col-span-1 min-w-0 text-right text-[13px] font-medium text-black dark:text-white lg:col-span-2 lg:pr-8 lg:text-left">
+                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Responsável</span>
+                                        <span className="block truncate">{client.owner || 'Levy Câmara'}</span>
                                     </div>
                                     
                                     {/* Action Dropdown Menu */}
-                                    <div className="absolute right-10 z-20">
+                                    <div className="absolute right-4 top-4 z-20 lg:right-10 lg:top-auto">
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setActiveDropdownClientId(activeDropdownClientId === client.id ? null : client.id);
                                             }}
-                                            className="p-1 text-black dark:text-white opacity-50 hover:opacity-100 transition-opacity rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                                            className="rounded-lg p-2 text-black opacity-70 transition-opacity hover:bg-zinc-100 hover:opacity-100 dark:text-white dark:hover:bg-zinc-800 lg:p-1"
+                                            aria-label={`Ações de ${client.company || client.name}`}
                                         >
                                             <MoreVertical size={16} />
                                         </button>
 
                                         {activeDropdownClientId === client.id && (
                                             <>
-                                                <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-30 py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                                                <div className="absolute right-0 z-30 mt-1 w-48 rounded-xl border border-zinc-200 bg-white py-1.5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-150 dark:border-zinc-800 dark:bg-zinc-900">
                                                     <button
                                                         onClick={() => void openClientActivities(client)}
-                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                                                        className="flex min-h-10 w-full items-center gap-2 px-4 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer"
                                                     >
                                                         <Activity size={13} className="text-emerald-600 shrink-0" />
                                                         Ver atividades
                                                     </button>
                                                     <button 
                                                         onClick={() => handleOpenEdit(client)}
-                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                                                        className="flex min-h-10 w-full items-center gap-2 px-4 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer"
                                                     >
                                                         <Edit2 size={13} className="text-blue-600 dark:text-blue-400 shrink-0" />
                                                         Editar Cliente
                                                     </button>
                                                     <button 
                                                         onClick={() => handleResendAccess(client)}
-                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                                                        className="flex min-h-10 w-full items-center gap-2 px-4 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800 cursor-pointer"
                                                     >
                                                         Reenviar Acesso
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDeleteClient(client)}
-                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center gap-2 cursor-pointer"
+                                                        className="flex min-h-10 w-full items-center gap-2 px-4 py-2 text-left text-xs font-semibold text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/20 cursor-pointer"
                                                     >
                                                         Excluir Cliente
                                                     </button>

@@ -228,7 +228,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
     const archivedCount = processes.filter(p => ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(p.status?.toUpperCase() || '')).length;
 
     return (
-        <div className="bg-white dark:bg-zinc-950 min-h-full font-sans transition-colors duration-300 flex flex-col relative z-0">
+        <div className="relative z-0 flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-white pb-[env(safe-area-inset-bottom)] font-sans transition-colors duration-300 dark:bg-zinc-950">
             {/* Modal Novo Processo */}
             <AsteryskoNewProcessModal 
                 isOpen={isModalOpen} 
@@ -246,15 +246,15 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
             />
 
             {/* Header */}
-            <div className="flex items-center justify-between pt-8 px-10 pb-6 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
-                <div className="flex items-center gap-6">
+            <div className="flex shrink-0 flex-col items-stretch gap-4 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-10 lg:pb-6 lg:pt-8">
+                <div className="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
                     <span className="font-season text-[22px] font-[420] text-black dark:text-white">Processos</span>
                     
                     {/* Status Tabs */}
-                    <div className="flex items-center bg-zinc-100 dark:bg-zinc-900 p-1 rounded-full border border-zinc-200 dark:border-zinc-800 text-xs font-semibold">
+                    <div className="flex w-full items-center overflow-x-auto rounded-full border border-zinc-200 bg-zinc-100 p-1 text-xs font-semibold dark:border-zinc-800 dark:bg-zinc-900 sm:w-auto">
                         <button
                             onClick={() => setActiveTab('ACTIVE')}
-                            className={`px-3 py-1 rounded-full transition-colors ${
+                            className={`min-h-9 flex-1 whitespace-nowrap rounded-full px-3 py-1 transition-colors sm:min-h-0 sm:flex-none ${
                                 activeTab === 'ACTIVE'
                                     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
                                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
@@ -264,7 +264,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                         </button>
                         <button
                             onClick={() => setActiveTab('ARCHIVED')}
-                            className={`px-3 py-1 rounded-full transition-colors ${
+                            className={`min-h-9 flex-1 whitespace-nowrap rounded-full px-3 py-1 transition-colors sm:min-h-0 sm:flex-none ${
                                 activeTab === 'ARCHIVED'
                                     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
                                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
@@ -274,7 +274,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                         </button>
                         <button
                             onClick={() => setActiveTab('ALL')}
-                            className={`px-3 py-1 rounded-full transition-colors ${
+                            className={`min-h-9 flex-1 whitespace-nowrap rounded-full px-3 py-1 transition-colors sm:min-h-0 sm:flex-none ${
                                 activeTab === 'ALL'
                                     ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-xs'
                                     : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200'
@@ -287,7 +287,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                 
                 <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 text-black dark:text-white font-sans text-xs font-semibold px-4 h-[32px] rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
+                    className="flex h-11 w-full items-center justify-center rounded-full border border-[#e5e5e5] bg-white px-4 font-sans text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-[36px] lg:w-auto"
                 >
                     <div className="bg-[#0412dd] dark:bg-[#3b48ff] rounded-full p-0.5 mr-2">
                         <Plus size={10} className="text-white" strokeWidth={3} />
@@ -299,7 +299,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
             {/* Table */}
             <div className="w-full flex-1">
                 {/* Table Header */}
-                <div className="grid grid-cols-12 px-10 py-4 border-b border-[#e5e5e5] dark:border-zinc-800 bg-[#fafafa] dark:bg-zinc-900/50">
+                <div className="hidden grid-cols-12 border-b border-[#e5e5e5] bg-[#fafafa] px-10 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 lg:grid">
                     <div className="col-span-3 text-sm font-semibold text-[#131f15] dark:text-zinc-200">Marca</div>
                     <div className="col-span-3 text-sm font-semibold text-[#131f15] dark:text-zinc-200">Número INPI</div>
                     <div className="col-span-3 text-sm font-semibold text-[#131f15] dark:text-zinc-200">Titular</div>
@@ -330,7 +330,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                             const isArchived = ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(process.status?.toUpperCase() || '');
 
                             return (
-                                <div key={process.id} className="grid grid-cols-12 px-10 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors items-center relative group">
+                                <div key={process.id} className="group relative grid grid-cols-2 items-start gap-x-4 gap-y-4 border-b border-[#e5e5e5] px-4 py-5 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50 sm:px-6 lg:grid-cols-12 lg:items-center lg:gap-0 lg:px-10">
                                     
                                     <div 
                                         onClick={() => {
@@ -340,7 +340,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                                 setEditingProcess(process);
                                             }
                                         }}
-                                        className="col-span-3 flex items-center gap-3 pr-4 cursor-pointer group-hover:text-[#0412dd] dark:group-hover:text-blue-400"
+                                        className="col-span-2 flex min-w-0 cursor-pointer items-center gap-3 pr-10 group-hover:text-[#0412dd] dark:group-hover:text-blue-400 lg:col-span-3 lg:pr-4"
                                         title="Abrir Ficha Completa & Documentos"
                                     >
                                         <ProcessBrandLogo logoUrl={process.brand?.logoUrl} brandName={brandName} />
@@ -349,45 +349,50 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                         </span>
                                     </div>
                                     
-                                    <div className="col-span-3 text-[13px] font-medium font-mono text-black dark:text-white pr-4 truncate">
-                                        {process.inpiProcessNumber || 'N/A'}
+                                    <div className="col-span-1 min-w-0 font-mono text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4">
+                                        <span className="mb-1 block font-sans text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Número INPI</span>
+                                        <span className="block truncate">{process.inpiProcessNumber || 'N/A'}</span>
                                     </div>
                                     
                                     <div 
                                         onClick={() => process.brand?.client && setSelectedClient(process.brand.client)}
-                                        className={`col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 truncate ${
+                                        className={`col-span-1 min-w-0 text-right text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4 lg:text-left ${
                                             process.brand?.client ? 'cursor-pointer hover:underline hover:text-[#0412dd] dark:hover:text-blue-400 transition-colors' : ''
                                         }`}
                                     >
-                                        {clientName}
+                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Titular</span>
+                                        <span className="block truncate">{clientName}</span>
                                     </div>
                                     
-                                    <div className="col-span-1 text-[13px] font-medium font-mono text-black dark:text-white pr-4 truncate">
-                                        {nclClass}
+                                    <div className="col-span-1 min-w-0 font-mono text-[13px] font-medium text-black dark:text-white lg:col-span-1 lg:pr-4">
+                                        <span className="mb-1 block font-sans text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Classe</span>
+                                        <span className="block truncate">{nclClass}</span>
                                     </div>
                                     
-                                    <div className="col-span-2 pl-4 pr-12">
-                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-[11px] font-semibold whitespace-nowrap ${statusInfo.color}`}>
+                                    <div className="col-span-1 min-w-0 text-right lg:col-span-2 lg:pl-4 lg:pr-12 lg:text-left">
+                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Status</span>
+                                        <span className={`inline-flex max-w-full items-center truncate whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-semibold sm:text-[11px] ${statusInfo.color}`}>
                                             {statusInfo.label}
                                         </span>
                                     </div>
                                     
                                     {/* Action Menu - Floating right */}
-                                    <div className="absolute right-8 z-10" ref={openMenuId === process.id ? menuRef : null}>
+                                    <div className="absolute right-4 top-4 z-10 lg:right-8 lg:top-auto" ref={openMenuId === process.id ? menuRef : null}>
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenMenuId(openMenuId === process.id ? null : process.id);
                                             }}
-                                            className="p-1.5 text-zinc-500 hover:text-black dark:hover:text-white rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all opacity-80 group-hover:opacity-100"
+                                            className="rounded-lg p-2 text-zinc-500 opacity-80 transition-all hover:bg-zinc-100 hover:text-black group-hover:opacity-100 dark:hover:bg-zinc-800 dark:hover:text-white lg:p-1.5"
                                             title="Opções do processo"
+                                            aria-label={`Ações do processo ${brandName}`}
                                         >
                                             <MoreVertical size={16} />
                                         </button>
 
                                         {/* Dropdown Menu */}
                                         {openMenuId === process.id && (
-                                            <div className="absolute right-0 mt-1 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-50 py-1.5 animate-in fade-in zoom-in-95 duration-150">
+                                            <div className="absolute right-0 z-50 mt-1 w-[min(14rem,calc(100vw-2rem))] rounded-xl border border-zinc-200 bg-white py-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150 dark:border-zinc-800 dark:bg-zinc-900">
                                                 <button
                                                     onClick={() => {
                                                         setOpenMenuId(null);
@@ -397,7 +402,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                                             setEditingProcess(process);
                                                         }
                                                     }}
-                                                    className="w-full px-4 py-2 text-left text-xs font-semibold text-[#0412dd] dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 flex items-center gap-2.5 transition-colors"
+                                                    className="flex min-h-10 w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-semibold text-[#0412dd] transition-colors hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/20"
                                                 >
                                                     <FileText size={14} className="text-[#0412dd] dark:text-blue-400" />
                                                     Ficha Completa & Documentos
@@ -408,7 +413,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                                         setOpenMenuId(null);
                                                         setEditingProcess(process);
                                                     }}
-                                                    className="w-full px-4 py-2 text-left text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 flex items-center gap-2.5 transition-colors"
+                                                    className="flex min-h-10 w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
                                                 >
                                                     <Edit3 size={14} className="text-zinc-500" />
                                                     Editar Dados Rápidos
@@ -416,7 +421,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
 
                                                 <button
                                                     onClick={() => handleToggleArchive(process)}
-                                                    className="w-full px-4 py-2 text-left text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800/70 flex items-center gap-2.5 transition-colors"
+                                                    className="flex min-h-10 w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800/70"
                                                 >
                                                     {isArchived ? (
                                                         <>
@@ -435,7 +440,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
 
                                                 <button
                                                     onClick={() => handleDeleteProcess(process)}
-                                                    className="w-full px-4 py-2 text-left text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2.5 transition-colors"
+                                                    className="flex min-h-10 w-full items-center gap-2.5 px-4 py-2 text-left text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
                                                 >
                                                     <Trash2 size={14} />
                                                     Excluir Definitivamente
@@ -460,7 +465,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                     />
                     
                     {/* Drawer container */}
-                    <div className="fixed inset-y-0 right-0 w-[450px] bg-white dark:bg-zinc-900 border-l border-zinc-200 dark:border-zinc-800 shadow-2xl z-50 p-8 flex flex-col justify-between animate-in slide-in-from-right duration-300">
+                    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[450px] flex-col justify-between border-l border-zinc-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-2xl animate-in slide-in-from-right duration-300 dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
                         <div className="flex flex-col gap-6 overflow-y-auto flex-1 pr-2">
                             {/* Drawer Header */}
                             <div className="flex items-center justify-between pb-4 border-b border-zinc-100 dark:border-zinc-800">

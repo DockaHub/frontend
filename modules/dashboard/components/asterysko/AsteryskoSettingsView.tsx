@@ -7,6 +7,7 @@ import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
 import DashboardPage from '../../../../components/DashboardPage';
 import { AsteryskoScoutAutomationSettings } from './AsteryskoScoutAutomationSettings';
+import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
 
 export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'scout_ai' | 'plans' | 'portal';
 
@@ -2081,6 +2082,8 @@ const WhatsAppCard: React.FC = () => {
                                 </div>
                             </div>
 
+                            <AsteryskoTrademarkGovernanceArea />
+
                         </div>
                     )}
 
@@ -2667,7 +2670,7 @@ const WhatsAppCard: React.FC = () => {
     if (embedded) return settingsContent;
 
     return (
-        <DashboardPage title="Configurações Asterysko" icon={Shield}>
+        <DashboardPage title="Configurações Asterysko" icon={Shield} padding="p-4 sm:p-6">
             {settingsContent}
         </DashboardPage>
     );
