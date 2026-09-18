@@ -381,7 +381,7 @@ const AppContent: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen w-screen bg-white dark:bg-zinc-950 text-docka-900 dark:text-zinc-100 antialiased selection:bg-indigo-100 selection:text-indigo-900 font-sans overflow-hidden transition-colors duration-300">
+    <div className="flex h-screen h-[100dvh] w-full max-w-full overflow-hidden bg-white font-sans text-docka-900 antialiased selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100">
       <CallOverlay />
       {!location.pathname.startsWith('/portal') && 
        !location.pathname.startsWith('/sign') && 
@@ -414,7 +414,7 @@ const AppContent: React.FC = () => {
           onToggleTheme={toggleTheme}
         />
       )}
-      <div className="flex-1 h-full overflow-hidden relative bg-white dark:bg-zinc-950">
+      <div className="relative h-full min-h-0 min-w-0 flex-1 overflow-hidden bg-white dark:bg-zinc-950">
         <Routes>
           {/* Public Routes */}
           <Route path="/portal/welcome" element={<WelcomePage theme={theme} onToggleTheme={toggleTheme} />} />

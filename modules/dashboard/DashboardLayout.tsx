@@ -91,20 +91,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
     };
 
     return (
-        <div className="flex h-full w-full bg-white dark:bg-zinc-950 overflow-hidden flex-col lg:flex-row relative transition-colors duration-300">
+        <div className="relative flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden bg-white transition-colors duration-300 dark:bg-zinc-950 lg:flex-row">
 
             {/* MOBILE HEADER: Only visible on small screens */}
-            <div className="lg:hidden h-14 bg-white dark:bg-zinc-900 border-b border-docka-200 dark:border-zinc-800 flex items-center justify-between px-4 shrink-0 z-20">
-                <div className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(true)}>
+            <div className="z-20 flex h-[calc(3.5rem+env(safe-area-inset-top))] shrink-0 items-center justify-between border-b border-docka-200 bg-white px-4 pt-[env(safe-area-inset-top)] dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
+                <button type="button" className="flex min-w-0 items-center gap-2" onClick={() => setIsMobileMenuOpen(true)} aria-label="Abrir menu e trocar organização">
                     <div className={`w-6 h-6 rounded-md ${selectedOrg?.logoColor || 'bg-blue-600'} flex items-center justify-center text-white text-[10px] font-bold`}>
                         {selectedOrg?.name?.substring(0, 1) || 'A'}
                     </div>
-                    <div className="flex items-center gap-1">
-                        <span className="font-bold text-docka-900 dark:text-zinc-100 text-sm">{selectedOrg?.name || 'Asterysko'}</span>
-                        <ChevronDown size={14} className="text-docka-400 dark:text-zinc-500" />
+                    <div className="flex min-w-0 items-center gap-1">
+                        <span className="max-w-[calc(100vw-7rem)] truncate text-sm font-bold text-docka-900 dark:text-zinc-100">{selectedOrg?.name || 'Asterysko'}</span>
+                        <ChevronDown size={14} className="shrink-0 text-docka-400 dark:text-zinc-500" />
                     </div>
-                </div>
-                <button onClick={() => setIsMobileMenuOpen(true)} className="p-2 text-docka-600 dark:text-zinc-400 hover:bg-docka-100 dark:hover:bg-zinc-800 rounded-md">
+                </button>
+                <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="shrink-0 rounded-md p-2 text-docka-600 hover:bg-docka-100 dark:text-zinc-400 dark:hover:bg-zinc-800" aria-label="Abrir navegação">
                     <Menu size={20} />
                 </button>
             </div>
@@ -130,7 +130,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
             {isMobileMenuOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
                     <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsMobileMenuOpen(false)} />
-                    <div className="absolute inset-y-0 left-0 w-[280px] bg-white dark:bg-zinc-900 shadow-xl animate-in slide-in-from-left duration-200 flex flex-col">
+                    <div className="absolute inset-y-0 left-0 flex w-[min(280px,calc(100vw-32px))] flex-col bg-white shadow-xl animate-in slide-in-from-left duration-200 dark:bg-zinc-900">
                         <UnifiedSidebar
                             currentOrg={selectedOrg}
                             onOrgChange={handleOrgChange}
@@ -149,7 +149,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
             )}
 
             {/* Content Area */}
-            <div className="flex-1 h-full overflow-hidden bg-white dark:bg-zinc-950 relative">
+            <div className="relative h-full min-h-0 min-w-0 flex-1 overflow-hidden bg-white dark:bg-zinc-950">
                 {renderContent()}
             </div>
         </div>

@@ -329,6 +329,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     const handleSelectOrg = (org: Organization) => {
         onOrgChange(org);
         setIsOrgMenuOpen(false);
+        onClose?.();
     };
 
     if (!currentOrg) return null;
@@ -363,7 +364,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     const isCurrentManyways = currentOrg.slug === 'manyspace' || currentOrg.slug === 'manyways';
 
     return (
-        <div className={`flex flex-col bg-white dark:bg-zinc-950 pt-[15px] pb-[15px] h-full border-r border-[#e5e5e5] dark:border-zinc-800 shrink-0 relative w-[180px] ${className}`}>
+        <div className={`relative flex h-full shrink-0 flex-col border-r border-[#e5e5e5] bg-white pb-[15px] pt-[15px] dark:border-zinc-800 dark:bg-zinc-950 ${className || 'w-[180px]'}`}>
 
             {/* Logo container at top left */}
             <div className="px-6 mb-6 flex items-center justify-between relative">
@@ -386,7 +387,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                         <div className="fixed inset-0 z-40" onClick={() => setIsOrgMenuOpen(false)} />
                         <div 
                             ref={orgMenuRef}
-                            className="absolute top-[50px] left-6 w-[320px] bg-[#1e1f22] border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-2"
+                            className="absolute left-6 top-[50px] z-50 w-[min(320px,calc(100vw-3rem))] overflow-hidden rounded-xl border border-white/10 bg-[#1e1f22] p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-150"
                         >
                             <div className="space-y-1">
                                 {filteredAndSortedOrgs.map((org, index) => {
@@ -446,8 +447,8 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                 )}
 
                 {onClose && (
-                    <button onClick={onClose} className="lg:hidden p-1 text-[#9f9f9f] hover:text-black rounded transition-colors">
-                        <X size={16} />
+                    <button onClick={onClose} className="-mr-2 rounded-lg p-2 text-[#9f9f9f] transition-colors hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white lg:hidden" aria-label="Fechar navegação">
+                        <X size={18} />
                     </button>
                 )}
             </div>
@@ -476,7 +477,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                         if (onClose) onClose();
                                     }
                                 }}
-                                className="w-full flex items-center gap-[8px] py-1 px-0 transition-all duration-150 group"
+                                className={`group flex w-full items-center gap-[8px] px-0 transition-all duration-150 ${onClose ? 'min-h-10 py-2' : 'py-1'}`}
                             >
                                 <item.icon
                                     size={16}
@@ -522,7 +523,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                                         navigate(`/dashboard?view=${child.id}&org=${currentOrg.id}`);
                                                         if (onClose) onClose();
                                                     }}
-                                                    className={`w-full flex items-center px-2 py-1.5 text-xs rounded-md transition-colors ${isChildSelected
+                                                    className={`flex w-full items-center rounded-md px-2 text-xs transition-colors ${onClose ? 'min-h-10 py-2' : 'py-1.5'} ${isChildSelected
                                                         ? 'font-bold'
                                                         : 'text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white'
                                                         }`}
@@ -643,7 +644,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                             {/* Menu Items */}
                             <div className="p-2 space-y-1">
                                 <button
-                                    onClick={() => { setIsUserMenuOpen(false); onOpenProfile?.(); }}
+                                    onClick={() => { setIsUserMenuOpen(false); onClose?.(); onOpenProfile?.(); }}
                                     className="w-full text-left px-3 py-2 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-3 transition-colors group"
                                 >
                                     <UserIcon size={16} className="text-docka-400 dark:text-zinc-500 group-hover:text-docka-600 dark:group-hover:text-zinc-200" />
@@ -651,7 +652,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                 </button>
 
                                 <button
-                                    onClick={() => { setIsUserMenuOpen(false); onOpenPreferences?.(); }}
+                                    onClick={() => { setIsUserMenuOpen(false); onClose?.(); onOpenPreferences?.(); }}
                                     className="w-full text-left px-3 py-2 text-sm text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 rounded-lg flex items-center gap-3 transition-colors group"
                                 >
                                     <Settings size={16} className="text-docka-400 dark:text-zinc-500 group-hover:text-docka-600 dark:group-hover:text-zinc-200" />
