@@ -330,7 +330,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                             const isArchived = ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(process.status?.toUpperCase() || '');
 
                             return (
-                                <div key={process.id} className="group relative grid grid-cols-2 items-start gap-x-4 gap-y-4 border-b border-[#e5e5e5] px-4 py-5 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50 sm:px-6 lg:grid-cols-12 lg:items-center lg:gap-0 lg:px-10">
+                                <div key={process.id} className="group relative grid grid-cols-2 items-center gap-x-3 gap-y-2 border-b border-[#e5e5e5] px-4 py-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50 sm:px-6 lg:min-h-[58px] lg:grid-cols-12 lg:gap-0 lg:px-10 lg:py-2.5">
                                     
                                     <div 
                                         onClick={() => {
@@ -340,7 +340,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                                 setEditingProcess(process);
                                             }
                                         }}
-                                        className="col-span-2 flex min-w-0 cursor-pointer items-center gap-3 pr-10 group-hover:text-[#0412dd] dark:group-hover:text-blue-400 lg:col-span-3 lg:pr-4"
+                                        className="col-span-1 flex min-w-0 cursor-pointer items-center gap-2.5 group-hover:text-[#0412dd] dark:group-hover:text-blue-400 lg:col-span-3 lg:gap-3 lg:pr-4"
                                         title="Abrir Ficha Completa & Documentos"
                                     >
                                         <ProcessBrandLogo logoUrl={process.brand?.logoUrl} brandName={brandName} />
@@ -349,35 +349,32 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
                                         </span>
                                     </div>
                                     
-                                    <div className="col-span-1 min-w-0 font-mono text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4">
-                                        <span className="mb-1 block font-sans text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Número INPI</span>
-                                        <span className="block truncate">{process.inpiProcessNumber || 'N/A'}</span>
+                                    <div className="order-3 col-span-1 min-w-0 font-mono text-[11px] font-medium text-zinc-500 dark:text-zinc-400 lg:order-none lg:col-span-3 lg:pr-4 lg:text-[13px] lg:text-black lg:dark:text-white">
+                                        <span className="block truncate lg:hidden">INPI {process.inpiProcessNumber || 'não informado'} · {nclClass}</span>
+                                        <span className="hidden truncate lg:block">{process.inpiProcessNumber || 'N/A'}</span>
                                     </div>
                                     
                                     <div 
                                         onClick={() => process.brand?.client && setSelectedClient(process.brand.client)}
-                                        className={`col-span-1 min-w-0 text-right text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4 lg:text-left ${
+                                        className={`order-3 col-span-1 min-w-0 text-right text-[11px] font-medium text-zinc-500 dark:text-zinc-400 lg:order-none lg:col-span-3 lg:pr-4 lg:text-left lg:text-[13px] lg:text-black lg:dark:text-white ${
                                             process.brand?.client ? 'cursor-pointer hover:underline hover:text-[#0412dd] dark:hover:text-blue-400 transition-colors' : ''
                                         }`}
                                     >
-                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Titular</span>
-                                        <span className="block truncate">{clientName}</span>
+                                        <span className="block truncate"><span className="lg:hidden">Titular: </span>{clientName}</span>
                                     </div>
                                     
-                                    <div className="col-span-1 min-w-0 font-mono text-[13px] font-medium text-black dark:text-white lg:col-span-1 lg:pr-4">
-                                        <span className="mb-1 block font-sans text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Classe</span>
+                                    <div className="hidden min-w-0 font-mono text-[13px] font-medium text-black dark:text-white lg:col-span-1 lg:block lg:pr-4">
                                         <span className="block truncate">{nclClass}</span>
                                     </div>
                                     
-                                    <div className="col-span-1 min-w-0 text-right lg:col-span-2 lg:pl-4 lg:pr-12 lg:text-left">
-                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Status</span>
+                                    <div className="order-2 col-span-1 min-w-0 pr-9 text-right lg:order-none lg:col-span-2 lg:pl-4 lg:pr-12 lg:text-left">
                                         <span className={`inline-flex max-w-full items-center truncate whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-semibold sm:text-[11px] ${statusInfo.color}`}>
                                             {statusInfo.label}
                                         </span>
                                     </div>
                                     
                                     {/* Action Menu - Floating right */}
-                                    <div className="absolute right-4 top-4 z-10 lg:right-8 lg:top-auto" ref={openMenuId === process.id ? menuRef : null}>
+                                    <div className="absolute right-3 top-2.5 z-10 lg:right-8 lg:top-auto" ref={openMenuId === process.id ? menuRef : null}>
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { DollarSign, CreditCard, Clock, AlertTriangle, Plus, Search, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, X, Receipt } from 'lucide-react';
+import { Plus, Search, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, X, Receipt } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 
@@ -333,70 +333,71 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
             )}
 
             {/* Header */}
-            <div className="flex flex-col items-stretch gap-4 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10 lg:pb-6 lg:pt-8">
-                <div>
-                    <span className="font-season text-[22px] font-[420] text-black dark:text-white">Visão Geral Financeira</span>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Gestão global de faturas, cobranças e honorários da Asterysko.</p>
+            <div className="sticky top-0 z-10 flex min-h-[76px] shrink-0 flex-col items-stretch justify-center gap-3 border-b border-[#e5e5e5] bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+                <div className="min-w-0">
+                    <span className="font-season text-xl font-[420] text-black dark:text-white sm:text-[22px]">Financeiro</span>
+                    <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">Faturas, cobranças e honorários da Asterysko.</p>
                 </div>
 
                 <button 
                     onClick={() => setIsCreateOpen(true)}
-                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2.5 text-xs font-bold text-white shadow-xs transition-colors hover:bg-blue-800 dark:bg-[#3b48ff] sm:w-auto"
+                    className="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-4 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-9 sm:min-h-0 sm:w-auto"
                 >
-                    <Plus size={16} strokeWidth={3} /> Emitir Nova Fatura
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0412dd] text-white dark:bg-[#3b48ff]"><Plus size={11} strokeWidth={3} /></span>
+                    Emitir nova fatura
                 </button>
             </div>
 
             {/* Dashboard KPI Grid */}
-            <div className="grid grid-cols-2 gap-3 px-4 py-5 sm:gap-4 sm:px-6 lg:grid-cols-4 lg:gap-6 lg:px-10 lg:py-8">
+            <div className="grid grid-cols-2 border-l border-t border-[#e5e5e5] dark:border-zinc-800 lg:grid-cols-4">
                 
                 {/* Total Faturado */}
-                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-[#0412dd] dark:text-[#3b48ff] rounded-xl flex items-center justify-center mb-4">
-                        <DollarSign size={20} />
-                    </div>
-                    <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">Total Faturado</h3>
-                    <div className="break-words font-season text-xl font-[420] leading-none text-black dark:text-white sm:text-[28px]">
+                <div className="flex min-w-0 flex-col justify-between gap-6 border-b border-r border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-6 lg:gap-10 lg:p-[30px]">
+                    <h3 className="text-xs font-medium text-black dark:text-zinc-300 sm:text-sm">Total faturado</h3>
+                    <div>
+                    <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-black dark:text-white">
                         {formatCurrency(totalBilled)}
+                    </div>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Honorários emitidos no período</p>
                     </div>
                 </div>
 
                 {/* Total Recebido */}
-                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-                    <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-xl flex items-center justify-center mb-4">
-                        <CreditCard size={20} />
-                    </div>
-                    <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">Total Recebido</h3>
-                    <div className="break-words font-season text-xl font-[420] leading-none text-green-600 dark:text-green-400 sm:text-[28px]">
+                <div className="flex min-w-0 flex-col justify-between gap-6 border-b border-r border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-6 lg:gap-10 lg:p-[30px]">
+                    <h3 className="text-xs font-medium text-black dark:text-zinc-300 sm:text-sm">Total recebido</h3>
+                    <div>
+                    <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(totalPaid)}
+                    </div>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Pagamentos já confirmados</p>
                     </div>
                 </div>
                 
                 {/* A Receber / Pendente */}
-                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-                    <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center mb-4">
-                        <Clock size={20} />
-                    </div>
-                    <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">A Receber</h3>
-                    <div className="break-words font-season text-xl font-[420] leading-none text-amber-600 dark:text-amber-400 sm:text-[28px]">
+                <div className="flex min-w-0 flex-col justify-between gap-6 border-b border-r border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-6 lg:gap-10 lg:p-[30px]">
+                    <h3 className="text-xs font-medium text-black dark:text-zinc-300 sm:text-sm">A receber</h3>
+                    <div>
+                    <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-amber-600 dark:text-amber-400">
                         {formatCurrency(totalPending)}
+                    </div>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Faturas dentro do vencimento</p>
                     </div>
                 </div>
 
                 {/* Vencidos */}
-                <div className="rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
-                    <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center mb-4">
-                        <AlertTriangle size={20} />
-                    </div>
-                    <h3 className="text-xs font-bold text-[#9f9f9f] uppercase tracking-wider mb-2">Faturas Vencidas</h3>
-                    <div className="break-words font-season text-xl font-[420] leading-none text-red-600 dark:text-red-400 sm:text-[28px]">
+                <div className="flex min-w-0 flex-col justify-between gap-6 border-b border-r border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-6 lg:gap-10 lg:p-[30px]">
+                    <h3 className="text-xs font-medium text-black dark:text-zinc-300 sm:text-sm">Faturas vencidas</h3>
+                    <div>
+                    <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-red-600 dark:text-red-400">
                         {formatCurrency(totalOverdue)}
+                    </div>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Cobranças que precisam de atenção</p>
                     </div>
                 </div>
             </div>
 
             {/* Filter and Search Bar */}
-            <div className="flex flex-col items-center justify-between gap-4 px-4 pb-4 sm:px-6 md:flex-row lg:px-10">
+            <div className="flex flex-col items-stretch justify-between gap-3 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6 md:flex-row md:items-center">
                 {/* Search Input */}
                 <div className="relative w-full md:w-80">
                     <Search className="absolute left-3.5 top-3 text-zinc-400" size={16} />
@@ -433,8 +434,8 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
             </div>
 
             {/* Invoices Table */}
-            <div className="w-full flex-1 px-4 sm:px-6 lg:px-10">
-                <div className="rounded-2xl border border-[#e5e5e5] bg-white shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="w-full flex-1">
+                <div className="bg-white dark:bg-zinc-950">
                     
                     {/* Table Header */}
                     <div className="hidden grid-cols-12 border-b border-[#e5e5e5] bg-[#fafafa] px-6 py-4 text-xs font-bold uppercase tracking-wider text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950 lg:grid">

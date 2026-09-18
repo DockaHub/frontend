@@ -421,10 +421,10 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                             const extraCount = displayedProcesses.length - limit;
 
                             return (
-                                <div key={client.id} className="group relative grid grid-cols-2 items-start gap-x-4 gap-y-4 border-b border-[#e5e5e5] px-4 py-5 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50 sm:px-6 lg:grid-cols-12 lg:items-center lg:gap-0 lg:px-10">
+                                <div key={client.id} className="group relative grid grid-cols-2 items-center gap-x-3 gap-y-2 border-b border-[#e5e5e5] px-4 py-3 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-900/50 sm:px-6 lg:min-h-[58px] lg:grid-cols-12 lg:gap-0 lg:px-10 lg:py-2.5">
                                     <div className="col-span-2 min-w-0 pr-10 text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4">
                                         <div className="truncate text-sm font-semibold lg:text-[13px] lg:font-medium">{client.company || client.name}</div>
-                                        <div className={`mt-1 text-[10px] font-bold ${client.portalPresence?.online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                                        <div className={`mt-0.5 truncate text-[10px] font-semibold ${client.portalPresence?.online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
                                             {client.portalPresence?.online
                                                 ? `● Online · ${client.portalPresence.sourceChannel === 'whatsapp' ? 'WhatsApp' : client.portalPresence.sourceChannel === 'email' ? 'E-mail' : 'Portal'}`
                                                 : client.portalPresence?.lastSeenAt
@@ -432,18 +432,19 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                                     : 'Nunca acessou o portal'}
                                         </div>
                                     </div>
-                                    <div className="col-span-2 min-w-0 text-[13px] font-medium text-black dark:text-white lg:col-span-3 lg:pr-4">
-                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">E-mail</span>
-                                        <span className="block truncate">{client.email || 'Não informado'}</span>
+                                    <div className="col-span-1 min-w-0 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 lg:col-span-3 lg:pr-4 lg:text-[13px] lg:text-black lg:dark:text-white">
+                                        <span className="block truncate">{client.email || 'E-mail não informado'}</span>
                                     </div>
                                     
                                     {/* Processes Overlapping Avatars */}
-                                    <div className="col-span-2 flex min-w-0 items-center justify-between gap-3 lg:justify-start lg:pr-4">
-                                        <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Processos</span>
+                                    <div className="col-span-1 flex min-w-0 items-center justify-end gap-3 lg:col-span-2 lg:justify-start lg:pr-4">
+                                        <span className="truncate text-right text-[11px] font-semibold text-zinc-500 dark:text-zinc-400 lg:hidden">
+                                            {displayedProcesses.length} {displayedProcesses.length === 1 ? 'processo' : 'processos'}
+                                        </span>
                                         {displayedProcesses.length === 0 ? (
-                                            <span className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500">Nenhum</span>
+                                            <span className="hidden text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 lg:inline">Nenhum</span>
                                         ) : (
-                                            <div className="flex items-center">
+                                            <div className="hidden items-center lg:flex">
                                                 <div className="flex items-center -space-x-1.5 overflow-hidden mr-2">
                                                     {displayedProcesses.slice(0, limit).map((proc: any, idx: number) => {
                                                         const initials = proc.brand ? proc.brand.substring(0, 1).toUpperCase() : '?';
@@ -474,17 +475,15 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                         )}
                                     </div>
 
-                                    <div className="col-span-1 text-[13px] font-medium text-black dark:text-white lg:col-span-2 lg:pr-4">
-                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Cadastrado</span>
+                                    <div className="hidden text-[13px] font-medium text-black dark:text-white lg:col-span-2 lg:block lg:pr-4">
                                         {client.createdAt ? new Date(client.createdAt).toLocaleDateString('pt-BR') : '12/12/2022'}
                                     </div>
-                                    <div className="col-span-1 min-w-0 text-right text-[13px] font-medium text-black dark:text-white lg:col-span-2 lg:pr-8 lg:text-left">
-                                        <span className="mb-1 block text-[9px] font-bold uppercase tracking-wider text-zinc-400 lg:hidden">Responsável</span>
+                                    <div className="hidden min-w-0 text-[13px] font-medium text-black dark:text-white lg:col-span-2 lg:block lg:pr-8">
                                         <span className="block truncate">{client.owner || 'Levy Câmara'}</span>
                                     </div>
                                     
                                     {/* Action Dropdown Menu */}
-                                    <div className="absolute right-4 top-4 z-20 lg:right-10 lg:top-auto">
+                                    <div className="absolute right-3 top-2.5 z-20 lg:right-10 lg:top-auto">
                                         <button 
                                             onClick={(e) => {
                                                 e.stopPropagation();
