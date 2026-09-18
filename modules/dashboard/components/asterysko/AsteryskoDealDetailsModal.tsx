@@ -1335,16 +1335,25 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
             {/* IN-APP DOCUMENT PREVIEW LIGHTBOX MODAL */}
             {previewFile && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-in fade-in duration-200">
-                    <div className="bg-white dark:bg-zinc-900 w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-zinc-200 dark:border-zinc-800">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
-                            <div className="flex items-center gap-3 min-w-0 pr-4">
-                                <div className="w-8 h-8 rounded-lg bg-[#0412dd]/10 dark:bg-[#3b48ff]/20 text-[#0412dd] dark:text-[#3b48ff] flex items-center justify-center shrink-0">
+                <div
+                    className="fixed inset-0 z-[250] flex items-center justify-center bg-black/70 p-0 backdrop-blur-md animate-in fade-in duration-200 sm:p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="asterysko-document-preview-title"
+                    onClick={() => setPreviewFile(null)}
+                >
+                    <div
+                        className="flex h-[100dvh] min-h-0 w-full max-w-5xl flex-col overflow-hidden bg-white shadow-2xl dark:bg-zinc-900 sm:h-[85dvh] sm:rounded-2xl sm:border sm:border-zinc-200 dark:sm:border-zinc-800"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <div className="flex shrink-0 items-center justify-between gap-2 border-b border-zinc-200 bg-zinc-50 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] dark:border-zinc-800 dark:bg-zinc-950 sm:gap-4 sm:px-6 sm:py-4">
+                            <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#0412dd]/10 text-[#0412dd] dark:bg-[#3b48ff]/20 dark:text-[#3b48ff] sm:h-10 sm:w-10">
                                     <FileText size={16} />
                                 </div>
                                 <div className="min-w-0">
-                                    <h3 className="font-bold text-sm text-black dark:text-white truncate" title={previewFile.name}>{previewFile.name}</h3>
-                                    <span className={`inline-block text-[9px] font-bold px-2 py-0.5 rounded ${
+                                    <h3 id="asterysko-document-preview-title" className="truncate text-sm font-bold text-black dark:text-white" title={previewFile.name}>{previewFile.name}</h3>
+                                    <span className={`mt-0.5 inline-block rounded px-2 py-0.5 text-[9px] font-bold ${
                                         previewFile.isPublic 
                                             ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400' 
                                             : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400'
@@ -1354,38 +1363,44 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex shrink-0 items-center gap-1 sm:gap-2">
                                 <button 
                                     onClick={() => forceDownloadFile(previewFile.url, previewFile.name)}
-                                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                                    className="flex h-11 w-11 items-center justify-center rounded-xl text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2"
+                                    aria-label="Baixar documento"
+                                    title="Baixar documento"
                                 >
-                                    <Download size={14} /> Baixar
+                                    <Download size={17} /> <span className="hidden sm:inline">Baixar</span>
                                 </button>
                                 <a 
                                     href={resolveUrl(previewFile.url) || '#'}
                                     target="_blank" 
                                     rel="noreferrer"
-                                    className="flex items-center gap-1.5 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 px-3 py-1.5 rounded-lg transition-colors"
+                                    className="flex h-11 w-11 items-center justify-center rounded-xl text-xs font-semibold text-zinc-600 transition-colors hover:bg-zinc-200 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2"
+                                    aria-label="Abrir documento em outra aba"
+                                    title="Abrir em outra aba"
                                 >
-                                    <ExternalLink size={14} /> Abrir
+                                    <ExternalLink size={17} /> <span className="hidden sm:inline">Abrir</span>
                                 </a>
                                 <button 
                                     onClick={() => setPreviewFile(null)}
-                                    className="p-1.5 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 text-zinc-500 transition-colors"
+                                    className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-900 text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                                    aria-label="Fechar visualização"
+                                    title="Fechar"
                                 >
-                                    <X size={18} />
+                                    <X size={20} />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex-1 bg-zinc-100 dark:bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
+                        <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-zinc-100 p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] dark:bg-zinc-950 sm:p-4">
                             {(() => {
                                 const rawUrl = previewFile.url || '';
                                 const isSignPage = rawUrl.startsWith('/sign/') || rawUrl.startsWith('/portal/');
                                 
                                 if (isSignPage) {
                                     return (
-                                        <div className="flex flex-col items-center justify-center p-10 text-center text-zinc-500 max-w-md">
+                                        <div className="flex max-w-md flex-col items-center justify-center p-5 text-center text-zinc-500 sm:p-10">
                                             <div className="w-16 h-16 rounded-2xl bg-[#0412dd]/10 text-[#0412dd] flex items-center justify-center mb-4">
                                                 <FileText size={32} />
                                             </div>
@@ -1409,7 +1424,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                                 if (!resolvedUrl) {
                                     return (
-                                        <div className="flex flex-col items-center justify-center p-10 text-center text-zinc-500">
+                                        <div className="flex flex-col items-center justify-center p-5 text-center text-zinc-500 sm:p-10">
                                             <FileText size={48} className="mb-3 text-zinc-400" />
                                             <h4 className="font-bold text-sm text-black dark:text-white mb-1">Documento Não Armazenado Localmente</h4>
                                             <p className="text-xs max-w-sm mb-4">Este documento está catalogado no processo, mas seu arquivo físico ainda não foi enviado para pré-visualização direta.</p>
@@ -1435,7 +1450,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         <img 
                                             src={resolvedUrl} 
                                             alt={previewFile.name} 
-                                            className="max-h-full max-w-full object-contain rounded-lg shadow-md"
+                                            className="max-h-full max-w-full rounded-md object-contain shadow-md sm:rounded-lg"
                                         />
                                     );
                                 }
@@ -1444,7 +1459,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     <iframe 
                                         src={resolvedUrl} 
                                         title={previewFile.name} 
-                                        className="w-full h-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white"
+                                        className="h-full w-full rounded-md border border-zinc-200 bg-white dark:border-zinc-800 sm:rounded-xl"
                                     />
                                 );
                             })()}
