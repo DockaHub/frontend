@@ -326,9 +326,9 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
             {/* Header Secundário da Aba Oportunidades */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-zinc-950 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <div className="flex flex-col justify-between gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 md:flex-row md:items-center">
                 <div>
                     <h2 className="text-xl font-bold text-zinc-900 dark:text-white">
                         Oportunidades de Prospecção
@@ -337,24 +337,24 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                         Empresas e marcas identificadas para análise e possível prospecção.
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="grid grid-cols-[44px_1fr] gap-2 sm:flex sm:items-center sm:gap-3">
                     <button
                         onClick={() => void loadData(true)}
-                        className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                        className="flex min-h-11 items-center justify-center rounded-xl border border-zinc-200 p-2.5 text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-800"
                         title="Atualizar lista"
                     >
                         <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                     </button>
                     <button
                         onClick={() => setIsEngineModalOpen(true)}
-                        className="px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 text-xs font-bold hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                        className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-zinc-200 px-3 py-2.5 text-xs font-bold text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800 sm:px-4"
                         title="Motor de Captação"
                     >
                         <Zap size={14} /> Motor
                     </button>
                     <button
                         onClick={() => setIsNewModalOpen(true)}
-                        className="px-5 py-2.5 rounded-xl bg-[#0412dd] dark:bg-[#3b48ff] text-white text-xs font-bold hover:bg-blue-800 transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+                        className="col-span-2 flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#0412dd] px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-blue-800 dark:bg-[#3b48ff] sm:col-auto"
                     >
                         <Plus size={16} /> Nova Oportunidade
                     </button>
@@ -465,7 +465,7 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
             {/* Batch Action Toolbar */}
             {selectedOppIds.length > 0 && (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/90 p-4 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/30">
-                    <div className="flex items-center gap-2">
+                    <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0412dd] text-xs font-bold text-white">
                             {selectedOppIds.length}
                         </span>
@@ -539,8 +539,8 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
 
             {/* Table */}
             <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
+                <div className="overflow-x-auto overscroll-x-contain">
+                    <table className="min-w-[1050px] w-full text-left border-collapse">
                         <thead>
                             <tr className="bg-zinc-50/80 dark:bg-zinc-900/80 border-b border-zinc-100 dark:border-zinc-800 text-[11px] font-bold text-zinc-400 uppercase tracking-wider">
                                 <th className="py-3.5 pl-4 pr-1 w-10">

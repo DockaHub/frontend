@@ -249,7 +249,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
         <div className="bg-white dark:bg-zinc-950 h-full min-h-0 overflow-hidden font-sans transition-colors duration-300 flex flex-col relative">
             {/* Toast Notification */}
             {toastMessage && (
-                <div className="fixed top-5 right-5 z-50 flex items-center gap-3 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 px-4 py-3 rounded-xl shadow-xl border border-zinc-700 dark:border-zinc-300 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="fixed left-4 right-4 top-4 z-[210] flex items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-white shadow-xl animate-in fade-in slide-in-from-top-2 duration-300 dark:border-zinc-300 dark:bg-zinc-100 dark:text-zinc-900 sm:left-auto sm:right-5 sm:top-5 sm:max-w-md">
                     <CheckCircle2 size={16} className="text-emerald-400 dark:text-emerald-600 shrink-0" />
                     <span className="text-xs font-medium">{toastMessage}</span>
                 </div>
@@ -257,7 +257,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
             {/* Top Header & Tab Navigation */}
             <div className="flex flex-col border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
-                <div className="flex items-center justify-between pt-8 px-10 pb-4">
+                <div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-10 lg:pb-4 lg:pt-8">
                     <div className="flex items-center gap-4">
                         <span className="font-season text-[22px] font-[420] text-black dark:text-white">CRM</span>
                     </div>
@@ -267,7 +267,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                             type="button"
                             onClick={() => void fetchDeals(true, true)}
                             disabled={isLoading || isRefreshing}
-                            className="flex h-[32px] items-center justify-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-3.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800"
+                            className="flex h-11 items-center justify-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-3.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-8"
                             aria-label="Atualizar dados do CRM"
                             title="Buscar novos leads e atualizar o funil"
                         >
@@ -278,7 +278,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                         {activeTab !== 'opportunities' && (
                             <button
                                 onClick={() => setIsLeadModalOpen(true)}
-                                className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 text-black dark:text-white font-sans text-xs font-semibold px-4 h-[32px] rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm cursor-pointer"
+                                className="flex h-11 items-center justify-center rounded-full border border-[#e5e5e5] bg-white px-3 font-sans text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:h-8 sm:px-4"
                             >
                                 <div className="bg-[#0412dd] dark:bg-[#3b48ff] rounded-full p-0.5 mr-2">
                                     <Plus size={10} className="text-white" strokeWidth={3} />
@@ -290,7 +290,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                 </div>
 
                 {/* Internal Tabs Segment Control */}
-                <div className="flex items-center gap-1 px-10 pb-3 overflow-x-auto custom-scrollbar">
+                <div className="custom-scrollbar flex items-center gap-1 overflow-x-auto px-4 pb-3 sm:px-6 lg:px-10">
                     {CRM_PHASES.map(phase => {
                         const isActive = activeTab === phase.id;
                         const count = phaseCounts[phase.id];
@@ -299,7 +299,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                             <button
                                 key={phase.id}
                                 onClick={() => handleTabChange(phase.id)}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 shrink-0 ${
+                                className={`flex min-h-10 shrink-0 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 sm:min-h-0 ${
                                     isActive
                                         ? 'bg-[#0412dd] dark:bg-[#3b48ff] text-white shadow-sm'
                                         : 'bg-[#f5f5f5] dark:bg-zinc-900 text-[#666666] dark:text-zinc-400 hover:bg-[#eaeaea] dark:hover:bg-zinc-800'
@@ -320,7 +320,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
             </div>
 
             {/* Board View / Tab Content */}
-            <div className="flex-1 min-h-0 w-full overflow-auto overscroll-contain flex custom-scrollbar relative items-stretch">
+            <div className="custom-scrollbar relative flex min-h-0 w-full flex-1 snap-x snap-mandatory items-stretch overflow-auto overscroll-contain lg:snap-none">
                 {isLoading && (
                     <div className="absolute inset-0 z-10 flex justify-center pt-12 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm">
                         <Loader2 className="animate-spin text-[#0412dd] dark:text-[#3b48ff]" size={24} />
@@ -329,7 +329,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
                 {/* Operational View for Opportunities Tab */}
                 {activeTab === 'opportunities' && (
-                    <div className="w-full min-w-0 p-6 md:p-8">
+                    <div className="w-full min-w-0 p-4 sm:p-6 md:p-8">
                         <AsteryskoOpportunitiesTab
                             organizationId={organization?.id}
                             onTotalChange={setOpportunityCount}
@@ -342,12 +342,12 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                     return (
                         <div 
                             key={col.id} 
-                            className={`shrink-0 w-[300px] h-full min-h-0 flex flex-col ${idx !== currentBoardColumns.length - 1 ? 'border-r border-[#e5e5e5] dark:border-zinc-800' : ''}`}
+                            className={`flex h-full min-h-0 w-[calc(100vw-2rem)] max-w-[320px] shrink-0 snap-start flex-col first:ml-4 last:mr-4 sm:w-[300px] lg:first:ml-0 lg:last:mr-0 ${idx !== currentBoardColumns.length - 1 ? 'border-r border-[#e5e5e5] dark:border-zinc-800' : ''}`}
                             onDragOver={handleDragOver}
                             onDrop={(e) => handleDrop(e, col.id)}
                         >
                             {/* Column Header */}
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e5e5] dark:border-zinc-800 bg-[#fafafa] dark:bg-zinc-900/50 shrink-0 sticky top-0">
+                            <div className="sticky top-0 flex shrink-0 items-center justify-between border-b border-[#e5e5e5] bg-[#fafafa] px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:px-6">
                                 <div className="flex items-center gap-2 truncate">
                                     <div className={`w-2.5 h-2.5 rounded-full ${col.color.replace('bg-', 'bg-').replace('-400', '-500')} shrink-0`} />
                                     <span className="text-sm font-semibold text-[#131f15] dark:text-zinc-200 truncate">{col.title}</span>
@@ -358,7 +358,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                             </div>
                             
                             {/* Column Content */}
-                            <div className="flex-1 min-h-0 p-4 flex flex-col gap-4 overflow-y-auto overscroll-contain custom-scrollbar">
+                            <div className="custom-scrollbar flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain p-3 sm:gap-4 sm:p-4">
                                 {col.cards.map((card) => {
                                     const sourceTag = card.tags?.find((t: any) => typeof t === 'string' ? t.toLowerCase().includes('site') : t.label?.toLowerCase().includes('site')) ? 'Site' : 'Manual';
                                     const formattedValue = formatDisplayValue(card.value);
@@ -369,7 +369,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                                             draggable
                                             onClick={() => setSelectedCard(card)}
                                             onDragStart={(e) => handleDragStart(e, card.id)}
-                                            className={`bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-700 rounded-[12px] p-5 shadow-sm flex flex-col hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors cursor-grab active:cursor-grabbing shrink-0 ${draggedCardId === card.id ? 'opacity-50' : ''}`}
+                                            className={`flex shrink-0 cursor-grab flex-col rounded-[12px] border border-[#e5e5e5] bg-white p-4 shadow-sm transition-colors hover:border-zinc-300 active:cursor-grabbing dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600 sm:p-5 ${draggedCardId === card.id ? 'opacity-50' : ''}`}
                                         >
                                             
                                             {/* Top Pills */}

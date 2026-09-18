@@ -164,8 +164,8 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
     const isProcessoExistente = formData.origem === 'Processo já existente';
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm transition-opacity dark:bg-black/40 sm:p-4">
-            <div className="flex h-full w-full max-w-[420px] flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] shadow-2xl animate-slide-left dark:bg-zinc-950 sm:h-[calc(100dvh-2rem)] sm:rounded-[20px] sm:pt-0">
+        <div className="fixed inset-0 z-[200] flex justify-end bg-black/20 backdrop-blur-sm transition-opacity dark:bg-black/40 sm:p-4">
+            <div className="flex h-[100dvh] min-h-0 w-full max-w-[420px] flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] shadow-2xl animate-slide-left dark:bg-zinc-950 sm:h-[calc(100dvh-2rem)] sm:rounded-[20px] sm:pt-0">
                 {/* Header */}
                 <div className="flex shrink-0 items-center justify-between border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6 sm:py-5">
                     <h2 className="font-season text-[22px] font-[420] text-black dark:text-white">
@@ -177,7 +177,7 @@ const AsteryskoNewProcessModal: React.FC<Props> = ({ isOpen, onClose, onSuccess,
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto custom-scrollbar flex flex-col pb-6">
+                <form onSubmit={handleSubmit} className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-6">
                     {/* Pesquisa ou criação de cliente */}
                     <div className="relative border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
                         <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9f9f9f]">

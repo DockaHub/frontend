@@ -228,7 +228,7 @@ const AsteryskoProcessesView: React.FC<Props> = ({ organization }) => {
     const archivedCount = processes.filter(p => ['ARCHIVED', 'ARQUIVADO', 'CANCELLED', 'CANCELADO'].includes(p.status?.toUpperCase() || '')).length;
 
     return (
-        <div className="relative z-0 flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-white pb-[env(safe-area-inset-bottom)] font-sans transition-colors duration-300 dark:bg-zinc-950">
+        <div className="relative flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto bg-white pb-[env(safe-area-inset-bottom)] font-sans transition-colors duration-300 dark:bg-zinc-950">
             {/* Modal Novo Processo */}
             <AsteryskoNewProcessModal 
                 isOpen={isModalOpen} 

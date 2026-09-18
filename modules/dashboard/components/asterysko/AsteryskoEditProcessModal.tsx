@@ -212,9 +212,9 @@ const AsteryskoEditProcessModal: React.FC<Props> = ({ isOpen, process, onClose, 
     const statusIsKnown = STATUS_OPTIONS.some(option => option.value === formData.status);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 backdrop-blur-sm sm:p-6">
-            <div className="flex max-h-[94vh] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-zinc-50 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
-                <header className="flex shrink-0 items-start justify-between border-b border-zinc-200 bg-white px-6 py-5 dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/45 p-0 backdrop-blur-sm sm:p-6">
+            <div className="flex h-[100dvh] min-h-0 w-full max-w-5xl flex-col overflow-hidden bg-zinc-50 pt-[env(safe-area-inset-top)] shadow-2xl dark:bg-zinc-900 sm:h-auto sm:max-h-[94dvh] sm:rounded-3xl sm:border sm:border-zinc-200 sm:pt-0 dark:sm:border-zinc-800">
+                <header className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-200 bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:px-6 sm:py-5">
                     <div>
                         <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#0412dd] dark:text-blue-400">Cadastro completo</span>
                         <h3 className="mt-1 font-season text-xl font-semibold text-zinc-900 dark:text-white">Editar processo</h3>
@@ -429,11 +429,11 @@ const AsteryskoEditProcessModal: React.FC<Props> = ({ isOpen, process, onClose, 
                         )}
                     </div>
 
-                    <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-zinc-200 bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:bg-zinc-950">
+                    <footer className="flex shrink-0 flex-col-reverse gap-3 border-t border-zinc-200 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4 dark:border-zinc-800 dark:bg-zinc-950">
                         <p className="flex items-center gap-2 text-[11px] text-zinc-500">
                             <Eye size={13} className="text-emerald-600" /> Alterações marcadas como Portal do Cliente aparecem após salvar.
                         </p>
-                        <div className="flex justify-end gap-3">
+                        <div className="grid grid-cols-2 gap-3 sm:flex sm:justify-end">
                             <button
                                 type="button"
                                 onClick={onClose}
@@ -445,7 +445,7 @@ const AsteryskoEditProcessModal: React.FC<Props> = ({ isOpen, process, onClose, 
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="flex min-w-40 items-center justify-center gap-2 rounded-xl bg-[#0412dd] px-5 py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-blue-600"
+                                className="flex min-w-0 items-center justify-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50 sm:min-w-40 sm:px-5 dark:bg-blue-600"
                             >
                                 {isLoading ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
                                 {isLoading ? 'Salvando...' : 'Salvar alterações'}

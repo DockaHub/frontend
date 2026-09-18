@@ -1218,7 +1218,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const tabs = ['Visão geral', 'Atividades', 'Documentos', 'Financeiro', 'Histórico'];
 
     return (
-        <div className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${isOpen && !isClosing ? 'bg-black/20 dark:bg-black/40 backdrop-blur-sm opacity-100' : 'opacity-0 pointer-events-none'}`}>
+        <div className={`fixed inset-0 z-[200] flex items-center justify-center p-0 transition-all duration-300 sm:p-4 ${isOpen && !isClosing ? 'bg-black/20 dark:bg-black/40 backdrop-blur-sm opacity-100' : 'opacity-0 pointer-events-none'}`}>
             
             {/* NOTIFICATION MOCKUP LIGHTBOX MODAL */}
             {activeNotificationMockup && (
@@ -1240,7 +1240,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                         {/* MOCKUP TYPE: WHATSAPP */}
                         {activeNotificationMockup.type === 'whatsapp' && (
-                            <div className="w-[360px] bg-[#0b141a] text-white rounded-3xl overflow-hidden border-4 border-zinc-800 shadow-2xl flex flex-col h-[520px]">
+                            <div className="flex h-[min(520px,75dvh)] w-[min(360px,calc(100vw-2rem))] flex-col overflow-hidden rounded-3xl border-4 border-zinc-800 bg-[#0b141a] text-white shadow-2xl">
                                 <div className="bg-[#202c33] p-3 flex items-center gap-3 border-b border-[#2a3942]">
                                     <div className="w-9 h-9 rounded-full bg-[#00a884] text-white flex items-center justify-center font-bold text-xs shrink-0">
                                         {activeNotificationMockup.recipientName.substring(0, 2).toUpperCase()}
@@ -1275,7 +1275,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                         {/* MOCKUP TYPE: EMAIL */}
                         {activeNotificationMockup.type === 'email' && (
-                            <div className="w-[540px] bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl flex flex-col">
+                            <div className="flex w-[min(540px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
                                 <div className="bg-zinc-100 dark:bg-zinc-950 p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-3 h-3 rounded-full bg-red-400" />
@@ -1306,7 +1306,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                         {/* MOCKUP TYPE: APP NOTIFICATION */}
                         {activeNotificationMockup.type === 'app' && (
-                            <div className="w-[380px] bg-zinc-900 text-white rounded-3xl p-5 border border-zinc-800 shadow-2xl flex flex-col gap-3 font-sans">
+                            <div className="flex w-[min(380px,calc(100vw-2rem))] flex-col gap-3 rounded-3xl border border-zinc-800 bg-zinc-900 p-5 font-sans text-white shadow-2xl">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-7 h-7 rounded-xl bg-[#0412dd] flex items-center justify-center font-season text-xs font-bold text-white">
@@ -1657,11 +1657,11 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             )}
 
             <div 
-                className={`bg-[#fcfcfc] dark:bg-zinc-950 w-full max-w-6xl h-[90vh] rounded-[24px] shadow-2xl flex flex-col overflow-hidden transition-all duration-300 transform ${isOpen && !isClosing ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-4 opacity-0'}`}
+                className={`flex h-[100dvh] min-h-0 w-full max-w-6xl transform flex-col overflow-hidden bg-[#fcfcfc] pt-[env(safe-area-inset-top)] shadow-2xl transition-all duration-300 dark:bg-zinc-950 sm:h-[90dvh] sm:rounded-[24px] sm:pt-0 ${isOpen && !isClosing ? 'scale-100 translate-y-0 opacity-100' : 'scale-95 translate-y-4 opacity-0'}`}
             >
                 {/* Header */}
                 <div className="bg-white dark:bg-zinc-900 border-b border-[#e5e5e5] dark:border-zinc-800 shrink-0">
-                    <div className="p-6 pb-0">
+                    <div className="px-4 pt-4 sm:px-6 sm:pt-6">
                         <div className="flex justify-between items-start mb-2">
                             <span className="bg-[#eef2ff] dark:bg-blue-900/30 text-[#0412dd] dark:text-[#3b48ff] text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wide">
                                 {getStatusLabel(currentDeal?.status)}
@@ -1670,20 +1670,20 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                 <X size={20} />
                             </button>
                         </div>
-                        <h2 className="font-season text-[32px] font-[420] text-black dark:text-white leading-tight">
+                        <h2 className="font-season text-[25px] font-[420] leading-tight text-black dark:text-white sm:text-[32px]">
                             {dealTitle}
                         </h2>
-                        <p className="text-sm font-medium text-[#9f9f9f] mt-1 mb-6 flex items-center gap-2">
+                        <p className="mb-4 mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-[#9f9f9f] sm:mb-6 sm:text-sm">
                             {currentPhase === 'processual' ? 'Processo' : currentPhase === 'onboarding' ? 'Atendimento' : 'Lead'} AST-{currentDeal?.id?.slice(0,8) || '0000'} <span className="w-1 h-1 rounded-full bg-[#ccc]"></span> Cliente: {clientName}
                         </p>
                         
                         {/* Tabs */}
-                        <div className="flex gap-2">
+                        <div className="custom-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:-mx-6 sm:px-6">
                             {tabs.map(tab => (
                                 <button 
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
-                                    className={`px-5 py-2.5 rounded-t-xl text-[13px] font-bold transition-colors ${activeTab === tab ? 'bg-[#0412dd] dark:bg-[#3b48ff] text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-[#666] dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
+                                    className={`min-h-11 shrink-0 rounded-t-xl px-4 py-2.5 text-[13px] font-bold transition-colors sm:min-h-0 sm:px-5 ${activeTab === tab ? 'bg-[#0412dd] dark:bg-[#3b48ff] text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-[#666] dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700'}`}
                                 >
                                     {tab}
                                 </button>
@@ -1705,7 +1705,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                     {activeTab === 'Visão geral' && (
                         <div className="flex flex-col lg:flex-row min-h-full w-full max-w-full overflow-x-hidden">
                             {/* Left Column (Main) */}
-                            <div className="flex-1 min-w-0 border-r border-[#e5e5e5] dark:border-zinc-800 p-6 lg:p-8 pb-16 flex flex-col gap-8 max-w-full overflow-x-hidden">
+                            <div className="flex max-w-full min-w-0 flex-1 flex-col gap-6 overflow-x-hidden border-r border-[#e5e5e5] p-4 pb-10 dark:border-zinc-800 sm:p-6 sm:pb-16 lg:gap-8 lg:p-8 lg:pb-16">
                                 {proxyAwaitingValidation && (
                                     <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/20">
                                         <div className="flex items-start gap-3">
@@ -1747,7 +1747,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 </div>
                                             </div>
                                         </div>
-                                        <div className="flex justify-between items-center border-t border-zinc-100 dark:border-zinc-800/80 pt-3 mt-1">
+                                        <div className="mt-1 flex flex-col items-stretch gap-3 border-t border-zinc-100 pt-3 dark:border-zinc-800/80 sm:flex-row sm:items-center sm:justify-between">
                                             <p className="text-[11px] font-medium text-[#666] dark:text-zinc-400">
                                                 Responsável: <span className="font-bold text-black dark:text-white">{assignedUser}</span>
                                             </p>
@@ -1760,7 +1760,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                         ? handleSendContractReminder()
                                                         : handleAdvanceStage()}
                                                 disabled={isAdvancingStage || isSendingContract || isConfirmingGru || isValidatingProxy || (isGruStage && gruPaymentConfirmed) || uploadingFile}
-                                                className="bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[12px] font-bold px-4 py-2 rounded-full hover:bg-blue-800 transition-colors flex items-center gap-1.5 cursor-pointer"
+                                                className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-[#0412dd] px-4 py-2 text-[12px] font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff] sm:min-h-0"
                                             >
                                                 {(isAdvancingStage || isSendingContract || isConfirmingGru) && <Loader2 size={14} className="animate-spin" />}
                                                 {isGruStage
@@ -1782,7 +1782,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     </p>
 
                                     {/* Visão de 3 Grupos de Fases */}
-                                    <div className="grid grid-cols-3 gap-3 mb-6">
+                                    <div className="mb-6 grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
                                         {[
                                             { id: 'commercial', label: '1. Comercial' },
                                             { id: 'onboarding', label: '2. Onboarding' },
@@ -1860,10 +1860,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                             { label: 'Produtos e serviços', value: currentDeal?.intakeData?.goodsServices || 'Não informado' },
                                             { label: 'Especificação', value: currentDeal?.process?.brand?.nclSpecification || currentDeal?.intakeData?.nclSpecification || 'A validar pela equipe' },
                                         ].map((item, idx) => (
-                                            <div key={idx} className="flex items-center justify-between py-3 border-b border-[#f0f0f0] dark:border-zinc-800/50 last:border-0 group">
-                                                <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400 w-1/3">{item.label}</span>
-                                                <div className="flex-1 flex justify-between items-center">
-                                                    <span className="text-[13px] font-medium text-black dark:text-white">{item.value}</span>
+                                            <div key={idx} className="group flex flex-col gap-1 border-b border-[#f0f0f0] py-3 last:border-0 dark:border-zinc-800/50 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                                                <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400 sm:w-1/3">{item.label}</span>
+                                                <div className="flex min-w-0 flex-1 items-center sm:justify-between">
+                                                    <span className="break-words text-[13px] font-medium text-black dark:text-white">{item.value}</span>
                                                 </div>
                                             </div>
                                         ))}
@@ -1916,7 +1916,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                             </div>
 
                             {/* Right Column (Sidebar) */}
-                            <div className="w-full lg:w-[300px] bg-white dark:bg-zinc-900 p-6 lg:p-8 flex flex-col gap-8 shrink-0">
+                            <div className="flex w-full shrink-0 flex-col gap-6 bg-white p-4 dark:bg-zinc-900 sm:p-6 lg:w-[300px] lg:gap-8 lg:p-8">
                                 
                                 {/* Resumo Comercial & Proposta */}
                                 <div>
@@ -2422,7 +2422,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                     {/* TAB: ATIVIDADES */}
                     {activeTab === 'Atividades' && (
-                        <div className="p-8 pb-16 max-w-4xl mx-auto min-h-full">
+                        <div className="mx-auto min-h-full max-w-4xl p-4 pb-10 sm:p-8 sm:pb-16">
                             <div className="flex justify-between items-center mb-8">
                                 <div>
                                     <h3 className="font-season text-[24px] font-[420] text-black dark:text-white">Plano de Ação</h3>
@@ -2483,7 +2483,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                     {/* TAB: DOCUMENTOS */}
                     {activeTab === 'Documentos' && (
-                        <div className="p-8 pb-16 max-w-4xl mx-auto min-h-full flex flex-col gap-6">
+                        <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-6 p-4 pb-10 sm:p-8 sm:pb-16">
                             
                             {/* Interactive Upload Dropzone */}
                             <div 
@@ -2532,7 +2532,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                             </div>
 
                             {/* Documents Grid */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 {filesList.length === 0 ? (
                                     <div className="col-span-2 text-center py-12 text-zinc-400 dark:text-zinc-500 font-medium text-sm">
                                         Nenhum documento anexado ainda a este processo.
@@ -2648,10 +2648,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                     {/* TAB: FINANCEIRO */}
                     {activeTab === 'Financeiro' && (
-                        <div className="p-8 pb-16 max-w-4xl mx-auto min-h-full flex flex-col gap-8">
+                        <div className="mx-auto flex min-h-full max-w-4xl flex-col gap-6 p-4 pb-10 sm:gap-8 sm:p-8 sm:pb-16">
                             
                             {/* KPI Metrics */}
-                            <div className="grid grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-6">
                                 <div className="bg-white dark:bg-zinc-900 border border-[#e5e5e5] dark:border-zinc-800 rounded-2xl p-6 shadow-xs">
                                     <div className="w-10 h-10 bg-[#eef2ff] dark:bg-blue-900/30 text-[#0412dd] dark:text-[#3b48ff] rounded-full flex items-center justify-center mb-4">
                                         <DollarSign size={20} />
@@ -2816,7 +2816,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
                     {/* TAB: HISTÓRICO */}
                     {activeTab === 'Histórico' && (
-                        <div className="p-8 pb-16 max-w-3xl mx-auto min-h-full">
+                        <div className="mx-auto min-h-full max-w-3xl p-4 pb-10 sm:p-8 sm:pb-16">
                             <div className="flex items-center justify-between mb-8">
                                 <div>
                                     <h3 className="font-season text-[24px] font-[420] text-black dark:text-white">Histórico de atividades</h3>
@@ -3014,10 +3014,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                         event.target.value = '';
                     }}
                 />
-                <div className="bg-white dark:bg-zinc-950 border-t border-[#e5e5e5] dark:border-zinc-800 p-6 flex items-center justify-between shrink-0 z-10">
+                <div className="z-10 grid shrink-0 grid-cols-2 gap-3 border-t border-[#e5e5e5] bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-zinc-950 sm:flex sm:items-center sm:justify-between sm:p-6">
                     <button 
                         onClick={handleArchiveLead}
-                        className="flex-1 max-w-[200px] h-12 bg-white dark:bg-transparent border-2 border-[#eef2ff] dark:border-blue-900 text-[#0412dd] dark:text-[#3b48ff] text-[14px] font-bold rounded-xl hover:bg-[#eef2ff] dark:hover:bg-blue-900/30 transition-colors cursor-pointer"
+                        className="h-12 w-full rounded-xl border-2 border-[#eef2ff] bg-white px-3 text-[13px] font-bold text-[#0412dd] transition-colors hover:bg-[#eef2ff] dark:border-blue-900 dark:bg-transparent dark:text-[#3b48ff] dark:hover:bg-blue-900/30 sm:max-w-[200px] sm:text-[14px]"
                     >
                         {currentPhase === 'commercial' ? 'Arquivar lead' : currentPhase === 'onboarding' ? 'Cancelar atendimento' : 'Arquivar processo'}
                     </button>
@@ -3030,7 +3030,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                 ? handleSendContractReminder()
                                 : handleAdvanceStage()}
                         disabled={isAdvancingStage || isSendingContract || isConfirmingGru || isValidatingProxy || (isGruStage && gruPaymentConfirmed) || uploadingFile}
-                        className="flex-1 max-w-[400px] ml-4 h-12 bg-[#0412dd] dark:bg-[#3b48ff] text-white text-[14px] font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-sm cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0412dd] px-3 text-[13px] font-bold text-white shadow-sm transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff] sm:ml-4 sm:max-w-[400px] sm:text-[14px]"
                     >
                         {(isAdvancingStage || isSendingContract || isConfirmingGru) ? <Loader2 size={18} className="animate-spin" /> : null}
                         {isGruStage

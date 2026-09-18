@@ -58,7 +58,7 @@ const INITIAL_FORM = {
 };
 
 const Field = ({ label, locked, children }: { label: string; locked?: boolean; children: React.ReactNode }) => (
-    <div className="flex flex-col border-b border-[#e5e5e5] px-6 py-3 dark:border-zinc-800">
+    <div className="flex flex-col border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
         <label className="mb-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-[#9f9f9f]">
             {locked && <LockKeyhole size={11} />} {label}
         </label>
@@ -169,16 +169,16 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/20 backdrop-blur-sm dark:bg-black/40">
-            <div className="m-4 flex w-[440px] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-[20px] bg-white shadow-2xl animate-slide-left dark:bg-zinc-950">
-                <div className="flex shrink-0 items-center justify-between border-b border-[#e5e5e5] px-6 py-5 dark:border-zinc-800">
+        <div className="fixed inset-0 z-[200] flex justify-end bg-black/20 backdrop-blur-sm dark:bg-black/40 sm:p-4">
+            <div className="flex h-[100dvh] min-h-0 w-full max-w-[440px] flex-col overflow-hidden bg-white pt-[env(safe-area-inset-top)] shadow-2xl animate-slide-left dark:bg-zinc-950 sm:h-[calc(100dvh-2rem)] sm:rounded-[20px] sm:pt-0">
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6 sm:py-5">
                     <div><h2 className="font-season text-[22px] font-[420] text-black dark:text-white">Novo lead</h2><p className="mt-1 text-xs text-[#8f8f8f]">Cliente, plano e responsável serão vinculados ao processo.</p></div>
-                    <button onClick={onClose} className="rounded-full p-1 text-[#9f9f9f] transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"><X size={20} /></button>
+                    <button onClick={onClose} className="shrink-0 rounded-lg p-2 text-[#9f9f9f] transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800" aria-label="Fechar cadastro de lead"><X size={20} /></button>
                 </div>
 
-                <form id="asterysko-new-lead-form" onSubmit={handleSubmit} className="custom-scrollbar flex flex-1 flex-col overflow-y-auto pb-6">
-                    <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Cliente</h3></div>
-                    <div className="relative border-b border-[#e5e5e5] px-6 py-3 dark:border-zinc-800">
+                <form id="asterysko-new-lead-form" onSubmit={handleSubmit} className="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-6">
+                    <div className="px-4 pb-2 pt-5 sm:px-6"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Cliente</h3></div>
+                    <div className="relative border-b border-[#e5e5e5] px-4 py-3 dark:border-zinc-800 sm:px-6">
                         <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-[#9f9f9f]">Pesquisar ou criar cliente</label>
                         <div className="flex items-center gap-2">
                             {existingClientSelected ? <Check size={16} className="text-emerald-600" /> : <Search size={16} className="text-[#9f9f9f]" />}
@@ -201,11 +201,11 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                             </div>
                         )}
                     </div>
-                    {existingClientSelected && <p className="mx-6 mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">Cliente existente selecionado. Os dados abaixo vêm do cadastro e não podem ser alterados neste lead.</p>}
+                    {existingClientSelected && <p className="mx-4 mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 sm:mx-6">Cliente existente selecionado. Os dados abaixo vêm do cadastro e não podem ser alterados neste lead.</p>}
                     <Field label="E-mail" locked={existingClientSelected}><input type="email" className={inputClass} disabled={existingClientSelected} value={formData.contactEmail} placeholder="cliente@email.com" onChange={event => setFormData(current => ({ ...current, contactEmail: event.target.value }))} /></Field>
                     <Field label="WhatsApp" locked={existingClientSelected}><input className={inputClass} disabled={existingClientSelected} value={formData.contactPhone} placeholder="(00) 00000-0000" onChange={event => setFormData(current => ({ ...current, contactPhone: event.target.value }))} /></Field>
 
-                    <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Processo</h3></div>
+                    <div className="px-4 pb-2 pt-5 sm:px-6"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Processo</h3></div>
                     <Field label="Marca"><input className={inputClass} value={formData.brandName} placeholder="Nome da marca" onChange={event => setFormData(current => ({ ...current, brandName: event.target.value }))} /></Field>
                     <Field label="Serviço de interesse"><select className={`${inputClass} appearance-none`} value={formData.serviceInterest} onChange={event => setFormData(current => ({ ...current, serviceInterest: event.target.value }))}>{['Registro de marca', 'Renovação', 'Recurso', 'Oposição', 'Transferência', 'Acompanhamento', 'Outro'].map(option => <option key={option}>{option}</option>)}</select></Field>
                     <Field label="Plano comercial">
@@ -213,7 +213,7 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                         {selectedPlan?.billingMode === 'SUBSCRIPTION' && <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-300">Mensalidade desde a primeira cobrança: R$ {Number(selectedPlan.value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}. A GRU será emitida separadamente depois.</p>}
                     </Field>
 
-                    <div className="px-6 pb-2 pt-5"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Organização do atendimento</h3></div>
+                    <div className="px-4 pb-2 pt-5 sm:px-6"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Organização do atendimento</h3></div>
                     <Field label="Responsável comercial"><select className={`${inputClass} appearance-none`} value={formData.assignedUserId} onChange={event => setFormData(current => ({ ...current, assignedUserId: event.target.value }))}><option value="">Selecione uma pessoa da equipe Asterysko</option>{members.map(member => <option key={member.id} value={member.id}>{member.name} {member.email ? `— ${member.email}` : ''}</option>)}</select></Field>
                     <Field label="Etapa inicial do CRM">
                         <select className={`${inputClass} appearance-none cursor-pointer`} value={formData.status} onChange={event => setFormData(current => ({ ...current, status: event.target.value }))}>
@@ -259,10 +259,10 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                     <Field label="Origem do lead"><select className={`${inputClass} appearance-none`} value={formData.leadOrigin} onChange={event => setFormData(current => ({ ...current, leadOrigin: event.target.value }))}>{['Instagram', 'Site', 'Indicação', 'Prospecção ativa', 'Outros'].map(option => <option key={option}>{option}</option>)}</select></Field>
                     <Field label="Prioridade"><select className={`${inputClass} appearance-none`} value={formData.priority} onChange={event => setFormData(current => ({ ...current, priority: event.target.value }))}><option value="low">Baixa</option><option value="medium">Normal</option><option value="high">Alta</option><option value="urgent">Urgente</option></select></Field>
                     <Field label="Observações internas"><textarea rows={3} className={`${inputClass} resize-none`} value={formData.internalNotes} placeholder="Contexto comercial e próximos passos" onChange={event => setFormData(current => ({ ...current, internalNotes: event.target.value }))} /></Field>
-                    {feedback && <p className="mx-6 mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/30 dark:text-red-300">{feedback}</p>}
+                    {feedback && <p className="mx-4 mt-4 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-950/30 dark:text-red-300 sm:mx-6">{feedback}</p>}
                 </form>
 
-                <div className="shrink-0 bg-white p-6 dark:bg-zinc-950">
+                <div className="shrink-0 bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:bg-zinc-950 sm:p-6">
                     <button form="asterysko-new-lead-form" type="submit" disabled={isLoading || loadingOptions} className="flex h-12 w-full items-center justify-center rounded-lg bg-[#0412dd] text-[13px] font-bold text-white transition-colors hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff] cursor-pointer">
                         {isLoading
                             ? (formData.status === 'contract'
