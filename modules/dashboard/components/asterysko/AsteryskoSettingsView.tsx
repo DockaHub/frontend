@@ -5,7 +5,6 @@ import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
-import DashboardPage from '../../../../components/DashboardPage';
 import { AsteryskoScoutAutomationSettings } from './AsteryskoScoutAutomationSettings';
 import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
 
@@ -732,7 +731,7 @@ const NotificationTemplatesManager: React.FC = () => {
     const channelTemplates = (Array.isArray(templates) ? templates : []).filter(t => (t.channel || 'WHATSAPP') === activeChannel);
 
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-8">
+        <div className="mt-8 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
             <div className="flex flex-col items-start justify-between gap-4 border-b border-docka-100 bg-docka-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-800/20 sm:p-6 md:flex-row md:items-center">
                 <div>
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
@@ -1259,7 +1258,7 @@ const EmailTemplatesVisualManager: React.FC = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="overflow-hidden rounded-2xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
                 <div className="border-b border-docka-100 bg-gradient-to-br from-[#0412dd]/[0.06] via-white to-white px-6 py-6 dark:border-zinc-800 dark:from-[#4150ff]/10 dark:via-zinc-900 dark:to-zinc-900">
                     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                         <div>
@@ -1498,7 +1497,7 @@ const CrmStageTaskManager: React.FC = () => {
     const currentTasksList = tasksMap[selectedStageKey] || [];
 
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-6">
+        <div className="mt-6 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
             <div className="flex flex-col justify-between gap-4 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:flex-row sm:items-center sm:px-6">
                 <div>
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
@@ -1755,7 +1754,7 @@ const WhatsAppCard: React.FC = () => {
     }, []);
 
     return (
-        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+        <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
                 <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                     <MessageSquare size={16} className="text-emerald-500" /> Conexão WhatsApp (Evolution API)
@@ -1875,30 +1874,37 @@ const WhatsAppCard: React.FC = () => {
 
     const settingsContent = (
         <>
-            <div className={`mx-auto pb-10 animate-in fade-in duration-500 sm:pb-20 ${activeSettingsTab === 'emails' ? 'max-w-6xl' : 'max-w-4xl'}`}>
-                {!embedded && <p className="text-docka-500 dark:text-zinc-400 text-sm mb-6 -mt-2">Preferências do escritório, integração WhatsApp, tabela de planos e portal do cliente.</p>}
+            <div className={`${embedded ? 'pb-10 sm:pb-20' : 'h-full min-h-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]'} bg-white animate-in fade-in duration-500 dark:bg-zinc-950`}>
+                {!embedded && (
+                    <header className="sticky top-0 z-20 flex min-h-[76px] items-center border-b border-[#e5e5e5] bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-7">
+                        <div className="min-w-0">
+                            <h1 className="font-season text-xl font-[420] text-black dark:text-white sm:text-[22px]">Configurações</h1>
+                            <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">Preferências, integrações e regras da operação Asterysko.</p>
+                        </div>
+                    </header>
+                )}
 
                 {/* SETTINGS TABS NAVIGATION */}
-                <div className="custom-scrollbar mb-5 flex snap-x snap-mandatory gap-1 overflow-x-auto rounded-2xl border-b border-docka-200 bg-white p-1.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:mb-8">
+                <nav className={`${embedded ? 'mb-5 sm:mb-8' : 'sticky top-[76px] z-10'} custom-scrollbar flex snap-x snap-mandatory overflow-x-auto border-b border-[#e5e5e5] bg-white/95 px-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-6`} aria-label="Seções das configurações">
                     {availableTabs.map((tab) => {
                         const TabIcon = tab.icon;
                         return (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveSettingsTab(tab.id)}
-                                className={`flex min-h-11 min-w-[145px] flex-1 snap-start items-center justify-center gap-2 rounded-xl px-3 py-3 text-xs font-bold transition-all sm:min-w-[160px] sm:px-4 ${
+                                className={`flex min-h-[52px] min-w-[145px] flex-1 snap-start items-center justify-center gap-2 border-b-2 px-3 py-3 text-xs font-semibold transition-colors sm:min-w-[160px] sm:px-4 ${
                                     activeSettingsTab === tab.id
-                                        ? 'bg-[#0412dd] text-white shadow-md'
-                                        : 'text-docka-600 dark:text-zinc-400 hover:bg-docka-50 dark:hover:bg-zinc-800'
+                                        ? 'border-[#0412dd] bg-blue-50/50 text-[#0412dd] dark:border-[#3b48ff] dark:bg-blue-950/20 dark:text-blue-400'
+                                        : 'border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
                                 }`}
                             >
                                 <TabIcon size={16} /> {tab.label}
                             </button>
                         );
                     })}
-                </div>
+                </nav>
 
-                <div className="space-y-5 sm:space-y-8">
+                <div className={`mx-auto space-y-5 px-4 py-5 sm:space-y-8 sm:px-6 sm:py-8 ${activeSettingsTab === 'emails' ? 'max-w-6xl' : 'max-w-5xl'}`}>
                     
                     {/* TAB 1: NOTIFICATIONS & WHATSAPP */}
                     {activeSettingsTab === 'notifications' && (
@@ -1927,7 +1933,7 @@ const WhatsAppCard: React.FC = () => {
 
                     {activeSettingsTab === 'rpi' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
-                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
                                 <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30">
                                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                                         <Shield size={16} /> Motor INPI (Revista da Propriedade Industrial)
@@ -2091,7 +2097,7 @@ const WhatsAppCard: React.FC = () => {
                     {activeSettingsTab === 'plans' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             {/* Fees Table Section */}
-                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
                                 <div className="flex flex-col items-stretch justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:flex-row sm:items-center sm:px-6">
                                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                                         <CreditCard size={16} /> Tabela de Planos Asterysko
@@ -2182,7 +2188,7 @@ const WhatsAppCard: React.FC = () => {
                     {activeSettingsTab === 'portal' && (
                         <div className="space-y-8 animate-in fade-in duration-300">
                             {/* Client Portal Management */}
-                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
                                 <div className="flex items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
                                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
                                         <Users size={16} /> Portal do Cliente
@@ -2318,7 +2324,7 @@ const WhatsAppCard: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
                                 <div className="flex flex-wrap items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
                                     <div>
                                         <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Benefícios do cliente</h3>
@@ -2670,9 +2676,9 @@ const WhatsAppCard: React.FC = () => {
     if (embedded) return settingsContent;
 
     return (
-        <DashboardPage title="Configurações Asterysko" icon={Shield} padding="p-4 sm:p-6">
+        <div className="h-full min-h-0 overflow-hidden bg-white dark:bg-zinc-950">
             {settingsContent}
-        </DashboardPage>
+        </div>
     );
 };
 
