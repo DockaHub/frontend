@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, MoreVertical, Loader2, Edit2, X, Save, User, Phone, Mail, FileText, MapPin } from 'lucide-react';
+import { Plus, MoreVertical, Loader2, Edit2, X, Save, User, Phone, Mail, FileText, MapPin, Activity, Clock3, Monitor, Smartphone } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 import AsteryskoNewClientModal from './AsteryskoNewClientModal';
@@ -15,6 +15,13 @@ interface Client {
     createdAt?: string;
     owner?: string;
     processes?: any[];
+    portalPresence?: {
+        online: boolean;
+        lastSeenAt?: string | null;
+        sourceChannel?: string | null;
+        browser?: string | null;
+        deviceType?: string | null;
+    };
 }
 
 interface Props {
@@ -40,6 +47,9 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [activeDropdownClientId, setActiveDropdownClientId] = useState<string | null>(null);
+    const [activityClient, setActivityClient] = useState<Client | null>(null);
+    const [activityData, setActivityData] = useState<any>(null);
+    const [activityLoading, setActivityLoading] = useState(false);
 
     const fetchClients = async () => {
         try {
@@ -74,6 +84,21 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
         } catch (error) {
             console.error('Failed to resend access', error);
             alert('Falha ao reenviar acesso.');
+        }
+    };
+
+    const openClientActivities = async (client: Client) => {
+        setActivityClient(client);
+        setActivityData(null);
+        setActivityLoading(true);
+        setActiveDropdownClientId(null);
+        try {
+            const response = await api.get(`/asterysko/clients/${client.id}/activities`);
+            setActivityData(response.data);
+        } catch (error) {
+            console.error('Failed to load client activities', error);
+        } finally {
+            setActivityLoading(false);
         }
     };
 
@@ -147,6 +172,66 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                 onSuccess={fetchClients} 
                 organizationId={organization?.id}
             />
+
+            {activityClient && (
+                <div className="fixed inset-0 z-[130] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4" onClick={() => setActivityClient(null)}>
+                    <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl max-w-3xl w-full max-h-[88vh] shadow-2xl overflow-hidden flex flex-col" onClick={event => event.stopPropagation()}>
+                        <header className="flex items-center justify-between p-6 border-b border-zinc-100 dark:border-zinc-800">
+                            <div>
+                                <h3 className="font-season text-[22px] font-bold text-black dark:text-white flex items-center gap-2"><Activity size={19} className="text-[#0412dd]" />Atividades de {activityClient.name}</h3>
+                                <p className="text-xs text-zinc-500 mt-1">Sessões, acessos e ações realizadas no Portal do Cliente.</p>
+                            </div>
+                            <button onClick={() => setActivityClient(null)} className="text-zinc-400 hover:text-zinc-700"><X size={21} /></button>
+                        </header>
+                        <div className="overflow-y-auto p-6">
+                            {activityLoading ? (
+                                <div className="py-16 flex justify-center text-zinc-400"><Loader2 className="animate-spin mr-2" size={18} />Carregando histórico...</div>
+                            ) : !activityData ? (
+                                <p className="py-16 text-center text-sm text-zinc-500">Não foi possível carregar este histórico.</p>
+                            ) : (
+                                <div className="space-y-6">
+                                    <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 p-4"><small className="text-zinc-500">Presença</small><strong className={`mt-1 block text-sm ${activityData.presence?.online ? 'text-emerald-600' : 'text-zinc-700 dark:text-zinc-200'}`}>{activityData.presence?.online ? '● Online agora' : 'Offline'}</strong></div>
+                                        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 p-4"><small className="text-zinc-500">Último acesso</small><strong className="mt-1 block text-sm text-zinc-800 dark:text-white">{activityData.presence?.lastSeenAt ? new Date(activityData.presence.lastSeenAt).toLocaleString('pt-BR') : 'Nunca acessou'}</strong></div>
+                                        <div className="rounded-xl bg-zinc-50 dark:bg-zinc-800/60 p-4"><small className="text-zinc-500">Canal</small><strong className="mt-1 block text-sm text-zinc-800 dark:text-white">{activityData.presence?.session?.sourceChannel === 'whatsapp' ? 'WhatsApp' : activityData.presence?.session?.sourceChannel === 'email' ? 'E-mail' : activityData.presence?.session?.sourceChannel || '—'}</strong></div>
+                                    </section>
+
+                                    {activityData.sessions?.length > 0 && (
+                                        <section>
+                                            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">Sessões recentes</h4>
+                                            <div className="flex gap-2 overflow-x-auto pb-2">
+                                                {activityData.sessions.slice(0, 6).map((session: any) => (
+                                                    <div key={session.id} className="min-w-[190px] rounded-xl border border-zinc-200 dark:border-zinc-700 p-3 text-xs">
+                                                        <div className="flex items-center gap-2 font-bold text-zinc-800 dark:text-white">{session.deviceType === 'mobile' ? <Smartphone size={14} /> : <Monitor size={14} />}{session.browser || 'Navegador'}</div>
+                                                        <p className="mt-1 text-zinc-500">{session.operatingSystem || 'Sistema não identificado'}</p>
+                                                        <p className="mt-2 text-zinc-500">{new Date(session.startedAt).toLocaleString('pt-BR')}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+
+                                    <section>
+                                        <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-500 mb-3">Linha do tempo</h4>
+                                        <div className="border-l-2 border-zinc-200 dark:border-zinc-700 ml-3 space-y-4">
+                                            {activityData.activities?.length ? activityData.activities.map((event: any) => (
+                                                <article key={event.id} className="relative pl-6">
+                                                    <span className="absolute -left-[7px] top-2 h-3 w-3 rounded-full bg-[#0412dd] ring-4 ring-white dark:ring-zinc-900" />
+                                                    <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 p-4">
+                                                        <strong className="text-sm text-black dark:text-white">{event.content}</strong>
+                                                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500"><Clock3 size={12} />{new Date(event.createdAt).toLocaleString('pt-BR')}{event.sourceChannel && <span>· {event.sourceChannel === 'whatsapp' ? 'WhatsApp' : event.sourceChannel === 'email' ? 'E-mail' : event.sourceChannel}</span>}</div>
+                                                        {event.metadata && <div className="mt-2 flex flex-wrap gap-1">{Object.entries(event.metadata).filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value)).slice(0, 6).map(([key, value]) => <span key={key} className="rounded bg-zinc-100 dark:bg-zinc-800 px-2 py-1 text-[10px] text-zinc-600 dark:text-zinc-300">{key}: {String(value)}</span>)}</div>}
+                                                    </div>
+                                                </article>
+                                            )) : <p className="pl-6 text-sm text-zinc-500">Nenhuma atividade registrada.</p>}
+                                        </div>
+                                    </section>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal Editar Cliente */}
             {editingClient && (
@@ -320,8 +405,15 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
 
                             return (
                                 <div key={client.id} className="grid grid-cols-12 px-10 py-5 border-b border-[#e5e5e5] dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors items-center relative group">
-                                    <div className="col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 truncate">
-                                        {client.company || client.name}
+                                    <div className="col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 min-w-0">
+                                        <div className="truncate">{client.company || client.name}</div>
+                                        <div className={`mt-1 text-[10px] font-bold ${client.portalPresence?.online ? 'text-emerald-600 dark:text-emerald-400' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                                            {client.portalPresence?.online
+                                                ? `● Online · ${client.portalPresence.sourceChannel === 'whatsapp' ? 'WhatsApp' : client.portalPresence.sourceChannel === 'email' ? 'E-mail' : 'Portal'}`
+                                                : client.portalPresence?.lastSeenAt
+                                                    ? `Último acesso ${new Date(client.portalPresence.lastSeenAt).toLocaleString('pt-BR')}`
+                                                    : 'Nunca acessou o portal'}
+                                        </div>
                                     </div>
                                     <div className="col-span-3 text-[13px] font-medium text-black dark:text-white pr-4 truncate">
                                         {client.email}
@@ -385,6 +477,13 @@ const AsteryskoClientsView: React.FC<Props> = ({ organization }) => {
                                         {activeDropdownClientId === client.id && (
                                             <>
                                                 <div className="absolute right-0 mt-1 w-44 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-xl z-30 py-1.5 animate-in fade-in slide-in-from-top-2 duration-150">
+                                                    <button
+                                                        onClick={() => void openClientActivities(client)}
+                                                        className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"
+                                                    >
+                                                        <Activity size={13} className="text-emerald-600 shrink-0" />
+                                                        Ver atividades
+                                                    </button>
                                                     <button 
                                                         onClick={() => handleOpenEdit(client)}
                                                         className="w-full text-left px-4 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 flex items-center gap-2 cursor-pointer"

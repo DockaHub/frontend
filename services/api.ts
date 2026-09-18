@@ -33,6 +33,10 @@ api.interceptors.request.use(
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        const portalSessionId = localStorage.getItem('asterysko_portal_session_id');
+        if (portalSessionId) {
+            config.headers['X-Asterysko-Session-Id'] = portalSessionId;
+        }
         return config;
     },
     (error) => {

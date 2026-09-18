@@ -2820,6 +2820,13 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                     <h3 className="font-season text-[24px] font-[420] text-black dark:text-white">Linha do Tempo e Log de Notificações</h3>
                                     <p className="text-[13px] text-[#666] dark:text-zinc-400">Histórico completo de auditoria do processo e disparos de comunicação.</p>
                                 </div>
+                                <div className={`rounded-full px-3 py-1.5 text-xs font-bold ${currentDeal?.portalPresence?.online ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}>
+                                    {currentDeal?.portalPresence?.online
+                                        ? '● Online agora'
+                                        : currentDeal?.portalPresence?.lastSeenAt
+                                            ? `Visto ${new Date(currentDeal.portalPresence.lastSeenAt).toLocaleString('pt-BR')}`
+                                            : 'Ainda não acessou o portal'}
+                                </div>
                             </div>
                             
                             <div className="relative border-l-2 border-[#e5e5e5] dark:border-zinc-800 ml-4 space-y-8 pb-8">
@@ -2835,6 +2842,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         });
 
                                         const dispatches = getNotificationDispatchesForActivity(event);
+                                        const activityDetails = Object.entries(event.metadata || {})
+                                            .filter(([, value]) => ['string', 'number', 'boolean'].includes(typeof value))
+                                            .slice(0, 6);
 
                                         return (
                                             <div key={idx} className="relative pl-8 group">
@@ -2854,6 +2864,12 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                             <span>•</span>
                                                             <span>{eventDate}</span>
                                                         </div>
+                                                        {(event.sourceChannel || activityDetails.length > 0) && (
+                                                            <div className="mt-2 flex flex-wrap gap-1.5">
+                                                                {event.sourceChannel && <span className="rounded-md bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300">Origem: {event.sourceChannel === 'whatsapp' ? 'WhatsApp' : event.sourceChannel === 'email' ? 'E-mail' : event.sourceChannel}</span>}
+                                                                {activityDetails.map(([key, value]) => <span key={key} className="rounded-md bg-zinc-100 px-2 py-1 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{key}: {String(value)}</span>)}
+                                                            </div>
+                                                        )}
                                                     </div>
 
                                                     {/* Notification Dispatches Badges */}

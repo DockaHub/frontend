@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Check, Clock3, FileText, ImagePlus, LockKeyhole, X } from 'lucide-react';
 import api from '../../../../services/api';
+import { asteryskoActivity } from '../../../../services/asteryskoActivityService';
 
 interface PortalPlan {
     id: string;
@@ -77,6 +78,7 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
     const [logoPreview, setLogoPreview] = useState('');
     const [documents, setDocuments] = useState<File[]>([]);
     const questionRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+    const startedAtRef = useRef(Date.now());
 
     const needsLogo = draft.presentation === 'MISTA';
     const steps = useMemo<Array<{ key: StepKey; eyebrow: string; title: string; help: string }>>(() => [
@@ -99,12 +101,20 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
     useEffect(() => {
         const previousOverflow = document.body.style.overflow;
         document.body.style.overflow = 'hidden';
+        void asteryskoActivity.track('trademark_wizard.started');
         return () => { document.body.style.overflow = previousOverflow; };
     }, []);
 
+    const cancelWizard = () => {
+        void asteryskoActivity.track('trademark_wizard.cancelled', {
+            metadata: { step: step.key, stepIndex, elapsedSeconds: Math.round((Date.now() - startedAtRef.current) / 1000) }
+        });
+        onCancel();
+    };
+
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape' && !submitting) onCancel();
+            if (event.key === 'Escape' && !submitting) cancelWizard();
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
@@ -141,8 +151,9 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
 
     useEffect(() => {
         const timer = window.setTimeout(() => questionRef.current?.focus(), 360);
+        void asteryskoActivity.track('trademark_wizard.step_viewed', { metadata: { step: step.key, stepIndex } });
         return () => window.clearTimeout(timer);
-    }, [step.key]);
+    }, [step.key, stepIndex]);
 
     const canContinue = useMemo(() => {
         if (step.key === 'name') return draft.brandName.trim().length >= 2;
@@ -162,7 +173,7 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
 
     const goBack = () => {
         setFeedback('');
-        if (stepIndex === 0) onCancel();
+        if (stepIndex === 0) cancelWizard();
         else setStepIndex(current => Math.max(0, current - 1));
     };
 
@@ -187,6 +198,11 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
             const response = await api.post('/asterysko/portal/new-trademark', payload);
             const contractUrl = response.data?.contractUrl;
             if (!contractUrl) throw new Error('CONTRACT_NOT_CREATED');
+            void asteryskoActivity.track('trademark_wizard.completed', {
+                processId: response.data?.processId ? String(response.data.processId) : undefined,
+                dealId: response.data?.dealId ? String(response.data.dealId) : undefined,
+                metadata: { steps: steps.length, billingMode: selectedPlan?.billingMode, documentCount: documents.length, hasLogo: Boolean(logo) }
+            });
             try { sessionStorage.removeItem(OFFER_STORAGE_KEY); } catch { /* optional browser storage */ }
             window.location.assign(contractUrl);
         } catch (error: any) {
@@ -217,9 +233,9 @@ export const NewTrademarkWizard: React.FC<Props> = ({ profileComplete, clientNam
     const modal = (
         <div className="ast-typeform" role="dialog" aria-modal="true" aria-labelledby="ast-typeform-title">
             <header className="ast-typeform__topbar">
-                <button className="ast-typeform__brand" type="button" onClick={onCancel}><img src="/assets/asterysko/brand-mark.svg" alt="" /><span><strong>Asterysko</strong><small>Novo registro de marca</small></span></button>
+                <button className="ast-typeform__brand" type="button" onClick={cancelWizard}><img src="/assets/asterysko/brand-mark.svg" alt="" /><span><strong>Asterysko</strong><small>Novo registro de marca</small></span></button>
                 <div className="ast-typeform__offer"><Clock3 size={15} /><span>Oferta mensal válida por</span><strong className={offerExpired ? 'is-expired' : ''}>{formatRemaining(remaining)}</strong></div>
-                <button className="ast-typeform__close" type="button" onClick={onCancel} aria-label="Fechar formulário"><X size={21} /></button>
+                <button className="ast-typeform__close" type="button" onClick={cancelWizard} aria-label="Fechar formulário"><X size={21} /></button>
                 <span className="ast-typeform__progress" style={{ '--ast-progress': `${progress}%` } as React.CSSProperties} />
             </header>
 

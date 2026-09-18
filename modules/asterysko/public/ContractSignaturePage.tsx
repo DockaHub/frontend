@@ -73,6 +73,7 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
     const progressLabelRef = useRef<HTMLElement | null>(null);
     const signaturePanelRef = useRef<HTMLElement | null>(null);
     const readProgressRef = useRef(0);
+    const trackedProgressRef = useRef<Set<number>>(new Set());
     const activeSectionRef = useRef('contract-summary');
     const { addToast } = useToast();
 
@@ -80,7 +81,9 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
         if (showLoading) setLoading(true);
         setLoadError('');
         try {
-            const response = await api.get(`/asterysko/public/deals/${dealId}/contract`);
+            const tracking = new URLSearchParams(window.location.search).get('tracking');
+            const trackingQuery = tracking ? `?tracking=${encodeURIComponent(tracking)}` : '';
+            const response = await api.get(`/asterysko/public/deals/${dealId}/contract${trackingQuery}`);
             const nextDeal = response.data.deal as ContractDeal;
             const labels = Array.isArray(response.data.acknowledgements) ? response.data.acknowledgements : [];
             setDeal(nextDeal);
@@ -89,7 +92,11 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
             setRectificationVersion(response.data.rectificationVersion || '');
             setAcknowledgementLabels(labels);
             setAcknowledgements(current => current.length === labels.length ? current : labels.map(() => false));
-            setPdfUrl(response.data.pdfUrl || nextDeal?.pdfUrl || '');
+            const rawPdfUrl = response.data.pdfUrl || nextDeal?.pdfUrl || '';
+            const trackedPdfUrl = rawPdfUrl && tracking
+                ? `${rawPdfUrl}${rawPdfUrl.includes('?') ? '&' : '?'}tracking=${encodeURIComponent(tracking)}`
+                : rawPdfUrl;
+            setPdfUrl(trackedPdfUrl);
             setSigned(Boolean(nextDeal?.signedAt || nextDeal?.status === 'contract_signed'));
             if (nextDeal?.contactName) setSignatureName(current => current || nextDeal.contactName || '');
         } catch (error: any) {
@@ -126,6 +133,15 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
                 readProgressRef.current = nextProgress;
                 if (progressLabelRef.current) progressLabelRef.current.textContent = `${nextProgress}% revisado`;
             }
+            const tracking = new URLSearchParams(window.location.search).get('tracking');
+            [25, 50, 75, 100].forEach(threshold => {
+                if (nextProgress < threshold || trackedProgressRef.current.has(threshold)) return;
+                trackedProgressRef.current.add(threshold);
+                const trackingQuery = tracking ? `?tracking=${encodeURIComponent(tracking)}` : '';
+                void api.post(`/asterysko/public/deals/${dealId}/activity${trackingQuery}`, {
+                    eventName: 'contract.read_progress', progress: threshold
+                }).catch(() => undefined);
+            });
 
             const marker = page.scrollTop + 150;
             let current = 'contract-summary';
@@ -199,14 +215,17 @@ export const ContractSignaturePage: React.FC<ContractSignaturePageProps> = ({ de
         }
         setSigning(true);
         try {
-            const response = await api.post(`/asterysko/public/deals/${dealId}/sign`, {
+            const tracking = new URLSearchParams(window.location.search).get('tracking');
+            const trackingQuery = tracking ? `?tracking=${encodeURIComponent(tracking)}` : '';
+            const response = await api.post(`/asterysko/public/deals/${dealId}/sign${trackingQuery}`, {
                 signatureName: signatureName.trim(),
                 agreed: true,
                 acknowledgements
             });
             setSigned(true);
             setDeal(response.data?.deal || deal);
-            setPdfUrl(response.data?.deal?.pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`);
+            const rawPdfUrl = response.data?.deal?.pdfUrl || `/api/asterysko/public/deals/${dealId}/contract-pdf`;
+            setPdfUrl(tracking ? `${rawPdfUrl}${rawPdfUrl.includes('?') ? '&' : '?'}tracking=${encodeURIComponent(tracking)}` : rawPdfUrl);
             addToast({ type: 'success', title: 'Contrato assinado', message: 'O PDF foi gerado e anexado ao seu processo.' });
         } catch (error: any) {
             console.error('Error signing contract', error);

@@ -21,6 +21,16 @@ const OTP_LENGTH = 6;
 
 const createEmptyOtp = () => Array<string>(OTP_LENGTH).fill('');
 
+const getLoginAttribution = () => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        source: params.get('utm_source') || undefined,
+        medium: params.get('utm_medium') || undefined,
+        campaign: params.get('utm_campaign') || undefined,
+        referrerHost: document.referrer ? (() => { try { return new URL(document.referrer).hostname; } catch { return undefined; } })() : undefined,
+    };
+};
+
 const formatPhoneMask = (value: string) => {
     const digits = value.replace(/\D/g, '').slice(0, 11);
     if (digits.length <= 2) return digits ? `(${digits}` : '';
@@ -114,12 +124,15 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
         setError('');
         setLoading(true);
         try {
-            const response = await api.post('/auth/portal/verify-otp', { identifier: sentIdentifier, code });
+            const response = await api.post('/auth/portal/verify-otp', { identifier: sentIdentifier, code, attribution: getLoginAttribution() });
             if (response.data.user?.role !== 'CLIENT') {
                 throw new Error('A sessão recebida não pertence ao Portal do Cliente.');
             }
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('user', JSON.stringify(response.data.user));
+            if (response.data.portalSessionId) {
+                localStorage.setItem('asterysko_portal_session_id', String(response.data.portalSessionId));
+            }
             setPortalLoading(true);
             await Promise.all([
                 refreshUser(),

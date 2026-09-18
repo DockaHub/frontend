@@ -7,6 +7,7 @@ import AsteryskoAnimatedMark from '../../../asterysko/public/AsteryskoAnimatedMa
 import { useSystemBarColor } from '../../../asterysko/public/useSystemBarColor';
 import NewTrademarkWizard from './NewTrademarkWizard';
 import '../../../asterysko/public/AsteryskoPortal.css';
+import { asteryskoActivity } from '../../../../services/asteryskoActivityService';
 
 interface AsteryskoClientPortalProps {
     onExit: () => void;
@@ -419,6 +420,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const viewTimer = useRef<number | null>(null);
     const menuTimer = useRef<number | null>(null);
     const subscriptionRequestRef = useRef(0);
+    const onboardingTrackedProcessRef = useRef<Set<string>>(new Set());
+    const onboardingCompletionTrackedRef = useRef<Set<string>>(new Set());
 
     useSystemBarColor(onboarding ? '#f3f3f3' : view === 'details' ? '#ffffff' : '#f3f3f3');
 
@@ -519,6 +522,21 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
         void fetchData();
     }, [logout]);
+
+    useEffect(() => {
+        void asteryskoActivity.ensureSession().then(() => asteryskoActivity.track('portal.opened', {
+            metadata: { onboarding }
+        }));
+        const heartbeat = window.setInterval(() => void asteryskoActivity.heartbeat(), 30_000);
+        const onVisibilityChange = () => {
+            if (document.visibilityState === 'visible') void asteryskoActivity.heartbeat();
+        };
+        document.addEventListener('visibilitychange', onVisibilityChange);
+        return () => {
+            window.clearInterval(heartbeat);
+            document.removeEventListener('visibilitychange', onVisibilityChange);
+        };
+    }, [onboarding]);
 
     useEffect(() => {
         const processId = selectedProcess?.id;
@@ -655,6 +673,37 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         }
         setPaymentChoiceConfirmed(sessionStorage.getItem(`ast-onboarding-payment-choice:${selectedProcessId}`) === 'confirmed');
     }, [selectedProcessId]);
+
+    useEffect(() => {
+        if (!onboarding || !selectedProcessId || onboardingTrackedProcessRef.current.has(selectedProcessId)) return;
+        onboardingTrackedProcessRef.current.add(selectedProcessId);
+        const key = `ast-onboarding-seen:${selectedProcessId}`;
+        const resumed = localStorage.getItem(key) === 'true';
+        localStorage.setItem(key, 'true');
+        void asteryskoActivity.track(resumed ? 'onboarding.resumed' : 'onboarding.started', { processId: selectedProcessId });
+    }, [onboarding, selectedProcessId]);
+
+    useEffect(() => {
+        const eventName = onboarding
+            ? 'onboarding.step_viewed'
+            : view === 'profile'
+                ? 'profile.opened'
+                : view === 'details'
+                    ? 'process.tab_viewed'
+                    : 'portal.viewed';
+        void asteryskoActivity.track(eventName, {
+            processId: selectedProcessId || undefined,
+            metadata: onboarding
+                ? { step: formalizationStep, tab: processTab }
+                : { view, tab: view === 'details' ? processTab : undefined }
+        });
+    }, [view, processTab, onboarding, formalizationStep, selectedProcessId]);
+
+    useEffect(() => {
+        if (!onboarding || formalizationStep !== FORMALIZATION_STEPS.length - 1 || !selectedProcessId || onboardingCompletionTrackedRef.current.has(selectedProcessId)) return;
+        onboardingCompletionTrackedRef.current.add(selectedProcessId);
+        void asteryskoActivity.track('onboarding.completed', { processId: selectedProcessId });
+    }, [onboarding, formalizationStep, selectedProcessId]);
 
     useEffect(() => {
         if (!onboarding || formalizationStep !== 3 || federalFeeAvailable || !selectedProcessId) return;
@@ -813,6 +862,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     };
 
     const openProcess = (process: any) => {
+        void asteryskoActivity.track('process.opened', { processId: String(process.id), metadata: { formalizationPending: getFormalizationStep(process) < FORMALIZATION_STEPS.length - 1 } });
         if (getFormalizationStep(process) < FORMALIZATION_STEPS.length - 1) {
             window.location.assign(`/onboarding?processId=${encodeURIComponent(String(process.id))}`);
             return;
@@ -823,6 +873,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     };
 
     const openProcessFormalization = (process: any) => {
+        void asteryskoActivity.track('onboarding.resumed', { processId: String(process.id) });
         window.location.assign(`/onboarding?processId=${encodeURIComponent(String(process.id))}`);
     };
 
@@ -831,7 +882,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     };
 
     const download = (url: unknown, fileName: string) => {
-        if (typeof url === 'string' && url) void forceDownloadFile(url, fileName);
+        if (typeof url === 'string' && url) {
+            void asteryskoActivity.track('document.downloaded', { processId: selectedProcessId || undefined, metadata: { extension: fileName.split('.').pop()?.toLowerCase() } });
+            void forceDownloadFile(url, fileName);
+        }
     };
 
     const openContractForSignature = (contract: any) => {
@@ -890,6 +944,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             setProxyFeedback(null);
             const response = await api.get(`/asterysko/processes/${processId}/proxy/download-pdf`, { responseType: 'blob' });
             forceDownloadBlob(response.data, `Procuracao_${brandName.replace(/\s+/g, '_')}.pdf`);
+            void asteryskoActivity.track('document.downloaded', { processId, metadata: { kind: 'proxy_template', extension: 'pdf' } });
         } catch (downloadError: any) {
             let message = 'Não foi possível gerar a procuração. Confira seus dados e tente novamente.';
             const errorBody = downloadError.response?.data;
@@ -941,11 +996,13 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 type: 'success',
                 message: response.data?.message || 'Procuração enviada com sucesso e encaminhada para validação.'
             });
+            void asteryskoActivity.track('document.uploaded', { processId, metadata: { kind: 'signed_proxy' } });
         } catch (uploadError: any) {
             setProxyFeedback({
                 type: 'error',
                 message: uploadError.response?.data?.error || uploadError.response?.data?.message || 'Não foi possível enviar a procuração.'
             });
+            void asteryskoActivity.track('document.upload_failed', { processId, metadata: { kind: 'signed_proxy', reason: 'request_failed' } });
         } finally {
             setProxyUploading(false);
         }
@@ -985,8 +1042,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                     : invoice)
             }));
             setGruFeedback({ type: 'success', message: response.data?.message || 'Comprovante enviado para validação.' });
+            void asteryskoActivity.track('document.uploaded', { processId, metadata: { kind: 'federal_fee_receipt' } });
         } catch (uploadError: any) {
             setGruFeedback({ type: 'error', message: uploadError.response?.data?.error || 'Não foi possível enviar o comprovante.' });
+            void asteryskoActivity.track('document.upload_failed', { processId, metadata: { kind: 'federal_fee_receipt', reason: 'request_failed' } });
         } finally {
             setGruReceiptUploading(false);
         }
@@ -1000,6 +1059,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
     const openDocumentPreview = (name: string, url: string) => {
         if (!url) return;
+        void asteryskoActivity.track('document.opened', { processId: selectedProcessId || undefined, metadata: { extension: name.split('.').pop()?.toLowerCase() } });
         setPreviewClosing(false);
         setPreviewDocument({ name, url });
     };
@@ -1012,6 +1072,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             setPaymentReceiptError('');
             const response = await api.get(`/asterysko/portal/financials/${receiptId}/payment-receipt`);
             setPaymentReceipt(response.data);
+            void asteryskoActivity.track('invoice.opened', { processId: String(invoice.processId || selectedProcessId || ''), invoiceId: receiptId });
         } catch (receiptError: any) {
             setPaymentReceiptError(receiptError.response?.data?.error || 'Não foi possível abrir os detalhes deste pagamento.');
         } finally {
@@ -1158,6 +1219,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         const payload = oneTimePix?.processId === selectedProcessId ? oneTimePix.payload : subscription?.pixQrCodePayload;
         if (!payload) return;
         await navigator.clipboard?.writeText(payload);
+        void asteryskoActivity.track('payment.pix_copied', { processId: selectedProcessId });
         setPixCopied(true);
         window.setTimeout(() => setPixCopied(false), 1800);
     };
@@ -1191,7 +1253,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         if (serviceInvoice) void openPaymentReceipt(serviceInvoice);
     };
 
-    const signOut = () => {
+    const signOut = async () => {
+        await asteryskoActivity.end('logout');
         logout();
         onExit();
         window.location.replace('/portal/login');
@@ -1358,6 +1421,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                                 href={benefit.linkUrl}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
+                                                onClick={() => void asteryskoActivity.track('benefit.clicked', { metadata: { benefitId: benefit.id } })}
                                                 aria-label={`${benefit.title} (abre em nova aba)`}
                                             >
                                                 {content}
