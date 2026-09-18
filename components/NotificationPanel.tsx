@@ -31,13 +31,12 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
         refreshNotifications,
         markAsRead,
         markAllAsRead,
-        markAsReadByLink,
     } = useNotifications();
     const navigate = useNavigate();
 
     const handleNotificationClick = async (notification: Notification) => {
         if (notification.link) {
-            await markAsReadByLink(notification.link);
+            if (!notification.read) await markAsRead(notification.id);
             navigate(notification.link);
             onClose();
             return;
@@ -61,6 +60,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
                 return <Users size={16} className="text-cyan-600" />;
             case 'CRM':
             case 'CRM_ASSIGNMENT':
+            case 'ASTERYSKO_ACTION':
             case 'OPPORTUNITY':
                 return <BriefcaseBusiness size={16} className="text-orange-600" />;
             case 'DOCUMENT':

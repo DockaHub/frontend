@@ -106,6 +106,26 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
         fetchDeals();
     }, [organization?.id]);
 
+    useEffect(() => {
+        if (!allColumns.length || typeof window === 'undefined') return;
+        const requestedDealId = new URLSearchParams(window.location.search).get('deal');
+        if (!requestedDealId || selectedCard?.id === requestedDealId) return;
+        const requestedCard = allColumns.flatMap(column => column.cards).find(card => card.id === requestedDealId);
+        if (!requestedCard) return;
+        setActiveTab(getPhaseForStage(requestedCard.status));
+        setSelectedCard(requestedCard);
+    }, [allColumns, selectedCard?.id]);
+
+    const closeDealDetails = () => {
+        setSelectedCard(null);
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('deal');
+            window.history.replaceState({}, '', url.toString());
+        }
+        void fetchDeals(true);
+    };
+
     // Calculate card counts per phase
     const phaseCounts = useMemo(() => {
         const counts: Record<CrmPhaseId, number> = {
@@ -438,10 +458,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
             <AsteryskoDealDetailsModal
                 isOpen={!!selectedCard}
-                onClose={() => {
-                    setSelectedCard(null);
-                    void fetchDeals(true);
-                }}
+                onClose={closeDealDetails}
                 card={selectedCard}
                 onUpdate={() => void fetchDeals(true)}
             />
