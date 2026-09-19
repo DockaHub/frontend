@@ -70,7 +70,7 @@ export const SecondaryButton = ({ children, className = '', ...props }: React.Bu
 export const SearchInput = ({ value, onChange, placeholder = 'Buscar…' }: { value: string; onChange: (value: string) => void; placeholder?: string }) => (
     <div className="relative min-w-0 flex-1 sm:max-w-sm">
         <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="min-h-11 w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
+        <input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="min-h-11 w-full rounded-full border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-base text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white" />
     </div>
 );
 

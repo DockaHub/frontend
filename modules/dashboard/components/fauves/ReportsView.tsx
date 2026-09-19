@@ -5,11 +5,11 @@ import {
 } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { FauvesReportsSnapshot, fauvesService } from '../../../../services/fauvesService';
-import { LoadingState, PageHeader, Panel, SecondaryButton } from './FauvesUI';
+import { FauvesPageHeader, LoadingState, Panel, SecondaryButton } from './FauvesUI';
 
 const currency = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const chartGrid = '#e2e8f0';
-const chartAccent = '#0d9488';
+const chartAccent = '#2a2ad7';
 
 const Trend = ({ value }: { value: number | null }) => {
     if (value === null) return <span className="text-[10px] font-medium text-slate-400">sem comparação</span>;
@@ -29,14 +29,14 @@ const MetricCard = ({ title, value, trend, icon: Icon, tone }: {
     icon: React.ElementType;
     tone: string;
 }) => (
-    <Panel className="min-w-0 p-5">
+    <div className="min-w-0 bg-white p-5 dark:bg-zinc-950">
         <div className="flex items-start justify-between gap-3">
             <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${tone}`}><Icon size={18} /></span>
             <Trend value={trend} />
         </div>
         <strong className="mt-5 block truncate text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-2xl">{value}</strong>
         <span className="mt-1 block text-xs font-medium text-slate-500 dark:text-zinc-400">{title}</span>
-    </Panel>
+    </div>
 );
 
 const SectionHeading = ({ children, description }: { children: React.ReactNode; description?: string }) => (
@@ -86,14 +86,14 @@ const ReportsView: React.FC = () => {
     );
 
     return (
-        <div className="animate-in fade-in duration-300">
-            <PageHeader
-                eyebrow="Inteligência"
+        <div className="h-full min-h-0 overflow-y-auto bg-white animate-in fade-in duration-300 dark:bg-zinc-950">
+            <FauvesPageHeader
                 title="Relatórios"
                 description="Receita, pedidos, ingressos e crescimento da plataforma em uma visão consolidada."
                 actions={actions}
             />
 
+            <main className="p-4 sm:p-6 lg:p-8">
             {loading ? (
                 <Panel><LoadingState label="Consolidando os dados da Fauves…" /></Panel>
             ) : !snapshot ? (
@@ -105,7 +105,7 @@ const ReportsView: React.FC = () => {
                 </Panel>
             ) : (
                 <div className="space-y-6">
-                    <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <section className="grid grid-cols-2 gap-px overflow-hidden border border-[#e5e5e5] bg-[#e5e5e5] dark:border-zinc-800 dark:bg-zinc-800 xl:grid-cols-4">
                         <MetricCard title="Receita no período" value={currency(snapshot.revenue)} trend={snapshot.trends.revenue} icon={DollarSign} tone="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300" />
                         <MetricCard title="Pedidos pagos" value={snapshot.orders.toLocaleString('pt-BR')} trend={snapshot.trends.orders} icon={ShoppingCart} tone="bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300" />
                         <MetricCard title="Ingressos vendidos" value={snapshot.tickets.toLocaleString('pt-BR')} trend={snapshot.trends.tickets} icon={Ticket} tone="bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300" />
@@ -113,7 +113,7 @@ const ReportsView: React.FC = () => {
                     </section>
 
                     <div className="grid gap-6 xl:grid-cols-2">
-                        <Panel className="overflow-hidden">
+                        <Panel className="overflow-hidden rounded-none shadow-none">
                             <SectionHeading description="Evolução diária no período selecionado">Receita por dia</SectionHeading>
                             <div className="h-[280px] p-4 pr-5 sm:h-[330px] sm:p-6">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -129,7 +129,7 @@ const ReportsView: React.FC = () => {
                             </div>
                         </Panel>
 
-                        <Panel className="overflow-hidden">
+                        <Panel className="overflow-hidden rounded-none shadow-none">
                             <SectionHeading description="Volume confirmado por data">Ingressos vendidos por dia</SectionHeading>
                             <div className="h-[280px] p-4 pr-5 sm:h-[330px] sm:p-6">
                                 <ResponsiveContainer width="100%" height="100%">
@@ -159,12 +159,13 @@ const ReportsView: React.FC = () => {
                     </div>
                 </div>
             )}
+            </main>
         </div>
     );
 };
 
 const RankingPanel = ({ title, rows, empty }: { title: string; rows: Array<{ id: string; name: string; detail: string; value: string }>; empty: string }) => (
-    <Panel className="overflow-hidden">
+    <Panel className="overflow-hidden rounded-none shadow-none">
         <SectionHeading>{title}</SectionHeading>
         {rows.length ? (
             <div className="divide-y divide-slate-100 dark:divide-zinc-800">
@@ -172,7 +173,7 @@ const RankingPanel = ({ title, rows, empty }: { title: string; rows: Array<{ id:
                     <div key={row.id} className="grid min-h-[72px] grid-cols-[30px_minmax(0,1fr)_auto] items-center gap-3 px-5 py-3 sm:px-6">
                         <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-[10px] font-bold text-slate-500 dark:bg-zinc-800 dark:text-zinc-300">{index + 1}</span>
                         <span className="min-w-0"><strong className="block truncate text-sm text-slate-900 dark:text-white">{row.name}</strong><small className="mt-1 block text-[10px] text-slate-400">{row.detail}</small></span>
-                        <strong className="text-xs text-teal-700 dark:text-teal-300 sm:text-sm">{row.value}</strong>
+                        <strong className="text-xs text-[#2a2ad7] dark:text-indigo-300 sm:text-sm">{row.value}</strong>
                     </div>
                 ))}
             </div>

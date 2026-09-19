@@ -8,7 +8,7 @@ import { TicketSupport } from '../../../../types';
 import { fauvesService } from '../../../../services/fauvesService';
 import { formatStatusLabel } from '../../../../utils/statusPresentation';
 import {
-    EmptyState, LoadingState, PageHeader, Panel, PrimaryButton, SecondaryButton,
+    EmptyState, FauvesPageHeader, LoadingState, Panel, PrimaryButton, SecondaryButton,
 } from './FauvesUI';
 
 interface SupportViewProps {
@@ -17,7 +17,7 @@ interface SupportViewProps {
 
 const cardTitleClass = 'text-sm font-bold text-slate-900 dark:text-white';
 const mutedTextClass = 'text-xs leading-5 text-slate-500 dark:text-zinc-400';
-const fieldClass = 'min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white';
+const fieldClass = 'min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-base text-slate-900 outline-none transition focus:border-[#2a2ad7] focus:ring-4 focus:ring-indigo-500/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white';
 
 const SupportView: React.FC<SupportViewProps> = ({ activeSubView = 'helpdesk' }) => {
     const [tickets, setTickets] = useState<TicketSupport[]>([]);
@@ -54,9 +54,8 @@ const SupportView: React.FC<SupportViewProps> = ({ activeSubView = 'helpdesk' })
                 : 'Visão geral dos atendimentos e da base de conhecimento da Fauves.';
 
     return (
-        <div className="animate-in fade-in duration-300">
-            <PageHeader
-                eyebrow="Atendimento"
+        <div className="h-full min-h-0 overflow-y-auto bg-white animate-in fade-in duration-300 dark:bg-zinc-950">
+            <FauvesPageHeader
                 title="Suporte"
                 description={pageDescription}
                 actions={(
@@ -65,15 +64,17 @@ const SupportView: React.FC<SupportViewProps> = ({ activeSubView = 'helpdesk' })
                     </SecondaryButton>
                 )}
             />
-            {activeSubView === 'helpdesk-tickets' ? (
-                <TicketsView tickets={tickets} isLoading={isLoading} error={error} onRetry={fetchTickets} />
-            ) : activeSubView === 'helpdesk-chat' ? (
-                <LiveChatView />
-            ) : activeSubView === 'helpdesk-center' ? (
-                <HelpCenterView />
-            ) : (
-                <SupportDashboard tickets={tickets} totalTickets={totalItems} />
-            )}
+            <main className="p-4 sm:p-6 lg:p-8">
+                {activeSubView === 'helpdesk-tickets' ? (
+                    <TicketsView tickets={tickets} isLoading={isLoading} error={error} onRetry={fetchTickets} />
+                ) : activeSubView === 'helpdesk-chat' ? (
+                    <LiveChatView />
+                ) : activeSubView === 'helpdesk-center' ? (
+                    <HelpCenterView />
+                ) : (
+                    <SupportDashboard tickets={tickets} totalTickets={totalItems} />
+                )}
+            </main>
         </div>
     );
 };
@@ -90,17 +91,17 @@ const SupportDashboard = ({ tickets, totalTickets }: { tickets: TicketSupport[];
 
     return (
         <div className="space-y-6">
-            <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <section className="grid grid-cols-2 gap-px overflow-hidden border border-[#e5e5e5] bg-[#e5e5e5] dark:border-zinc-800 dark:bg-zinc-800 xl:grid-cols-4">
                 {stats.map(({ label, value, icon: Icon, tone }) => (
-                    <Panel key={label} className="p-5">
+                    <div key={label} className="bg-white p-5 dark:bg-zinc-950">
                         <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tone}`}><Icon size={19} /></span>
                         <strong className="mt-5 block text-2xl font-bold tracking-tight text-slate-950 dark:text-white">{value.toLocaleString('pt-BR')}</strong>
                         <span className="mt-1 block text-xs font-medium text-slate-500 dark:text-zinc-400">{label}</span>
-                    </Panel>
+                    </div>
                 ))}
             </section>
 
-            <Panel className="overflow-hidden">
+            <Panel className="overflow-hidden rounded-none shadow-none">
                 <div className="border-b border-slate-100 px-5 py-4 dark:border-zinc-800 sm:px-6">
                     <h2 className={cardTitleClass}>Áreas de atendimento</h2>
                     <p className={`mt-1 ${mutedTextClass}`}>Acompanhe os principais canais da operação em um só lugar.</p>
@@ -116,7 +117,7 @@ const SupportDashboard = ({ tickets, totalTickets }: { tickets: TicketSupport[];
                             <h3 className="mt-4 text-sm font-bold text-slate-900 dark:text-white">{title}</h3>
                             <p className={`mt-1 ${mutedTextClass}`}>{description}</p>
                             <div className="mt-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                <span>{meta}</span><ChevronRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:text-teal-600" />
+                                <span>{meta}</span><ChevronRight size={15} className="transition-transform group-hover:translate-x-0.5 group-hover:text-[#2a2ad7]" />
                             </div>
                         </article>
                     ))}
@@ -124,7 +125,7 @@ const SupportDashboard = ({ tickets, totalTickets }: { tickets: TicketSupport[];
             </Panel>
 
             <div className="grid gap-6 lg:grid-cols-2">
-                <Panel className="overflow-hidden">
+                <Panel className="overflow-hidden rounded-none shadow-none">
                     <div className="border-b border-slate-100 px-5 py-4 dark:border-zinc-800 sm:px-6"><h2 className={cardTitleClass}>Desempenho de tickets</h2></div>
                     <div className="space-y-5 p-5 sm:p-6">
                         {[
@@ -134,13 +135,13 @@ const SupportDashboard = ({ tickets, totalTickets }: { tickets: TicketSupport[];
                         ].map((stat) => (
                             <div key={stat.label}>
                                 <div className="mb-2 flex justify-between text-xs"><span className="font-medium text-slate-500">{stat.label}</span><strong className="text-slate-900 dark:text-white">{stat.value}%</strong></div>
-                                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800"><div className="h-full rounded-full bg-teal-500" style={{ width: `${stat.value}%` }} /></div>
+                                <div className="h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-zinc-800"><div className="h-full rounded-full bg-[#2a2ad7]" style={{ width: `${stat.value}%` }} /></div>
                             </div>
                         ))}
                     </div>
                 </Panel>
 
-                <Panel className="overflow-hidden">
+                <Panel className="overflow-hidden rounded-none shadow-none">
                     <div className="border-b border-slate-100 px-5 py-4 dark:border-zinc-800 sm:px-6"><h2 className={cardTitleClass}>Resumo da operação</h2></div>
                     <div className="divide-y divide-slate-100 px-5 dark:divide-zinc-800 sm:px-6">
                         {[
@@ -174,7 +175,7 @@ const TicketsView = ({ tickets, isLoading, error, onRetry }: { tickets: TicketSu
     }), [query, status, tickets]);
 
     return (
-        <Panel className="overflow-hidden">
+        <Panel className="overflow-hidden rounded-none shadow-none">
             <div className="flex flex-col gap-3 border-b border-slate-100 p-4 dark:border-zinc-800 sm:p-5 lg:flex-row lg:items-center">
                 <div className="relative min-w-0 flex-1">
                     <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -216,7 +217,7 @@ const TicketsView = ({ tickets, isLoading, error, onRetry }: { tickets: TicketSu
 const Priority = ({ value }: { value: string }) => <span className={`shrink-0 rounded-full px-2.5 py-1 text-[9px] font-bold uppercase ${value === 'high' ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30'}`}>{value === 'high' ? 'Alta' : value || 'Normal'}</span>;
 
 const LiveChatView = () => (
-    <Panel className="flex min-h-[540px] overflow-hidden">
+    <Panel className="flex min-h-[540px] overflow-hidden rounded-none shadow-none">
         <aside className="flex w-full flex-col border-r border-slate-100 dark:border-zinc-800 md:w-80">
             <div className="border-b border-slate-100 p-5 dark:border-zinc-800">
                 <div className="flex items-center gap-2"><Users size={18} className="text-teal-600" /><h2 className={cardTitleClass}>Conversas</h2><span className="ml-auto h-2 w-2 rounded-full bg-rose-500" /></div>

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Eye, ImagePlus, MapPin, Pencil, Plus, RefreshCw, Upload } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
-import { EmptyState, LoadingState, PageHeader, Panel, PrimaryButton, SearchInput, SecondaryButton, StatusBadge, useFauvesToast } from './FauvesUI';
+import { EmptyState, FauvesPageHeader, LoadingState, Panel, PrimaryButton, SearchInput, SecondaryButton, StatusBadge, useFauvesToast } from './FauvesUI';
 
 interface CityItem {
     id: string;
@@ -35,7 +35,7 @@ const emptyForm: CityForm = {
 const states = ['AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'];
 const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 const svgDataUrl = (svg?: string | null) => svg ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}` : '';
-const fieldClass = 'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-sm text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white';
+const fieldClass = 'mt-2 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-base text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white';
 const labelClass = 'block text-xs font-bold text-slate-600 dark:text-zinc-300';
 
 const fileAsDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
@@ -145,15 +145,14 @@ const FauvesCitiesView: React.FC = () => {
     const iconPreview = svgDataUrl(form.iconSvg);
 
     return (
-        <div>
-            <PageHeader
-                eyebrow="Discover"
+        <div className="h-full min-h-0 overflow-y-auto bg-white animate-in fade-in duration-300 dark:bg-zinc-950">
+            <FauvesPageHeader
                 title="Cidades"
-                description="Personalize as páginas locais da Fauves. Cidades detectadas nos eventos entram aqui automaticamente para você completar a curadoria."
+                description="Curadoria das páginas locais e cidades detectadas nos eventos Fauves."
                 actions={<><SecondaryButton onClick={() => void load()}><RefreshCw size={15} /> Atualizar</SecondaryButton><PrimaryButton onClick={showCreate}><Plus size={15} /> Nova cidade</PrimaryButton></>}
             />
 
-            <Panel>
+            <Panel className="overflow-hidden rounded-none border-x-0 border-t-0 shadow-none">
                 <div className="flex flex-col gap-3 border-b border-slate-100 p-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between">
                     <SearchInput value={search} onChange={setSearch} placeholder="Buscar cidade, UF ou slug…" />
                     <span className="text-xs font-semibold text-slate-400">{cities.length} cidades cadastradas</span>

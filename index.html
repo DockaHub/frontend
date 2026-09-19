@@ -90,6 +90,15 @@
       pointer-events: auto;
     }
 
+    /* Evita o zoom automático do Safari ao focar campos com fonte menor que 16px. */
+    @supports (-webkit-touch-callout: none) {
+      input:not([type="checkbox"]):not([type="radio"]),
+      select,
+      textarea {
+        font-size: 16px !important;
+      }
+    }
+
     /* Custom scrollbar for ultra-minimalist look */
     ::-webkit-scrollbar {
       width: 6px;

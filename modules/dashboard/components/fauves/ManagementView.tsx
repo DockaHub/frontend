@@ -5,7 +5,7 @@ import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
 import FauvesUserDetails from './FauvesUserDetails';
 import { CATEGORY_ICON_OPTIONS, getCategoryIcon } from './categoryIcons';
-import { FauvesPageHeader } from './FauvesUI';
+import { FauvesPageHeader, PrimaryButton } from './FauvesUI';
 
 const normalizeIconSearch = (value: string) => value
     .normalize('NFD')
@@ -634,46 +634,30 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
     }
 
     return (
-        <div className={`${type === 'users' ? 'h-full min-h-0 overflow-y-auto bg-white dark:bg-zinc-950' : ''} animate-in fade-in duration-300`}>
-            {!hideHeader && type === 'users' && (
+        <div className="h-full min-h-0 overflow-y-auto bg-white animate-in fade-in duration-300 dark:bg-zinc-950">
+            {!hideHeader && (
                 <FauvesPageHeader
-                    title="Usuários & Risco"
-                    description={`${totalItems.toLocaleString('pt-BR')} usuários cadastrados na plataforma Fauves.`}
+                    title={type === 'users' ? 'Usuários & Risco' : type === 'artists' ? 'Artistas' : type === 'categories' ? 'Categorias' : type === 'ads' ? 'Anúncios da Plataforma' : config.title}
+                    description={`${config.subtitle}. ${totalItems.toLocaleString('pt-BR')} ${type === 'users' ? 'usuários' : type === 'artists' ? 'artistas' : type === 'categories' ? 'categorias' : type === 'ads' ? 'anúncios' : 'registros'} cadastrados.`}
+                    actions={config.btn ? (
+                        <PrimaryButton onClick={() => {
+                            setEditingItem(null);
+                            if (type === 'categories') {
+                                setCategoryName('');
+                                setCategorySlug('');
+                                setCategoryIcon('Music');
+                                setCategoryColor('indigo');
+                                setCategoryDescription('');
+                                setCategoryImageUrl('');
+                                setCategoryIconSearch('');
+                            }
+                            setIsModalOpen(true);
+                        }}><Plus size={15} /> {config.btn}</PrimaryButton>
+                    ) : undefined}
                 />
             )}
-            {!hideHeader && type !== 'users' && <div className="flex justify-between items-end mb-8">
-                <div>
-                    <div className="flex items-center justify-between">
-                        <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{type === 'ads' ? 'Anúncios da Plataforma' : config.title}</h1>
-                        <span className="text-xs text-docka-400 dark:text-zinc-500">Total: {totalItems} {type === 'artists' ? 'artistas' : type === 'ads' ? 'anúncios' : type}</span>
-                    </div>
-                    <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">{config.subtitle}</p>
-                </div>
-                <div className="flex gap-2">
-                    {config.btn && (
-                        <button
-                            onClick={() => {
-                                setEditingItem(null);
-                                if (type === 'categories') {
-                                    setCategoryName('');
-                                    setCategorySlug('');
-                                    setCategoryIcon('Music');
-                                    setCategoryColor('indigo');
-                                    setCategoryDescription('');
-                                    setCategoryImageUrl('');
-                                    setCategoryIconSearch('');
-                                }
-                                setIsModalOpen(true);
-                            }}
-                            className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 shadow-sm transition-colors flex items-center gap-2"
-                        >
-                            <Plus size={16} /> {config.btn}
-                        </button>
-                    )}
-                </div>
-            </div>}
 
-            <div className={type === 'users' ? 'border-b border-[#e5e5e5] dark:border-zinc-800' : 'mb-6 bg-transparent'}>
+            <div className="border-b border-[#e5e5e5] dark:border-zinc-800">
                 {type === 'ads' ? (
                     <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm flex flex-wrap items-end gap-4">
                         <div className="flex-1 min-w-[200px]">
@@ -720,7 +704,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                         </button>
                     </div>
                 ) : (
-                    <div className={type === 'users' ? 'bg-white dark:bg-zinc-950' : 'rounded-xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'}>
+                    <div className="bg-white dark:bg-zinc-950">
                         <div className={`flex gap-3 p-4 sm:px-6 ${type === 'users' ? 'flex-col sm:flex-row sm:items-center' : 'items-center justify-between'}`}>
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={14} />
@@ -728,11 +712,11 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                     value={type === 'users' ? managementQuery : undefined}
                                     onChange={type === 'users' ? (event) => setManagementQuery(event.target.value) : undefined}
                                     placeholder={type === 'users' ? 'Buscar por nome, e-mail ou tipo…' : 'Buscar por nome…'}
-                                    className="min-h-11 w-full rounded-full border border-docka-200 bg-white py-2 pl-9 pr-4 text-sm text-docka-900 outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-docka-400 dark:placeholder:text-zinc-600"
+                                    className="min-h-11 w-full rounded-full border border-docka-200 bg-white py-2 pl-9 pr-4 text-base text-docka-900 outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-docka-400 dark:placeholder:text-zinc-600"
                                 />
                             </div>
                             <div className="flex items-center gap-2">
-                                <select className="min-h-11 flex-1 rounded-full border border-docka-200 bg-white px-4 text-xs font-semibold text-docka-900 outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 sm:flex-none">
+                                <select className="min-h-11 flex-1 rounded-full border border-docka-200 bg-white px-4 text-base font-semibold text-docka-900 outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 sm:flex-none">
                                     <option>Todos</option>
                                 </select>
                                 <button
@@ -750,7 +734,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                 )}
             </div>
 
-            <div className={type === 'users' ? 'border-b border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950' : 'rounded-xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'}>
+            <div className="border-b border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
 
                 {isLoading ? (
                     <div className="p-20 flex flex-col items-center justify-center text-docka-400 dark:text-zinc-500">
@@ -1015,7 +999,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className={`flex items-center justify-between gap-3 ${type === 'users' ? 'border-t border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6' : 'mt-4 px-2'}`}>
+                <div className="flex items-center justify-between gap-3 border-t border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6">
                     <span className="text-xs text-docka-500 dark:text-zinc-500 sm:text-sm">
                         Mostrando página <span className="font-bold text-docka-900 dark:text-zinc-100">{currentPage}</span> de <span className="font-bold text-docka-900 dark:text-zinc-100">{totalPages}</span>
                         {totalItems > 0 && <span className="ml-1">({totalItems} registros)</span>}
