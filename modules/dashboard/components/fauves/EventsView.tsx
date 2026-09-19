@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, RotateCw, Plus, TrendingUp, Calendar, MapPin, ChevronLeft, Eye, ShoppingCart, CheckCircle2, Loader2, ExternalLink, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Search, RotateCw, Plus, TrendingUp, Calendar, MapPin, ChevronLeft, ChevronRight, Eye, ShoppingCart, CheckCircle2, Loader2, ExternalLink, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { FauvesEvent } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
@@ -30,6 +30,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [query, setQuery] = useState('');
 
     const [categories, setCategories] = useState<any[]>([]);
     const [organizations, setOrganizations] = useState<any[]>([]);
@@ -118,6 +119,18 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
     }, [selectedEvent]);
 
     const totalPages = Math.ceil(totalItems / itemsPerPage);
+    const filteredEvents = useMemo(() => {
+        const normalizedQuery = query.trim().toLocaleLowerCase('pt-BR');
+        if (!normalizedQuery) return events;
+        return events.filter((event) => [
+            event.title,
+            event.date,
+            event.location,
+            event.locationName,
+            event.locationAddress,
+            (event as any).organizationName,
+        ].filter(Boolean).join(' ').toLocaleLowerCase('pt-BR').includes(normalizedQuery));
+    }, [events, query]);
 
     const handleEventSaved = async () => {
         setIsCreateModalOpen(false);
@@ -145,7 +158,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
         <div className="animate-in fade-in duration-300 pb-12">
             {selectedEvent ? (
                 /* DETAIL VIEW */
-                <div className="animate-in slide-in-from-left-4 duration-300">
+                <div className="animate-in slide-in-from-left-4 p-4 duration-300 sm:p-6 lg:p-8">
                     {/* Header Navigation */}
                     <div className="flex items-center justify-between mb-6">
                         <button
@@ -378,18 +391,20 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                 /* LIST VIEW */
                 <div className="animate-in fade-in duration-500">
                     {/* Filters */}
-                    <div className="mb-5 flex flex-col gap-3 border border-[#e5e5e5] bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900/40 sm:flex-row sm:items-center sm:p-4">
+                    <div className="flex flex-col gap-3 border-b border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:flex-row sm:items-center sm:px-6">
                         <div className="relative min-w-0 flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={16} />
                             <input
-                                className="min-h-11 w-full rounded-xl border border-docka-200 bg-white py-2 pl-10 pr-4 text-sm text-docka-900 outline-none transition-colors placeholder:text-docka-400 focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
-                                placeholder="Buscar eventos por nome..."
+                                value={query}
+                                onChange={(event) => setQuery(event.target.value)}
+                                className="min-h-11 w-full rounded-full border border-docka-200 bg-white py-2 pl-10 pr-4 text-sm text-docka-900 outline-none transition-colors placeholder:text-docka-400 focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
+                                placeholder="Buscar por evento, produtora ou local…"
                             />
                         </div>
-                        <div className="custom-scrollbar flex gap-2 overflow-x-auto">
-                            <button onClick={() => setIsImportModalOpen(true)} className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-docka-200 bg-white px-3 text-xs font-semibold text-docka-900 transition-colors hover:bg-docka-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"><LinkIcon size={15} className="text-amber-500" /> Importar</button>
-                            <button onClick={() => setIsCreateModalOpen(true)} className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-[#2a2ad7] px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-800"><Plus size={15} /> Novo evento</button>
-                            <button onClick={fetchEvents} disabled={isLoading} className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-docka-200 bg-white px-3 text-xs font-semibold text-docka-700 hover:bg-docka-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"><RotateCw size={14} className={isLoading ? 'animate-spin' : ''} /> Atualizar</button>
+                        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] gap-2 sm:flex">
+                            <button onClick={() => setIsImportModalOpen(true)} className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-full border border-docka-200 bg-white px-3 text-xs font-semibold text-docka-900 transition-colors hover:bg-docka-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"><LinkIcon size={15} className="shrink-0 text-amber-500" /> <span className="truncate">Importar</span></button>
+                            <button onClick={() => setIsCreateModalOpen(true)} className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-full bg-[#2a2ad7] px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-800"><Plus size={15} className="shrink-0" /> <span className="truncate">Novo<span className="hidden sm:inline"> evento</span></span></button>
+                            <button onClick={fetchEvents} disabled={isLoading} aria-label="Atualizar eventos" title="Atualizar eventos" className="flex h-11 w-11 items-center justify-center rounded-full border border-docka-200 bg-white text-docka-700 hover:bg-docka-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"><RotateCw size={15} className={isLoading ? 'animate-spin' : ''} /></button>
                         </div>
                     </div>
 
@@ -400,60 +415,55 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                         </div>
                     ) : (
                         <>
-                            <div className="mb-6 grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                                {events.map((event: FauvesEvent) => (
-                                    <div
+                            <div className="bg-white dark:bg-zinc-950">
+                                <div className="hidden min-h-10 grid-cols-[minmax(280px,1.4fr)_minmax(220px,1fr)_150px_130px_32px] items-center gap-5 border-b border-[#e5e5e5] bg-zinc-50/70 px-6 text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/50 lg:grid">
+                                    <span>Evento</span><span>Data e local</span><span>Interesse</span><span>Status</span><span />
+                                </div>
+                                {filteredEvents.length > 0 ? filteredEvents.map((event: FauvesEvent) => {
+                                    const isPublished = event.isPublished || ['published', 'active', 'publicado'].includes(String(event.status).toLowerCase());
+                                    return <button
                                         key={event.id}
                                         onClick={() => setSelectedEvent(event)}
-                                        className="group grid min-h-[92px] cursor-pointer grid-cols-[92px_minmax(0,1fr)] overflow-hidden border border-docka-200 bg-white transition-colors hover:border-[#2a2ad7]/40 hover:bg-indigo-50/20 dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-indigo-500/40 md:flex md:flex-col"
+                                        className="group grid min-h-[88px] w-full grid-cols-[56px_minmax(0,1fr)_20px] items-center gap-3 border-b border-[#e5e5e5] px-4 py-3 text-left transition-colors hover:bg-indigo-50/30 dark:border-zinc-800 dark:hover:bg-indigo-950/10 lg:grid-cols-[minmax(280px,1.4fr)_minmax(220px,1fr)_150px_130px_32px] lg:gap-5 lg:px-6"
                                     >
-                                        <div className="relative h-full min-h-[92px] overflow-hidden bg-docka-100 dark:bg-zinc-800 md:aspect-square md:h-auto">
-                                            <img src={event.image || 'https://placehold.co/600x400?text=Sem+Capa'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" alt={event.title} />
-                                            <div className="absolute top-2 left-2">
-                                                <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider ${event.isPublished || ['published', 'active', 'publicado'].includes(String(event.status).toLowerCase()) ? 'bg-emerald-500 text-white' : 'bg-docka-600 text-white'}`}>
-                                                    {formatStatusLabel(event.status)}
-                                                </span>
-                                            </div>
-                                            <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-1 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-md shadow-sm border border-white/20">
-                                                <TrendingUp size={10} className="text-orange-500" />
-                                                <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400">{event.stats?.interests || 0}</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex min-w-0 flex-1 flex-col p-3 md:p-4">
-                                            <h3 className="mb-1 truncate text-sm font-bold text-docka-900 dark:text-zinc-100 md:line-clamp-2 md:whitespace-normal">{event.title}</h3>
-                                            <div className="flex items-center text-xs text-docka-500 dark:text-zinc-400">
-                                                <Calendar size={12} className="mr-1.5" /> {event.date}
-                                            </div>
-                                            <div className="flex items-center text-xs text-docka-500 dark:text-zinc-400 mt-1">
-                                                <MapPin size={12} className="mr-1.5 shrink-0" /> <span className="truncate">{event.locationName || event.locationAddress || event.location || 'Local não definido'}</span>
-                                            </div>
-                                            <div className="mt-auto hidden items-center justify-between pt-4 text-xs text-docka-400 dark:text-zinc-500 md:flex">
-                                                <span className="flex items-center gap-1"><Eye size={12} /> {event.stats?.views || 0}</span>
-                                                <span className="text-indigo-500 font-bold">Gerenciar &rarr;</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
+                                        <span className="contents lg:flex lg:min-w-0 lg:items-center lg:gap-3">
+                                            <span className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-docka-100 dark:bg-zinc-800 lg:h-12 lg:w-12"><img src={event.image || 'https://placehold.co/160x160?text=Evento'} className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" alt="" /></span>
+                                            <span className="min-w-0">
+                                                <strong className="block truncate text-sm font-semibold text-black dark:text-white">{event.title}</strong>
+                                                <span className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 lg:hidden"><Calendar size={11} className="shrink-0" /><span className="truncate">{event.date || 'Data não definida'}</span></span>
+                                                <span className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400 lg:hidden"><MapPin size={11} className="shrink-0" /><span className="truncate">{event.locationName || event.locationAddress || event.location || 'Local não definido'}</span></span>
+                                                <span className={`mt-2 inline-flex max-w-full truncate rounded-full px-2 py-0.5 text-[9px] font-bold uppercase lg:hidden ${isPublished ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>{formatStatusLabel(event.status)}</span>
+                                                <small className="mt-1 hidden truncate text-[10px] text-zinc-400 lg:block">{(event as any).organizationName || (event as any).organization?.name || 'Fauves'}</small>
+                                            </span>
+                                        </span>
+                                        <span className="hidden min-w-0 lg:block"><span className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300"><Calendar size={13} className="shrink-0 text-zinc-400" />{event.date || 'Data não definida'}</span><span className="mt-1 flex min-w-0 items-center gap-1.5 text-[11px] text-zinc-500 dark:text-zinc-400"><MapPin size={12} className="shrink-0" /><span className="truncate">{event.locationName || event.locationAddress || event.location || 'Local não definido'}</span></span></span>
+                                        <span className="hidden items-center gap-4 text-xs lg:flex"><span className="flex items-center gap-1.5 text-orange-600 dark:text-orange-400"><TrendingUp size={13} />{event.stats?.interests || 0}</span><span className="flex items-center gap-1.5 text-zinc-500"><Eye size={13} />{event.stats?.views || 0}</span></span>
+                                        <span className={`hidden w-fit max-w-full truncate rounded-full px-2.5 py-1 text-[9px] font-bold uppercase lg:inline-flex ${isPublished ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>{formatStatusLabel(event.status)}</span>
+                                        <ChevronRight size={17} className="text-zinc-300 transition-transform group-hover:translate-x-0.5 group-hover:text-[#2a2ad7] dark:text-zinc-600" />
+                                    </button>;
+                                }) : <div className="flex min-h-52 flex-col items-center justify-center px-6 text-center"><Search size={24} className="mb-3 text-zinc-300 dark:text-zinc-700" /><strong className="text-sm text-zinc-700 dark:text-zinc-200">Nenhum evento encontrado</strong><p className="mt-1 text-xs text-zinc-400">Tente buscar por outro nome, produtora ou local.</p></div>}
                             </div>
 
-                            <div className="flex items-center justify-between border-t border-docka-200 dark:border-zinc-800 pt-4">
-                                <div className="text-sm text-docka-500 dark:text-zinc-400">
-                                    Página {currentPage} de {totalPages || 1}
+                            <div className="flex items-center justify-between gap-3 border-t border-docka-200 px-4 py-4 dark:border-zinc-800 sm:px-6">
+                                <div className="text-xs text-docka-500 dark:text-zinc-400 sm:text-sm">
+                                    <span className="hidden sm:inline">Página </span>{currentPage} de {totalPages || 1}
                                 </div>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                                         disabled={currentPage === 1}
-                                        className="px-3 py-1 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded text-sm disabled:opacity-50 hover:bg-docka-50 dark:hover:bg-zinc-800"
+                                        aria-label="Página anterior"
+                                        className="flex min-h-10 items-center justify-center gap-1 rounded-full border border-docka-200 bg-white px-3 text-xs font-semibold disabled:opacity-50 hover:bg-docka-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                                     >
-                                        Anterior
+                                        <ChevronLeft size={14} /><span className="hidden sm:inline">Anterior</span>
                                     </button>
                                     <button
                                         onClick={() => setCurrentPage(p => p + 1)}
                                         disabled={currentPage >= totalPages}
-                                        className="px-3 py-1 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded text-sm disabled:opacity-50 hover:bg-docka-50 dark:hover:bg-zinc-800"
+                                        aria-label="Próxima página"
+                                        className="flex min-h-10 items-center justify-center gap-1 rounded-full border border-docka-200 bg-white px-3 text-xs font-semibold disabled:opacity-50 hover:bg-docka-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
                                     >
-                                        Próxima
+                                        <span className="hidden sm:inline">Próxima</span><ChevronRight size={14} />
                                     </button>
                                 </div>
                             </div>
