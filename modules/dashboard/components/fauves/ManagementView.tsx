@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, Plus, Link as LinkIcon, Loader2, RotateCw, MoreHorizontal, Pencil, Globe, Trash2, Ban, CreditCard } from 'lucide-react';
+import { Search, Plus, Link as LinkIcon, Loader2, RotateCw, MoreHorizontal, Pencil, Globe, Trash2, Ban, CreditCard, ChevronRight } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
 import FauvesUserDetails from './FauvesUserDetails';
@@ -30,6 +30,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
     const [editingItem, setEditingItem] = useState<any | null>(null);
     const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [managementQuery, setManagementQuery] = useState('');
 
     // Category form state
     const [categoryName, setCategoryName] = useState('');
@@ -92,7 +93,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
         users: {
             title: 'Usuários',
             subtitle: 'Gerencie todos os usuários da plataforma',
-            btn: 'Novo Usuário',
+            btn: null,
             headers: ['Usuário', 'Email', 'Tipo', 'Cadastro', 'Ações'],
         },
         artists: {
@@ -120,6 +121,16 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
             headers: ['Preview', 'Título', 'Estado', 'Tipo Link', 'Ordem', 'Status'],
         }
     }[type];
+
+    const visibleData = useMemo(() => {
+        if (type !== 'users' || !managementQuery.trim()) return data;
+        const normalizedQuery = managementQuery.trim().toLocaleLowerCase('pt-BR');
+        return data.filter((row: any) => [row.col1, row.col2, row.col3, row.col4, row.name, row.email]
+            .filter(Boolean)
+            .join(' ')
+            .toLocaleLowerCase('pt-BR')
+            .includes(normalizedQuery));
+    }, [data, managementQuery, type]);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -628,12 +639,6 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                 <FauvesPageHeader
                     title="Usuários & Risco"
                     description={`${totalItems.toLocaleString('pt-BR')} usuários cadastrados na plataforma Fauves.`}
-                    actions={config.btn ? (
-                        <button onClick={() => { setEditingItem(null); setIsModalOpen(true); }} className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-4 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:min-h-9">
-                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2a2ad7] text-white"><Plus size={11} strokeWidth={3} /></span>
-                            Novo usuário
-                        </button>
-                    ) : undefined}
                 />
             )}
             {!hideHeader && type !== 'users' && <div className="flex justify-between items-end mb-8">
@@ -716,22 +721,26 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                     </div>
                 ) : (
                     <div className={type === 'users' ? 'bg-white dark:bg-zinc-950' : 'rounded-xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'}>
-                        <div className="flex items-center justify-between gap-3 p-4 sm:px-6">
+                        <div className={`flex gap-3 p-4 sm:px-6 ${type === 'users' ? 'flex-col sm:flex-row sm:items-center' : 'items-center justify-between'}`}>
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={14} />
                                 <input
-                                    placeholder={`Buscar por nome...`}
-                                    className="w-full pl-9 pr-4 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-docka-400 dark:focus:border-zinc-500 text-docka-900 dark:text-zinc-100 placeholder:text-docka-400 dark:placeholder:text-zinc-600"
+                                    value={type === 'users' ? managementQuery : undefined}
+                                    onChange={type === 'users' ? (event) => setManagementQuery(event.target.value) : undefined}
+                                    placeholder={type === 'users' ? 'Buscar por nome, e-mail ou tipo…' : 'Buscar por nome…'}
+                                    className="min-h-11 w-full rounded-full border border-docka-200 bg-white py-2 pl-9 pr-4 text-sm text-docka-900 outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 placeholder:text-docka-400 dark:placeholder:text-zinc-600"
                                 />
                             </div>
                             <div className="flex items-center gap-2">
-                                <select className="px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-docka-400 dark:focus:border-zinc-500 text-docka-900 dark:text-zinc-100">
+                                <select className="min-h-11 flex-1 rounded-full border border-docka-200 bg-white px-4 text-xs font-semibold text-docka-900 outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 sm:flex-none">
                                     <option>Todos</option>
                                 </select>
                                 <button
                                     onClick={fetchData}
                                     disabled={isLoading}
-                                    className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-docka-500 hover:text-docka-900 dark:hover:text-zinc-100 disabled:opacity-50"
+                                    aria-label="Atualizar usuários"
+                                    title="Atualizar usuários"
+                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-docka-200 bg-white text-docka-500 hover:bg-zinc-50 hover:text-docka-900 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                                 >
                                     <RotateCw size={16} className={isLoading ? 'animate-spin' : ''} />
                                 </button>
@@ -757,16 +766,15 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                     <>
                     {type === 'users' && (
                         <div className="divide-y divide-[#e5e5e5] dark:divide-zinc-800 lg:hidden">
-                            {data.length > 0 ? data.map((row: any) => (
-                                <button key={row.id} type="button" onClick={() => setSelectedUserId(row.id)} className="grid min-h-[72px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10">
+                            {visibleData.length > 0 ? visibleData.map((row: any) => (
+                                <button key={row.id} type="button" onClick={() => setSelectedUserId(row.id)} className="grid min-h-[80px] w-full grid-cols-[42px_minmax(0,1fr)_20px] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10">
+                                    <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-indigo-50 text-xs font-bold text-[#2a2ad7] dark:bg-indigo-950/40 dark:text-indigo-300">{row.img || row.photoUrl ? <img src={row.img || row.photoUrl} alt="" className="h-full w-full object-cover" /> : String(row.col1 || 'U').slice(0, 2).toUpperCase()}</span>
                                     <span className="min-w-0">
                                         <strong className="block truncate text-sm font-semibold text-black dark:text-white">{row.col1}</strong>
                                         <small className="mt-1 block truncate text-[11px] text-zinc-500 dark:text-zinc-400">{row.col2}</small>
+                                        <span className="mt-1.5 flex min-w-0 items-center gap-2"><span className={`max-w-[110px] truncate rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${row.badge === 'purple' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>{row.col3 || 'Usuário'}</span><small className="truncate text-[10px] text-zinc-400">{row.col4}</small></span>
                                     </span>
-                                    <span className="flex flex-col items-end gap-1">
-                                        <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase ${row.badge === 'purple' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>{row.col3 || 'Usuário'}</span>
-                                        <small className="text-[10px] text-zinc-400">{row.col4}</small>
-                                    </span>
+                                    <ChevronRight size={17} className="text-zinc-300 dark:text-zinc-600" />
                                 </button>
                             )) : <div className="px-4 py-12 text-center text-sm text-zinc-400">Nenhum usuário encontrado.</div>}
                         </div>
@@ -778,7 +786,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-docka-50 dark:divide-zinc-800">
-                            {data.length > 0 ? data.map((row: any, i) => (
+                            {visibleData.length > 0 ? visibleData.map((row: any, i) => (
                                 <tr 
                                     key={i} 
                                     onClick={() => {
@@ -970,8 +978,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                     ) : (
                                         <>
                                             <td className="px-6 py-4">
-                                                <div className="font-medium text-docka-900 dark:text-zinc-100">{row.col1}</div>
-                                                {row.sub1 && <div className="text-[10px] text-docka-400 dark:text-zinc-500">{row.sub1}</div>}
+                                                <div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-indigo-50 text-[10px] font-bold text-[#2a2ad7] dark:bg-indigo-950/40 dark:text-indigo-300">{row.img || row.photoUrl ? <img src={row.img || row.photoUrl} alt="" className="h-full w-full object-cover" /> : String(row.col1 || 'U').slice(0, 2).toUpperCase()}</span><span className="min-w-0"><span className="block truncate font-medium text-docka-900 dark:text-zinc-100">{row.col1}</span>{row.sub1 && <span className="block text-[10px] text-docka-400 dark:text-zinc-500">{row.sub1}</span>}</span></div>
                                             </td>
                                             <td className="px-6 py-4 text-docka-600 dark:text-zinc-400">{row.col2}</td>
                                             <td className="px-6 py-4">
@@ -984,9 +991,10 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                                                         e.stopPropagation();
                                                         setSelectedUserId(row.id);
                                                     }}
-                                                    className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+                                                    aria-label={`Abrir ${row.col1}`}
+                                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-docka-200 text-indigo-600 transition-colors hover:bg-indigo-50 dark:border-zinc-700 dark:text-indigo-400 dark:hover:bg-indigo-950/30"
                                                 >
-                                                    Editar
+                                                    <ChevronRight size={15} />
                                                 </button>
                                             </td>
                                         </>

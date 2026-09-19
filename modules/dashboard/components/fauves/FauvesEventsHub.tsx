@@ -41,7 +41,7 @@ const FauvesEventsHub: React.FC<FauvesEventsHubProps> = ({ initialEventId }) => 
                 </button>
             </nav>
 
-            <main className={activeTab === 'events' ? '' : 'p-4 sm:p-6 lg:p-8'}>
+            <main>
                 {activeTab === 'events' ? (
                     <EventsView initialEventId={initialEventId} />
                 ) : (

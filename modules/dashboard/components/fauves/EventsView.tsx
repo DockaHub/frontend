@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Search, RotateCw, Plus, TrendingUp, Calendar, MapPin, ChevronLeft, ChevronRight, Eye, ShoppingCart, CheckCircle2, Loader2, ExternalLink, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import { Search, RotateCw, Plus, Pencil, TrendingUp, Calendar, MapPin, ChevronLeft, ChevronRight, Eye, ShoppingCart, CheckCircle2, Loader2, ExternalLink, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { FauvesEvent } from '../../../../types';
 import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
@@ -160,30 +160,30 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                 /* DETAIL VIEW */
                 <div className="animate-in slide-in-from-left-4 p-4 duration-300 sm:p-6 lg:p-8">
                     {/* Header Navigation */}
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#e5e5e5] pb-4 dark:border-zinc-800">
                         <button
                             onClick={() => { setSelectedEvent(null); setFullEvent(null); setSummary(null); }}
-                            className="flex items-center text-sm font-medium text-docka-500 dark:text-zinc-400 hover:text-docka-900 dark:hover:text-zinc-200 transition-colors"
+                            className="flex min-h-10 items-center rounded-full border border-[#e5e5e5] px-3 text-xs font-semibold text-docka-600 transition-colors hover:bg-zinc-50 hover:text-black dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
                         >
                             <ChevronLeft size={16} className="mr-1" /> Voltar
                         </button>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setIsEditModalOpen(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg text-xs font-bold hover:bg-docka-800 dark:hover:bg-white transition-colors shadow-sm"
-                            >
-                                <Plus size={14} /> Editar Evento
-                            </button>
-                            <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded border ${(fullEvent || selectedEvent)?.isPublished || ['published', 'active', 'publicado'].includes(String((fullEvent || selectedEvent)?.status || '').toLowerCase()) ? 'bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-docka-100 text-docka-600 border-docka-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700'}`}>
+                        <div className="flex min-w-0 items-center gap-2">
+                            <span className={`inline-flex max-w-[112px] truncate rounded-full px-2.5 py-1 text-[9px] font-bold uppercase ${(fullEvent || selectedEvent)?.isPublished || ['published', 'active', 'publicado'].includes(String((fullEvent || selectedEvent)?.status || '').toLowerCase()) ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                                 {formatStatusLabel((fullEvent || selectedEvent)?.status, 'Rascunho')}
                             </span>
+                            <button
+                                onClick={() => setIsEditModalOpen(true)}
+                                className="flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-[#2a2ad7] px-4 text-xs font-semibold text-white transition-colors hover:bg-indigo-800"
+                            >
+                                <Pencil size={14} /> <span>Editar<span className="hidden sm:inline"> evento</span></span>
+                            </button>
                         </div>
                     </div>
 
                     {/* Main Header Card */}
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm mb-6 flex flex-col md:flex-row gap-6">
+                    <div className="mb-4 flex flex-col gap-4 border-b border-[#e5e5e5] bg-white pb-5 dark:border-zinc-800 dark:bg-zinc-950 sm:flex-row sm:gap-5">
                         {/* Image */}
-                        <div className="w-full md:w-48 h-48 bg-docka-100 dark:bg-zinc-800 rounded-lg overflow-hidden shrink-0 border border-docka-200 dark:border-zinc-700">
+                        <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-xl bg-docka-100 dark:bg-zinc-800 sm:h-40 sm:w-40 sm:aspect-square">
                             {(fullEvent || selectedEvent).image ? (
                                 <img src={(fullEvent || selectedEvent).image} className="w-full h-full object-cover" alt="Capa do evento" />
                             ) : (
@@ -195,10 +195,10 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                         </div>
 
                         {/* Info */}
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
                             <div>
-                                <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100 mb-1 flex items-center gap-2">
-                                    {(fullEvent || selectedEvent).title || (fullEvent || selectedEvent).name}
+                                <h1 className="mb-1 flex items-center gap-2 break-words font-season text-xl font-[420] text-black dark:text-white sm:text-2xl">
+                                    <span className="min-w-0">{(fullEvent || selectedEvent).title || (fullEvent || selectedEvent).name}</span>
                                     {isDetailLoading && <Loader2 className="animate-spin text-docka-400" size={18} />}
                                 </h1>
                                 <p className="text-sm text-docka-500 dark:text-zinc-400 mb-4">{(fullEvent || selectedEvent).organization?.name || 'Fauves'}</p>
@@ -215,7 +215,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                 </div>
                             </div>
 
-                            <div className="bg-docka-50 dark:bg-zinc-800/50 rounded-lg p-4 space-y-3 border border-docka-100 dark:border-zinc-800">
+                            <div className="space-y-3 border-t border-[#e5e5e5] pt-4 dark:border-zinc-800 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0">
                                 <h3 className="text-xs font-bold text-docka-900 dark:text-zinc-100 mb-3 border-b border-docka-200 dark:border-zinc-700 pb-2">Informações</h3>
 
                                 <div className="grid grid-cols-1 gap-3">
@@ -253,53 +253,53 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                     </div>
 
                     {/* KPI Metric Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
+                    <div className="mb-4 grid grid-cols-2 border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950 lg:grid-cols-4 lg:divide-x lg:divide-[#e5e5e5] lg:dark:divide-zinc-800">
+                        <div className="border-b border-r border-[#e5e5e5] p-4 dark:border-zinc-800 lg:border-b-0 lg:border-r-0 sm:p-5">
+                            <div className="mb-3 flex items-center justify-between">
                                 <div className="p-2 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg">
                                     <Eye size={20} />
                                 </div>
                             </div>
-                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{metrics?.views || 0}</h3>
-                            <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Visualizações</p>
+                            <h3 className="text-2xl font-semibold text-docka-900 dark:text-zinc-100">{metrics?.views || 0}</h3>
+                            <p className="mt-1 text-xs text-docka-500 dark:text-zinc-500">Visualizações</p>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="border-b border-[#e5e5e5] p-4 dark:border-zinc-800 lg:border-b-0 sm:p-5">
+                            <div className="mb-3 flex items-center justify-between">
                                 <div className="p-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg">
                                     <TrendingUp size={20} />
                                 </div>
                             </div>
-                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{metrics?.interests || 0}</h3>
-                            <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Cliques em Ingressos</p>
+                            <h3 className="text-2xl font-semibold text-docka-900 dark:text-zinc-100">{metrics?.interests || 0}</h3>
+                            <p className="mt-1 text-xs text-docka-500 dark:text-zinc-500">Cliques em ingressos</p>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="border-r border-[#e5e5e5] p-4 dark:border-zinc-800 lg:border-r-0 sm:p-5">
+                            <div className="mb-3 flex items-center justify-between">
                                 <div className="p-2 bg-docka-100 dark:bg-zinc-800 text-docka-600 dark:text-zinc-400 rounded-lg">
                                     <ShoppingCart size={20} />
                                 </div>
                             </div>
-                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{(summary || {}).revenue > 0 ? ((summary || {}).ticketsSold + ((summary || {}).pendingPayments || 0)) : 0}</h3>
-                            <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Pedidos Criados</p>
+                            <h3 className="text-2xl font-semibold text-docka-900 dark:text-zinc-100">{(summary || {}).revenue > 0 ? ((summary || {}).ticketsSold + ((summary || {}).pendingPayments || 0)) : 0}</h3>
+                            <p className="mt-1 text-xs text-docka-500 dark:text-zinc-500">Pedidos criados</p>
                         </div>
 
-                        <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm">
-                            <div className="flex items-center justify-between mb-4">
+                        <div className="p-4 sm:p-5">
+                            <div className="mb-3 flex items-center justify-between">
                                 <div className="p-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg">
                                     <CheckCircle2 size={20} />
                                 </div>
                             </div>
-                            <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{(summary || {}).ticketsSold || 0}</h3>
-                            <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">Vendas Concluídas</p>
+                            <h3 className="text-2xl font-semibold text-docka-900 dark:text-zinc-100">{(summary || {}).ticketsSold || 0}</h3>
+                            <p className="mt-1 text-xs text-docka-500 dark:text-zinc-500">Vendas concluídas</p>
                         </div>
                     </div>
 
                     {/* Funnel & Revenue ... (Simplified for brevity or keep structure) */}
-                    <div className="grid grid-cols-1 gap-6 mb-6">
+                    <div className="mb-4 grid grid-cols-1 gap-4">
                          {/* Conversion Funnel Card */}
-                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
-                            <h2 className="text-lg font-bold text-docka-900 dark:text-zinc-100 mb-6 flex items-center gap-2">
+                        <div className="border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
+                            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-docka-900 dark:text-zinc-100">
                                 <TrendingUp size={16} className="text-amber-500" /> Funil de Conversão
                             </h2>
                             <div className="space-y-4">
@@ -310,14 +310,14 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                     { label: 'Chegaram à revisão', val: (summary || {}).revenue > 0 ? ((summary || {}).ticketsSold + Math.floor(((summary || {}).pendingPayments || 0) * 0.5)) : 0, drop: '10%' },
                                     { label: 'Completaram pagamento', val: (summary || {}).ticketsSold || 0, drop: '20%' }
                                 ].map((step, i) => (
-                                    <div key={i} className="flex items-center justify-between py-3 border-b border-docka-100 dark:border-zinc-800 last:border-0">
-                                        <div className="flex items-center gap-3">
+                                    <div key={i} className="flex items-center justify-between gap-3 border-b border-docka-100 py-3 last:border-0 dark:border-zinc-800">
+                                        <div className="flex min-w-0 items-center gap-3">
                                             <div className={`w-3 h-3 rounded-full ${i === 4 ? 'bg-emerald-500' : 'bg-docka-300 dark:bg-zinc-700'}`}></div>
-                                            <span className="text-sm text-docka-600 dark:text-zinc-400">{step.label}</span>
+                                            <span className="text-xs leading-4 text-docka-600 dark:text-zinc-400 sm:text-sm">{step.label}</span>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            {step.drop && <span className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded border border-red-100 dark:border-red-800">↓ {step.drop}</span>}
-                                            <span className="font-bold text-docka-900 dark:text-zinc-100 min-w-[60px] text-right">{step.val}</span>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            {step.drop && <span className="hidden rounded-full bg-red-50 px-2 py-0.5 text-[10px] text-red-600 dark:bg-red-900/30 dark:text-red-400 sm:inline-flex">↓ {step.drop}</span>}
+                                            <span className="min-w-[40px] text-right text-sm font-bold text-docka-900 dark:text-zinc-100">{step.val}</span>
                                         </div>
                                     </div>
                                 ))}
@@ -325,9 +325,9 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
                         {/* Revenue Card */}
-                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                        <div className="border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
                             <h3 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-4">Receita</h3>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center py-2 border-b border-docka-100 dark:border-zinc-800">
@@ -346,7 +346,7 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                         </div>
 
                         {/* Tickets Card */}
-                        <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6 shadow-sm">
+                        <div className="border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
                             <h3 className="text-sm font-bold text-docka-900 dark:text-zinc-100 mb-4">Ingressos</h3>
                             <div className="space-y-3">
                                 <div className="flex justify-between items-center py-2 border-b border-docka-100 dark:border-zinc-800">
@@ -366,23 +366,23 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                     </div>
 
                     {/* Technical Details */}
-                    <div className="bg-docka-50 dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl p-6">
+                    <div className="border border-[#e5e5e5] bg-zinc-50/60 p-4 dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-5">
                         <h3 className="text-xs font-bold text-docka-500 dark:text-zinc-500 uppercase tracking-wider mb-4">Detalhes Técnicos</h3>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                             <div>
                                 <span className="text-docka-500 dark:text-zinc-500">ID:</span>
-                                <span className="ml-2 font-mono text-docka-900 dark:text-zinc-100">{(fullEvent || selectedEvent).id}</span>
+                                <span className="mt-1 block break-all font-mono text-docka-900 dark:text-zinc-100">{(fullEvent || selectedEvent).id}</span>
                             </div>
                             <div className="relative group">
                                 <span className="text-docka-500 dark:text-zinc-500">Organização ID:</span>
-                                <span className="ml-2 font-mono text-amber-600 dark:text-amber-400 cursor-help underline decoration-dotted">
+                                <span className="mt-1 block break-all font-mono text-amber-600 underline decoration-dotted dark:text-amber-400">
                                     {(fullEvent || selectedEvent).organizationId || (fullEvent || selectedEvent).organization?.id}
                                 </span>
                                 <ExternalLink size={10} className="inline ml-1 text-amber-500" />
                             </div>
                             <div>
                                 <span className="text-docka-500 dark:text-zinc-500">Slug:</span>
-                                <span className="ml-2 font-mono text-docka-900 dark:text-zinc-100">{(fullEvent || selectedEvent).slug}</span>
+                                <span className="mt-1 block break-all font-mono text-docka-900 dark:text-zinc-100">{(fullEvent || selectedEvent).slug}</span>
                             </div>
                         </div>
                     </div>
