@@ -47,6 +47,18 @@ export const PageHeader = ({ eyebrow, title, description, actions }: {
     </div>
 );
 
+export const FauvesPageHeader = ({ title, description, actions }: {
+    title: string; description: string; actions?: React.ReactNode;
+}) => (
+    <header className="sticky top-0 z-20 flex min-h-[76px] items-center justify-between gap-3 border-b border-[#e5e5e5] bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-7">
+        <div className="min-w-0 flex-1">
+            <h1 className="truncate font-season text-xl font-[420] text-black dark:text-white sm:text-[22px]">{title}</h1>
+            <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">{description}</p>
+        </div>
+        {actions && <div className="custom-scrollbar flex max-w-[58%] shrink-0 items-center justify-end gap-2 overflow-x-auto sm:max-w-none">{actions}</div>}
+    </header>
+);
+
 export const PrimaryButton = ({ children, className = '', ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button {...props} className={`inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-teal-500 dark:text-slate-950 dark:hover:bg-teal-400 ${className}`}>{children}</button>
 );

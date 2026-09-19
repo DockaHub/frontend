@@ -5,6 +5,7 @@ import Modal from '../../../../components/common/Modal';
 import { fauvesService } from '../../../../services/fauvesService';
 import FauvesUserDetails from './FauvesUserDetails';
 import { CATEGORY_ICON_OPTIONS, getCategoryIcon } from './categoryIcons';
+import { FauvesPageHeader } from './FauvesUI';
 
 const normalizeIconSearch = (value: string) => value
     .normalize('NFD')
@@ -622,8 +623,20 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
     }
 
     return (
-        <div className="animate-in fade-in duration-300">
-            {!hideHeader && <div className="flex justify-between items-end mb-8">
+        <div className={`${type === 'users' ? 'h-full min-h-0 overflow-y-auto bg-white dark:bg-zinc-950' : ''} animate-in fade-in duration-300`}>
+            {!hideHeader && type === 'users' && (
+                <FauvesPageHeader
+                    title="Usuários & Risco"
+                    description={`${totalItems.toLocaleString('pt-BR')} usuários cadastrados na plataforma Fauves.`}
+                    actions={config.btn ? (
+                        <button onClick={() => { setEditingItem(null); setIsModalOpen(true); }} className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[#e5e5e5] bg-white px-4 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:hover:bg-zinc-800 sm:min-h-9">
+                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#2a2ad7] text-white"><Plus size={11} strokeWidth={3} /></span>
+                            Novo usuário
+                        </button>
+                    ) : undefined}
+                />
+            )}
+            {!hideHeader && type !== 'users' && <div className="flex justify-between items-end mb-8">
                 <div>
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">{type === 'ads' ? 'Anúncios da Plataforma' : config.title}</h1>
@@ -655,7 +668,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                 </div>
             </div>}
 
-            <div className="bg-transparent mb-6">
+            <div className={type === 'users' ? 'border-b border-[#e5e5e5] dark:border-zinc-800' : 'mb-6 bg-transparent'}>
                 {type === 'ads' ? (
                     <div className="bg-white dark:bg-zinc-900 p-4 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm flex flex-wrap items-end gap-4">
                         <div className="flex-1 min-w-[200px]">
@@ -702,8 +715,8 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                         </button>
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-sm">
-                        <div className="p-4 border-b border-docka-200 dark:border-zinc-800 flex justify-between items-center gap-4">
+                    <div className={type === 'users' ? 'bg-white dark:bg-zinc-950' : 'rounded-xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'}>
+                        <div className="flex items-center justify-between gap-3 p-4 sm:px-6">
                             <div className="relative flex-1">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={14} />
                                 <input
@@ -728,7 +741,7 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                 )}
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-sm">
+            <div className={type === 'users' ? 'border-b border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950' : 'rounded-xl border border-docka-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900'}>
 
                 {isLoading ? (
                     <div className="p-20 flex flex-col items-center justify-center text-docka-400 dark:text-zinc-500">
@@ -741,7 +754,24 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                         <button onClick={fetchData} className="text-xs underline">Tentar novamente</button>
                     </div>
                 ) : (
-                    <table className="w-full text-sm text-left">
+                    <>
+                    {type === 'users' && (
+                        <div className="divide-y divide-[#e5e5e5] dark:divide-zinc-800 lg:hidden">
+                            {data.length > 0 ? data.map((row: any) => (
+                                <button key={row.id} type="button" onClick={() => setSelectedUserId(row.id)} className="grid min-h-[72px] w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10">
+                                    <span className="min-w-0">
+                                        <strong className="block truncate text-sm font-semibold text-black dark:text-white">{row.col1}</strong>
+                                        <small className="mt-1 block truncate text-[11px] text-zinc-500 dark:text-zinc-400">{row.col2}</small>
+                                    </span>
+                                    <span className="flex flex-col items-end gap-1">
+                                        <span className={`rounded-full px-2.5 py-1 text-[9px] font-bold uppercase ${row.badge === 'purple' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>{row.col3 || 'Usuário'}</span>
+                                        <small className="text-[10px] text-zinc-400">{row.col4}</small>
+                                    </span>
+                                </button>
+                            )) : <div className="px-4 py-12 text-center text-sm text-zinc-400">Nenhum usuário encontrado.</div>}
+                        </div>
+                    )}
+                    <table className={`${type === 'users' ? 'hidden lg:table' : 'table'} w-full text-left text-sm`}>
                         <thead className="bg-docka-50 dark:bg-zinc-800/50 text-docka-500 dark:text-zinc-500 font-medium text-xs uppercase">
                             <tr>
                                 {config.headers.map((h, i) => <th key={i} className="px-6 py-3 border-b border-docka-100 dark:border-zinc-800">{h}</th>)}
@@ -971,13 +1001,14 @@ const ManagementView: React.FC<ManagementViewProps> = ({ type, hideHeader = fals
                             )}
                         </tbody>
                     </table>
+                    </>
                 )}
             </div>
 
             {/* Pagination Controls */}
             {totalPages > 1 && (
-                <div className="flex justify-between items-center mt-4 px-2">
-                    <span className="text-sm text-docka-500 dark:text-zinc-500">
+                <div className={`flex items-center justify-between gap-3 ${type === 'users' ? 'border-t border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:px-6' : 'mt-4 px-2'}`}>
+                    <span className="text-xs text-docka-500 dark:text-zinc-500 sm:text-sm">
                         Mostrando página <span className="font-bold text-docka-900 dark:text-zinc-100">{currentPage}</span> de <span className="font-bold text-docka-900 dark:text-zinc-100">{totalPages}</span>
                         {totalItems > 0 && <span className="ml-1">({totalItems} registros)</span>}
                     </span>

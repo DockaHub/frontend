@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ShieldAlert, Ticket } from 'lucide-react';
 import EventsView from './EventsView';
 import FauvesEventsAdminView from './FauvesEventsAdminView';
+import { FauvesPageHeader } from './FauvesUI';
 
 interface FauvesEventsHubProps {
     initialEventId?: string;
@@ -11,15 +12,16 @@ const FauvesEventsHub: React.FC<FauvesEventsHubProps> = ({ initialEventId }) => 
     const [activeTab, setActiveTab] = useState<'events' | 'moderation'>('events');
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center gap-2 border-b border-slate-200 dark:border-zinc-800 pb-3">
+        <div className="h-full min-h-0 overflow-y-auto bg-white dark:bg-zinc-950">
+            <FauvesPageHeader title="Eventos" description="Gestão, vendas, curadoria e segurança dos eventos Fauves." />
+            <nav className="sticky top-[76px] z-10 flex items-center overflow-x-auto border-b border-[#e5e5e5] bg-white/95 px-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-6" aria-label="Áreas de eventos">
                 <button
                     type="button"
                     onClick={() => setActiveTab('events')}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    className={`inline-flex min-h-[52px] shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-xs font-semibold transition-colors ${
                         activeTab === 'events'
-                            ? 'bg-[#2a2ad7] text-white shadow-sm'
-                            : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700'
+                            ? 'border-[#2a2ad7] bg-indigo-50/60 text-[#2a2ad7] dark:border-indigo-400 dark:bg-indigo-950/20 dark:text-indigo-300'
+                            : 'border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
                     }`}
                 >
                     <Ticket size={14} />
@@ -28,22 +30,24 @@ const FauvesEventsHub: React.FC<FauvesEventsHubProps> = ({ initialEventId }) => 
                 <button
                     type="button"
                     onClick={() => setActiveTab('moderation')}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                    className={`inline-flex min-h-[52px] shrink-0 items-center gap-2 border-b-2 px-4 py-2 text-xs font-semibold transition-colors ${
                         activeTab === 'moderation'
-                            ? 'bg-[#2a2ad7] text-white shadow-sm'
-                            : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 hover:bg-slate-200 dark:hover:bg-zinc-700'
+                            ? 'border-[#2a2ad7] bg-indigo-50/60 text-[#2a2ad7] dark:border-indigo-400 dark:bg-indigo-950/20 dark:text-indigo-300'
+                            : 'border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
                     }`}
                 >
                     <ShieldAlert size={14} />
                     Moderação & Auditoria
                 </button>
-            </div>
+            </nav>
 
-            {activeTab === 'events' ? (
-                <EventsView initialEventId={initialEventId} />
-            ) : (
-                <FauvesEventsAdminView />
-            )}
+            <main className="p-4 sm:p-6 lg:p-8">
+                {activeTab === 'events' ? (
+                    <EventsView initialEventId={initialEventId} />
+                ) : (
+                    <FauvesEventsAdminView hideHeader />
+                )}
+            </main>
         </div>
     );
 };

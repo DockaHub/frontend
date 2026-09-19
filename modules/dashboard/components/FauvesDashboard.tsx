@@ -25,6 +25,7 @@ interface FauvesDashboardProps {
 
 const FauvesDashboard: React.FC<FauvesDashboardProps> = ({ activeView, user }) => {
     const userName = user?.name ? user.name.split(' ')[0] : 'Usuário';
+    const usesOperationalShell = ['overview', 'organizations', 'events', 'users'].includes(activeView);
 
     const renderView = () => {
         switch (activeView) {
@@ -49,9 +50,9 @@ const FauvesDashboard: React.FC<FauvesDashboardProps> = ({ activeView, user }) =
 
     return (
         <FauvesToastProvider>
-            <div className={`h-full overflow-y-auto transition-colors ${activeView === 'overview' ? 'bg-white dark:bg-zinc-950' : 'bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,.08),transparent_28%),linear-gradient(to_bottom,#f8fafc,#ffffff_32%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,.08),transparent_28%),linear-gradient(to_bottom,#09090b,#09090b)]'}`}>
-                <div className={activeView === 'overview' ? 'min-h-full' : 'min-h-full p-4 sm:p-6 lg:p-8'}>
-                    <div className={activeView === 'overview' ? 'min-h-full' : 'mx-auto max-w-[1500px]'}><React.Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center text-sm font-semibold text-[#2a2ad7]">Carregando Fauves…</div>}>{renderView()}</React.Suspense></div>
+            <div className={`h-full transition-colors ${usesOperationalShell ? 'overflow-hidden bg-white dark:bg-zinc-950' : 'overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,.08),transparent_28%),linear-gradient(to_bottom,#f8fafc,#ffffff_32%)] dark:bg-[radial-gradient(circle_at_top_right,rgba(20,184,166,.08),transparent_28%),linear-gradient(to_bottom,#09090b,#09090b)]'}`}>
+                <div className={usesOperationalShell ? 'h-full min-h-0' : 'min-h-full p-4 sm:p-6 lg:p-8'}>
+                    <div className={usesOperationalShell ? 'h-full min-h-0' : 'mx-auto max-w-[1500px]'}><React.Suspense fallback={<div className="flex min-h-[60vh] items-center justify-center text-sm font-semibold text-[#2a2ad7]">Carregando Fauves…</div>}>{renderView()}</React.Suspense></div>
                 </div>
             </div>
         </FauvesToastProvider>

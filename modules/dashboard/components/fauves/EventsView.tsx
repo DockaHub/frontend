@@ -377,43 +377,20 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
             ) : (
                 /* LIST VIEW */
                 <div className="animate-in fade-in duration-500">
-                    <div className="flex justify-between items-end mb-6">
-                        <div>
-                            <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Eventos & Vendas</h1>
-                            <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gerencie todos os eventos da plataforma.</p>
-                        </div>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setIsImportModalOpen(true)}
-                                className="px-4 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 text-docka-900 dark:text-zinc-100 rounded-lg text-sm font-medium hover:bg-docka-50 dark:hover:bg-zinc-800 shadow-sm transition-colors flex items-center gap-2"
-                            >
-                                <LinkIcon size={16} className="text-amber-500" /> Importar Externo
-                            </button>
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="px-4 py-2 bg-docka-900 dark:bg-zinc-100 dark:text-zinc-900 text-white rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white/90 shadow-sm transition-colors flex items-center gap-2"
-                            >
-                                <Plus size={16} /> Criar Evento
-                            </button>
-                        </div>
-                    </div>
-
                     {/* Filters */}
-                    <div className="flex gap-4 mb-6">
-                        <div className="flex-1 relative">
+                    <div className="mb-5 flex flex-col gap-3 border border-[#e5e5e5] bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900/40 sm:flex-row sm:items-center sm:p-4">
+                        <div className="relative min-w-0 flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400 dark:text-zinc-500" size={16} />
                             <input
-                                className="w-full pl-10 pr-4 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-docka-400 dark:focus:border-zinc-500 transition-colors text-docka-900 dark:text-zinc-100 placeholder:text-docka-400 dark:placeholder:text-zinc-600"
+                                className="min-h-11 w-full rounded-xl border border-docka-200 bg-white py-2 pl-10 pr-4 text-sm text-docka-900 outline-none transition-colors placeholder:text-docka-400 focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-600"
                                 placeholder="Buscar eventos por nome..."
                             />
                         </div>
-                        <button
-                            onClick={fetchEvents}
-                            disabled={isLoading}
-                            className="px-4 py-2 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm font-medium text-docka-700 dark:text-zinc-300 hover:bg-docka-50 dark:hover:bg-zinc-800 flex items-center gap-2 disabled:opacity-50"
-                        >
-                            <RotateCw size={14} className={isLoading ? 'animate-spin' : ''} /> Atualizar
-                        </button>
+                        <div className="custom-scrollbar flex gap-2 overflow-x-auto">
+                            <button onClick={() => setIsImportModalOpen(true)} className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-docka-200 bg-white px-3 text-xs font-semibold text-docka-900 transition-colors hover:bg-docka-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"><LinkIcon size={15} className="text-amber-500" /> Importar</button>
+                            <button onClick={() => setIsCreateModalOpen(true)} className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-[#2a2ad7] px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-800"><Plus size={15} /> Novo evento</button>
+                            <button onClick={fetchEvents} disabled={isLoading} className="flex min-h-11 shrink-0 items-center gap-2 rounded-xl border border-docka-200 bg-white px-3 text-xs font-semibold text-docka-700 hover:bg-docka-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"><RotateCw size={14} className={isLoading ? 'animate-spin' : ''} /> Atualizar</button>
+                        </div>
                     </div>
 
                     {isLoading ? (
@@ -423,14 +400,14 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                         </div>
                     ) : (
                         <>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6">
+                            <div className="mb-6 grid grid-cols-1 gap-2 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                                 {events.map((event: FauvesEvent) => (
                                     <div
                                         key={event.id}
                                         onClick={() => setSelectedEvent(event)}
-                                        className="group bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden hover:shadow-lg hover:border-docka-300 dark:hover:border-zinc-700 transition-all cursor-pointer flex flex-col"
+                                        className="group grid min-h-[92px] cursor-pointer grid-cols-[92px_minmax(0,1fr)] overflow-hidden border border-docka-200 bg-white transition-colors hover:border-[#2a2ad7]/40 hover:bg-indigo-50/20 dark:border-zinc-800 dark:bg-zinc-900/40 dark:hover:border-indigo-500/40 md:flex md:flex-col"
                                     >
-                                        <div className="aspect-square bg-docka-100 dark:bg-zinc-800 relative overflow-hidden">
+                                        <div className="relative h-full min-h-[92px] overflow-hidden bg-docka-100 dark:bg-zinc-800 md:aspect-square md:h-auto">
                                             <img src={event.image || 'https://placehold.co/600x400?text=Sem+Capa'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100" alt={event.title} />
                                             <div className="absolute top-2 left-2">
                                                 <span className={`px-2 py-1 text-[10px] font-bold uppercase rounded-md tracking-wider ${event.isPublished || ['published', 'active', 'publicado'].includes(String(event.status).toLowerCase()) ? 'bg-emerald-500 text-white' : 'bg-docka-600 text-white'}`}>
@@ -442,15 +419,15 @@ const EventsView: React.FC<EventsViewProps> = ({ initialEventId }) => {
                                                 <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400">{event.stats?.interests || 0}</span>
                                             </div>
                                         </div>
-                                        <div className="p-4 flex-1 flex flex-col">
-                                            <h3 className="font-bold text-docka-900 dark:text-zinc-100 mb-1 line-clamp-2">{event.title}</h3>
+                                        <div className="flex min-w-0 flex-1 flex-col p-3 md:p-4">
+                                            <h3 className="mb-1 truncate text-sm font-bold text-docka-900 dark:text-zinc-100 md:line-clamp-2 md:whitespace-normal">{event.title}</h3>
                                             <div className="flex items-center text-xs text-docka-500 dark:text-zinc-400">
                                                 <Calendar size={12} className="mr-1.5" /> {event.date}
                                             </div>
                                             <div className="flex items-center text-xs text-docka-500 dark:text-zinc-400 mt-1">
                                                 <MapPin size={12} className="mr-1.5 shrink-0" /> <span className="truncate">{event.locationName || event.locationAddress || event.location || 'Local não definido'}</span>
                                             </div>
-                                            <div className="mt-auto pt-4 flex justify-between items-center text-xs text-docka-400 dark:text-zinc-500">
+                                            <div className="mt-auto hidden items-center justify-between pt-4 text-xs text-docka-400 dark:text-zinc-500 md:flex">
                                                 <span className="flex items-center gap-1"><Eye size={12} /> {event.stats?.views || 0}</span>
                                                 <span className="text-indigo-500 font-bold">Gerenciar &rarr;</span>
                                             </div>
