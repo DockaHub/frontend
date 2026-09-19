@@ -25,7 +25,7 @@ interface FauvesDashboardProps {
 
 const FauvesDashboard: React.FC<FauvesDashboardProps> = ({ activeView, user }) => {
     const userName = user?.name ? user.name.split(' ')[0] : 'Usuário';
-    const usesOperationalShell = ['overview', 'organizations', 'events', 'users'].includes(activeView);
+    const usesOperationalShell = ['overview', 'organizations', 'events', 'users', 'finance', 'helpdesk', 'helpdesk-tickets', 'helpdesk-chat', 'helpdesk-center', 'reports'].includes(activeView);
 
     const renderView = () => {
         switch (activeView) {

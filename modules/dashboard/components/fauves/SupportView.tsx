@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
     MessageSquare, CheckCircle, Book, Filter,
     Loader2, ChevronRight, Users, FolderOpen, LayoutDashboard,
-    Plus, Search, ArrowLeft, Edit2, Trash2, HelpCircle, X
+    Plus, Search, ArrowLeft, Edit2, Trash2, HelpCircle, X, RefreshCw
 } from 'lucide-react';
 import { TicketSupport } from '../../../../types';
 import { fauvesService } from '../../../../services/fauvesService';
 import { formatStatusLabel } from '../../../../utils/statusPresentation';
+import { FauvesPageHeader, SecondaryButton } from './FauvesUI';
 
 interface SupportViewProps {
     activeSubView?: string;
@@ -32,9 +33,9 @@ const SupportView: React.FC<SupportViewProps> = ({ activeSubView = 'helpdesk' })
             console.error('Failed to fetch tickets:', err);
             const status = err.response?.status;
             let msg = 'Erro ao carregar tickets de suporte.';
-            if (status === 401) msg = '(401: Não autorizado - Token inválido)';
-            else if (status === 404) msg = '(404: Não encontrado)';
-            else if (status) msg = `(Erro ${status})`;
+            if (status === 401) msg = 'Sua sessão não tem acesso aos chamados de suporte.';
+            else if (status === 404) msg = 'A integração de suporte ainda não está disponível.';
+            else if (status) msg = 'Não foi possível consultar o suporte agora.';
 
             setError(msg);
         } finally {
@@ -64,14 +65,12 @@ const SupportView: React.FC<SupportViewProps> = ({ activeSubView = 'helpdesk' })
         }
     };
 
-    return (
-        <div className="animate-in fade-in duration-300 pb-12">
-            <div className="mb-8">
-                <h1 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Helpdesk</h1>
-                <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Central de gerenciamento de suporte.</p>
-            </div>
+    const pageDescription = activeSubView === 'helpdesk-tickets' ? 'Acompanhe e responda aos chamados dos usuários.' : activeSubView === 'helpdesk-chat' ? 'Conversas e atendimentos em tempo real.' : activeSubView === 'helpdesk-center' ? 'Conteúdo de ajuda para clientes e produtoras.' : 'Visão geral dos atendimentos da Fauves.';
 
-            {renderContent()}
+    return (
+        <div className="h-full min-h-0 overflow-y-auto bg-white pb-12 dark:bg-zinc-950">
+            <FauvesPageHeader title="Suporte" description={pageDescription} actions={<SecondaryButton onClick={() => void fetchTickets()} disabled={isLoading}><RefreshCw size={14} /><span className="hidden sm:inline">Atualizar</span></SecondaryButton>} />
+            <main className="p-4 sm:p-6 lg:p-8">{renderContent()}</main>
         </div>
     );
 };
@@ -79,36 +78,36 @@ const SupportView: React.FC<SupportViewProps> = ({ activeSubView = 'helpdesk' })
 // --- SUB-COMPONENTS ---
 
 const SupportDashboard = ({ totalTickets }: any) => (
-    <div className="space-y-8">
+    <div className="space-y-4">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-px overflow-hidden border border-[#e5e5e5] bg-[#e5e5e5] dark:border-zinc-800 dark:bg-zinc-800 lg:grid-cols-4">
             {[
                 { label: 'Total de Tickets', val: totalTickets.toString(), icon: MessageSquare, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/30' },
                 { label: 'Resolvidos', val: '0', icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/30' },
                 { label: 'Chats Ativos', val: '0', icon: Users, color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-50 dark:bg-purple-900/30' },
                 { label: 'Artigos', val: '0', icon: Book, color: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-900/30' },
             ].map((stat, i) => (
-                <div key={i} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm transition-all hover:border-docka-300 dark:hover:border-zinc-700">
-                    <div className="flex items-center justify-between mb-4">
+                <div key={i} className="bg-white p-4 dark:bg-zinc-950 sm:p-5">
+                    <div className="mb-3 flex items-center justify-between">
                         <div className={`p-2 rounded-lg ${stat.bg} ${stat.color}`}>
                             <stat.icon size={20} />
                         </div>
                     </div>
-                    <h3 className="text-3xl font-bold text-docka-900 dark:text-zinc-100">{stat.val}</h3>
-                    <p className="text-sm text-docka-500 dark:text-zinc-500 mt-1">{stat.label}</p>
+                    <h3 className="text-2xl font-semibold text-docka-900 dark:text-zinc-100">{stat.val}</h3>
+                    <p className="mt-1 text-xs text-docka-500 dark:text-zinc-500">{stat.label}</p>
                 </div>
             ))}
         </div>
 
         {/* Quick Access Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950 md:grid-cols-3 md:divide-x md:divide-[#e5e5e5] md:dark:divide-zinc-800">
             {[
                 { title: 'Gerenciar Tickets', desc: 'Visualize e responda todos os tickets de suporte', items: '0 pendentes', icon: MessageSquare, color: 'bg-blue-50 text-blue-600' },
                 { title: 'Live Chat', desc: 'Atenda conversas em tempo real', items: '0 ativos', icon: Users, color: 'bg-purple-50 text-purple-600' },
                 { title: 'Central de Ajuda', desc: 'Gerencie categorias e artigos', items: '0 artigos', icon: Book, color: 'bg-indigo-50 text-indigo-600' }
             ].map((card, i) => (
-                <div key={i} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 hover:border-docka-300 transition-all group">
-                    <div className="flex gap-4 mb-4">
+                <div key={i} className="group border-b border-[#e5e5e5] p-4 last:border-b-0 dark:border-zinc-800 md:border-b-0 sm:p-5">
+                    <div className="mb-3 flex gap-3">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${card.color} dark:bg-zinc-800`}>
                             <card.icon size={20} />
                         </div>
@@ -117,7 +116,7 @@ const SupportDashboard = ({ totalTickets }: any) => (
                             <p className="text-xs text-docka-500 dark:text-zinc-500 mt-0.5 line-clamp-1">{card.desc}</p>
                         </div>
                     </div>
-                    <div className="flex items-center justify-between mt-6">
+                    <div className="mt-4 flex items-center justify-between">
                         <span className="text-[10px] font-bold text-docka-400 dark:text-zinc-500 uppercase flex items-center gap-1.5">
                             <span className="w-1.5 h-1.5 rounded-full bg-docka-300 dark:bg-zinc-700"></span>
                             {card.items}
@@ -129,8 +128,8 @@ const SupportDashboard = ({ totalTickets }: any) => (
         </div>
 
         {/* Recent Activity Mini-List */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800">
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Desempenho de Tickets</h3>
                 </div>
@@ -153,7 +152,7 @@ const SupportDashboard = ({ totalTickets }: any) => (
                 </div>
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
+            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800">
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Atividade Recente</h3>
                 </div>
@@ -180,25 +179,20 @@ const SupportDashboard = ({ totalTickets }: any) => (
 );
 
 const TicketsView = ({ tickets, isLoading, error }: any) => (
-    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-docka-100 dark:border-zinc-800">
-            <h2 className="text-xl font-bold text-docka-900 dark:text-zinc-100">Tickets de Suporte</h2>
-            <p className="text-xs text-docka-500 mt-1">Gerencie todos os tickets de suporte.</p>
-        </div>
-
+    <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
         {/* Filters & Search Header */}
-        <div className="p-4 bg-white dark:bg-zinc-900 border-b border-docka-100 dark:border-zinc-800 flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex flex-col gap-3 border-b border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 md:flex-row md:items-center sm:px-6">
             <div className="relative flex-1 w-full">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" />
                 <input
                     type="text"
                     placeholder="Buscar tickets..."
-                    className="w-full pl-9 pr-4 py-2 bg-docka-50 dark:bg-zinc-800 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500/20 text-docka-900 dark:text-zinc-100"
+                    className="min-h-11 w-full rounded-full border border-docka-200 bg-white py-2 pl-9 pr-4 text-sm text-docka-900 outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
                 />
             </div>
             <div className="flex gap-2 w-full md:w-auto overflow-x-auto no-scrollbar">
                 {['Todos', 'Abertos', 'Em Andamento', 'Fechados'].map((tab, i) => (
-                    <button key={tab} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${i === 0 ? 'bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-docka-800 dark:hover:bg-white shadow-sm' : 'bg-white dark:bg-zinc-800 text-docka-600 dark:text-zinc-400 border border-docka-200 dark:border-zinc-700 hover:bg-docka-50 dark:hover:bg-zinc-700'}`}>
+                    <button key={tab} className={`min-h-10 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition-colors ${i === 0 ? 'bg-[#2a2ad7] text-white' : 'border border-docka-200 bg-white text-docka-600 hover:bg-docka-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800'}`}>
                         {tab}
                     </button>
                 ))}
@@ -224,7 +218,9 @@ const TicketsView = ({ tickets, isLoading, error }: any) => (
                 <p className="text-xs text-docka-500 mt-1">Parece que não há solicitações de suporte no momento.</p>
             </div>
         ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="divide-y divide-[#e5e5e5] dark:divide-zinc-800 lg:hidden">{tickets.map((t: any) => <button key={t.id} type="button" className="grid min-h-[84px] w-full grid-cols-[minmax(0,1fr)_20px] items-center gap-3 px-4 py-3 text-left hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10"><span className="min-w-0"><span className="flex items-center gap-2"><strong className="truncate text-sm text-black dark:text-white">{t.subject}</strong><span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${t.priority === 'high' ? 'bg-red-50 text-red-600 dark:bg-red-950/30' : 'bg-amber-50 text-amber-600 dark:bg-amber-950/30'}`}>{t.priority === 'high' ? 'Alta' : t.priority}</span></span><small className="mt-1 block truncate text-[11px] text-zinc-500 dark:text-zinc-400">{t.user} · {t.date}</small><span className="mt-1.5 inline-flex rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">{formatStatusLabel(t.status)}</span></span><ChevronRight size={17} className="text-zinc-300 dark:text-zinc-600" /></button>)}</div>
+            <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-docka-50/50 dark:bg-zinc-800/50 border-b border-docka-50 dark:border-zinc-800">
                         <tr>
@@ -260,22 +256,23 @@ const TicketsView = ({ tickets, isLoading, error }: any) => (
                     </tbody>
                 </table>
             </div>
+            </>
         )}
     </div>
 );
 
 const LiveChatView = () => (
-    <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm flex h-[600px] animate-in slide-in-from-bottom-4">
+    <div className="flex h-[calc(100dvh-190px)] min-h-[460px] overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
         {/* Chat Sidebar */}
-        <div className="w-80 border-r border-docka-100 dark:border-zinc-800 flex flex-col">
+        <div className="flex w-full flex-col border-r border-docka-100 dark:border-zinc-800 md:w-80">
             <div className="p-4 border-b border-docka-50 dark:border-zinc-800">
                 <h2 className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
-                    <Users size={18} /> Live Chat
+                    <Users size={18} /> Conversas
                     <span className="ml-auto w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
                 </h2>
                 <div className="mt-4 relative">
                     <Filter size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-docka-400" />
-                    <input className="w-full pl-8 pr-3 py-1.5 bg-docka-50 dark:bg-zinc-800 rounded-lg text-xs border-none" placeholder="Buscar conversas..." />
+                    <input className="min-h-10 w-full rounded-full border border-zinc-200 bg-white pl-8 pr-3 text-xs outline-none focus:border-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900" placeholder="Buscar conversas…" />
                 </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center justify-center text-center">
@@ -285,7 +282,7 @@ const LiveChatView = () => (
         </div>
 
         {/* Chat Area Placeholder */}
-        <div className="flex-1 bg-docka-50/20 dark:bg-zinc-950 flex flex-col items-center justify-center">
+        <div className="hidden flex-1 flex-col items-center justify-center bg-docka-50/20 dark:bg-zinc-950 md:flex">
             <div className="text-center p-8 max-w-sm">
                 <div className="w-16 h-16 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-docka-100 dark:border-zinc-800 flex items-center justify-center mx-auto mb-6 text-docka-300">
                     <Users size={32} />
@@ -303,7 +300,7 @@ const HelpCenterView = () => {
 
     if (view === 'categories') {
         return (
-            <div className="animate-in fade-in duration-300">
+            <div>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
                         <button
@@ -318,7 +315,7 @@ const HelpCenterView = () => {
                     {!showCategoryForm && (
                         <button
                             onClick={() => setShowCategoryForm(true)}
-                            className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white shadow-sm flex items-center gap-2"
+                            className="flex min-h-11 items-center gap-2 rounded-full bg-[#2a2ad7] px-4 text-sm font-semibold text-white hover:bg-indigo-800"
                         >
                             <Plus size={16} /> Nova Categoria
                         </button>
@@ -326,7 +323,7 @@ const HelpCenterView = () => {
                 </div>
 
                 {showCategoryForm && (
-                    <div className="mb-8 bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden animate-in slide-in-from-top-4">
+                    <div className="mb-6 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                         <div className="p-6 border-b border-docka-100 dark:border-zinc-800 flex justify-between items-center">
                             <h3 className="font-bold text-docka-900 dark:text-zinc-100">Nova Categoria</h3>
                             <button onClick={() => setShowCategoryForm(false)} className="text-docka-400 hover:text-docka-600 transition-colors">
@@ -411,7 +408,7 @@ const HelpCenterView = () => {
                     </div>
                 )}
 
-                <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm">
+                <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm text-left">
                             <thead className="bg-docka-50/50 dark:bg-zinc-800/50 border-b border-docka-50 dark:border-zinc-800">
@@ -467,7 +464,7 @@ const HelpCenterView = () => {
 
     if (view === 'articles') {
         return (
-            <div className="animate-in fade-in duration-300">
+            <div>
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                     <div>
                         <button
@@ -479,12 +476,12 @@ const HelpCenterView = () => {
                         <h2 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Artigos</h2>
                         <p className="text-docka-500 dark:text-zinc-400 text-sm mt-1">Gerencie os artigos de ajuda.</p>
                     </div>
-                    <button className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white shadow-sm flex items-center gap-2">
+                    <button className="flex min-h-11 items-center gap-2 rounded-full bg-[#2a2ad7] px-4 text-sm font-semibold text-white hover:bg-indigo-800">
                         <Plus size={16} /> Novo Artigo
                     </button>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 p-4 border border-docka-200 dark:border-zinc-800 rounded-xl shadow-sm flex flex-col md:flex-row gap-4 mb-8">
+                <div className="mb-6 flex flex-col gap-3 border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 md:flex-row">
                     <div className="relative flex-1">
                         <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-docka-300" />
                         <input
@@ -503,7 +500,7 @@ const HelpCenterView = () => {
                     </select>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm p-24 text-center">
+                <div className="overflow-hidden border border-[#e5e5e5] bg-white px-6 py-20 text-center dark:border-zinc-800 dark:bg-zinc-950">
                     <Book size={48} className="text-docka-200 mx-auto mb-4" />
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100">Nenhum artigo encontrado</h3>
                     <p className="text-sm text-docka-400 mt-1">Publique o seu primeiro artigo para ajudar seus usuários.</p>
@@ -513,7 +510,7 @@ const HelpCenterView = () => {
     }
 
     return (
-        <div className="animate-in fade-in duration-300">
+        <div>
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div>
                     <h2 className="text-2xl font-bold text-docka-900 dark:text-zinc-100">Central de Ajuda</h2>
@@ -521,19 +518,19 @@ const HelpCenterView = () => {
                 </div>
                 <button
                     onClick={() => setView('articles')}
-                    className="bg-docka-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-4 py-2 rounded-lg text-sm font-medium hover:bg-docka-800 dark:hover:bg-white shadow-sm flex items-center gap-2"
+                    className="flex min-h-11 items-center gap-2 rounded-full bg-[#2a2ad7] px-4 text-sm font-semibold text-white hover:bg-indigo-800"
                 >
                     <Plus size={16} /> Novo Artigo
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="mb-4 grid grid-cols-1 gap-px overflow-hidden border border-[#e5e5e5] bg-[#e5e5e5] dark:border-zinc-800 dark:bg-zinc-800 md:grid-cols-3">
                 {[
                     { label: 'Artigos Publicados', val: '0', icon: Book, color: 'text-indigo-600 bg-indigo-50' },
                     { label: 'Categorias', val: '0', icon: FolderOpen, color: 'text-blue-600 bg-blue-50' },
                     { label: 'Visualizações Totais', val: '0', icon: LayoutDashboard, color: 'text-emerald-600 bg-emerald-50' },
                 ].map((stat, i) => (
-                    <div key={i} className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-docka-200 dark:border-zinc-800 shadow-sm hover:border-docka-300 dark:hover:border-zinc-700 transition-all">
+                    <div key={i} className="bg-white p-4 dark:bg-zinc-950 sm:p-5">
                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${stat.color} dark:bg-zinc-800 mb-4`}>
                             <stat.icon size={24} />
                         </div>
@@ -543,10 +540,10 @@ const HelpCenterView = () => {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950 md:grid-cols-2 md:divide-x md:divide-[#e5e5e5] md:dark:divide-zinc-800">
                 <button
                     onClick={() => setView('categories')}
-                    className="bg-white dark:bg-zinc-900 p-8 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-6 hover:border-docka-300 dark:hover:border-zinc-700 hover:shadow-md transition-all group text-left"
+                    className="group flex items-center gap-4 border-b border-[#e5e5e5] p-5 text-left transition-colors hover:bg-indigo-50/30 dark:border-zinc-800 dark:hover:bg-indigo-950/10 md:border-b-0 sm:p-6"
                 >
                     <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform shrink-0">
                         <FolderOpen size={32} />
@@ -561,7 +558,7 @@ const HelpCenterView = () => {
                 </button>
                 <button
                     onClick={() => setView('articles')}
-                    className="bg-white dark:bg-zinc-900 p-8 rounded-xl border border-docka-200 dark:border-zinc-800 flex items-center gap-6 hover:border-docka-300 dark:hover:border-zinc-700 hover:shadow-md transition-all group text-left"
+                    className="group flex items-center gap-4 p-5 text-left transition-colors hover:bg-indigo-50/30 dark:hover:bg-indigo-950/10 sm:p-6"
                 >
                     <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform shrink-0">
                         <Book size={32} />
@@ -576,7 +573,7 @@ const HelpCenterView = () => {
                 </button>
             </div>
 
-            <div className="bg-white dark:bg-zinc-900 border border-docka-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm mt-10">
+            <div className="mt-4 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="px-8 py-5 border-b border-docka-100 dark:border-zinc-800 flex justify-between items-center">
                     <h3 className="font-bold text-docka-900 dark:text-zinc-100">Artigos Mais Visualizados</h3>
                     <div className="text-[10px] font-bold text-docka-400 uppercase tracking-widest bg-docka-50 dark:bg-zinc-800 px-3 py-1 rounded-full">Automático</div>

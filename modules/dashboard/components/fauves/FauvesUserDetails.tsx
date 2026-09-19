@@ -4,7 +4,7 @@ import {
   User as UserIcon, Mail, Smartphone, Calendar, 
   Activity, Fingerprint, 
   Save, RotateCw, Ban, CheckCircle, 
-  AlertCircle, Info, ArrowLeft, Pencil, 
+  AlertCircle, ArrowLeft, Pencil,
   Lock, Building, Ticket, ShoppingCart, 
   CalendarDays, TrendingUp, Bell, Handshake,
   ChevronRight, Trash2
@@ -154,7 +154,7 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
 
   return (
     <>
-    <div className="h-full overflow-y-auto bg-white pb-12 animate-in fade-in duration-500 dark:bg-zinc-950">
+    <div className="h-full overflow-y-auto bg-white pb-12 dark:bg-zinc-950">
       {/* HEADER PAGE */}
       <div className="sticky top-0 z-20 flex min-h-[76px] items-center justify-between gap-3 border-b border-[#e5e5e5] bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-7">
         <div className="flex min-w-0 items-center gap-3">
@@ -188,42 +188,6 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
         {/* LEFT COLUMN */}
         <div className="space-y-4 lg:col-span-8">
           
-          {/* INFORMACAO DO USUARIO */}
-          <section className="border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
-            <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-500 dark:bg-blue-900/30"><Info size={15} /></span>
-              Informações do Usuário
-            </h3>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-               <div className="space-y-1">
-                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Nome</p>
-                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{user.name}</p>
-               </div>
-               <div className="space-y-1">
-                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Email</p>
-                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{user.email}</p>
-               </div>
-               <div className="space-y-1">
-                 <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Permissões</p>
-                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{user.isAdmin ? 'Administrador Global' : user.role || 'Usuário comum'}</p>
-               </div>
-            </div>
-          </section>
-
-          {/* RESETAR SENHA */}
-          <section className="flex flex-col justify-between gap-4 border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:flex-row sm:items-center sm:p-5">
-            <div>
-              <h3 className="text-base font-black text-zinc-900 dark:text-zinc-100 mb-1 flex items-center gap-3">
-                <span className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-500 flex items-center justify-center"><Lock size={16} /></span>
-                Resetar Senha
-              </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">Clique em "Resetar" para definir uma nova senha para este usuário.</p>
-            </div>
-            <button onClick={resetAccess} disabled={saving} className="flex min-h-11 items-center justify-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-100 disabled:opacity-50 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-300">
-              <RotateCw size={14} /> Enviar redefinição
-            </button>
-          </section>
-
           {/* DADOS PESSOAIS COMPLETOS */}
           <section className="border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:p-5">
             <h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
@@ -269,8 +233,8 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
                 )}
               </div>
               <div className="space-y-1.5">
-                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Função</p>
-                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 uppercase tracking-widest text-indigo-500">{user.role || 'ATTENDEE'}</p>
+                <p className="text-[10px] font-black text-zinc-400 uppercase tracking-tighter">Acesso</p>
+                <p className="text-sm font-bold text-indigo-500">{user.isAdmin ? 'Administrador global' : user.role || 'Usuário comum'}</p>
               </div>
             </div>
 
@@ -335,7 +299,7 @@ const FauvesUserDetails: React.FC<FauvesUserDetailsProps> = ({ userId, onBack, o
                  <Ticket size={32} className="opacity-30" />
               </div>
               <h4 className="text-3xl font-black text-zinc-900 dark:text-zinc-100 leading-none mb-1">{user.eventsCreated || 0}</h4>
-              <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Nenhum evento criado</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">{user.eventsCreated ? 'Eventos criados' : 'Nenhum evento criado'}</p>
             </div>
           </section>
 
