@@ -2,7 +2,8 @@ import {
     LayoutDashboard, Ticket, CreditCard, Mic2, Users,
     BarChart3, Settings, Headphones, FolderOpen,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
-    Network, Search, Trophy, Wallet, MapPinned
+    Network, Search, Trophy, Wallet, MapPinned, ListChecks, BadgeDollarSign,
+    BookOpen, LifeBuoy, PanelsTopLeft
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization } from '../types';
@@ -12,6 +13,7 @@ export interface MenuItem {
     id: string;
     label: string;
     icon: any;
+    section?: string;
     badgeCount?: number;
     badgeColor?: string;
     children?: { id: string; label: string; icon?: any }[];
@@ -58,6 +60,20 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
 
     const getOrgMenu = (): MenuItem[] => {
         if (!currentOrg) return [];
+
+        // Specific Menu for Allyo
+        if (currentOrg.slug === 'allyo') {
+            return [
+                { id: 'overview', label: 'Início', icon: Home },
+                { id: 'tasks', label: 'Tarefas', icon: ListChecks },
+                { id: 'earnings', label: 'Ganhos', icon: BadgeDollarSign },
+                { id: 'clients', label: 'Clientes', icon: Users },
+                { id: 'catalog', label: 'Catálogo', icon: BookOpen },
+                { id: 'settings', label: 'Configurações', icon: Settings },
+                { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
+                { id: 'help-center', label: 'Central de Ajuda', icon: LifeBuoy, section: 'SUPORTE' },
+            ];
+        }
 
         // Specific Menu for Tokyon
         if (currentOrg.slug === 'tokyon') {

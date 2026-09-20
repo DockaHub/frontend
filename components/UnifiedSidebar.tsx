@@ -350,6 +350,8 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                 return isDark ? '#818cf8' : '#0412dd'; // Indigo-400 on dark mode, bright blue on light mode
             case 'fauves':
                 return isDark ? '#a5b4fc' : '#2a2ad7'; // Indigo-300 on dark mode
+            case 'allyo':
+                return isDark ? '#d0f08e' : '#9db669';
             default:
                 return isDark ? '#ff7a45' : '#fd6b32'; // Orange on dark mode
         }
@@ -468,7 +470,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
 
                 {/* 2. Workspace Menu Items (PRIMARY) */}
                 <div className="space-y-[15px] mb-6">
-                    {menuItems.map(item => {
+                    {menuItems.map((item, itemIndex) => {
                         // Determine if active: Location is dashboard AND view matches
                         const currentView = searchParams.get('view') || 'overview';
                         const isDashboard = location.pathname.startsWith('/dashboard');
@@ -516,8 +518,17 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                             </button>
                         );
 
+                        const previousSection = itemIndex > 0 ? menuItems[itemIndex - 1]?.section : undefined;
+                        const showSection = Boolean(item.section && item.section !== previousSection);
+
                         return (
-                            <div key={item.id} className="space-y-[15px]">
+                            <React.Fragment key={item.id}>
+                                {showSection && (
+                                    <p className="pt-2 text-[8px] font-semibold tracking-[0.04em] text-[#a1a79d] dark:text-zinc-500">
+                                        {item.section}
+                                    </p>
+                                )}
+                            <div className="space-y-[15px]">
                                 {ButtonContent}
 
                                 {/* Sub-items rendering */}
@@ -546,6 +557,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                     </div>
                                 )}
                             </div>
+                            </React.Fragment>
                         )
                     })}
                 </div>

@@ -7,6 +7,7 @@ import TokyonDashboard from './components/TokyonDashboard';
 import AsteryskoDashboard from './components/AsteryskoDashboard';
 import UmaChaveDashboard from './components/UmaChaveDashboard';
 import ManySpaceDashboard from './components/ManySpaceDashboard';
+import AllyoDashboard from './components/AllyoDashboard';
 import { ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import UnifiedSidebar, { BrandLogo } from '../../components/UnifiedSidebar';
@@ -59,6 +60,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
     const renderContent = () => {
         if (!selectedOrg) {
             return <AsteryskoDashboard user={user} activeView={activeView} organization={initialOrg} />;
+        }
+        if (selectedOrg.slug === 'allyo') {
+            return <AllyoDashboard user={user} activeView={activeView} organization={selectedOrg} />;
         }
         // Routing by Organization Type (More robust for real data)
         if (selectedOrg.type === 'AGENCY') {
