@@ -9,12 +9,23 @@ export const CURRENT_USER: User = {
   role: 'admin',
 };
 
+export const ALLYO_PREVIEW_ORGANIZATION: Organization = {
+  id: 'allyo-preview',
+  name: 'Allyo',
+  slug: 'allyo',
+  logoColor: 'bg-[#0d1e1d]',
+  type: 'SAAS',
+  features: { calendar: true, drive: true, contacts: true },
+  memberRole: 'MEMBER',
+};
+
 export const ORGANIZATIONS: Organization[] = [
   { id: 'ae14ea68-91f6-4be3-bd67-d6c1d9762e67', name: 'ManySpace', slug: 'manyspace', logoColor: 'bg-manyspace-orange', type: 'SAAS', features: { calendar: true, drive: true, contacts: true } },
   { id: 'org_2', name: 'Fauves', slug: 'fauves', logoColor: 'bg-amber-700', type: 'EVENT_TECH', features: { calendar: true, drive: true, contacts: true } },
   { id: '2a89b3f0-643f-4514-b201-3c7e43db859a', name: 'Tokyon', slug: 'tokyon', logoColor: 'bg-red-600', type: 'INFRASTRUCTURE', features: { calendar: false, drive: false, contacts: false } },
   { id: 'org_4', name: 'Asterysko', slug: 'asterysko', logoColor: 'bg-blue-600', type: 'AGENCY' },
   { id: 'org_7', name: 'Uma Chave', slug: 'umachave', logoColor: 'bg-orange-500', type: 'AGENCY' },
+  ALLYO_PREVIEW_ORGANIZATION,
 ];
 
 export const INITIAL_DOMAINS: Domain[] = [
