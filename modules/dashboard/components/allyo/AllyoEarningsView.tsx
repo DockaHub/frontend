@@ -28,6 +28,7 @@ const downloadReport = (rows: typeof deliveries) => {
 const AllyoEarningsView = () => {
     const [period, setPeriod] = useState('Setembro/2026');
     const totalCredits = useMemo(() => deliveries.reduce((sum, row) => sum + row.credits, 0), []);
+    const approvedCredits = 68;
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
@@ -41,8 +42,18 @@ const AllyoEarningsView = () => {
                     <div className={`border-b px-[30px] py-5 ${ALLYO_BORDER}`}>
                         <h2 className="text-sm font-medium">Receita progressiva</h2>
                         <p className="mt-[10px] text-xs leading-[1.35] text-[#858585]">O valor que você recebe por crédito é progressivo e dinâmico. Confira abaixo as recompensas relacionadas ao seu desempenho:</p>
+                        <div className="mt-5 rounded-[12px] border border-[#dce7c4] bg-[#f8faf3] p-3.5 dark:border-[#d0f08e]/20 dark:bg-[#d0f08e]/5">
+                            <div className="flex items-center justify-between gap-3">
+                                <span className="text-[10px] font-bold uppercase tracking-[.06em] text-[#739044] dark:text-[#d0f08e]">Seu nível atual</span>
+                                <span className="text-xs font-semibold text-black dark:text-white">{approvedCredits} créditos aprovados</span>
+                            </div>
+                            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#e5ecd7] dark:bg-zinc-800">
+                                <div className="h-full rounded-full bg-[#9db669]" style={{ width: `${Math.min(100, (approvedCredits / 70) * 100)}%` }} />
+                            </div>
+                            <p className="mt-2 text-[10px] leading-4 text-[#7b8669] dark:text-zinc-400">Faltam <strong>2 créditos</strong> para o próximo nível.</p>
+                        </div>
                     </div>
-                    <Tier label="&lt;70 créditos aprovados" value="R$ 50,00" />
+                    <Tier label="&lt;70 créditos aprovados" value="R$ 50,00" current />
                     <Tier label="70–71 créditos aprovados" value="R$ 4.000,00" />
                     <Tier label="&gt;71 créditos aprovados" value="R$ 70,00" />
                     <div className={`border-b px-[30px] py-5 ${ALLYO_BORDER}`}>
@@ -69,7 +80,7 @@ const AllyoEarningsView = () => {
                                     <th className="w-[25%] px-3 py-[15px] font-medium">Data de aprovação</th>
                                     <th className="w-[17%] px-3 py-[15px] font-medium">Versões</th>
                                     <th className="w-[20%] px-3 py-[15px] font-medium">Créditos</th>
-                                    <th className="w-[20%] px-3 py-[15px] text-right font-medium">Boosters Utilizados</th>
+                                    <th className="w-[20%] py-[15px] pl-3 pr-[30px] text-right font-medium">Boosters Utilizados</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -79,7 +90,7 @@ const AllyoEarningsView = () => {
                                         <td className="px-3 py-5">{row.approvedAt}</td>
                                         <td className="px-3 py-5"><VersionBadges count={row.versions} /></td>
                                         <td className="px-3 py-5">{formatCredits(row.credits)}</td>
-                                        <td className="px-3 py-5 text-right">{row.boosters}</td>
+                                        <td className="py-5 pl-3 pr-[30px] text-right">{row.boosters}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -91,9 +102,10 @@ const AllyoEarningsView = () => {
     );
 };
 
-const Tier = ({ label, value }: { label: string; value: string }) => (
-    <div className={`flex items-center justify-between gap-4 border-b px-[30px] py-5 ${ALLYO_BORDER}`}>
-        <span className="text-xs font-semibold text-[#9f9f9f]">{label}</span>
+const Tier = ({ label, value, current = false }: { label: string; value: string; current?: boolean }) => (
+    <div className={`relative flex items-center justify-between gap-4 border-b px-[30px] py-5 ${ALLYO_BORDER} ${current ? 'bg-[#fbfcf8] dark:bg-[#d0f08e]/[.035]' : ''}`}>
+        {current && <span className="absolute inset-y-3 left-0 w-[3px] rounded-r-full bg-[#9db669]" />}
+        <span className={`text-xs font-semibold ${current ? 'text-[#739044] dark:text-[#d0f08e]' : 'text-[#9f9f9f]'}`}>{label}{current && <small className="ml-2 rounded-full bg-[#eef4e3] px-2 py-1 text-[8px] font-bold uppercase tracking-[.06em] text-[#739044] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]">Atual</small>}</span>
         <strong className="shrink-0 font-season text-base font-normal">{value}</strong>
     </div>
 );

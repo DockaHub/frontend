@@ -475,7 +475,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                         const currentView = searchParams.get('view') || 'overview';
                         const isDashboard = location.pathname.startsWith('/dashboard');
 
-                        const isSelected = isDashboard && (currentView === item.id || (item.children?.some(child => currentView === child.id)));
+                        const isSelected = isDashboard && (currentView === item.id || (item.id === 'tasks' && currentView === 'task-detail') || (item.children?.some(child => currentView === child.id)));
                         const hasChildren = item.children && item.children.length > 0;
                         const isExpanded = isSelected || expandedItems.has(item.id);
 

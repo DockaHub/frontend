@@ -1,5 +1,6 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 export const ALLYO_BORDER = 'border-[#e5e5e5] dark:border-zinc-800';
 export const ALLYO_ACCENT = '#9db669';
@@ -52,14 +53,22 @@ const statusColor: Record<AllyoTask['status'], string> = {
 };
 
 export const TaskRow = ({ task }: { task: AllyoTask }) => {
-    const [expanded, setExpanded] = useState(false);
+    const [, setSearchParams] = useSearchParams();
+
+    const openTask = () => {
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.set('view', 'task-detail');
+            next.set('task', task.id);
+            return next;
+        });
+    };
 
     return (
         <div className={`border-t ${ALLYO_BORDER}`}>
             <button
                 type="button"
-                onClick={() => setExpanded((value) => !value)}
-                aria-expanded={expanded}
+                onClick={openTask}
                 className="grid min-h-[78px] w-full grid-cols-[minmax(190px,1.35fr)_70px_90px_minmax(155px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-lg:grid-cols-[minmax(180px,1fr)_80px_18px] max-sm:grid-cols-[1fr_18px]"
             >
                 <span className="flex min-w-0 items-center gap-[10px]">
@@ -75,16 +84,8 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
                 <DataCell label="CLIENTE" value={task.client} className="max-lg:hidden" />
                 <DataCell label="DEADLINE" value={`${task.deadline} • ${task.time}`} className="max-sm:hidden" />
                 <DataCell label="STATUS" value={task.status} valueClassName={statusColor[task.status]} />
-                <ChevronRight size={18} className={`text-[#9f9f9f] transition-transform ${expanded ? 'rotate-90' : ''}`} />
+                <ChevronRight size={18} className="text-[#9f9f9f]" />
             </button>
-            {expanded && (
-                <div className="grid grid-cols-2 gap-4 border-t border-dashed border-[#e5e5e5] bg-[#fafbf8] px-[30px] py-4 text-xs text-[#616161] dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-400 sm:grid-cols-4">
-                    <DataCell label="CAM" value={task.cam} />
-                    <DataCell label="CRIATIVO" value={task.creative} />
-                    <DataCell label="CLIENTE" value={task.client} />
-                    <DataCell label="ENTREGA" value={`${task.deadline} • ${task.time}`} />
-                </div>
-            )}
         </div>
     );
 };
@@ -96,7 +97,7 @@ export const DataCell = ({ label, value, className = '', valueClassName = '' }: 
     </span>
 );
 
-export const FilterSelect = ({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) => {
+export const FilterSelect = ({ label, value, options, onChange, includeAll = true }: { label: string; value: string; options: string[]; onChange: (value: string) => void; includeAll?: boolean }) => {
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
     const menuId = useId();
@@ -138,9 +139,11 @@ export const FilterSelect = ({ label, value, options, onChange }: { label: strin
             {open && (
                 <div id={menuId} role="listbox" className="absolute left-0 top-[calc(100%+8px)] z-[80] min-w-[210px] overflow-hidden rounded-[14px] border border-[#e5e5e5] bg-white p-1.5 shadow-[0_18px_45px_rgba(19,31,21,.16)] animate-in fade-in zoom-in-95 duration-150 dark:border-zinc-700 dark:bg-zinc-900">
                     <div className="px-3 pb-2 pt-1.5 text-[9px] font-bold uppercase tracking-[0.08em] text-[#9f9f9f]">{label}</div>
-                    <button type="button" role="option" aria-selected={value === 'Todos'} onClick={() => select('Todos')} className={`flex w-full items-center justify-between gap-4 rounded-[9px] px-3 py-2.5 text-left text-xs transition-colors ${value === 'Todos' ? 'bg-[#f3f7ea] font-semibold text-[#72844d] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]' : 'text-black hover:bg-[#f7f7f5] dark:text-zinc-200 dark:hover:bg-zinc-800'}`}>
-                        <span>Todos</span>{value === 'Todos' && <Check size={14} />}
-                    </button>
+                    {includeAll && (
+                        <button type="button" role="option" aria-selected={value === 'Todos'} onClick={() => select('Todos')} className={`flex w-full items-center justify-between gap-4 rounded-[9px] px-3 py-2.5 text-left text-xs transition-colors ${value === 'Todos' ? 'bg-[#f3f7ea] font-semibold text-[#72844d] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]' : 'text-black hover:bg-[#f7f7f5] dark:text-zinc-200 dark:hover:bg-zinc-800'}`}>
+                            <span>Todos</span>{value === 'Todos' && <Check size={14} />}
+                        </button>
+                    )}
                     {options.filter((option, index, list) => list.indexOf(option) === index).map((option) => (
                         <button key={option} type="button" role="option" aria-selected={value === option} onClick={() => select(option)} className={`flex w-full items-center justify-between gap-4 rounded-[9px] px-3 py-2.5 text-left text-xs transition-colors ${value === option ? 'bg-[#f3f7ea] font-semibold text-[#72844d] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]' : 'text-black hover:bg-[#f7f7f5] dark:text-zinc-200 dark:hover:bg-zinc-800'}`}>
                             <span className="truncate">{option}</span>{value === option && <Check size={14} />}
