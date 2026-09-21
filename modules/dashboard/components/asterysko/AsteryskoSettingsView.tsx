@@ -37,12 +37,16 @@ interface PortalBenefit {
     id: string;
     title: string;
     description: string | null;
+    serviceSummary: string | null;
+    usageRules: string | null;
     badge: string | null;
     imageUrl: string | null;
     linkUrl: string | null;
     active: boolean;
     sortOrder: number;
 }
+
+const DEFAULT_BENEFIT_USAGE_RULES = 'Para solicitar este benefício, apresente o e-mail cadastrado na Asterysko. Nossa equipe verificará internamente se o seu cadastro está elegível antes de confirmar a concessão.';
 
 interface InpiBulkProgress {
     active: boolean;
@@ -312,7 +316,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
 
     const openNewBenefit = () => {
         const nextOrder = portalBenefits.reduce((highest, benefit) => Math.max(highest, benefit.sortOrder), -1) + 1;
-        setSelectedBenefit({ active: true, sortOrder: nextOrder, title: '', description: '', badge: '', imageUrl: '', linkUrl: '' });
+        setSelectedBenefit({ active: true, sortOrder: nextOrder, title: '', description: '', serviceSummary: '', usageRules: DEFAULT_BENEFIT_USAGE_RULES, badge: '', imageUrl: '', linkUrl: '' });
         setBenefitModalOpen(true);
     };
 
@@ -325,6 +329,8 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
         const payload = {
             title: selectedBenefit.title.trim(),
             description: selectedBenefit.description?.trim() || null,
+            serviceSummary: selectedBenefit.serviceSummary?.trim() || null,
+            usageRules: selectedBenefit.usageRules?.trim() || null,
             badge: selectedBenefit.badge?.trim() || null,
             imageUrl: selectedBenefit.imageUrl?.trim() || null,
             linkUrl: selectedBenefit.linkUrl?.trim() || null,
@@ -2376,7 +2382,7 @@ const WhatsAppCard: React.FC = () => {
                                                         </button>
                                                         <button
                                                             type="button"
-                                                            onClick={() => { setSelectedBenefit({ ...benefit }); setBenefitModalOpen(true); }}
+                                                            onClick={() => { setSelectedBenefit({ ...benefit, usageRules: benefit.usageRules || DEFAULT_BENEFIT_USAGE_RULES }); setBenefitModalOpen(true); }}
                                                             className="p-2 text-docka-500 hover:text-blue-600 hover:bg-blue-50 dark:text-zinc-400 dark:hover:bg-blue-950/30 rounded-lg"
                                                             aria-label={`Editar ${benefit.title}`}
                                                         >
@@ -2441,7 +2447,7 @@ const WhatsAppCard: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Descrição</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Descrição curta do benefício</label>
                         <textarea
                             value={selectedBenefit?.description || ''}
                             onChange={event => setSelectedBenefit(current => ({ ...current, description: event.target.value }))}
@@ -2450,6 +2456,29 @@ const WhatsAppCard: React.FC = () => {
                             placeholder="Explique brevemente o benefício oferecido."
                             className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
                         />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Resumo do serviço</label>
+                        <textarea
+                            value={selectedBenefit?.serviceSummary || ''}
+                            onChange={event => setSelectedBenefit(current => ({ ...current, serviceSummary: event.target.value }))}
+                            maxLength={1200}
+                            rows={4}
+                            placeholder="Explique em poucas linhas o que o serviço oferece e para quem ele é indicado."
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Regras de uso do benefício</label>
+                        <textarea
+                            value={selectedBenefit?.usageRules ?? DEFAULT_BENEFIT_USAGE_RULES}
+                            onChange={event => setSelectedBenefit(current => ({ ...current, usageRules: event.target.value }))}
+                            maxLength={1200}
+                            rows={4}
+                            placeholder="Explique que o cliente deve apresentar o e-mail cadastrado na Asterysko."
+                            className="w-full px-3 py-2 bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-700 rounded-lg text-sm outline-none focus:border-blue-500"
+                        />
+                        <p className="mt-1.5 text-xs text-slate-500 dark:text-zinc-400">A apresentação do e-mail identifica o cadastro; a elegibilidade é confirmada internamente antes da concessão.</p>
                     </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
@@ -2485,7 +2514,7 @@ const WhatsAppCard: React.FC = () => {
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Link ao clicar</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Link do serviço (opcional)</label>
                         <input
                             type="url"
                             value={selectedBenefit?.linkUrl || ''}

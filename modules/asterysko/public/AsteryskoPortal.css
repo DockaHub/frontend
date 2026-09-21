@@ -734,6 +734,10 @@
   scroll-snap-align: start;
   overflow: hidden;
   text-decoration: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
 }
 
 .ast-benefit-card--linked { cursor: pointer; }
@@ -765,6 +769,28 @@
 
 .ast-benefit-card h3 { margin: 1px 0 0; font-family: "Season Mix", serif; font-size: 20px; font-weight: 400; }
 .ast-benefit-card p { margin: 1px 0 0; font-size: 9px; }
+
+.ast-benefit-modal { position: fixed; z-index: 165; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 24px; background: rgba(10, 10, 12, .68); backdrop-filter: blur(10px); animation: ast-document-preview-in 260ms ease both; }
+.ast-benefit-modal__panel { width: min(580px, 100%); max-height: calc(100svh - 48px); overflow-y: auto; border-radius: 24px; background: #fff; box-shadow: 0 28px 80px rgba(0, 0, 0, .32); animation: ast-document-panel-in 360ms cubic-bezier(.22, 1, .36, 1) both; }
+.ast-benefit-modal__hero { position: relative; min-height: 180px; overflow: hidden; background: #0d1e1d; color: #fff; }
+.ast-benefit-modal__hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ast-benefit-modal__hero-shade { position: relative; display: flex; min-height: 180px; flex-direction: column; justify-content: flex-end; padding: 30px; background: linear-gradient(180deg, rgba(13, 30, 29, .35), rgba(13, 30, 29, .94)); }
+.ast-benefit-modal__badge { align-self: flex-start; margin-bottom: 16px; border-radius: 4px; background: #fff; color: #0d1e1d; padding: 4px 7px; font-size: 10px; font-weight: 700; }
+.ast-benefit-modal__eyebrow { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.ast-benefit-modal__hero h2 { margin: 8px 40px 0 0; font-family: "Season Mix", serif; font-size: clamp(28px, 5vw, 40px); font-weight: 400; line-height: 1.05; }
+.ast-benefit-modal__close { position: absolute; top: 16px; right: 16px; display: grid; width: 36px; height: 36px; place-items: center; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; background: rgba(0,0,0,.34); color: #fff; cursor: pointer; }
+.ast-benefit-modal__body { display: grid; gap: 23px; padding: 28px 30px; }
+.ast-benefit-modal__body > section > span, .ast-benefit-modal__email span { display: block; color: #767676; font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.ast-benefit-modal__body > section > p { margin: 8px 0 0; color: #303030; font-size: 14px; line-height: 1.55; white-space: pre-line; }
+.ast-benefit-modal__email { display: flex; align-items: center; gap: 13px; border: 1px solid #dbe3f4; border-radius: 14px; background: #f5f7fd; padding: 16px; color: var(--ast-blue); }
+.ast-benefit-modal__email > div { min-width: 0; flex: 1; }
+.ast-benefit-modal__email strong { display: block; margin-top: 5px; overflow-wrap: anywhere; color: #1b1b1b; font-size: 14px; font-weight: 600; }
+.ast-benefit-modal__email button { display: grid; width: 36px; height: 36px; flex: 0 0 36px; place-items: center; border: 1px solid #dbe3f4; border-radius: 9px; background: #fff; color: var(--ast-blue); cursor: pointer; }
+.ast-benefit-modal__note { margin: -11px 0 0; color: #777; font-size: 11px; line-height: 1.4; }
+.ast-benefit-modal__actions { position: sticky; bottom: 0; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e9e9e9; background: rgba(255,255,255,.96); padding: 16px 30px calc(16px + env(safe-area-inset-bottom)); backdrop-filter: blur(12px); }
+.ast-benefit-modal__actions > * { display: inline-flex; min-height: 42px; align-items: center; justify-content: center; gap: 8px; border: 1px solid #dedede; border-radius: 10px; background: #fff; color: #222; padding: 0 16px; font: inherit; font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.ast-benefit-modal__actions > a { border-color: var(--ast-blue); background: var(--ast-blue); color: #fff; }
+.ast-benefit-modal :is(button, a):focus-visible { outline: 3px solid var(--ast-blue); outline-offset: 2px; }
 
 .ast-home-burst {
   display: block;
@@ -2196,6 +2222,12 @@
   .ast-pdf-viewer__error { font-size: 14px; }
 
   .ast-receipt-modal { align-items: end; padding: 0; }
+  .ast-benefit-modal { align-items: end; padding: 0; }
+  .ast-benefit-modal__panel { width: 100%; max-height: 96svh; border-radius: 24px 24px 0 0; }
+  .ast-benefit-modal__hero-shade { min-height: 170px; padding: 24px 20px; }
+  .ast-benefit-modal__body { gap: 20px; padding: 22px 20px; }
+  .ast-benefit-modal__actions { padding: 14px 20px calc(14px + env(safe-area-inset-bottom)); }
+  .ast-benefit-modal__actions > * { flex: 1; }
   .ast-receipt-modal__panel { width: 100%; max-height: 96svh; border-radius: 26px 26px 0 0; }
   .ast-receipt-modal__header { min-height: calc(76px + env(safe-area-inset-top)); padding: max(14px, calc(env(safe-area-inset-top) + 8px)) 18px 14px; }
   .ast-receipt-modal__brand strong { font-size: 16px; }

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Check, CheckCircle2, ChevronRight, Clock3, Copy, CreditCard, Download, ExternalLink, FileText, Landmark, LockKeyhole, QrCode, Upload, X } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, ChevronRight, Clock3, Copy, CreditCard, Download, ExternalLink, FileText, Landmark, LockKeyhole, Mail, QrCode, Upload, X } from 'lucide-react';
 import api from '../../../../services/api';
 import { useAuth } from '../../../../context/AuthContext';
 import { forceDownloadBlob, forceDownloadFile, resolveFileUrl } from './utils/fileDownload';
@@ -81,6 +81,8 @@ interface PortalBenefit {
     id: string;
     title: string;
     description?: string | null;
+    serviceSummary?: string | null;
+    usageRules?: string | null;
     badge?: string | null;
     imageUrl?: string | null;
     linkUrl?: string | null;
@@ -364,6 +366,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [processes, setProcesses] = useState<any[]>([]);
     const [financials, setFinancials] = useState<any>({ invoices: [], contracts: [] });
     const [benefits, setBenefits] = useState<PortalBenefit[]>([]);
+    const [selectedBenefit, setSelectedBenefit] = useState<PortalBenefit | null>(null);
+    const [benefitEmailCopied, setBenefitEmailCopied] = useState(false);
     const [selectedProcess, setSelectedProcess] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -575,6 +579,20 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [paymentReceipt]);
+
+    useEffect(() => {
+        if (!selectedBenefit) return;
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setSelectedBenefit(null);
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [selectedBenefit]);
 
     useEffect(() => {
         if (!paymentSheet) return;
@@ -1385,34 +1403,26 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                     <div><span>Ecossistema Asterysko</span><h2 id="ast-benefits-title">Mais benefícios</h2></div>
                                 </div>
                                 <div className="ast-benefit-row">
-                                    {benefits.map(benefit => {
-                                        const content = (
-                                            <>
+                                    {benefits.map(benefit => (
+                                        <button
+                                            className="ast-benefit-card ast-benefit-card--linked"
+                                            key={benefit.id}
+                                            type="button"
+                                            onClick={() => {
+                                                setBenefitEmailCopied(false);
+                                                setSelectedBenefit(benefit);
+                                                void asteryskoActivity.track('benefit.clicked', { metadata: { benefitId: benefit.id } });
+                                            }}
+                                            aria-label={`Ver detalhes do benefício ${benefit.title}`}
+                                        >
                                                 {benefit.imageUrl && <img className="ast-benefit-card__image" src={benefit.imageUrl} alt="" />}
                                                 <div className="ast-benefit-card__shade">
                                                     {benefit.badge && <span className="ast-benefit-card__tag">{benefit.badge}</span>}
                                                     <h3>{benefit.title}</h3>
                                                     {benefit.description && <p>{benefit.description}</p>}
                                                 </div>
-                                            </>
-                                        );
-
-                                        return benefit.linkUrl ? (
-                                            <a
-                                                className="ast-benefit-card ast-benefit-card--linked"
-                                                key={benefit.id}
-                                                href={benefit.linkUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                onClick={() => void asteryskoActivity.track('benefit.clicked', { metadata: { benefitId: benefit.id } })}
-                                                aria-label={`${benefit.title} (abre em nova aba)`}
-                                            >
-                                                {content}
-                                            </a>
-                                        ) : (
-                                            <article className="ast-benefit-card" key={benefit.id}>{content}</article>
-                                        );
-                                    })}
+                                        </button>
+                                    ))}
                                 </div>
                             </section>
                         )}
@@ -2039,6 +2049,44 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 <iframe src={resolvedPreviewUrl} title={previewDocument.name} />
                             )}
                         </div>
+                    </section>
+                </div>
+            )}
+
+            {selectedBenefit && (
+                <div className="ast-benefit-modal" role="presentation" onClick={() => setSelectedBenefit(null)}>
+                    <section className="ast-benefit-modal__panel" role="dialog" aria-modal="true" aria-labelledby="ast-benefit-modal-title" onClick={event => event.stopPropagation()}>
+                        <div className="ast-benefit-modal__hero">
+                            {selectedBenefit.imageUrl && <img src={selectedBenefit.imageUrl} alt="" />}
+                            <div className="ast-benefit-modal__hero-shade">
+                                {selectedBenefit.badge && <span className="ast-benefit-modal__badge">{selectedBenefit.badge}</span>}
+                                <span className="ast-benefit-modal__eyebrow">Ecossistema Asterysko</span>
+                                <h2 id="ast-benefit-modal-title">{selectedBenefit.title}</h2>
+                            </div>
+                            <button className="ast-benefit-modal__close" type="button" onClick={() => setSelectedBenefit(null)} aria-label="Fechar benefício"><X size={20} /></button>
+                        </div>
+                        <div className="ast-benefit-modal__body">
+                            {selectedBenefit.description && <section><span>Seu benefício</span><p>{selectedBenefit.description}</p></section>}
+                            <section><span>Sobre o serviço</span><p>{selectedBenefit.serviceSummary || 'Os detalhes deste serviço serão apresentados em breve.'}</p></section>
+                            <section><span>Como usar</span><p>{selectedBenefit.usageRules || 'Apresente o e-mail cadastrado na Asterysko ao solicitar o benefício. Nossa equipe verificará internamente se o seu cadastro está elegível antes de confirmar a concessão.'}</p></section>
+                            <div className="ast-benefit-modal__email">
+                                <Mail size={20} aria-hidden="true" />
+                                <div><span>E-mail do seu cadastro</span><strong>{profileValues.email || 'E-mail não informado no cadastro'}</strong></div>
+                                {profileValues.email && <button type="button" onClick={async () => {
+                                    try {
+                                        await navigator.clipboard.writeText(profileValues.email);
+                                        setBenefitEmailCopied(true);
+                                    } catch {
+                                        setBenefitEmailCopied(false);
+                                    }
+                                }} aria-label="Copiar e-mail cadastrado">{benefitEmailCopied ? <Check size={18} /> : <Copy size={18} />}</button>}
+                            </div>
+                            <p className="ast-benefit-modal__note">O e-mail ajuda a localizar seu cadastro. A concessão do benefício depende de validação interna.</p>
+                        </div>
+                        <footer className="ast-benefit-modal__actions">
+                            <button type="button" onClick={() => setSelectedBenefit(null)}>Fechar</button>
+                            {selectedBenefit.linkUrl && <a href={selectedBenefit.linkUrl} target="_blank" rel="noopener noreferrer">Conhecer o serviço <ExternalLink size={16} /></a>}
+                        </footer>
                     </section>
                 </div>
             )}
