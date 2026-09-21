@@ -1,11 +1,17 @@
 import React from 'react';
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ALLYO_BORDER, ALLYO_TASKS, AllyoPageHeader, TaskRow } from './AllyoUI';
 
-const sales = [
-    { month: 'jul/25', value: 5 }, { month: 'ago/25', value: 42 }, { month: 'set/25', value: 82 },
-    { month: 'out/25', value: 60 }, { month: 'nov/25', value: 160 }, { month: 'dez/25', value: 160 },
-    { month: 'jan/26', value: 160 }, { month: 'fev/26', value: 160 }, { month: 'mar/26', value: 160 },
-    { month: 'abr/26', value: 160 }, { month: 'mai/26', value: 160 }, { month: 'jun/26', value: 191 },
+const credits = [
+    { month: 'Jan', delivered: 0, approved: 0 },
+    { month: 'Fev', delivered: 0, approved: 0 },
+    { month: 'Mar', delivered: 0, approved: 0 },
+    { month: 'Abr', delivered: 39.286, approved: 14.632 },
+    { month: 'Mai', delivered: 164.821, approved: 145.274 },
+    { month: 'Jun', delivered: 239.477, approved: 182.499 },
+    { month: 'Jul', delivered: 154.386, approved: 230.118 },
+    { month: 'Ago', delivered: 205.173, approved: 184.742 },
+    { month: 'Set', delivered: 247.615, approved: 138.251 },
 ];
 
 const creatives = [
@@ -39,20 +45,61 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
 
             <section className="grid grid-cols-1 xl:grid-cols-[1.03fr_1fr]">
                 <div className={`border-b xl:border-r ${ALLYO_BORDER}`}>
-                    <PanelTitle>Vendas nos últimos 30 dias</PanelTitle>
-                    <div className="flex h-[374px] items-end overflow-x-auto border-t px-3 pb-9 pt-5 sm:px-5 dark:border-zinc-800">
-                        <div className="grid h-full w-8 shrink-0 content-between pb-1 text-right text-[9px] text-[#616161] dark:text-zinc-500">
-                            {[200, 160, 120, 80, 40, 0].map((value) => <span key={value}>{value}</span>)}
-                        </div>
-                        <div className="flex h-full min-w-[560px] flex-1 items-end border-b border-l border-[#e5e5e5] dark:border-zinc-800">
-                            {sales.map((item) => (
-                                <div key={item.month} className="relative flex h-full min-w-[46px] flex-1 items-end border-r border-[#e5e5e5] dark:border-zinc-800">
-                                    <div className="relative w-full border-t border-[#2a2ad7] bg-gradient-to-b from-[#ececff] to-transparent dark:from-indigo-950/60" style={{ height: `${Math.max(10, item.value / 2)}%` }}>
-                                        <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-black dark:text-zinc-300">{item.value}</span>
-                                    </div>
-                                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] text-black dark:text-zinc-400">{item.month}</span>
-                                </div>
-                            ))}
+                    <PanelTitle>Créditos entregues vs. aprovados</PanelTitle>
+                    <div className="h-[374px] overflow-x-auto border-t dark:border-zinc-800">
+                        <div className="h-full min-w-[560px] px-3 pb-4 pt-5 sm:px-5">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={credits} margin={{ top: 8, right: 0, left: -6, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="allyoDeliveredCredits" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#2a2ad7" stopOpacity={0.18} />
+                                            <stop offset="100%" stopColor="#2a2ad7" stopOpacity={0.02} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid stroke="#e5e5e5" horizontal={false} />
+                                    <XAxis
+                                        dataKey="month"
+                                        axisLine={{ stroke: '#e5e5e5' }}
+                                        tickLine={false}
+                                        tick={{ fontSize: 10, fill: '#616161', fontFamily: 'Plus Jakarta Sans' }}
+                                        interval={0}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 10, fill: '#616161', fontFamily: 'Plus Jakarta Sans' }}
+                                        width={38}
+                                        domain={[0, 250]}
+                                        ticks={[0, 50, 100, 150, 200, 250]}
+                                    />
+                                    <Tooltip
+                                        cursor={{ stroke: '#d4d4d8', strokeWidth: 1 }}
+                                        formatter={(value, name) => [Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }), name]}
+                                        contentStyle={{ border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 11, boxShadow: 'none' }}
+                                        labelStyle={{ display: 'none' }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="delivered"
+                                        name="Créditos entregues"
+                                        stroke="#2a2ad7"
+                                        strokeWidth={2}
+                                        fill="url(#allyoDeliveredCredits)"
+                                        dot={false}
+                                        activeDot={{ r: 5, fill: '#ffffff', stroke: '#2a2ad7', strokeWidth: 2 }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="approved"
+                                        name="Créditos aprovados"
+                                        stroke="#00a33c"
+                                        strokeWidth={2}
+                                        fill="transparent"
+                                        dot={false}
+                                        activeDot={{ r: 5, fill: '#ffffff', stroke: '#00a33c', strokeWidth: 2 }}
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
                     </div>
                 </div>
