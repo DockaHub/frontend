@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Organization } from '../../types';
 
 import FauvesDashboard from './components/FauvesDashboard';
@@ -11,6 +11,7 @@ import AllyoDashboard from './components/AllyoDashboard';
 import { ChevronDown } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import UnifiedSidebar, { BrandLogo } from '../../components/UnifiedSidebar';
+import { getBrandBgColor } from '../../utils/brandFavicon';
 
 interface DashboardLayoutProps {
     currentOrg: Organization;
@@ -35,6 +36,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
 
     const [viewData, setViewData] = useState<any>(null); // Data passed between views (not in URL for security/size)
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [transitionTarget, setTransitionTarget] = useState<Organization | null>(null);
+    const transitionTimers = useRef<number[]>([]);
+
+    useEffect(() => () => {
+        transitionTimers.current.forEach((timer) => window.clearTimeout(timer));
+    }, []);
 
     // Helper to change view
     const handleViewChange = (view: string, data: any = null) => {
@@ -47,13 +54,31 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
         }, { replace: true });
     };
 
-    const handleOrgChange = (org: Organization) => {
+    const applyOrgChange = (org: Organization) => {
         // Update URL - This will trigger a re-render of DashboardLayout because searchParams changes
         setSearchParams(prev => {
             prev.set('org', org.id);
             prev.set('view', 'overview');
             return prev;
         }, { replace: true });
+    };
+
+    const handleOrgChange = (org: Organization) => {
+        if (org.id === selectedOrg.id || transitionTarget) return;
+
+        transitionTimers.current.forEach((timer) => window.clearTimeout(timer));
+        transitionTimers.current = [];
+
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            applyOrgChange(org);
+            return;
+        }
+
+        setTransitionTarget(org);
+        transitionTimers.current = [
+            window.setTimeout(() => applyOrgChange(org), 260),
+            window.setTimeout(() => setTransitionTarget(null), 760),
+        ];
     };
 
 
@@ -151,8 +176,68 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ currentOrg: initialOr
             <div className="relative h-full min-h-0 min-w-0 flex-1 overflow-hidden bg-white dark:bg-zinc-950">
                 {renderContent()}
             </div>
+
+            {transitionTarget && <WorkspaceSwitchTransition organization={transitionTarget} />}
         </div>
     );
+};
+
+const WorkspaceSwitchTransition = ({ organization }: { organization: Organization }) => {
+    const background = getBrandBgColor(organization);
+    const foreground = getReadableForeground(background);
+
+    return (
+        <div
+            className="workspace-switch-overlay absolute inset-0 z-[100] flex items-center justify-center overflow-hidden"
+            style={{
+                backgroundColor: background,
+                color: foreground,
+                backgroundImage: 'radial-gradient(circle at 28% 20%, rgba(255,255,255,.18), transparent 30%), radial-gradient(circle at 78% 82%, rgba(255,255,255,.1), transparent 34%)',
+            }}
+            role="status"
+            aria-live="polite"
+            aria-label={`Abrindo o workspace ${organization.name}`}
+        >
+            <style>{`
+                @keyframes workspace-switch-cover {
+                    0% { opacity: 0; clip-path: circle(0 at 38px 38px); }
+                    12% { opacity: 1; }
+                    43% { opacity: 1; clip-path: circle(155vmax at 38px 38px); }
+                    68% { opacity: 1; clip-path: circle(155vmax at 38px 38px); }
+                    100% { opacity: 0; clip-path: circle(155vmax at 38px 38px); }
+                }
+                @keyframes workspace-switch-mark {
+                    0%, 16% { opacity: 0; transform: translateY(10px) scale(.86); }
+                    45%, 68% { opacity: 1; transform: translateY(0) scale(1); }
+                    100% { opacity: 0; transform: translateY(-6px) scale(.98); }
+                }
+                .workspace-switch-overlay {
+                    animation: workspace-switch-cover 760ms cubic-bezier(.72, 0, .2, 1) both;
+                    pointer-events: auto;
+                }
+                .workspace-switch-mark {
+                    animation: workspace-switch-mark 760ms cubic-bezier(.22, 1, .36, 1) both;
+                }
+            `}</style>
+            <div className="workspace-switch-mark relative flex flex-col items-center px-6 text-center">
+                <div className="absolute -inset-16 -z-10 rounded-full bg-white/10 blur-3xl" />
+                <div className="rounded-[22px] bg-white/10 p-2.5 shadow-[0_24px_70px_rgba(0,0,0,.22)] ring-1 ring-white/20 backdrop-blur-md">
+                    <BrandLogo org={organization} size="lg" className="!h-16 !w-16 !rounded-2xl" />
+                </div>
+                <span className="mt-5 text-xs font-bold uppercase tracking-[.16em] opacity-75">Trocando de workspace</span>
+                <strong className="mt-1.5 font-season text-[32px] font-normal leading-tight sm:text-[38px]">{organization.name}</strong>
+            </div>
+        </div>
+    );
+};
+
+const getReadableForeground = (color: string) => {
+    const normalized = color.replace('#', '');
+    if (!/^[0-9a-f]{6}$/i.test(normalized)) return '#ffffff';
+    const red = Number.parseInt(normalized.slice(0, 2), 16);
+    const green = Number.parseInt(normalized.slice(2, 4), 16);
+    const blue = Number.parseInt(normalized.slice(4, 6), 16);
+    return ((red * 299 + green * 587 + blue * 114) / 1000) > 170 ? '#111111' : '#ffffff';
 };
 
 export default DashboardLayout;
