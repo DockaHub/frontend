@@ -30,7 +30,7 @@ export const useDynamicFaviconAndTitle = ({
         const orgIdFromUrl = searchParams.get('org');
         const activeOrg = (orgIdFromUrl && userOrgs.find(o => o.id === orgIdFromUrl)) || currentOrg;
 
-        // 1. Calculate & set Title: "ManySpace - <Empresa> - <Página>"
+        // 1. Calculate & set the title for the active workspace.
         const newTitle = getPageTitle({
             pathname,
             searchParams,
@@ -44,10 +44,12 @@ export const useDynamicFaviconAndTitle = ({
         }
 
         // 2. Resolve & set Favicon dynamically based on active org / domain
+        const isPlatformSurface = pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname.startsWith('/workspaces') || pathname.startsWith('/admin');
+
         if (isTenantDomain || pathname.startsWith('/portal')) {
             const tenantOrg = activeOrg || { slug: 'asterysko', name: 'Asterysko' };
             setDynamicFavicon(getOrgFaviconSvg(tenantOrg));
-        } else if (!isAuthenticated && (pathname === '/login' || pathname.startsWith('/auth'))) {
+        } else if (isPlatformSurface || !isAuthenticated) {
             setDynamicFavicon(MANYWAYS_FAVICON_SVG);
         } else if (activeOrg) {
             setDynamicFavicon(getOrgFaviconSvg(activeOrg));

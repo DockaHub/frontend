@@ -1,4 +1,5 @@
 import { Organization } from '../types';
+import { getBackendUrl } from '../services/api';
 
 export const MANYWAYS_FAVICON_SVG = `<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
 <rect width="600" height="600" rx="100" fill="black"/>
@@ -122,8 +123,17 @@ export const getOrgFaviconSvg = (org?: Partial<Organization> | null): string => 
 </svg>`;
     }
 
+    // Prefer the organization's uploaded brand asset when there is no
+    // dedicated icon. Public frontend assets stay local; uploaded backend
+    // paths are resolved against the API host.
+    if (org.logo) {
+        if (/^(https?:|data:|blob:)/.test(org.logo)) return org.logo;
+        if (/^\/(brands|assets|favicon)/.test(org.logo)) return org.logo;
+        return `${getBackendUrl()}${org.logo.startsWith('/') ? '' : '/'}${org.logo}`;
+    }
+
     // Monogram fallback with brand color
-    const letter = (org.name || 'M').charAt(0).toUpperCase();
+    const letter = escapeXml((org.name || 'M').charAt(0).toUpperCase());
     const bg = getBrandBgColor(org);
     return `<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="600" height="600" rx="120" fill="${bg}"/>
@@ -133,18 +143,13 @@ export const getOrgFaviconSvg = (org?: Partial<Organization> | null): string => 
 
 export const setDynamicFavicon = (iconSource: string) => {
     try {
-        let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
-        if (!link) {
-            link = document.createElement('link');
-            link.rel = 'icon';
-            document.head.appendChild(link);
-        }
+        // Recreate the element so browsers do not retain the icon cached for
+        // the previously selected workspace.
+        document.querySelectorAll<HTMLLinkElement>("link[rel='icon'], link[rel='shortcut icon']").forEach((element) => element.remove());
 
-        // Remove any secondary icon links to avoid browser caching old icons
-        const icons = document.querySelectorAll("link[rel~='icon']");
-        icons.forEach((el, index) => {
-            if (index > 0) el.remove();
-        });
+        const link = document.createElement('link');
+        link.rel = 'icon';
+        link.setAttribute('sizes', 'any');
 
         if (iconSource.startsWith('<svg') || iconSource.includes('<svg')) {
             link.type = 'image/svg+xml';
@@ -152,10 +157,19 @@ export const setDynamicFavicon = (iconSource: string) => {
         } else {
             link.href = iconSource;
         }
+        document.head.appendChild(link);
     } catch (e) {
         console.error('Failed to update dynamic favicon', e);
     }
 };
+
+const escapeXml = (value: string) => value.replace(/[<>&'\"]/g, (character) => ({
+    '<': '&lt;',
+    '>': '&gt;',
+    '&': '&amp;',
+    "'": '&apos;',
+    '"': '&quot;',
+}[character] || character));
 
 export const getViewLabel = (slug?: string, view?: string): string => {
     const s = slug?.toLowerCase() || '';
@@ -259,6 +273,7 @@ export const getViewLabel = (slug?: string, view?: string): string => {
         earnings: 'Ganhos',
         catalog: 'Catálogo',
         'creative-panel': 'Painel Criativo',
+        'task-detail': 'Tarefa',
         'help-center': 'Central de Ajuda',
         calendar: 'Agenda',
         drive: 'Drive',
@@ -318,20 +333,20 @@ export const getPageTitle = ({
     const orgName = currentOrg?.name || 'ManySpace';
 
     // 2. Global modules
-    if (pathname.startsWith('/mail')) return `ManySpace - ${orgName} - E-mail`;
-    if (pathname.startsWith('/chat')) return `ManySpace - ${orgName} - Chat`;
-    if (pathname.startsWith('/tasks')) return `ManySpace - ${orgName} - Tarefas`;
-    if (pathname.startsWith('/calendar')) return `ManySpace - ${orgName} - Agenda`;
-    if (pathname.startsWith('/drive')) return `ManySpace - ${orgName} - Drive`;
-    if (pathname.startsWith('/contacts')) return `ManySpace - ${orgName} - Contatos`;
-    if (pathname.startsWith('/meet')) return `ManySpace - ${orgName} - Meet`;
+    if (pathname.startsWith('/mail')) return `${orgName} — E-mail`;
+    if (pathname.startsWith('/chat')) return `${orgName} — Chat`;
+    if (pathname.startsWith('/tasks')) return `${orgName} — Tarefas`;
+    if (pathname.startsWith('/calendar')) return `${orgName} — Agenda`;
+    if (pathname.startsWith('/drive')) return `${orgName} — Drive`;
+    if (pathname.startsWith('/contacts')) return `${orgName} — Contatos`;
+    if (pathname.startsWith('/meet')) return `${orgName} — Meet`;
 
     // 3. Dashboard views
     if (pathname.startsWith('/dashboard') || pathname === '/') {
         const view = searchParams.get('view') || 'overview';
         const viewLabel = getViewLabel(currentOrg?.slug, view);
-        return `ManySpace - ${orgName} - ${viewLabel}`;
+        return `${orgName} — ${viewLabel}`;
     }
 
-    return `ManySpace - ${orgName}`;
+    return orgName;
 };
