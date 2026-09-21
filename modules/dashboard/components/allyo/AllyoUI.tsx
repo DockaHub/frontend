@@ -19,7 +19,7 @@ export interface AllyoTask {
 
 export const ALLYO_TASKS: AllyoTask[] = [
     { id: '123456', name: 'KV campanha de lançamento', category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
-    { id: '123457', name: 'Roteiro para filme manifesto', category: 'Redação', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },
+    { id: '123457', name: 'Storyboard para filme manifesto', category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },
     { id: '123458', name: 'Motion para redes sociais', category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy' },
     { id: '123459', name: 'Edição do case anual', category: 'Vídeo', client: 'Fauves', deadline: '23/12/2026', time: '09h00min', status: 'Iniciar', cam: 'Bruno', creative: 'Caio' },
     { id: '123460', name: 'Landing page institucional', category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana' },
