@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { CalendarDays, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
 
 export const ALLYO_BORDER = 'border-[#e5e5e5] dark:border-zinc-800';
 export const ALLYO_ACCENT = '#9db669';
@@ -96,17 +96,58 @@ export const DataCell = ({ label, value, className = '', valueClassName = '' }: 
     </span>
 );
 
-export const FilterSelect = ({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) => (
-    <label className="relative shrink-0">
-        <span className="sr-only">{label}</span>
-        <select
-            value={value}
-            onChange={(event) => onChange(event.target.value)}
-            className="min-h-9 appearance-none rounded-full border border-[#e5e5e5] bg-white py-2 pl-[15px] pr-9 text-xs font-semibold text-black outline-none transition-colors hover:border-[#9db669] focus:border-[#9db669] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
-        >
-            <option value="Todos">{label}</option>
-            {options.map((option) => <option key={option} value={option}>{option}</option>)}
-        </select>
-        <ChevronDown size={13} className="pointer-events-none absolute right-[13px] top-1/2 -translate-y-1/2 text-black dark:text-zinc-400" />
-    </label>
-);
+export const FilterSelect = ({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) => {
+    const [open, setOpen] = useState(false);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const menuId = useId();
+    const visibleValue = value === 'Todos' ? label : value;
+
+    useEffect(() => {
+        const closeOnOutsideClick = (event: MouseEvent) => {
+            if (rootRef.current && !rootRef.current.contains(event.target as Node)) setOpen(false);
+        };
+        const closeOnEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') setOpen(false);
+        };
+        document.addEventListener('mousedown', closeOnOutsideClick);
+        document.addEventListener('keydown', closeOnEscape);
+        return () => {
+            document.removeEventListener('mousedown', closeOnOutsideClick);
+            document.removeEventListener('keydown', closeOnEscape);
+        };
+    }, []);
+
+    const select = (nextValue: string) => {
+        onChange(nextValue);
+        setOpen(false);
+    };
+
+    return (
+        <div ref={rootRef} className="relative shrink-0">
+            <button
+                type="button"
+                onClick={() => setOpen((current) => !current)}
+                aria-expanded={open}
+                aria-controls={menuId}
+                className={`flex min-h-9 items-center gap-[10px] rounded-full border bg-white py-2 pl-[15px] pr-[13px] text-xs font-semibold outline-none transition-all dark:bg-zinc-900 dark:text-white ${open ? 'border-[#9db669] shadow-[0_0_0_3px_rgba(157,182,105,.13)] dark:border-[#d0f08e]' : 'border-[#e5e5e5] hover:border-[#b9ca94] dark:border-zinc-700'}`}
+            >
+                <span className={`max-w-[180px] truncate ${value === 'Todos' ? 'text-black dark:text-white' : 'text-[#72844d] dark:text-[#d0f08e]'}`}>{visibleValue}</span>
+                <ChevronDown size={13} className={`shrink-0 transition-transform ${open ? 'rotate-180 text-[#9db669]' : 'text-black dark:text-zinc-400'}`} />
+            </button>
+
+            {open && (
+                <div id={menuId} role="listbox" className="absolute left-0 top-[calc(100%+8px)] z-[80] min-w-[210px] overflow-hidden rounded-[14px] border border-[#e5e5e5] bg-white p-1.5 shadow-[0_18px_45px_rgba(19,31,21,.16)] animate-in fade-in zoom-in-95 duration-150 dark:border-zinc-700 dark:bg-zinc-900">
+                    <div className="px-3 pb-2 pt-1.5 text-[9px] font-bold uppercase tracking-[0.08em] text-[#9f9f9f]">{label}</div>
+                    <button type="button" role="option" aria-selected={value === 'Todos'} onClick={() => select('Todos')} className={`flex w-full items-center justify-between gap-4 rounded-[9px] px-3 py-2.5 text-left text-xs transition-colors ${value === 'Todos' ? 'bg-[#f3f7ea] font-semibold text-[#72844d] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]' : 'text-black hover:bg-[#f7f7f5] dark:text-zinc-200 dark:hover:bg-zinc-800'}`}>
+                        <span>Todos</span>{value === 'Todos' && <Check size={14} />}
+                    </button>
+                    {options.filter((option, index, list) => list.indexOf(option) === index).map((option) => (
+                        <button key={option} type="button" role="option" aria-selected={value === option} onClick={() => select(option)} className={`flex w-full items-center justify-between gap-4 rounded-[9px] px-3 py-2.5 text-left text-xs transition-colors ${value === option ? 'bg-[#f3f7ea] font-semibold text-[#72844d] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]' : 'text-black hover:bg-[#f7f7f5] dark:text-zinc-200 dark:hover:bg-zinc-800'}`}>
+                            <span className="truncate">{option}</span>{value === option && <Check size={14} />}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};

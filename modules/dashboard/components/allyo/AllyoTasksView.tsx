@@ -24,7 +24,7 @@ const AllyoTasksView = () => {
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
             <AllyoPageHeader title="Tarefas" />
-            <div className={`custom-scrollbar flex min-h-[64px] items-center gap-[10px] overflow-x-auto border-b px-5 py-3 sm:px-[30px] ${ALLYO_BORDER}`}>
+            <div className={`relative z-30 flex min-h-[64px] flex-wrap items-center gap-[10px] border-b px-5 py-3 sm:px-[30px] ${ALLYO_BORDER}`}>
                 <span className="mr-1 shrink-0 text-sm font-medium">Filtros</span>
                 <FilterSelect label="Tarefas ativas" value={state} options={['Ativas', 'Concluídas']} onChange={setState} />
                 <FilterSelect label="Período" value={period} options={['Esta semana', 'Este mês', 'Próximos 30 dias']} onChange={setPeriod} />

@@ -3,6 +3,7 @@ import { Organization } from '../../../types';
 import AllyoOverviewView from './allyo/AllyoOverviewView';
 import AllyoTasksView from './allyo/AllyoTasksView';
 import AllyoEarningsView from './allyo/AllyoEarningsView';
+import AllyoCreativePanelView from './allyo/AllyoCreativePanelView';
 import { AllyoPageHeader } from './allyo/AllyoUI';
 
 interface AllyoDashboardProps {
@@ -28,6 +29,8 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user }) => 
             return <AllyoTasksView />;
         case 'earnings':
             return <AllyoEarningsView />;
+        case 'creative-panel':
+            return <AllyoCreativePanelView />;
         default: {
             const content = placeholderLabels[activeView] || { title: 'Allyo', description: 'Este módulo está sendo preparado.' };
             return (
