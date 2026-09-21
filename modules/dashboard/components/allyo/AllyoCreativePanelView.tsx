@@ -41,8 +41,8 @@ const creatives: CreativeAsset[] = Array.from({ length: 10 }, (_, index) => {
         approvedVersion: versions,
         approvedAt: `${String(10 + index).padStart(2, '0')}/09/2026`,
         format: index % 2 === 0 ? 'Feed • 1080 × 1350 px' : 'Social • 1080 × 1080 px',
-        image: index % 3 === 0 ? '/brands/allyo/creative-automotive.png' : '/brands/allyo/designer-avatar.png',
-        avatar: '/brands/allyo/creative-automotive-alt.png',
+        image: '/brands/allyo/creative-card.png',
+        avatar: '/brands/allyo/creative-designer-avatar.png',
     };
 });
 
