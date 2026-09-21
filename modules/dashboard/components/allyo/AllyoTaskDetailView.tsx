@@ -3,6 +3,7 @@ import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, Send } from 'l
 import { useSearchParams } from 'react-router-dom';
 import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, todayLabel } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
+import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -39,6 +40,7 @@ const AllyoTaskDetailView = () => {
     const deliverableKind = getDeliverableKind(task);
     const requestCopy = deliverableCopy[deliverableKind];
     const briefing = briefingByKind[deliverableKind];
+    const isMultiDeliverable = Boolean(task.deliverables && task.deliverables.length > 1);
     const [status, setStatus] = useState(task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
     const [descriptionOpen, setDescriptionOpen] = useState(true);
     const [orderOpen, setOrderOpen] = useState(true);
@@ -48,6 +50,7 @@ const AllyoTaskDetailView = () => {
         'Versão 1': { approval: [], source: [] },
     });
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
+    const [readyDeliverables, setReadyDeliverables] = useState(0);
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
 
     const goBack = () => {
@@ -94,7 +97,7 @@ const AllyoTaskDetailView = () => {
             </section>
 
             <div className={`flex flex-wrap items-center gap-2 border-b px-5 py-4 text-sm text-[#a4a4a4] sm:px-[30px] ${ALLYO_BORDER}`}>
-                <span>Isso é uma solicitação para</span><Tag>{requestCopy.type}</Tag><span>com</span><Tag>{requestCopy.count}</Tag><span>para aprovação em</span><Tag>{requestCopy.approval}</Tag><span>e</span><Tag>{requestCopy.editable}</Tag><span>no</span><Tag>{requestCopy.software}</Tag>
+                {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>PNG ou PDF</Tag><span>e um único pacote final de</span><Tag>arquivos editáveis</Tag></> : <><span>Isso é uma solicitação para</span><Tag>{requestCopy.type}</Tag><span>com</span><Tag>{requestCopy.count}</Tag><span>para aprovação em</span><Tag>{requestCopy.approval}</Tag><span>e</span><Tag>{requestCopy.editable}</Tag><span>no</span><Tag>{requestCopy.software}</Tag></>}
             </div>
 
             <div className="grid min-w-0 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -106,18 +109,20 @@ const AllyoTaskDetailView = () => {
                         </div>
                     </CollapsibleSection>
 
-                    <button type="button" onClick={() => setOrderOpen((value) => !value)} className={`flex w-full items-center justify-between border-b px-5 py-5 text-left sm:px-[30px] ${ALLYO_BORDER}`}><h2 className="font-season text-lg font-normal">Visualização do pedido</h2>{orderOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
-                    {orderOpen && <DeliveryWorkspace kind={deliverableKind} />}
-                    <VersionBundle kind={deliverableKind} version={deliveryVersion} onVersionChange={setDeliveryVersion} approvalFiles={currentFiles.approval} sourceFiles={currentFiles.source} onApprovalFilesChange={(files) => updateVersionFiles('approval', files)} onSourceFilesChange={(files) => updateVersionFiles('source', files)} />
+                    <button type="button" onClick={() => setOrderOpen((value) => !value)} className={`flex w-full items-center justify-between border-b px-5 py-5 text-left sm:px-[30px] ${ALLYO_BORDER}`}><h2 className="font-season text-lg font-normal">Visualização do pedido {isMultiDeliverable && <span className="text-[#888]">({task.deliverables?.length})</span>}</h2>{orderOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
+                    {orderOpen && (isMultiDeliverable && task.deliverables
+                        ? <AllyoMultiDeliverableWorkspace key={task.id} deliverables={task.deliverables} onProgressChange={setReadyDeliverables} />
+                        : <DeliveryWorkspace kind={deliverableKind} />)}
+                    {!isMultiDeliverable && <VersionBundle kind={deliverableKind} version={deliveryVersion} onVersionChange={setDeliveryVersion} approvalFiles={currentFiles.approval} sourceFiles={currentFiles.source} onApprovalFilesChange={(files) => updateVersionFiles('approval', files)} onSourceFilesChange={(files) => updateVersionFiles('source', files)} />}
                 </main>
 
                 <aside className="min-w-0 bg-[#fdfdfc] dark:bg-zinc-950">
                     <div className="sticky top-[139px]">
                         <div className={`border-b p-5 ${ALLYO_BORDER}`}>
                             <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">Próxima ação</span>
-                            <h2 className="mt-2 font-season text-xl font-normal">{requestCopy.next}</h2>
-                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{requestCopy.helper}</p>
-                            <button type="button" onClick={() => updateStatus('Em revisão')} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b]"><Send size={15} /> Enviar para revisão</button>
+                            <h2 className="mt-2 font-season text-xl font-normal">{isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
+                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
+                            <button type="button" disabled={isMultiDeliverable && readyDeliverables === 0} onClick={() => { updateStatus('Em revisão'); if (isMultiDeliverable) setSavedLabel(`${readyDeliverables} ${readyDeliverables === 1 ? 'pedido enviado' : 'pedidos enviados'} para revisão agora`); }} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {isMultiDeliverable ? readyDeliverables > 0 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão` : 'Nenhum pedido pronto' : 'Enviar para revisão'}</button>
                         </div>
                         <SideRow label="Referências de tarefas"><Tag>#123456</Tag><Tag>#123982</Tag></SideRow>
                         <SideRow label="Arquivos para tarefa">{sidebarFiles[deliverableKind].map((file) => <FileBadge key={file} label={file} />)}</SideRow>

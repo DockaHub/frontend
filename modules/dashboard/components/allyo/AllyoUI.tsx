@@ -1,9 +1,26 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 export const ALLYO_BORDER = 'border-[#e5e5e5] dark:border-zinc-800';
 export const ALLYO_ACCENT = '#9db669';
+
+export interface AllyoDeliverableScene {
+    id: string;
+    label: string;
+    title: string;
+    copy: string;
+}
+
+export interface AllyoDeliverable {
+    id: string;
+    title: string;
+    type: 'Carrossel' | 'Estático';
+    format: string;
+    approvalFormat: string;
+    software: string;
+    scenes: AllyoDeliverableScene[];
+}
 
 export interface AllyoTask {
     id: string;
@@ -15,6 +32,7 @@ export interface AllyoTask {
     status: 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída';
     cam: string;
     creative: string;
+    deliverables?: AllyoDeliverable[];
 }
 
 export const ALLYO_TASKS: AllyoTask[] = [
@@ -23,7 +41,51 @@ export const ALLYO_TASKS: AllyoTask[] = [
     { id: '123458', name: 'Motion para redes sociais', category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy' },
     { id: '123459', name: 'Edição do case anual', category: 'Vídeo', client: 'Fauves', deadline: '23/12/2026', time: '09h00min', status: 'Iniciar', cam: 'Bruno', creative: 'Caio' },
     { id: '123460', name: 'Landing page institucional', category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana' },
-    { id: '123461', name: 'Peças para mídia paga', category: 'Design', client: 'Asterysko', deadline: '28/12/2026', time: '11h15min', status: 'Em andamento', cam: 'Bruno', creative: 'Caio' },
+    {
+        id: '123461',
+        name: 'Peças para mídia paga',
+        category: 'Design',
+        client: 'Asterysko',
+        deadline: '28/12/2026',
+        time: '11h15min',
+        status: 'Em andamento',
+        cam: 'Bruno',
+        creative: 'Caio',
+        deliverables: [
+            {
+                id: 'pedido-01', title: 'Carrossel · Rotina mais segura', type: 'Carrossel', format: '1080 × 1350 px', approvalFormat: 'PNG', software: 'Photoshop',
+                scenes: [
+                    { id: '01', label: 'Capa', title: 'Teste sua rotina de segurança', copy: 'Some 1 ponto para cada SIM e descubra seu resultado no final.' },
+                    { id: '02', label: 'Pergunta 1', title: 'Você monitora os acessos?', copy: 'Mostre como pequenas ações ajudam a construir uma rotina mais segura.' },
+                    { id: '03', label: 'Pergunta 2', title: 'Sua equipe sabe como agir?', copy: 'Reforce a importância de processos claros para situações inesperadas.' },
+                    { id: '04', label: 'Resultado', title: 'Confira sua pontuação', copy: 'Apresente as faixas de resultado de maneira simples e visual.' },
+                    { id: '05', label: 'Encerramento', title: 'Segurança começa com prevenção', copy: 'Finalize com a solução e um CTA para conversar com um especialista.' },
+                ],
+            },
+            {
+                id: 'pedido-02', title: 'Carrossel · Monitoramento 24h', type: 'Carrossel', format: '1080 × 1350 px', approvalFormat: 'PNG', software: 'Photoshop',
+                scenes: [
+                    { id: '01', label: 'Capa', title: 'Proteção que não pausa', copy: 'Introduza o monitoramento contínuo com uma mensagem direta.' },
+                    { id: '02', label: 'Benefício', title: 'Acompanhamento em tempo real', copy: 'Destaque visibilidade e resposta rápida em qualquer horário.' },
+                    { id: '03', label: 'Tecnologia', title: 'Tudo conectado', copy: 'Mostre os dispositivos trabalhando de forma integrada.' },
+                    { id: '04', label: 'Confiança', title: 'Uma central pronta para agir', copy: 'Reforce o apoio de especialistas quando um alerta acontece.' },
+                    { id: '05', label: 'CTA', title: 'Cuide do que importa', copy: 'Convide o público a conhecer a solução completa.' },
+                ],
+            },
+            {
+                id: 'pedido-03', title: 'Estático · Resposta rápida', type: 'Estático', format: '1080 × 1350 px', approvalFormat: 'PNG', software: 'Photoshop',
+                scenes: [{ id: '01', label: 'Peça única', title: 'Não é só ver. É poder agir.', copy: 'Câmera em destaque e mensagem de resposta rápida com leitura imediata.' }],
+            },
+            {
+                id: 'pedido-04', title: 'Estático · Controle pelo aplicativo', type: 'Estático', format: '1080 × 1350 px', approvalFormat: 'PNG', software: 'Photoshop',
+                scenes: [{ id: '01', label: 'Peça única', title: 'Sua segurança na palma da mão', copy: 'Apresente o aplicativo e os principais controles disponíveis ao usuário.' }],
+            },
+            {
+                id: 'pedido-05', title: 'Estático · Fale com um especialista', type: 'Estático', format: '1080 × 1350 px', approvalFormat: 'PNG', software: 'Photoshop',
+                scenes: [{ id: '01', label: 'Peça única', title: 'Proteção sob medida para sua rotina', copy: 'Peça de conversão com CTA direto para atendimento.' }],
+            },
+        ],
+    },
     { id: '123462', name: 'Apresentação comercial', category: 'Catálogo', client: 'Tokyon', deadline: '30/12/2026', time: '15h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
     { id: '123463', name: 'Desdobramento de identidade', category: 'Branding', client: 'ManySpace', deadline: '05/01/2027', time: '17h00min', status: 'Em revisão', cam: 'Bruno', creative: 'Joana' },
 ];
