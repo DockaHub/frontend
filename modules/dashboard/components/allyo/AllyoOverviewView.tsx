@@ -1,5 +1,4 @@
 import React from 'react';
-import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ALLYO_BORDER, ALLYO_TASKS, AllyoPageHeader, TaskRow } from './AllyoUI';
 
 const credits = [
@@ -21,6 +20,9 @@ const creatives = [
     { name: 'Bianca Lima', score: 42 },
     { name: 'Rafael Dias', score: 18 },
 ];
+
+const creditBarHeight = (value: number) => `${Math.min(100, (value / 250) * 100)}%`;
+const creditValue = (value: number) => value.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 
 const AllyoOverviewView = ({ userName }: { userName?: string }) => {
     const firstName = userName?.trim().split(/\s+/)[0] || 'Criativo';
@@ -46,60 +48,42 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
             <section className="grid grid-cols-1 xl:grid-cols-[1.03fr_1fr]">
                 <div className={`border-b xl:border-r ${ALLYO_BORDER}`}>
                     <PanelTitle>Créditos entregues vs. aprovados</PanelTitle>
-                    <div className="h-[374px] overflow-x-auto border-t dark:border-zinc-800">
-                        <div className="h-full min-w-[560px] px-3 pb-4 pt-5 sm:px-5">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={credits} margin={{ top: 8, right: 0, left: -6, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="allyoDeliveredCredits" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#2a2ad7" stopOpacity={0.18} />
-                                            <stop offset="100%" stopColor="#2a2ad7" stopOpacity={0.02} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid stroke="#e5e5e5" horizontal={false} />
-                                    <XAxis
-                                        dataKey="month"
-                                        axisLine={{ stroke: '#e5e5e5' }}
-                                        tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#616161', fontFamily: 'Plus Jakarta Sans' }}
-                                        interval={0}
-                                    />
-                                    <YAxis
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fontSize: 10, fill: '#616161', fontFamily: 'Plus Jakarta Sans' }}
-                                        width={38}
-                                        domain={[0, 250]}
-                                        ticks={[0, 50, 100, 150, 200, 250]}
-                                    />
-                                    <Tooltip
-                                        cursor={{ stroke: '#d4d4d8', strokeWidth: 1 }}
-                                        formatter={(value, name) => [Number(value).toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }), name]}
-                                        contentStyle={{ border: '1px solid #e5e5e5', borderRadius: 8, fontSize: 11, boxShadow: 'none' }}
-                                        labelStyle={{ display: 'none' }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="delivered"
-                                        name="Créditos entregues"
-                                        stroke="#2a2ad7"
-                                        strokeWidth={2}
-                                        fill="url(#allyoDeliveredCredits)"
-                                        dot={false}
-                                        activeDot={{ r: 5, fill: '#ffffff', stroke: '#2a2ad7', strokeWidth: 2 }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="approved"
-                                        name="Créditos aprovados"
-                                        stroke="#00a33c"
-                                        strokeWidth={2}
-                                        fill="transparent"
-                                        dot={false}
-                                        activeDot={{ r: 5, fill: '#ffffff', stroke: '#00a33c', strokeWidth: 2 }}
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                    <div className="flex h-[374px] items-end overflow-x-auto border-t px-3 pb-9 pt-5 sm:px-5 dark:border-zinc-800">
+                        <div className="grid h-full w-8 shrink-0 content-between pb-1 text-right text-[9px] text-[#616161] dark:text-zinc-500">
+                            {[250, 200, 150, 100, 50, 0].map((value) => <span key={value}>{value}</span>)}
+                        </div>
+                        <div className="flex h-full min-w-[560px] flex-1 items-end border-b border-l border-[#e5e5e5] dark:border-zinc-800">
+                            {credits.map((item, index) => (
+                                <div key={item.month} className="group relative flex h-full min-w-[62px] flex-1 items-end border-r border-[#e5e5e5] dark:border-zinc-800">
+                                    <div className={`pointer-events-none absolute top-2 z-20 hidden min-w-[214px] flex-col gap-1.5 rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-[10px] shadow-sm group-hover:flex dark:border-zinc-700 dark:bg-zinc-900 ${index === 0 ? 'left-1' : index === credits.length - 1 ? 'right-1' : 'left-1/2 -translate-x-1/2'}`}>
+                                        <span className="flex items-center gap-2 whitespace-nowrap">
+                                            <span className="h-3 w-3 border-2 border-[#2a2ad7]" />
+                                            <span>Créditos entregues: {creditValue(item.delivered)}</span>
+                                        </span>
+                                        <span className="flex items-center gap-2 whitespace-nowrap">
+                                            <span className="h-3 w-3 border-2 border-[#00a33c]" />
+                                            <span>Créditos aprovados: {creditValue(item.approved)}</span>
+                                        </span>
+                                    </div>
+
+                                    <div className="flex h-full w-full items-end gap-px px-px">
+                                        <div
+                                            className="relative flex-1 border-t border-[#2a2ad7] bg-gradient-to-b from-[#ececff] to-transparent dark:from-indigo-950/60"
+                                            style={{ height: creditBarHeight(item.delivered) }}
+                                        >
+                                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-[#2a2ad7] dark:text-indigo-300">{Math.round(item.delivered)}</span>
+                                        </div>
+                                        <div
+                                            className="relative flex-1 border-t border-[#00a33c] bg-gradient-to-b from-[#e9f8ee] to-transparent dark:from-emerald-950/50"
+                                            style={{ height: creditBarHeight(item.approved) }}
+                                        >
+                                            <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] text-[#008b34] dark:text-emerald-300">{Math.round(item.approved)}</span>
+                                        </div>
+                                    </div>
+
+                                    <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap text-[9px] text-black dark:text-zinc-400">{item.month}</span>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
