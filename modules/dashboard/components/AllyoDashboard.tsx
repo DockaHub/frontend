@@ -36,7 +36,7 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user }) => 
         case 'clients':
             return <AllyoClientsView />;
         case 'task-detail':
-            return <AllyoTaskDetailView />;
+            return <AllyoTaskDetailView userName={user?.name} />;
         default: {
             const content = placeholderLabels[activeView] || { title: 'Allyo', description: 'Este módulo está sendo preparado.' };
             return (

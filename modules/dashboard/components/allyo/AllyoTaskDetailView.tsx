@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, Send } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, todayLabel } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
 import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
+import AllyoTaskChat from './AllyoTaskChat';
+import { addTaskActivity, readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -34,7 +36,7 @@ const sidebarFiles = {
     presentation: ['PDF', 'PPTX'],
     storyboard: ['PDF', 'IMG'],
 };
-const AllyoTaskDetailView = () => {
+const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const task = ALLYO_TASKS.find((item) => item.id === searchParams.get('task')) || ALLYO_TASKS[0];
     const deliverableKind = getDeliverableKind(task);
@@ -51,7 +53,16 @@ const AllyoTaskDetailView = () => {
     });
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
     const [readyDeliverables, setReadyDeliverables] = useState(0);
+    const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
+    const [clientChanges, setClientChanges] = useState(() => readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
+    const canSendForReview = isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0;
+
+    useEffect(() => {
+        const refresh = () => setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
+        refresh();
+        return subscribeToTaskActivity(task.id, refresh);
+    }, [task.id]);
 
     const goBack = () => {
         setSearchParams((current) => {
@@ -75,6 +86,20 @@ const AllyoTaskDetailView = () => {
         setSavedLabel(`${deliveryVersion} atualizada agora`);
     };
 
+    const sendForReview = () => {
+        const fileNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => file.name).join(', ');
+        addTaskActivity(task.id, {
+            type: 'approval_sent',
+            author: userName?.trim() || task.creative,
+            role: 'system',
+            version: isMultiDeliverable ? `${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'}` : deliveryVersion,
+            text: fileNames ? `Arquivo para aprovação: ${fileNames}` : 'Material enviado para aprovação do cliente.',
+        });
+        updateStatus('Em revisão');
+        if (isMultiDeliverable) setSavedLabel(`${readyDeliverables} ${readyDeliverables === 1 ? 'pedido enviado' : 'pedidos enviados'} para revisão agora`);
+        setActiveTab('messages');
+    };
+
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
             <header className={`sticky top-0 z-40 flex min-h-[75px] items-center justify-between gap-4 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
@@ -96,7 +121,13 @@ const AllyoTaskDetailView = () => {
                 <span className="ml-auto text-[11px] font-medium text-[#8f8f8f]" aria-live="polite">{savedLabel}</span>
             </section>
 
-            <div className={`flex flex-wrap items-center gap-2 border-b px-5 py-4 text-sm text-[#a4a4a4] sm:px-[30px] ${ALLYO_BORDER}`}>
+            <nav className={`flex items-center gap-7 border-b bg-white px-5 sm:px-[30px] dark:bg-zinc-950 ${ALLYO_BORDER}`} aria-label="Seções da tarefa">
+                <button type="button" onClick={() => setActiveTab('details')} aria-current={activeTab === 'details' ? 'page' : undefined} className={`min-h-12 border-b-2 text-sm font-semibold transition ${activeTab === 'details' ? 'border-[#003f35] text-[#003f35] dark:border-[#d0f08e] dark:text-[#d0f08e]' : 'border-transparent text-[#717b73] hover:text-[#003f35]'}`}>Detalhes</button>
+                <button type="button" onClick={() => setActiveTab('messages')} aria-current={activeTab === 'messages' ? 'page' : undefined} className={`inline-flex min-h-12 items-center gap-2 border-b-2 text-sm font-semibold transition ${activeTab === 'messages' ? 'border-[#003f35] text-[#003f35] dark:border-[#d0f08e] dark:text-[#d0f08e]' : 'border-transparent text-[#717b73] hover:text-[#003f35]'}`}><MessageCircle size={15} /> Mensagens {clientChanges > 0 && <span className="rounded-full bg-[#e6f2e8] px-2 py-0.5 text-[10px] text-[#34704a] dark:bg-emerald-900/40 dark:text-emerald-200" aria-label={`${clientChanges} alterações do cliente`}>{clientChanges}</span>}</button>
+            </nav>
+
+            {activeTab === 'messages' && <AllyoTaskChat key={task.id} task={task} userName={userName} />}
+            <div hidden={activeTab !== 'details'}><div className={`flex flex-wrap items-center gap-2 border-b px-5 py-4 text-sm text-[#a4a4a4] sm:px-[30px] ${ALLYO_BORDER}`}>
                 {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>PNG ou PDF</Tag><span>e um único pacote final de</span><Tag>arquivos editáveis</Tag></> : <><span>Isso é uma solicitação para</span><Tag>{requestCopy.type}</Tag><span>com</span><Tag>{requestCopy.count}</Tag><span>para aprovação em</span><Tag>{requestCopy.approval}</Tag><span>e</span><Tag>{requestCopy.editable}</Tag><span>no</span><Tag>{requestCopy.software}</Tag></>}
             </div>
 
@@ -122,7 +153,8 @@ const AllyoTaskDetailView = () => {
                             <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">Próxima ação</span>
                             <h2 className="mt-2 font-season text-xl font-normal">{isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
                             <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
-                            <button type="button" disabled={isMultiDeliverable && readyDeliverables === 0} onClick={() => { updateStatus('Em revisão'); if (isMultiDeliverable) setSavedLabel(`${readyDeliverables} ${readyDeliverables === 1 ? 'pedido enviado' : 'pedidos enviados'} para revisão agora`); }} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {isMultiDeliverable ? readyDeliverables > 0 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão` : 'Nenhum pedido pronto' : 'Enviar para revisão'}</button>
+                            <button type="button" disabled={!canSendForReview} onClick={sendForReview} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {isMultiDeliverable ? readyDeliverables > 0 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão` : 'Nenhum pedido pronto' : 'Enviar para revisão'}</button>
+                            {!canSendForReview && <p className="mt-2 text-center text-xs text-[#8f8f8f]">Anexe o material para liberar o envio.</p>}
                         </div>
                         <SideRow label="Referências de tarefas"><Tag>#123456</Tag><Tag>#123982</Tag></SideRow>
                         <SideRow label="Arquivos para tarefa">{sidebarFiles[deliverableKind].map((file) => <FileBadge key={file} label={file} />)}</SideRow>
@@ -130,7 +162,7 @@ const AllyoTaskDetailView = () => {
                         {brandKitOpen && <div className={`border-b px-5 py-4 text-xs leading-5 text-[#7f7f7f] dark:text-zinc-400 ${ALLYO_BORDER}`}><p>Logo principal e negativo</p><p>Paleta: verde, grafite e branco</p><p>Tipografia: Plus Jakarta Sans</p></div>}
                     </div>
                 </aside>
-            </div>
+            </div></div>
         </div>
     );
 };
