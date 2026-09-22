@@ -6,8 +6,10 @@ import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, Ve
 import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
 import AllyoTaskChat from './AllyoTaskChat';
 import AllyoProjectFlow from './AllyoProjectFlow';
+import AllyoTaskResources from './AllyoTaskResources';
 import { addTaskActivity, readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
 import { getAllyoProject } from './allyoProjects';
+import { getTaskResources } from './allyoTaskResourceData';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -32,12 +34,6 @@ const briefingByKind = {
         { title: '3. Entrega', items: ['PDF gerado automaticamente pela Allyo', 'Arquivos de apoio são opcionais'] },
     ],
 };
-const sidebarFiles = {
-    social: ['PNG', 'PSD'],
-    landing: ['PNG', 'FIG'],
-    presentation: ['PDF', 'PPTX'],
-    storyboard: ['PDF', 'IMG'],
-};
 const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const task = ALLYO_TASKS.find((item) => item.id === searchParams.get('task')) || ALLYO_TASKS[0];
@@ -46,6 +42,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const projectTask = projectTasks.find((item) => item.id === task.id);
     const isTaskBlocked = projectTask?.status === 'blocked';
     const blockingTasks = (projectTask?.dependsOn || []).map((id) => projectTasks.find((item) => item.id === id)?.title).filter(Boolean);
+    const taskResources = getTaskResources(task.id);
     const deliverableKind = getDeliverableKind(task);
     const requestCopy = deliverableCopy[deliverableKind];
     const briefing = briefingByKind[deliverableKind];
@@ -71,11 +68,27 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         return subscribeToTaskActivity(task.id, refresh);
     }, [task.id]);
 
+    useEffect(() => {
+        setStatus(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
+        setDeliveryVersion('Versão 1');
+        setFilesByVersion({ 'Versão 1': { approval: [], source: [] } });
+        setActiveTab('details');
+    }, [isTaskBlocked, task.id, task.status]);
+
     const goBack = () => {
         setSearchParams((current) => {
             const next = new URLSearchParams(current);
             next.set('view', 'tasks');
             next.delete('task');
+            return next;
+        });
+    };
+
+    const openReferencedTask = (taskId: string) => {
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.set('view', 'task-detail');
+            next.set('task', taskId);
             return next;
         });
     };
@@ -165,8 +178,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                             <button type="button" disabled={!canSendForReview} onClick={sendForReview} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {isMultiDeliverable ? readyDeliverables > 0 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão` : 'Nenhum pedido pronto' : 'Enviar para revisão'}</button>
                             {!canSendForReview && <p className="mt-2 text-center text-xs text-[#8f8f8f]">{isTaskBlocked ? 'O envio será liberado automaticamente com a dependência.' : 'Anexe o material para liberar o envio.'}</p>}
                         </div>
-                        <SideRow label="Referências de tarefas"><Tag>#123456</Tag><Tag>#123982</Tag></SideRow>
-                        <SideRow label="Arquivos para tarefa">{sidebarFiles[deliverableKind].map((file) => <FileBadge key={file} label={file} />)}</SideRow>
+                        <AllyoTaskResources resources={taskResources} onOpenTask={openReferencedTask} />
                         <button type="button" onClick={() => setBrandKitOpen((value) => !value)} className={`flex w-full items-center justify-between border-b p-5 text-left ${ALLYO_BORDER}`}><span className="font-season text-base">Brand Kit</span>{brandKitOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
                         {brandKitOpen && <div className={`border-b px-5 py-4 text-xs leading-5 text-[#7f7f7f] dark:text-zinc-400 ${ALLYO_BORDER}`}><p>Logo principal e negativo</p><p>Paleta: verde, grafite e branco</p><p>Tipografia: Plus Jakarta Sans</p></div>}
                     </div>
@@ -188,8 +200,5 @@ const CollapsibleSection = ({ title, icon, open, onToggle, children }: { title: 
 );
 
 const BriefingBlock = ({ title, items }: { title: string; items: string[] }) => <div><h3 className="font-semibold text-black dark:text-zinc-200">{title}</h3><ul className="mt-1 list-disc pl-5">{items.map((item) => <li key={item}>{item}</li>)}</ul></div>;
-
-const SideRow = ({ label, children }: { label: string; children: React.ReactNode }) => <div className={`flex items-center justify-between gap-4 border-b p-5 ${ALLYO_BORDER}`}><span className="text-[13px] text-[#8f8f8f]">{label}</span><span className="flex items-center gap-1.5">{children}</span></div>;
-const FileBadge = ({ label }: { label: string }) => <span className="flex h-9 min-w-9 items-center justify-center rounded-[5px] border border-[#c2c2c2] bg-white px-1.5 text-[11px] font-bold text-[#2a2ad7] dark:border-zinc-700 dark:bg-zinc-900">{label}</span>;
 
 export default AllyoTaskDetailView;
