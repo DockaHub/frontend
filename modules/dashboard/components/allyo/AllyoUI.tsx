@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { CalendarDays, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
 
@@ -144,6 +144,9 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
                 className="grid min-h-[78px] w-full grid-cols-[minmax(220px,1.35fr)_76px_70px_90px_minmax(155px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-lg:grid-cols-[minmax(190px,1fr)_76px_minmax(155px,1fr)_105px_18px] max-md:grid-cols-[minmax(190px,1fr)_76px_105px_18px] max-sm:grid-cols-[minmax(0,1fr)_68px_18px]"
             >
                 <span className="flex min-w-0 items-center gap-[10px]">
+                    <span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center rounded-full border border-[#9db669] text-[#9db669]" aria-hidden="true">
+                        <Grid2X2 size={15} strokeWidth={1.5} />
+                    </span>
                     <span className="min-w-0 text-sm font-medium leading-5 text-black dark:text-white">
                         <strong className="block truncate font-medium">{task.name}</strong>
                         <span className="block truncate">{task.category}</span>
