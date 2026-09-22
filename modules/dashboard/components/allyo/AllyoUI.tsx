@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
+import { CalendarDays, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
 
@@ -26,6 +26,7 @@ export interface AllyoDeliverable {
 export interface AllyoTask {
     id: string;
     name: string;
+    credits: number;
     category: string;
     client: string;
     deadline: string;
@@ -37,14 +38,15 @@ export interface AllyoTask {
 }
 
 export const ALLYO_TASKS: AllyoTask[] = [
-    { id: '123456', name: 'KV campanha de lançamento', category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
-    { id: '123457', name: 'Storyboard para filme manifesto', category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },
-    { id: '123458', name: 'Motion para redes sociais', category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy' },
-    { id: '123459', name: 'Edição do case anual', category: 'Vídeo', client: 'Fauves', deadline: '23/12/2026', time: '09h00min', status: 'Iniciar', cam: 'Bruno', creative: 'Caio' },
-    { id: '123460', name: 'Landing page institucional', category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana' },
+    { id: '123456', name: 'KV campanha de lançamento', credits: 1, category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
+    { id: '123457', name: 'Storyboard para filme manifesto', credits: 1, category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },
+    { id: '123458', name: 'Motion para redes sociais', credits: 1, category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy' },
+    { id: '123459', name: 'Edição do case anual', credits: 1, category: 'Vídeo', client: 'Fauves', deadline: '23/12/2026', time: '09h00min', status: 'Iniciar', cam: 'Bruno', creative: 'Caio' },
+    { id: '123460', name: 'Landing page institucional', credits: 1, category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana' },
     {
         id: '123461',
         name: 'Peças para mídia paga',
+        credits: 1,
         category: 'Design',
         client: 'Asterysko',
         deadline: '28/12/2026',
@@ -87,9 +89,11 @@ export const ALLYO_TASKS: AllyoTask[] = [
             },
         ],
     },
-    { id: '123462', name: 'Apresentação comercial', category: 'Catálogo', client: 'Tokyon', deadline: '30/12/2026', time: '15h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
-    { id: '123463', name: 'Desdobramento de identidade', category: 'Branding', client: 'ManySpace', deadline: '05/01/2027', time: '17h00min', status: 'Em revisão', cam: 'Bruno', creative: 'Joana' },
+    { id: '123462', name: 'Apresentação comercial', credits: 1, category: 'Catálogo', client: 'Tokyon', deadline: '30/12/2026', time: '15h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
+    { id: '123463', name: 'Desdobramento de identidade', credits: 1, category: 'Branding', client: 'ManySpace', deadline: '05/01/2027', time: '17h00min', status: 'Em revisão', cam: 'Bruno', creative: 'Joana' },
 ];
+
+export const formatTaskCredits = (credits: number) => `${credits.toLocaleString('pt-BR')} ${credits === 1 ? 'crédito' : 'créditos'}`;
 
 export const todayLabel = () => {
     const now = new Date();
@@ -137,11 +141,12 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
             <button
                 type="button"
                 onClick={openTask}
-                className="grid min-h-[78px] w-full grid-cols-[minmax(190px,1.35fr)_70px_90px_minmax(155px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-lg:grid-cols-[minmax(180px,1fr)_80px_18px] max-sm:grid-cols-[1fr_18px]"
+                className="grid min-h-[78px] w-full grid-cols-[minmax(220px,1.35fr)_70px_90px_minmax(155px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-lg:grid-cols-[minmax(210px,1fr)_80px_18px] max-sm:grid-cols-[1fr_18px]"
             >
                 <span className="flex min-w-0 items-center gap-[10px]">
-                    <span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center rounded-full border border-[#9db669] text-[#9db669]">
-                        <Grid2X2 size={15} strokeWidth={1.5} />
+                    <span className="flex min-h-[40px] min-w-[62px] shrink-0 flex-col items-center justify-center rounded-[9px] bg-[#eef3e4] px-2 text-[#576c37] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]" aria-label={formatTaskCredits(task.credits)}>
+                        <strong className="text-sm font-bold leading-tight">{task.credits.toLocaleString('pt-BR')}</strong>
+                        <span className="text-[9px] font-semibold leading-tight">{task.credits === 1 ? 'crédito' : 'créditos'}</span>
                     </span>
                     <span className="min-w-0 text-sm font-medium leading-5 text-black dark:text-white">
                         <strong className="block truncate font-medium">{task.name}</strong>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, todayLabel } from './AllyoUI';
+import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
 import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
 import AllyoTaskChat from './AllyoTaskChat';
@@ -115,7 +115,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
 
             <section className={`sticky top-[75px] z-30 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span><FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} /></div>
-                <MetaItem label="Consumo" value="1 crédito" />
+                <MetaItem label="Créditos da tarefa" value={formatTaskCredits(task.credits)} />
                 <MetaItem label="Deadline" value={`${task.deadline}, ${task.time}`} icon={<Clock3 size={14} />} />
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
                 <span className="ml-auto text-[11px] font-medium text-[#8f8f8f]" aria-live="polite">{savedLabel}</span>
