@@ -141,23 +141,23 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
             <button
                 type="button"
                 onClick={openTask}
-                className="grid min-h-[78px] w-full grid-cols-[minmax(220px,1.35fr)_70px_90px_minmax(155px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-lg:grid-cols-[minmax(210px,1fr)_80px_18px] max-sm:grid-cols-[1fr_18px]"
+                className="grid min-h-[78px] w-full grid-cols-[minmax(220px,1.35fr)_76px_70px_90px_minmax(155px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-lg:grid-cols-[minmax(190px,1fr)_76px_minmax(155px,1fr)_105px_18px] max-md:grid-cols-[minmax(190px,1fr)_76px_105px_18px] max-sm:grid-cols-[minmax(0,1fr)_68px_18px]"
             >
                 <span className="flex min-w-0 items-center gap-[10px]">
-                    <span className="flex min-h-[40px] min-w-[62px] shrink-0 flex-col items-center justify-center rounded-[9px] bg-[#eef3e4] px-2 text-[#576c37] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]" aria-label={formatTaskCredits(task.credits)}>
-                        <strong className="text-sm font-bold leading-tight">{task.credits.toLocaleString('pt-BR')}</strong>
-                        <span className="text-[9px] font-semibold leading-tight">{task.credits === 1 ? 'crédito' : 'créditos'}</span>
-                    </span>
                     <span className="min-w-0 text-sm font-medium leading-5 text-black dark:text-white">
                         <strong className="block truncate font-medium">{task.name}</strong>
                         <span className="block truncate">{task.category}</span>
                         {clientChanges > 0 && <span className="mt-1 inline-block rounded-full bg-[#e6f2e8] px-2 py-1 text-[10px] font-semibold text-[#34704a] dark:bg-emerald-900/40 dark:text-emerald-200">{clientChanges} {clientChanges === 1 ? 'alteração do cliente' : 'alterações do cliente'}</span>}
                     </span>
                 </span>
+                <span className="min-w-0" aria-label={formatTaskCredits(task.credits)}>
+                    <span className="block text-[9px] font-medium leading-none text-[#616161] dark:text-zinc-500">CRÉDITOS</span>
+                    <span className="mt-[10px] flex items-center gap-1.5 text-sm font-medium leading-none text-black dark:text-zinc-200"><span aria-hidden="true" className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#9db669] text-[9px] font-bold text-[#72894c] dark:text-[#d0f08e]">C</span>{task.credits.toLocaleString('pt-BR')}</span>
+                </span>
                 <DataCell label="ID" value={task.id} className="max-lg:hidden" />
                 <DataCell label="CLIENTE" value={task.client} className="max-lg:hidden" />
-                <DataCell label="DEADLINE" value={`${task.deadline} • ${task.time}`} className="max-sm:hidden" />
-                <DataCell label="STATUS" value={task.status} valueClassName={statusColor[task.status]} />
+                <DataCell label="DEADLINE" value={`${task.deadline} • ${task.time}`} className="max-md:hidden" />
+                <DataCell label="STATUS" value={task.status} valueClassName={statusColor[task.status]} className="max-sm:hidden" />
                 <ChevronRight size={18} className="text-[#9f9f9f]" />
             </button>
         </div>
