@@ -26,6 +26,8 @@ export interface AllyoDeliverable {
 export interface AllyoTask {
     id: string;
     name: string;
+    projectId: string;
+    projectName: string;
     credits: number;
     category: string;
     client: string;
@@ -38,14 +40,16 @@ export interface AllyoTask {
 }
 
 export const ALLYO_TASKS: AllyoTask[] = [
-    { id: '123456', name: 'KV campanha de lançamento', credits: 1, category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
-    { id: '123457', name: 'Storyboard para filme manifesto', credits: 1, category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },
-    { id: '123458', name: 'Motion para redes sociais', credits: 1, category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy' },
-    { id: '123459', name: 'Edição do case anual', credits: 1, category: 'Vídeo', client: 'Fauves', deadline: '23/12/2026', time: '09h00min', status: 'Iniciar', cam: 'Bruno', creative: 'Caio' },
-    { id: '123460', name: 'Landing page institucional', credits: 1, category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana' },
+    { id: '123456', name: 'KV campanha de lançamento', projectId: 'project-fauves-launch', projectName: 'Campanha de lançamento 2027', credits: 1, category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
+    { id: '123457', name: 'Storyboard para filme manifesto', projectId: 'project-asterysko-security', projectName: 'Campanha Segurança 24h', credits: 1, category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },
+    { id: '123458', name: 'Motion para redes sociais', projectId: 'project-tokyon-institutional', projectName: 'Campanha institucional', credits: 1, category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy' },
+    { id: '123459', name: 'Edição do case anual', projectId: 'project-fauves-launch', projectName: 'Campanha de lançamento 2027', credits: 1, category: 'Vídeo', client: 'Fauves', deadline: '23/12/2026', time: '09h00min', status: 'Iniciar', cam: 'Bruno', creative: 'Caio' },
+    { id: '123460', name: 'Landing page institucional', projectId: 'project-manyspace-brand', projectName: 'Reposicionamento digital', credits: 1, category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana' },
     {
         id: '123461',
         name: 'Peças para mídia paga',
+        projectId: 'project-asterysko-security',
+        projectName: 'Campanha Segurança 24h',
         credits: 1,
         category: 'Design',
         client: 'Asterysko',
@@ -89,8 +93,8 @@ export const ALLYO_TASKS: AllyoTask[] = [
             },
         ],
     },
-    { id: '123462', name: 'Apresentação comercial', credits: 1, category: 'Catálogo', client: 'Tokyon', deadline: '30/12/2026', time: '15h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
-    { id: '123463', name: 'Desdobramento de identidade', credits: 1, category: 'Branding', client: 'ManySpace', deadline: '05/01/2027', time: '17h00min', status: 'Em revisão', cam: 'Bruno', creative: 'Joana' },
+    { id: '123462', name: 'Apresentação comercial', projectId: 'project-tokyon-institutional', projectName: 'Campanha institucional', credits: 1, category: 'Catálogo', client: 'Tokyon', deadline: '30/12/2026', time: '15h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
+    { id: '123463', name: 'Desdobramento de identidade', projectId: 'project-manyspace-brand', projectName: 'Reposicionamento digital', credits: 1, category: 'Branding', client: 'ManySpace', deadline: '05/01/2027', time: '17h00min', status: 'Em revisão', cam: 'Bruno', creative: 'Joana' },
 ];
 
 export const formatTaskCredits = (credits: number) => `${credits.toLocaleString('pt-BR')} ${credits === 1 ? 'crédito' : 'créditos'}`;
@@ -149,7 +153,7 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
                     </span>
                     <span className="min-w-0 text-sm font-medium leading-5 text-black dark:text-white">
                         <strong className="block truncate font-medium">{task.name}</strong>
-                        <span className="block truncate">{task.category}</span>
+                        <span className="block truncate text-[11px] text-[#777] dark:text-zinc-400">{task.projectName} · {task.category}</span>
                         {clientChanges > 0 && <span className="mt-1 inline-block rounded-full bg-[#e6f2e8] px-2 py-1 text-[10px] font-semibold text-[#34704a] dark:bg-emerald-900/40 dark:text-emerald-200">{clientChanges} {clientChanges === 1 ? 'alteração do cliente' : 'alterações do cliente'}</span>}
                     </span>
                 </span>
