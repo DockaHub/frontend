@@ -7,6 +7,7 @@ import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
 import { AsteryskoScoutAutomationSettings } from './AsteryskoScoutAutomationSettings';
 import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
+import { resolveFileUrl } from './utils/fileDownload';
 
 export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'scout_ai' | 'plans' | 'portal';
 
@@ -91,6 +92,7 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
     const [benefitModalOpen, setBenefitModalOpen] = useState(false);
     const [selectedBenefit, setSelectedBenefit] = useState<Partial<PortalBenefit> | null>(null);
     const [benefitSaving, setBenefitSaving] = useState(false);
+    const [benefitImageUploading, setBenefitImageUploading] = useState(false);
     const [inpiHistory, setInpiHistory] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
     const [inpiBulkProgress, setInpiBulkProgress] = useState<InpiBulkProgress | null>(null);
@@ -320,6 +322,35 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
         setBenefitModalOpen(true);
     };
 
+    const uploadBenefitImage = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file || !organization?.id) return;
+        if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+            addToast({ type: 'error', title: 'Formato inválido', message: 'Envie uma imagem PNG, JPG ou WebP.' });
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            addToast({ type: 'error', title: 'Imagem muito grande', message: 'O tamanho máximo é 5 MB.' });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+        try {
+            setBenefitImageUploading(true);
+            const response = await api.post(`/asterysko/portal-benefits/${organization.id}/image`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+            setSelectedBenefit(current => current ? { ...current, imageUrl: response.data.imageUrl } : null);
+            addToast({ type: 'success', title: 'Imagem enviada', message: 'A imagem está pronta. Salve o benefício para publicá-la.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Erro no upload', message: error.response?.data?.error || 'Não foi possível enviar a imagem.' });
+        } finally {
+            setBenefitImageUploading(false);
+        }
+    };
+
     const savePortalBenefit = async () => {
         if (!organization?.id || !selectedBenefit?.title?.trim()) {
             addToast({ type: 'error', title: 'Campo obrigatório', message: 'Informe o título do benefício.' });
@@ -337,6 +368,8 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
             active: selectedBenefit.active !== false,
             sortOrder: Number(selectedBenefit.sortOrder || 0)
         };
+
+        if (benefitImageUploading) return;
 
         try {
             setBenefitSaving(true);
@@ -2359,7 +2392,7 @@ const WhatsAppCard: React.FC = () => {
                                             {portalBenefits.map(benefit => (
                                                 <div key={benefit.id} className="flex flex-col gap-4 rounded-xl border border-docka-200 dark:border-zinc-700 p-4 sm:flex-row sm:items-center">
                                                     <div className="h-16 w-full sm:w-24 shrink-0 overflow-hidden rounded-lg bg-gradient-to-br from-slate-700 to-slate-950">
-                                                        {benefit.imageUrl && <img src={benefit.imageUrl} alt="" className="h-full w-full object-cover" />}
+                                                        {benefit.imageUrl && <img src={resolveFileUrl(benefit.imageUrl)} alt="" className="h-full w-full object-cover" />}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <div className="flex flex-wrap items-center gap-2">
@@ -2411,7 +2444,7 @@ const WhatsAppCard: React.FC = () => {
 
             <Modal
                 isOpen={benefitModalOpen}
-                onClose={() => { if (!benefitSaving) setBenefitModalOpen(false); }}
+                onClose={() => { if (!benefitSaving && !benefitImageUploading) setBenefitModalOpen(false); }}
                 title={selectedBenefit?.id ? 'Editar benefício' : 'Novo benefício'}
                 size="md"
                 footer={
@@ -2419,7 +2452,7 @@ const WhatsAppCard: React.FC = () => {
                         <button
                             type="button"
                             onClick={() => setBenefitModalOpen(false)}
-                            disabled={benefitSaving}
+                            disabled={benefitSaving || benefitImageUploading}
                             className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg disabled:opacity-50"
                         >
                             Cancelar
@@ -2427,10 +2460,10 @@ const WhatsAppCard: React.FC = () => {
                         <button
                             type="button"
                             onClick={savePortalBenefit}
-                            disabled={benefitSaving}
+                            disabled={benefitSaving || benefitImageUploading}
                             className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl text-sm font-bold disabled:opacity-50"
                         >
-                            {benefitSaving ? 'Salvando...' : 'Salvar benefício'}
+                            {benefitSaving ? 'Salvando...' : benefitImageUploading ? 'Enviando imagem...' : 'Salvar benefício'}
                         </button>
                     </>
                 }
@@ -2504,9 +2537,23 @@ const WhatsAppCard: React.FC = () => {
                         </div>
                     </div>
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">URL da imagem</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-zinc-400 uppercase mb-1.5">Imagem do benefício</label>
+                        {selectedBenefit?.imageUrl && (
+                            <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-100 dark:bg-zinc-900">
+                                <img src={resolveFileUrl(selectedBenefit.imageUrl)} alt={`Prévia de ${selectedBenefit.title || 'benefício'}`} className="h-36 w-full object-cover" />
+                            </div>
+                        )}
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                            <label className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-zinc-200 hover:bg-slate-50 dark:hover:bg-zinc-800 ${benefitImageUploading ? 'pointer-events-none opacity-50' : ''}`}>
+                                <Upload size={15} /> {benefitImageUploading ? 'Enviando imagem...' : selectedBenefit?.imageUrl ? 'Trocar imagem' : 'Enviar imagem'}
+                                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadBenefitImage} disabled={benefitImageUploading} className="sr-only" />
+                            </label>
+                            {selectedBenefit?.imageUrl && <button type="button" onClick={() => setSelectedBenefit(current => ({ ...current, imageUrl: '' }))} disabled={benefitImageUploading} className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-500 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-50">Remover imagem</button>}
+                            <span className="text-xs text-slate-500 dark:text-zinc-400">PNG, JPG ou WebP · até 5 MB</span>
+                        </div>
+                        <label className="mb-1.5 block text-xs text-slate-500 dark:text-zinc-400">Ou cole uma URL</label>
                         <input
-                            type="url"
+                            type="text"
                             value={selectedBenefit?.imageUrl || ''}
                             onChange={event => setSelectedBenefit(current => ({ ...current, imageUrl: event.target.value }))}
                             placeholder="https://..."

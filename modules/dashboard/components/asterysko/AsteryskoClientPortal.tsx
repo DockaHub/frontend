@@ -1415,12 +1415,12 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                             }}
                                             aria-label={`Ver detalhes do benefício ${benefit.title}`}
                                         >
-                                                {benefit.imageUrl && <img className="ast-benefit-card__image" src={benefit.imageUrl} alt="" />}
-                                                <div className="ast-benefit-card__shade">
-                                                    {benefit.badge && <span className="ast-benefit-card__tag">{benefit.badge}</span>}
-                                                    <h3>{benefit.title}</h3>
-                                                    {benefit.description && <p>{benefit.description}</p>}
-                                                </div>
+                                            {benefit.imageUrl && <img className="ast-benefit-card__image" src={resolveFileUrl(benefit.imageUrl)} alt="" />}
+                                            <div className="ast-benefit-card__shade">
+                                                {benefit.badge && <span className="ast-benefit-card__tag">{benefit.badge}</span>}
+                                                <h3>{benefit.title}</h3>
+                                                {benefit.description && <p>{benefit.description}</p>}
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -2057,7 +2057,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 <div className="ast-benefit-modal" role="presentation" onClick={() => setSelectedBenefit(null)}>
                     <section className="ast-benefit-modal__panel" role="dialog" aria-modal="true" aria-labelledby="ast-benefit-modal-title" onClick={event => event.stopPropagation()}>
                         <div className="ast-benefit-modal__hero">
-                            {selectedBenefit.imageUrl && <img src={selectedBenefit.imageUrl} alt="" />}
+                            {selectedBenefit.imageUrl && <img src={resolveFileUrl(selectedBenefit.imageUrl)} alt="" />}
                             <div className="ast-benefit-modal__hero-shade">
                                 {selectedBenefit.badge && <span className="ast-benefit-modal__badge">{selectedBenefit.badge}</span>}
                                 <span className="ast-benefit-modal__eyebrow">Ecossistema Asterysko</span>
