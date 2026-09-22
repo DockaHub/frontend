@@ -11,17 +11,20 @@ export interface AllyoTaskAttachment {
     extension: string;
     size: string;
     purpose: 'Material de apoio' | 'Referência visual';
+    previewUrl?: string;
+    downloadUrl?: string;
 }
 
 export interface AllyoTaskResources {
     references: AllyoTaskReference[];
     attachments: AllyoTaskAttachment[];
+    archiveUrl?: string;
 }
 
 const resourcesByTask: Record<string, AllyoTaskResources> = {
     '123456': {
         references: [{ id: '122908', title: 'KV campanha Dia do Cliente', category: 'Design' }, { id: '122741', title: 'Lançamento coleção de verão', category: 'Campanha' }],
-        attachments: [{ id: 'fa-1', name: 'Guia da campanha 2027.pdf', extension: 'PDF', size: '4,8 MB', purpose: 'Material de apoio' }, { id: 'fa-2', name: 'Moodboard lançamento.zip', extension: 'ZIP', size: '38,2 MB', purpose: 'Referência visual' }],
+        attachments: [{ id: 'fa-1', name: 'Guia da campanha 2027.pdf', extension: 'PDF', size: '4,8 MB', purpose: 'Material de apoio' }, { id: 'fa-2', name: 'Moodboard lançamento.zip', extension: 'ZIP', size: '38,2 MB', purpose: 'Referência visual' }, { id: 'fa-5', name: 'KV campanha anterior.ai', extension: 'AI', size: '28,6 MB', purpose: 'Referência visual' }],
     },
     '123457': {
         references: [{ id: '122635', title: 'Storyboard vídeo institucional', category: 'Storyboard' }],
@@ -45,7 +48,7 @@ const resourcesByTask: Record<string, AllyoTaskResources> = {
     },
     '123462': {
         references: [{ id: '123458', linkedTaskId: '123458', title: 'Motion para redes sociais', category: 'Motion' }],
-        attachments: [{ id: 'to-3', name: 'Conteúdo apresentação.docx', extension: 'DOCX', size: '146 KB', purpose: 'Material de apoio' }, { id: 'to-4', name: 'Apresentação referência.pdf', extension: 'PDF', size: '5,2 MB', purpose: 'Referência visual' }],
+        attachments: [{ id: 'to-3', name: 'Conteúdo apresentação.docx', extension: 'DOCX', size: '146 KB', purpose: 'Material de apoio' }, { id: 'to-4', name: 'Apresentação referência.pdf', extension: 'PDF', size: '5,2 MB', purpose: 'Referência visual' }, { id: 'to-5', name: 'Catálogo institucional.indd', extension: 'INDD', size: '41,3 MB', purpose: 'Referência visual' }],
     },
     '123463': {
         references: [{ id: '123460', linkedTaskId: '123460', title: 'Landing page institucional', category: 'Digital' }],
