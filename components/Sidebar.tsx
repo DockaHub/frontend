@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [searchParams] = useSearchParams();
   const dashboardView = searchParams.get('view');
 
-  const { menuItems } = useSidebarNavigation(currentOrg);
+  const { menuItems } = useSidebarNavigation(currentOrg, user);
 
   console.log('Sidebar render. Org:', currentOrg?.slug);
   const organizations = userOrgs || [currentOrg]; // Fallback

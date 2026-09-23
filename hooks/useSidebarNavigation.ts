@@ -6,7 +6,7 @@ import {
     BookOpen, LifeBuoy, PanelsTopLeft, ShieldCheck
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { Organization } from '../types';
+import { Organization, User } from '../types';
 import api from '../services/api';
 
 export interface MenuItem {
@@ -19,7 +19,7 @@ export interface MenuItem {
     children?: { id: string; label: string; icon?: any }[];
 }
 
-export const useSidebarNavigation = (currentOrg: Organization) => {
+export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User, 'role'>) => {
     const [unreadLeads, setUnreadLeads] = useState(0);
 
     // Fetch unread leads specifically for Asterysko
@@ -170,9 +170,11 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
 
     const filterMenuByPermissions = (items: MenuItem[]): MenuItem[] => {
         if (!currentOrg) return items;
-        
+        const globalRole = String(user?.role || '').toUpperCase();
+        const isGlobalAdmin = ['ADMIN', 'OWNER', 'SUPER_ADMIN'].includes(globalRole);
+
         // Donos e Admins globais/da org vêem tudo
-        if (currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN') {
+        if (isGlobalAdmin || currentOrg.memberRole === 'OWNER' || currentOrg.memberRole === 'ADMIN') {
             return items;
         }
 

@@ -276,7 +276,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     const navigate = useNavigate();
     const location = useLocation();
     const [searchParams] = useSearchParams();
-    const { menuItems } = useSidebarNavigation(currentOrg);
+    const { menuItems } = useSidebarNavigation(currentOrg, user);
 
     // Close menu on click outside
     useEffect(() => {

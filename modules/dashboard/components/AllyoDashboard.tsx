@@ -24,7 +24,8 @@ const placeholderLabels: Record<string, { title: string; description: string }> 
 };
 
 const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organization }) => {
-    const canManageAccess = user?.role === 'ADMIN' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
+    const globalRole = String(user?.role || '').toUpperCase();
+    const canManageAccess = ['ADMIN', 'OWNER', 'SUPER_ADMIN'].includes(globalRole) || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
     switch (activeView) {
         case 'overview':
         case 'home':

@@ -65,7 +65,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
 
     const currentOrg = organizations.find(o => o.id === currentOrgId) || organizations[0];
-    const { menuItems } = useSidebarNavigation(currentOrg);
+    const { menuItems } = useSidebarNavigation(currentOrg, user);
 
     if (!currentOrg) return null;
 
