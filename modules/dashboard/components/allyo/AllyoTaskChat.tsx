@@ -186,9 +186,6 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                         <Send size={14} /> {isSending ? 'Enviando...' : 'Enviar'}
                     </button>
                 </div>
-                <p className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400">
-                    🟢 Conectado ao Railway: a mensagem é entregue em tempo real no portal do cliente.
-                </p>
             </form>
         </section>
     );

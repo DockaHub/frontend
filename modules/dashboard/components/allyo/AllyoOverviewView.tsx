@@ -75,7 +75,7 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
                 {openTasks.length === 0 && (
                     <div className="flex min-h-[140px] flex-col items-center justify-center p-6 text-center text-xs text-[#7f7f7f] dark:text-zinc-400">
                         <Inbox size={22} className="mb-2 text-zinc-400" />
-                        <span>Nenhuma tarefa pendente na fila no momento. As novas demandas da Allyo aparecerão aqui.</span>
+                        <span>Nenhuma tarefa pendente na fila no momento.</span>
                     </div>
                 )}
             </section>
