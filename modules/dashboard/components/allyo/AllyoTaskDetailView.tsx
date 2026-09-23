@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel } from './AllyoUI';
+import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTask, AllyoTask } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
 import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
 import AllyoTaskChat from './AllyoTaskChat';
@@ -10,6 +10,7 @@ import AllyoTaskResources from './AllyoTaskResources';
 import { addTaskActivity, readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
 import { getAllyoProject } from './allyoProjects';
 import { getTaskResources } from './allyoTaskResourceData';
+import { allyoService } from '../../../../services/allyoService';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -36,7 +37,22 @@ const briefingByKind = {
 };
 const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [searchParams, setSearchParams] = useSearchParams();
-    const task = ALLYO_TASKS.find((item) => item.id === searchParams.get('task')) || ALLYO_TASKS[0];
+    const taskId = searchParams.get('task');
+    const [liveTask, setLiveTask] = useState<AllyoTask | null>(null);
+
+    useEffect(() => {
+        if (!taskId) return;
+        allyoService.getDemands().then((res) => {
+            if (res && Array.isArray(res.demands)) {
+                const found = res.demands.find((d) => d.id === taskId);
+                if (found) {
+                    setLiveTask(mapDemandToTask(found));
+                }
+            }
+        }).catch((err) => console.warn('[AllyoTaskDetailView] Erro ao carregar demanda da API:', err));
+    }, [taskId]);
+
+    const task = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || ALLYO_TASKS[0];
     const project = getAllyoProject(task.projectId);
     const projectTasks = project?.stages.flatMap((stage) => stage.tasks) || [];
     const projectTask = projectTasks.find((item) => item.id === task.id);
@@ -93,9 +109,26 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         });
     };
 
-    const updateStatus = (nextStatus: string) => {
+    const updateStatus = async (nextStatus: string) => {
         setStatus(nextStatus);
         setSavedLabel('Status atualizado agora');
+
+        try {
+            const projectId = task.projectId || task.id;
+            const apiStatusMap: Record<string, 'Em andamento' | 'Em revisão' | 'Concluído' | 'Rascunho'> = {
+                'Nova': 'Rascunho',
+                'Em andamento': 'Em andamento',
+                'Em revisão': 'Em revisão',
+                'Pronta para entrega': 'Em revisão',
+                'Entregue': 'Concluído',
+            };
+            const mapped = apiStatusMap[nextStatus];
+            if (mapped) {
+                await allyoService.updateProjectStatus(projectId, { status: mapped });
+            }
+        } catch (err) {
+            console.warn('[AllyoTaskDetailView] Erro ao sincronizar status com Railway:', err);
+        }
     };
 
     const updateVersionFiles = (slot: 'approval' | 'source', files: ManagedFile[]) => {
@@ -106,7 +139,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         setSavedLabel(`${deliveryVersion} atualizada agora`);
     };
 
-    const sendForReview = () => {
+    const sendForReview = async () => {
         const fileNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => file.name).join(', ');
         addTaskActivity(task.id, {
             type: 'approval_sent',
@@ -118,6 +151,17 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         updateStatus('Em revisão');
         if (isMultiDeliverable) setSavedLabel(`${readyDeliverables} ${readyDeliverables === 1 ? 'pedido enviado' : 'pedidos enviados'} para revisão agora`);
         setActiveTab('messages');
+
+        try {
+            const projectId = task.projectId || task.id;
+            await allyoService.submitDesignRevision(projectId, {
+                name: fileNames || task.name,
+                version: deliveryVersion,
+                color: '#d7ff70',
+            });
+        } catch (err) {
+            console.warn('[AllyoTaskDetailView] Erro ao enviar revisão para Railway:', err);
+        }
     };
 
     return (

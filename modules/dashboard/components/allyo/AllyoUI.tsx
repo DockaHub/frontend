@@ -39,6 +39,48 @@ export interface AllyoTask {
     deliverables?: AllyoDeliverable[];
 }
 
+export function mapDemandToTask(demand: any): AllyoTask {
+    const statusMap: Record<string, 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída'> = {
+        'Rascunho': 'Iniciar',
+        'Em andamento': 'Em andamento',
+        'Em revisão': 'Em revisão',
+        'Concluído': 'Concluída',
+        'Concluída': 'Concluída',
+    };
+
+    const status = statusMap[demand.status] || 'Em andamento';
+    const creative = Array.isArray(demand.team) && demand.team[0] ? demand.team[0] : 'Levy';
+    const client = demand.workspace?.name || 'Cliente Allyo';
+    const category = demand.service || 'Design';
+    const deliverables = Array.isArray(demand.briefing?.deliverables)
+        ? demand.briefing.deliverables.map((d: any, idx: number) => ({
+            id: `deliv-${idx}`,
+            title: typeof d === 'string' ? d : d.title || `Entregável ${idx + 1}`,
+            type: (typeof d === 'string' && d.toLowerCase().includes('carrossel')) ? 'Carrossel' as const : 'Estático' as const,
+            format: '1080x1350',
+            approvalFormat: 'PNG',
+            software: 'Figma',
+            scenes: [],
+        }))
+        : undefined;
+
+    return {
+        id: demand.id,
+        name: demand.name,
+        projectId: demand.id,
+        projectName: demand.name,
+        credits: demand.tasks || 1,
+        category,
+        client,
+        deadline: demand.deadline || new Date(demand.createdAt || Date.now()).toLocaleDateString('pt-BR'),
+        time: '18h00min',
+        status,
+        cam: 'Marina',
+        creative,
+        deliverables,
+    };
+}
+
 export const ALLYO_TASKS: AllyoTask[] = [
     { id: '123456', name: 'KV campanha de lançamento', projectId: 'project-fauves-launch', projectName: 'Campanha de lançamento 2027', credits: 1, category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
     { id: '123457', name: 'Storyboard para filme manifesto', projectId: 'project-asterysko-security', projectName: 'Campanha Segurança 24h', credits: 1, category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },

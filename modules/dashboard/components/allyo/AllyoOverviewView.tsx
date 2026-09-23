@@ -1,5 +1,8 @@
-import React from 'react';
-import { ALLYO_BORDER, ALLYO_TASKS, AllyoPageHeader, TaskRow } from './AllyoUI';
+import { useEffect, useMemo, useState } from 'react';
+import { ALLYO_BORDER, AllyoPageHeader, mapDemandToTask, TaskRow, AllyoTask } from './AllyoUI';
+import { allyoService } from '../../../../services/allyoService';
+import { socketService } from '../../../../services/socketService';
+import { Inbox } from 'lucide-react';
 
 const credits = [
     { month: 'Jan', delivered: 0, approved: 0 },
@@ -26,7 +29,33 @@ const creditValue = (value: number) => value.toLocaleString('pt-BR', { minimumFr
 
 const AllyoOverviewView = ({ userName }: { userName?: string }) => {
     const firstName = userName?.trim().split(/\s+/)[0] || 'Criativo';
-    const openTasks = ALLYO_TASKS.filter((task) => task.status !== 'Concluída').slice(0, 3);
+    const [liveTasks, setLiveTasks] = useState<AllyoTask[]>([]);
+
+    const loadDemands = async () => {
+        try {
+            const res = await allyoService.getDemands();
+            if (res && Array.isArray(res.demands)) {
+                setLiveTasks(res.demands.map(mapDemandToTask));
+            }
+        } catch (err) {
+            console.warn('[AllyoOverviewView] Erro ao carregar demandas:', err);
+        }
+    };
+
+    useEffect(() => {
+        loadDemands();
+
+        socketService.connect();
+        const handleEvent = () => loadDemands();
+        socketService.on('allyo:event', handleEvent);
+        return () => {
+            socketService.off('allyo:event', handleEvent);
+        };
+    }, []);
+
+    // 100% dados reais da API da Allyo
+    const effectiveTasks = liveTasks;
+    const openTasks = useMemo(() => effectiveTasks.filter((task) => task.status !== 'Concluída').slice(0, 3), [effectiveTasks]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
@@ -43,6 +72,12 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
                     <span className="flex h-[25px] min-w-[25px] items-center justify-center rounded-full bg-[#ff0037] px-1.5 text-sm font-extrabold text-white">{openTasks.length}</span>
                 </div>
                 {openTasks.map((task) => <TaskRow key={task.id} task={task} />)}
+                {openTasks.length === 0 && (
+                    <div className="flex min-h-[140px] flex-col items-center justify-center p-6 text-center text-xs text-[#7f7f7f] dark:text-zinc-400">
+                        <Inbox size={22} className="mb-2 text-zinc-400" />
+                        <span>Nenhuma tarefa pendente na fila no momento. As novas demandas da Allyo aparecerão aqui.</span>
+                    </div>
+                )}
             </section>
 
             <section className="grid grid-cols-1 xl:grid-cols-[1.03fr_1fr]">
