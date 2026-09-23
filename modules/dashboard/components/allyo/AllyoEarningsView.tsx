@@ -1,18 +1,19 @@
-import React, { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
 import { ALLYO_BORDER, AllyoPageHeader, FilterSelect } from './AllyoUI';
+import { allyoService, AllyoDemand } from '../../../../services/allyoService';
 
-const deliveries = Array.from({ length: 11 }, (_, index) => ({
-    id: String(71271 + index),
-    approvedAt: `${String(10 + (index % 9)).padStart(2, '0')}/09/2026 • ${String(index).padStart(2, '0')}:01`,
-    versions: index % 3 === 0 ? 2 : 3,
-    credits: index % 4 === 0 ? 1.5 : 1,
-    boosters: index % 5 === 0 ? 1 : 0,
-}));
+interface DeliveryRow {
+    id: string;
+    approvedAt: string;
+    versions: number;
+    credits: number;
+    boosters: number;
+}
 
 const formatCredits = (value: number) => `${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${value === 1 ? 'crédito' : 'créditos'}`;
 
-const downloadReport = (rows: typeof deliveries) => {
+const downloadReport = (rows: DeliveryRow[]) => {
     const header = ['ID da Tarefa', 'Data de aprovação', 'Versões', 'Créditos', 'Boosters Utilizados'];
     const csv = [header, ...rows.map((row) => [row.id, row.approvedAt, row.versions, row.credits, row.boosters])]
         .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
@@ -20,15 +21,60 @@ const downloadReport = (rows: typeof deliveries) => {
     const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'allyo-ganhos-setembro-2026.csv';
+    link.download = 'allyo-ganhos.csv';
     link.click();
     URL.revokeObjectURL(url);
 };
 
 const AllyoEarningsView = () => {
-    const [period, setPeriod] = useState('Setembro/2026');
-    const totalCredits = useMemo(() => deliveries.reduce((sum, row) => sum + row.credits, 0), []);
-    const approvedCredits = 68;
+    const [period, setPeriod] = useState('Todas as entregas');
+    const [demands, setDemands] = useState<AllyoDemand[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsLoading(true);
+        allyoService.getDemands()
+            .then((res) => {
+                if (res && Array.isArray(res.demands)) {
+                    setDemands(res.demands);
+                }
+            })
+            .catch((err) => console.warn('[AllyoEarningsView] Erro ao carregar demandas:', err))
+            .finally(() => setIsLoading(false));
+    }, []);
+
+    const approvedDemands = useMemo(() => {
+        return demands.filter((d) => d.status === 'Concluído' || d.status === 'Concluída');
+    }, [demands]);
+
+    const pendingDemands = useMemo(() => {
+        return demands.filter((d) => d.status === 'Em revisão' || d.status === 'Em andamento');
+    }, [demands]);
+
+    const approvedCredits = useMemo(() => {
+        return approvedDemands.reduce((sum, d) => sum + (d.tasks || 1), 0);
+    }, [approvedDemands]);
+
+    const pendingCredits = useMemo(() => {
+        return pendingDemands.reduce((sum, d) => sum + (d.tasks || 1), 0);
+    }, [pendingDemands]);
+
+    // Cálculo de saldo com base no valor progressivo por crédito
+    const totalEarnings = useMemo(() => {
+        if (approvedCredits <= 0) return 0;
+        if (approvedCredits <= 70) return approvedCredits * 50;
+        return 70 * 50 + (approvedCredits - 70) * 70;
+    }, [approvedCredits]);
+
+    const deliveries: DeliveryRow[] = useMemo(() => {
+        return approvedDemands.map((d) => ({
+            id: d.id,
+            approvedAt: new Date(d.updatedAt || d.createdAt).toLocaleDateString('pt-BR'),
+            versions: d.designsCount || 1,
+            credits: d.tasks || 1,
+            boosters: 0,
+        }));
+    }, [approvedDemands]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
@@ -37,7 +83,9 @@ const AllyoEarningsView = () => {
                 <aside className={`border-b xl:border-b-0 xl:border-r ${ALLYO_BORDER}`}>
                     <div className={`border-b p-[30px] ${ALLYO_BORDER}`}>
                         <span className="block text-[10px] font-semibold text-[#9f9f9f]">SALDO</span>
-                        <strong className="mt-[5px] block font-season text-[22px] font-normal">R$ 8.851,35</strong>
+                        <strong className="mt-[5px] block font-season text-[22px] font-normal">
+                            {totalEarnings.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                        </strong>
                     </div>
                     <div className={`border-b px-[30px] py-5 ${ALLYO_BORDER}`}>
                         <h2 className="text-sm font-medium">Receita progressiva</h2>
@@ -50,15 +98,21 @@ const AllyoEarningsView = () => {
                             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#e5ecd7] dark:bg-zinc-800">
                                 <div className="h-full rounded-full bg-[#9db669]" style={{ width: `${Math.min(100, (approvedCredits / 70) * 100)}%` }} />
                             </div>
-                            <p className="mt-2 text-[10px] leading-4 text-[#7b8669] dark:text-zinc-400">Faltam <strong>2 créditos</strong> para o próximo nível.</p>
+                            <p className="mt-2 text-[10px] leading-4 text-[#7b8669] dark:text-zinc-400">
+                                {approvedCredits < 70
+                                    ? `Faltam ${70 - approvedCredits} créditos para o próximo nível.`
+                                    : 'Parabéns! Você atingiu a faixa máxima de remuneração.'}
+                            </p>
                         </div>
                     </div>
-                    <Tier label="&lt;70 créditos aprovados" value="R$ 50,00" current />
-                    <Tier label="70–71 créditos aprovados" value="R$ 4.000,00" />
-                    <Tier label="&gt;71 créditos aprovados" value="R$ 70,00" />
+                    <Tier label="<70 créditos aprovados" value="R$ 50,00" current={approvedCredits < 70} />
+                    <Tier label="70–71 créditos aprovados" value="R$ 4.000,00" current={approvedCredits >= 70 && approvedCredits <= 71} />
+                    <Tier label=">71 créditos aprovados" value="R$ 70,00" current={approvedCredits > 71} />
                     <div className={`border-b px-[30px] py-5 ${ALLYO_BORDER}`}>
                         <h2 className="text-sm font-medium">Créditos pendentes</h2>
-                        <p className="mt-[10px] text-xs leading-[1.35] text-[#858585]">Atualmente, <strong>{totalCredits.toLocaleString('pt-BR')} créditos</strong> aguardam aprovação do cliente. Após aprovação, serão transferidos para sua lista de créditos aprovados.</p>
+                        <p className="mt-[10px] text-xs leading-[1.35] text-[#858585]">
+                            Atualmente, <strong>{pendingCredits.toLocaleString('pt-BR')} créditos</strong> aguardam aprovação do cliente. Após aprovação, serão transferidos para sua lista de créditos aprovados.
+                        </p>
                     </div>
                 </aside>
 
@@ -66,8 +120,13 @@ const AllyoEarningsView = () => {
                     <div className={`flex min-h-[91px] flex-wrap items-center justify-between gap-3 border-b px-5 py-4 sm:px-[30px] ${ALLYO_BORDER}`}>
                         <h2 className="text-sm font-medium">Entregas que você realizou</h2>
                         <div className="flex items-center gap-[10px]">
-                            <FilterSelect label="Período" value={period} options={['Setembro/2026', 'Agosto/2026', 'Julho/2026']} onChange={setPeriod} />
-                            <button type="button" onClick={() => downloadReport(deliveries)} className="inline-flex min-h-9 items-center gap-[10px] rounded-full bg-[#131f15] px-[15px] py-2 text-xs font-semibold text-white transition hover:bg-[#253829]">
+                            <FilterSelect label="Período" value={period} options={['Todas as entregas', 'Últimos 30 dias']} onChange={setPeriod} />
+                            <button
+                                type="button"
+                                disabled={deliveries.length === 0}
+                                onClick={() => downloadReport(deliveries)}
+                                className="inline-flex min-h-9 items-center gap-[10px] rounded-full bg-[#131f15] px-[15px] py-2 text-xs font-semibold text-white transition hover:bg-[#253829] disabled:opacity-40"
+                            >
                                 <Download size={13} /> <span className="hidden sm:inline">Baixar relatório</span>
                             </button>
                         </div>
@@ -86,7 +145,7 @@ const AllyoEarningsView = () => {
                             <tbody>
                                 {deliveries.map((row) => (
                                     <tr key={row.id} className={`border-b text-sm font-medium transition-colors hover:bg-[#fafbf8] dark:hover:bg-zinc-900/60 ${ALLYO_BORDER}`}>
-                                        <td className="px-[30px] py-5">{row.id}</td>
+                                        <td className="px-[30px] py-5 truncate font-mono text-xs">{row.id}</td>
                                         <td className="px-3 py-5">{row.approvedAt}</td>
                                         <td className="px-3 py-5"><VersionBadges count={row.versions} /></td>
                                         <td className="px-3 py-5">{formatCredits(row.credits)}</td>
@@ -95,6 +154,13 @@ const AllyoEarningsView = () => {
                                 ))}
                             </tbody>
                         </table>
+
+                        {!isLoading && deliveries.length === 0 && (
+                            <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
+                                <strong className="text-sm font-semibold">Nenhuma entrega realizada ainda</strong>
+                                <span className="mt-2 text-xs text-[#7f7f7f]">As demandas aprovadas pelos clientes na Allyo Space aparecerão aqui contabilizando créditos e saldo.</span>
+                            </div>
+                        )}
                     </div>
                 </main>
             </div>
@@ -112,7 +178,7 @@ const Tier = ({ label, value, current = false }: { label: string; value: string;
 
 const VersionBadges = ({ count }: { count: number }) => (
     <span className="inline-flex gap-[3px]">
-        {Array.from({ length: count }, (_, index) => <span key={index} className="rounded-[3px] border border-[#c2c2c2] px-1 py-[3px] text-[10px] leading-none">{index + 1}ª</span>)}
+        {Array.from({ length: Math.max(1, count) }, (_, index) => <span key={index} className="rounded-[3px] border border-[#c2c2c2] px-1 py-[3px] text-[10px] leading-none">{index + 1}ª</span>)}
     </span>
 );
 

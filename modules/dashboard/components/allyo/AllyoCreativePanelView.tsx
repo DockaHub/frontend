@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock3, Layers3, Palette, UserRound } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { ALLYO_BORDER, AllyoPageHeader, FilterSelect } from './AllyoUI';
+import { allyoService } from '../../../../services/allyoService';
 
 interface CreativeAsset {
     id: string;
@@ -15,41 +16,57 @@ interface CreativeAsset {
     approvedAt: string;
     format: string;
     image: string;
-    avatar: string;
+    avatar?: string;
 }
-
-const designers = [
-    { name: 'Marina Alves', specialty: 'Direção de Arte' },
-    { name: 'Levy Camará', specialty: 'Designer' },
-    { name: 'Joana Martins', specialty: 'Motion Designer' },
-    { name: 'Caio Lima', specialty: 'Designer' },
-];
-
-const clients = ['Webmotors', 'Fauves', 'Asterysko', 'Tokyon'];
-
-const creatives: CreativeAsset[] = Array.from({ length: 10 }, (_, index) => {
-    const designer = designers[index % designers.length];
-    const versions = (index % 3) + 1;
-    return {
-        id: `creative-${index + 1}`,
-        taskId: String(71271 + index),
-        taskName: index % 2 === 0 ? 'Conteúdo automotivo para celular' : 'Campanha de performance — mobile',
-        client: clients[index % clients.length],
-        designer: designer.name,
-        specialty: designer.specialty,
-        versions,
-        approvedVersion: versions,
-        approvedAt: `${String(10 + index).padStart(2, '0')}/09/2026`,
-        format: index % 2 === 0 ? 'Feed • 1080 × 1350 px' : 'Social • 1080 × 1080 px',
-        image: '/brands/allyo/creative-card.png',
-        avatar: '/brands/allyo/creative-designer-avatar.png',
-    };
-});
 
 const AllyoCreativePanelView = () => {
     const [client, setClient] = useState('Todos');
     const [selected, setSelected] = useState<CreativeAsset | null>(null);
-    const visibleCreatives = useMemo(() => client === 'Todos' ? creatives : creatives.filter((creative) => creative.client === client), [client]);
+    const [creatives, setCreatives] = useState<CreativeAsset[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsLoading(true);
+        allyoService.getDemands()
+            .then((res) => {
+                if (res && Array.isArray(res.demands)) {
+                    const list: CreativeAsset[] = [];
+                    res.demands.forEach((d) => {
+                        if (d.designs && d.designs.length > 0) {
+                            d.designs.forEach((design) => {
+                                list.push({
+                                    id: String(design.id),
+                                    taskId: d.id,
+                                    taskName: `${d.name} — ${design.name}`,
+                                    client: d.workspace?.name || 'Cliente Allyo',
+                                    designer: d.team?.[0] || 'Levy Camará',
+                                    specialty: d.service || 'Design',
+                                    versions: d.designsCount || 1,
+                                    approvedVersion: design.approved ? 1 : 0,
+                                    approvedAt: new Date(design.createdAt || d.updatedAt).toLocaleDateString('pt-BR'),
+                                    format: 'Design • Digital',
+                                    image: design.thumbnailUrl || design.fileUrl || '/brands/allyo/creative-card.png',
+                                    avatar: '/brands/allyo/creative-designer-avatar.png',
+                                });
+                            });
+                        }
+                    });
+                    setCreatives(list);
+                }
+            })
+            .catch((err) => console.warn('[AllyoCreativePanelView] Erro ao carregar criativos:', err))
+            .finally(() => setIsLoading(false));
+    }, []);
+
+    const clientsList = useMemo(() => {
+        const uniqueClients = Array.from(new Set(creatives.map((c) => c.client).filter(Boolean)));
+        return ['Todos', ...uniqueClients];
+    }, [creatives]);
+
+    const visibleCreatives = useMemo(() => {
+        if (client === 'Todos') return creatives;
+        return creatives.filter((c) => c.client === client);
+    }, [client, creatives]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
@@ -57,23 +74,39 @@ const AllyoCreativePanelView = () => {
 
             <div className={`relative z-30 flex min-h-[71px] flex-wrap items-center gap-[10px] border-b px-5 py-4 sm:px-[30px] ${ALLYO_BORDER}`}>
                 <span className="mr-1 text-sm font-medium">Filtros</span>
-                <FilterSelect label="Selecione um cliente" value={client} options={clients} onChange={setClient} />
+                <FilterSelect label="Selecione um cliente" value={client} options={clientsList} onChange={setClient} />
                 <span className="ml-auto text-[10px] font-semibold text-[#9f9f9f]">{visibleCreatives.length} criativos no histórico</span>
             </div>
 
             <main className="p-5 sm:p-[30px]">
-                <div className="grid grid-cols-1 gap-[10px] min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
-                    {visibleCreatives.map((creative) => (
-                        <button key={creative.id} type="button" onClick={() => setSelected(creative)} className="group relative aspect-square min-w-0 overflow-hidden rounded-[10px] bg-[#ef1f46] text-left shadow-sm outline-none transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(19,31,21,.16)] focus-visible:ring-2 focus-visible:ring-[#9db669] focus-visible:ring-offset-2">
-                            <img src={creative.image} alt={creative.taskName} className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
-                            <span className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/35 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                            <span className="absolute bottom-[10px] left-[10px] flex h-[28px] max-w-[calc(100%-20px)] items-center gap-[7px] rounded-full bg-white py-1.5 pl-1.5 pr-3 shadow-[0_2px_8px_rgba(0,0,0,.18)]">
-                                <img src={creative.avatar} alt="" className="h-[16px] w-[16px] shrink-0 rounded-full object-cover" />
-                                <span className="truncate text-[9px] font-semibold text-black">{creative.designer}</span>
-                            </span>
-                        </button>
-                    ))}
-                </div>
+                {visibleCreatives.length > 0 && (
+                    <div className="grid grid-cols-1 gap-[10px] min-[480px]:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+                        {visibleCreatives.map((creative) => (
+                            <button
+                                key={creative.id}
+                                type="button"
+                                onClick={() => setSelected(creative)}
+                                className="group relative aspect-square min-w-0 overflow-hidden rounded-[10px] bg-[#142320] text-left shadow-sm outline-none transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_rgba(19,31,21,.16)] focus-visible:ring-2 focus-visible:ring-[#9db669] focus-visible:ring-offset-2"
+                            >
+                                <img src={creative.image} alt={creative.taskName} className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.025]" />
+                                <span className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                                <span className="absolute bottom-[10px] left-[10px] flex h-[28px] max-w-[calc(100%-20px)] items-center gap-[7px] rounded-full bg-white py-1.5 pl-1.5 pr-3 shadow-[0_2px_8px_rgba(0,0,0,.18)]">
+                                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#003f35] text-[9px] font-bold text-white">
+                                        {creative.designer.slice(0, 2).toUpperCase()}
+                                    </span>
+                                    <span className="truncate text-[9px] font-semibold text-black">{creative.designer}</span>
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                )}
+
+                {!isLoading && visibleCreatives.length === 0 && (
+                    <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
+                        <strong className="text-sm font-semibold">Nenhum criativo no histórico</strong>
+                        <span className="mt-2 text-xs text-[#7f7f7f]">As versões e designs submetidos nas demandas aparecerão aqui organizados por cliente.</span>
+                    </div>
+                )}
             </main>
 
             <CreativeDetailsModal creative={selected} onClose={() => setSelected(null)} />
@@ -86,12 +119,12 @@ const CreativeDetailsModal = ({ creative, onClose }: { creative: CreativeAsset |
         {creative && (
             <div className="grid gap-6 md:grid-cols-[minmax(280px,1.05fr)_minmax(280px,.95fr)]">
                 <div>
-                    <div className="overflow-hidden rounded-[14px] bg-[#ef1f46]">
+                    <div className="overflow-hidden rounded-[14px] bg-[#142320]">
                         <img src={creative.image} alt={creative.taskName} className="aspect-square w-full object-cover" />
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-3 text-[10px] text-[#7f7f7f] dark:text-zinc-400">
                         <span>{creative.format}</span>
-                        <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><CheckCircle2 size={13} /> Aprovado</span>
+                        <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><CheckCircle2 size={13} /> {creative.approvedVersion > 0 ? 'Aprovado' : 'Em revisão'}</span>
                     </div>
                 </div>
 
@@ -102,14 +135,18 @@ const CreativeDetailsModal = ({ creative, onClose }: { creative: CreativeAsset |
 
                     <div className={`mt-6 grid grid-cols-2 border-y ${ALLYO_BORDER}`}>
                         <Detail icon={<UserRound size={16} />} label="DESIGNER RESPONSÁVEL" value={creative.designer} detail={creative.specialty} />
-                        <Detail icon={<Layers3 size={16} />} label="VERSÕES FEITAS" value={`${creative.versions} ${creative.versions === 1 ? 'versão' : 'versões'}`} detail={`Aprovada na ${creative.approvedVersion}ª versão`} borderLeft />
-                        <Detail icon={<Clock3 size={16} />} label="DATA DE APROVAÇÃO" value={creative.approvedAt} detail="Aprovado pelo cliente" />
+                        <Detail icon={<Layers3 size={16} />} label="VERSÕES FEITAS" value={`${creative.versions} ${creative.versions === 1 ? 'versão' : 'versões'}`} detail={creative.approvedVersion > 0 ? `Aprovada na ${creative.approvedVersion}ª versão` : 'Aguardando aprovação'} borderLeft />
+                        <Detail icon={<Clock3 size={16} />} label="DATA DE ENVIO" value={creative.approvedAt} detail={creative.approvedVersion > 0 ? 'Aprovado pelo cliente' : 'Em análise'} />
                         <Detail icon={<Palette size={16} />} label="FORMATO" value={creative.format.split(' • ')[0]} detail={creative.format.split(' • ')[1]} borderLeft />
                     </div>
 
                     <div className="mt-6 rounded-[14px] border border-[#dce7c4] bg-[#f7faef] p-4 dark:border-[#d0f08e]/20 dark:bg-[#d0f08e]/5">
-                        <h3 className="text-xs font-semibold text-[#647440] dark:text-[#d0f08e]">Histórico de aprovação</h3>
-                        <p className="mt-2 text-xs leading-5 text-[#72805a] dark:text-zinc-400">Esta peça foi aprovada na {creative.approvedVersion}ª versão. O histórico ajuda o time criativo a entender as escolhas visuais e o padrão de aprovação deste cliente.</p>
+                        <h3 className="text-xs font-semibold text-[#647440] dark:text-[#d0f08e]">Histórico da peça</h3>
+                        <p className="mt-2 text-xs leading-5 text-[#72805a] dark:text-zinc-400">
+                            {creative.approvedVersion > 0
+                                ? `Esta peça foi aprovada na ${creative.approvedVersion}ª versão. O histórico ajuda o time criativo a entender as escolhas visuais e o padrão de aprovação deste cliente.`
+                                : 'Esta peça foi enviada para o cliente e está em processo de revisão.'}
+                        </p>
                     </div>
                 </div>
             </div>

@@ -10,6 +10,38 @@ export interface AllyoDemandBriefing {
     notes?: string;
 }
 
+export interface AllyoDesignAsset {
+    id: number;
+    projectId: string;
+    name: string;
+    version: string;
+    color: string;
+    approved: boolean;
+    fileUrl?: string;
+    thumbnailUrl?: string;
+    createdAt: string;
+}
+
+export interface AllyoClient {
+    id: string;
+    name: string;
+    slug?: string;
+    segment: string;
+    monthlyCredits: number;
+    usedCredits: number;
+    cam: string;
+    contractEnd: string;
+    since: string;
+    logo?: string;
+    projectsCount?: number;
+    usersCount?: number;
+}
+
+export interface ClientsResponse {
+    count: number;
+    clients: AllyoClient[];
+}
+
 export interface AllyoDemand {
     id: string;
     name: string;
@@ -25,6 +57,7 @@ export interface AllyoDemand {
     workspace?: { id: string; name: string; plan?: string };
     briefing?: AllyoDemandBriefing | null;
     designsCount: number;
+    designs?: AllyoDesignAsset[];
     messagesCount: number;
     createdAt: string;
     updatedAt: string;
@@ -56,6 +89,14 @@ export const allyoService = {
      */
     async getDemands(params?: { status?: string; workspaceId?: string }): Promise<DemandsResponse> {
         const response = await api.get('/allyo/demands', { params });
+        return response.data;
+    },
+
+    /**
+     * Busca todos os clientes / workspaces cadastrados na Allyo Space
+     */
+    async getClients(): Promise<ClientsResponse> {
+        const response = await api.get('/allyo/clients');
         return response.data;
     },
 

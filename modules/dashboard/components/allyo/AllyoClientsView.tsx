@@ -1,41 +1,44 @@
-import React, { useState } from 'react';
-import { BadgeCheck, CalendarClock, ChevronRight, CircleGauge, UserRound } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { BadgeCheck, CalendarClock, ChevronRight, CircleGauge, UserRound, Building2 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { ALLYO_BORDER, AllyoPageHeader, DataCell } from './AllyoUI';
-
-interface AllyoClient {
-    id: string;
-    name: string;
-    segment: string;
-    monthlyCredits: number;
-    usedCredits: number;
-    cam: string;
-    contractEnd: string;
-    since: string;
-    logo: string;
-}
-
-const clients: AllyoClient[] = [
-    { id: 'cli-001', name: 'Asterysko', segment: 'Jurídico', monthlyCredits: 90, usedCredits: 62, cam: 'Marina Alves', contractEnd: '30/04/2027', since: '01/05/2026', logo: '/brands/allyo/client-icon.png' },
-    { id: 'cli-002', name: 'Fauves', segment: 'Eventos', monthlyCredits: 120, usedCredits: 87, cam: 'Bruno Costa', contractEnd: '18/06/2027', since: '18/06/2026', logo: '/brands/fauves.svg' },
-    { id: 'cli-003', name: 'Tokyon', segment: 'Tecnologia', monthlyCredits: 70, usedCredits: 41, cam: 'Marina Alves', contractEnd: '12/08/2027', since: '12/08/2026', logo: '/brands/tokyon.svg' },
-    { id: 'cli-004', name: 'Niva', segment: 'Mobilidade', monthlyCredits: 90, usedCredits: 76, cam: 'Bruno Costa', contractEnd: '04/09/2027', since: '04/09/2026', logo: '/brands/niva.svg' },
-    { id: 'cli-005', name: 'Webmotors', segment: 'Automotivo', monthlyCredits: 150, usedCredits: 108, cam: 'Marina Alves', contractEnd: '21/11/2027', since: '21/11/2026', logo: '/brands/allyo/client-icon.png' },
-    { id: 'cli-006', name: 'ManySpace', segment: 'Tecnologia', monthlyCredits: 80, usedCredits: 53, cam: 'Bruno Costa', contractEnd: '15/01/2028', since: '15/01/2027', logo: '/favicon.svg' },
-];
+import { allyoService, AllyoClient } from '../../../../services/allyoService';
 
 const AllyoClientsView = () => {
+    const [clients, setClients] = useState<AllyoClient[]>([]);
     const [selected, setSelected] = useState<AllyoClient | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsLoading(true);
+        allyoService.getClients()
+            .then((res) => {
+                if (res && Array.isArray(res.clients)) {
+                    setClients(res.clients);
+                }
+            })
+            .catch((err) => console.warn('[AllyoClientsView] Erro ao carregar clientes:', err))
+            .finally(() => setIsLoading(false));
+    }, []);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
             <AllyoPageHeader title="Seus clientes" />
             <section aria-label="Clientes ativos">
                 {clients.map((client) => (
-                    <button key={client.id} type="button" onClick={() => setSelected(client)} className={`grid min-h-[78px] w-full grid-cols-[minmax(210px,1.2fr)_120px_140px_180px_150px_18px] items-center gap-[50px] border-b px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9db669] sm:px-[30px] max-xl:grid-cols-[minmax(190px,1fr)_120px_160px_130px_18px] max-lg:grid-cols-[minmax(190px,1fr)_140px_130px_18px] max-sm:grid-cols-[1fr_105px_18px] ${ALLYO_BORDER}`}>
+                    <button
+                        key={client.id}
+                        type="button"
+                        onClick={() => setSelected(client)}
+                        className={`grid min-h-[78px] w-full grid-cols-[minmax(210px,1.2fr)_120px_140px_180px_150px_18px] items-center gap-[50px] border-b px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9db669] sm:px-[30px] max-xl:grid-cols-[minmax(190px,1fr)_120px_160px_130px_18px] max-lg:grid-cols-[minmax(190px,1fr)_140px_130px_18px] max-sm:grid-cols-[1fr_105px_18px] ${ALLYO_BORDER}`}
+                    >
                         <span className="flex min-w-0 items-center gap-[10px]">
-                            <span className="h-[35px] w-[35px] shrink-0 overflow-hidden rounded-[10px] border border-[#e9e9e9] bg-white dark:border-zinc-700">
-                                <img src={client.logo} alt="" className="h-full w-full object-cover" />
+                            <span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] border border-[#e9e9e9] bg-[#0d1e1d] text-white dark:border-zinc-700">
+                                {client.logo ? (
+                                    <img src={client.logo} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                    <Building2 size={18} className="text-[#9db669]" />
+                                )}
                             </span>
                             <strong className="truncate text-sm font-medium text-black dark:text-white">{client.name}</strong>
                         </span>
@@ -46,6 +49,13 @@ const AllyoClientsView = () => {
                         <ChevronRight size={18} className="text-[#9f9f9f]" />
                     </button>
                 ))}
+
+                {!isLoading && clients.length === 0 && (
+                    <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
+                        <strong className="text-sm font-semibold">Nenhum cliente cadastrado</strong>
+                        <span className="mt-2 text-xs text-[#7f7f7f]">As empresas e clientes cadastrados no portal da Allyo aparecerão aqui.</span>
+                    </div>
+                )}
             </section>
 
             <ClientDetailsModal client={selected} onClose={() => setSelected(null)} />
@@ -58,7 +68,13 @@ const ClientDetailsModal = ({ client, onClose }: { client: AllyoClient | null; o
         {client && (
             <div>
                 <div className="flex items-center gap-4">
-                    <img src={client.logo} alt="" className="h-14 w-14 rounded-[14px] border border-[#e5e5e5] object-cover dark:border-zinc-700" />
+                    <div className="flex h-14 w-14 items-center justify-center rounded-[14px] border border-[#e5e5e5] bg-[#0d1e1d] text-white dark:border-zinc-700">
+                        {client.logo ? (
+                            <img src={client.logo} alt="" className="h-full w-full object-cover rounded-[14px]" />
+                        ) : (
+                            <Building2 size={26} className="text-[#9db669]" />
+                        )}
+                    </div>
                     <div className="min-w-0">
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#739044]"><BadgeCheck size={14} /> Cliente ativo</span>
                         <h2 className="mt-1 truncate font-season text-[28px] font-normal text-black dark:text-white">{client.name}</h2>
@@ -76,12 +92,19 @@ const ClientDetailsModal = ({ client, onClose }: { client: AllyoClient | null; o
                 <div className="mt-6">
                     <div className="flex items-center justify-between text-xs">
                         <span className="font-semibold text-black dark:text-zinc-200">Consumo da franquia mensal</span>
-                        <span className="font-semibold text-[#739044]">{Math.round((client.usedCredits / client.monthlyCredits) * 100)}%</span>
+                        <span className="font-semibold text-[#739044]">
+                            {client.monthlyCredits > 0 ? Math.round((client.usedCredits / client.monthlyCredits) * 100) : 0}%
+                        </span>
                     </div>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#edf1e5] dark:bg-zinc-800">
-                        <div className="h-full rounded-full bg-[#9db669]" style={{ width: `${Math.min(100, (client.usedCredits / client.monthlyCredits) * 100)}%` }} />
+                        <div
+                            className="h-full rounded-full bg-[#9db669]"
+                            style={{ width: `${Math.min(100, client.monthlyCredits > 0 ? (client.usedCredits / client.monthlyCredits) * 100 : 0)}%` }}
+                        />
                     </div>
-                    <p className="mt-3 text-xs leading-5 text-[#7f7f7f] dark:text-zinc-400">Restam {client.monthlyCredits - client.usedCredits} créditos disponíveis neste ciclo. As peças aprovadas podem ser consultadas no Painel Criativo.</p>
+                    <p className="mt-3 text-xs leading-5 text-[#7f7f7f] dark:text-zinc-400">
+                        Restam {Math.max(0, client.monthlyCredits - client.usedCredits)} créditos disponíveis neste ciclo.
+                    </p>
                 </div>
             </div>
         )}
