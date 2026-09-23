@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, Camera, ChevronRight, Crown, Search, ShieldCheck, UserPlus, UsersRound } from 'lucide-react';
+import { Building2, ChevronRight, Crown, Search, ShieldCheck, UserPlus, UsersRound } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
 import { AllyoClient, AllyoUser, AllyoUserCategory, allyoService } from '../../../../services/allyoService';
@@ -28,7 +28,7 @@ const CATEGORY_GROUPS: HierarchyGroup[] = ['Direção', 'Gestão', 'Operação',
 
 const emptyForm = {
     name: '', email: '', phone: '', category: 'CRIATIVO' as AllyoUserCategory,
-    jobTitle: '', team: '', language: 'pt-BR', clientId: '', avatarUrl: '',
+    jobTitle: '', team: '', language: 'pt-BR', clientId: '',
 };
 
 const AllyoUsersView = () => {
@@ -147,18 +147,6 @@ const CreateUserModal = ({ isOpen, clients, onClose, onCreated }: { isOpen: bool
 
     const update = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
 
-    const handleAvatar = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        if (file.size > 2 * 1024 * 1024) {
-            addToast({ type: 'warning', title: 'Imagem muito grande', message: 'Escolha um avatar de até 2 MB.' });
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => update('avatarUrl', typeof reader.result === 'string' ? reader.result : '');
-        reader.readAsDataURL(file);
-    };
-
     const submit = async (event: React.FormEvent) => {
         event.preventDefault();
         if (clientRequired && !form.clientId) {
@@ -169,7 +157,7 @@ const CreateUserModal = ({ isOpen, clients, onClose, onCreated }: { isOpen: bool
         try {
             const result = await allyoService.createUser({
                 name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() || undefined,
-                avatarUrl: form.avatarUrl || undefined, category: form.category, jobTitle: form.jobTitle.trim() || undefined,
+                category: form.category, jobTitle: form.jobTitle.trim() || undefined,
                 team: form.team.trim() || undefined, language: form.language, clientId: clientRequired ? form.clientId : undefined,
             });
             onCreated(result.user);
@@ -182,15 +170,6 @@ const CreateUserModal = ({ isOpen, clients, onClose, onCreated }: { isOpen: bool
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Novo usuário" size="lg" footer={<><AllyoSecondaryButton type="button" onClick={onClose}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-user-form" disabled={isSaving}>{isSaving ? 'Criando...' : 'Criar usuário'}</AllyoPrimaryButton></>}>
             <form id="allyo-user-form" onSubmit={submit} className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <label className="group relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-[#edf1e6] text-[#6d8149]">
-                        {form.avatarUrl ? <img src={form.avatarUrl} alt="Prévia do avatar" className="h-full w-full object-cover" /> : <Camera size={21} />}
-                        <span className="absolute inset-0 hidden items-center justify-center bg-black/45 text-[9px] font-semibold text-white group-hover:flex">Alterar</span>
-                        <input type="file" accept="image/*" className="sr-only" onChange={handleAvatar} />
-                    </label>
-                    <span><strong className="block text-sm">Avatar</strong><span className="mt-1 block text-[11px] text-[#888]">Opcional · JPG ou PNG de até 2 MB</span></span>
-                </div>
-
                 <div className="grid gap-4 sm:grid-cols-2">
                     <AllyoField label="Categoria" required className="sm:col-span-2"><AllyoSelect value={form.category} onChange={(event) => update('category', event.target.value)}>
                         {CATEGORY_GROUPS.map((categoryGroup) => <optgroup key={categoryGroup} label={categoryGroup}>{(Object.entries(CATEGORY_CONFIG) as [AllyoUserCategory, typeof config][]).filter(([, item]) => item.group === categoryGroup).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}</optgroup>)}
