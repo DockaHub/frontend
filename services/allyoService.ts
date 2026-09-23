@@ -178,8 +178,8 @@ export const allyoService = {
     /**
      * Busca todos os clientes / workspaces cadastrados na Allyo Space
      */
-    async getClients(): Promise<ClientsResponse> {
-        const response = await api.get('/allyo/clients');
+    async getClients(params?: { scope?: 'assigned' }): Promise<ClientsResponse> {
+        const response = await api.get('/allyo/clients', { params });
         return response.data;
     },
 

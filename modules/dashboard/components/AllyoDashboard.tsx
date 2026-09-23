@@ -16,7 +16,7 @@ interface AllyoDashboardProps {
 }
 
 const placeholderLabels: Record<string, { title: string; description: string }> = {
-    clients: { title: 'Clientes', description: 'A carteira de clientes e seus projetos aparecerá aqui.' },
+    clients: { title: 'Meus clientes', description: 'Os clientes dos projetos em que você participa aparecerão aqui.' },
     catalog: { title: 'Catálogo', description: 'Serviços, formatos e créditos criativos serão organizados aqui.' },
     settings: { title: 'Configurações', description: 'Preferências da operação, equipe e permissões da Allyo.' },
     'creative-panel': { title: 'Painel Criativo', description: 'Visão de capacidade, qualidade e desempenho do time criativo.' },
@@ -36,9 +36,12 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organ
         case 'creative-panel':
             return <AllyoCreativePanelView />;
         case 'clients':
-            return <AllyoClientsView canManage={canManageAccess} />;
+            return <AllyoClientsView mode="assigned" />;
+        case 'management-clients':
+            return canManageAccess ? <AllyoClientsView mode="management" /> : <AccessDenied title="Empresas e contratos" />;
+        case 'management-users':
         case 'users':
-            return canManageAccess ? <AllyoUsersView /> : <AccessDenied />;
+            return canManageAccess ? <AllyoUsersView /> : <AccessDenied title="Usuários e hierarquia" />;
         case 'task-detail':
             return <AllyoTaskDetailView userName={user?.name} />;
         default: {
@@ -59,11 +62,11 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organ
     }
 };
 
-const AccessDenied = () => (
+const AccessDenied = ({ title }: { title: string }) => (
     <div className="h-full overflow-y-auto bg-white dark:bg-zinc-950">
-        <AllyoPageHeader title="Usuários e hierarquia" />
+        <AllyoPageHeader title={title} />
         <div className="flex min-h-[420px] items-center justify-center px-6 text-center">
-            <div className="max-w-sm"><h2 className="font-season text-2xl text-black dark:text-white">Acesso restrito</h2><p className="mt-3 text-sm leading-6 text-[#7f7f7f] dark:text-zinc-400">Somente administradores da Allyo podem gerenciar usuários e níveis de acesso.</p></div>
+            <div className="max-w-sm"><h2 className="font-season text-2xl text-black dark:text-white">Acesso restrito</h2><p className="mt-3 text-sm leading-6 text-[#7f7f7f] dark:text-zinc-400">Somente administradores da Allyo podem acessar esta área de gestão.</p></div>
         </div>
     </div>
 );

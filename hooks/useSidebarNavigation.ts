@@ -3,7 +3,7 @@ import {
     BarChart3, Settings, Headphones, FolderOpen,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
     Network, Search, Trophy, Wallet, MapPinned, ListChecks, BadgeDollarSign,
-    BookOpen, LifeBuoy, PanelsTopLeft
+    BookOpen, LifeBuoy, PanelsTopLeft, ShieldCheck
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization } from '../types';
@@ -67,10 +67,19 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'overview', label: 'Início', icon: Home },
                 { id: 'tasks', label: 'Tarefas', icon: ListChecks },
                 { id: 'earnings', label: 'Ganhos', icon: BadgeDollarSign },
-                { id: 'clients', label: 'Clientes', icon: Building2 },
-                { id: 'users', label: 'Usuários', icon: Users },
+                { id: 'clients', label: 'Meus clientes', icon: Building2 },
                 { id: 'catalog', label: 'Catálogo', icon: BookOpen },
-                { id: 'settings', label: 'Configurações', icon: Settings },
+                {
+                    id: 'management',
+                    label: 'Gestão',
+                    icon: ShieldCheck,
+                    section: 'ADMINISTRAÇÃO',
+                    children: [
+                        { id: 'management-clients', label: 'Empresas e contratos' },
+                        { id: 'management-users', label: 'Usuários e hierarquia' },
+                        { id: 'settings', label: 'Configurações' },
+                    ],
+                },
                 { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
                 { id: 'help-center', label: 'Central de Ajuda', icon: LifeBuoy, section: 'SUPORTE' },
             ];
@@ -175,12 +184,16 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 return items.filter((item) => !['team', 'settings'].includes(item.id));
             }
             if (currentOrg.slug === 'allyo') {
-                return items.filter((item) => !['users', 'settings'].includes(item.id));
+                return items.filter((item) => item.id !== 'management');
             }
             return items;
         }
 
         return items.filter(item => {
+            if (currentOrg.slug === 'allyo' && item.id === 'management') {
+                return false;
+            }
+
             // Regras específicas da Asterysko
             if (currentOrg.slug === 'asterysko') {
                 if (item.id === 'crm') return perms.canAccessCRM !== false;

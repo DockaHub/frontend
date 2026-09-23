@@ -13,7 +13,8 @@ const emptyClientForm = {
     requireTwoFactor: false, billingStatus: 'OK' as 'OK' | 'Aviso' | 'Bloqueado', notes: '', creativeDirection: '',
 };
 
-const AllyoClientsView = ({ canManage = false }: { canManage?: boolean }) => {
+const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
+    const canManage = mode === 'management';
     const { addToast } = useToast();
     const [clients, setClients] = useState<AllyoClient[]>([]);
     const [selected, setSelected] = useState<AllyoClient | null>(null);
@@ -22,7 +23,7 @@ const AllyoClientsView = ({ canManage = false }: { canManage?: boolean }) => {
 
     useEffect(() => {
         setIsLoading(true);
-        allyoService.getClients()
+        allyoService.getClients(mode === 'assigned' ? { scope: 'assigned' } : undefined)
             .then((res) => {
                 if (res && Array.isArray(res.clients)) {
                     setClients(res.clients);
@@ -30,11 +31,11 @@ const AllyoClientsView = ({ canManage = false }: { canManage?: boolean }) => {
             })
             .catch((err) => console.warn('[AllyoClientsView] Erro ao carregar clientes:', err))
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [mode]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
-            <AllyoPageHeader title="Clientes" actions={canManage ? <AllyoPrimaryButton onClick={() => setIsCreateOpen(true)}><Plus size={15} /> Nova empresa</AllyoPrimaryButton> : undefined} />
+            <AllyoPageHeader title={canManage ? 'Empresas e contratos' : 'Meus clientes'} actions={canManage ? <AllyoPrimaryButton onClick={() => setIsCreateOpen(true)}><Plus size={15} /> Nova empresa</AllyoPrimaryButton> : undefined} />
             <section aria-label="Clientes ativos">
                 {clients.map((client) => (
                     <button
@@ -63,8 +64,8 @@ const AllyoClientsView = ({ canManage = false }: { canManage?: boolean }) => {
 
                 {!isLoading && clients.length === 0 && (
                     <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
-                        <strong className="text-sm font-semibold">Nenhum cliente cadastrado</strong>
-                        <span className="mt-2 text-xs text-[#7f7f7f]">As empresas e clientes cadastrados no portal da Allyo aparecerão aqui.</span>
+                        <strong className="text-sm font-semibold">{canManage ? 'Nenhuma empresa cadastrada' : 'Nenhum cliente atribuído'}</strong>
+                        <span className="mt-2 text-xs text-[#7f7f7f]">{canManage ? 'Cadastre a empresa responsável pelos projetos e usuários do cliente.' : 'Os clientes aparecerão quando você fizer parte da equipe de um projeto.'}</span>
                         {canManage && <AllyoPrimaryButton className="mt-5" onClick={() => setIsCreateOpen(true)}><Plus size={15} /> Cadastrar empresa</AllyoPrimaryButton>}
                     </div>
                 )}
