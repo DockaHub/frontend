@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
@@ -148,12 +148,15 @@ export const todayLabel = () => {
     return `${weekdays[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}. de ${now.getFullYear()}`;
 };
 
-export const AllyoPageHeader = ({ title }: { title: string }) => (
+export const AllyoPageHeader = ({ title, actions }: { title: string; actions?: ReactNode }) => (
     <header className={`sticky top-0 z-20 flex h-[75px] shrink-0 items-center justify-between border-b bg-white/95 px-5 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
         <h1 className="truncate font-season text-[22px] font-normal text-black dark:text-white">{title}</h1>
-        <div className="flex items-center gap-[5px] text-black dark:text-zinc-300">
-            <CalendarDays size={18} className="text-[#9f9f9f]" />
-            <span className="hidden text-sm font-semibold sm:inline">{todayLabel()}</span>
+        <div className="flex items-center gap-3">
+            {actions}
+            <div className="hidden items-center gap-[5px] text-black md:flex dark:text-zinc-300">
+                <CalendarDays size={18} className="text-[#9f9f9f]" />
+                <span className="text-sm font-semibold">{todayLabel()}</span>
+            </div>
         </div>
     </header>
 );

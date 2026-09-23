@@ -5,13 +5,14 @@ import AllyoTasksView from './allyo/AllyoTasksView';
 import AllyoEarningsView from './allyo/AllyoEarningsView';
 import AllyoCreativePanelView from './allyo/AllyoCreativePanelView';
 import AllyoClientsView from './allyo/AllyoClientsView';
+import AllyoUsersView from './allyo/AllyoUsersView';
 import AllyoTaskDetailView from './allyo/AllyoTaskDetailView';
 import { AllyoPageHeader } from './allyo/AllyoUI';
 
 interface AllyoDashboardProps {
     activeView: string;
     organization?: Organization;
-    user?: { name?: string };
+    user?: { name?: string; role?: string };
 }
 
 const placeholderLabels: Record<string, { title: string; description: string }> = {
@@ -22,7 +23,8 @@ const placeholderLabels: Record<string, { title: string; description: string }> 
     'help-center': { title: 'Central de Ajuda', description: 'Documentação e suporte para a operação Allyo.' },
 };
 
-const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user }) => {
+const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organization }) => {
+    const canManageAccess = user?.role === 'ADMIN' || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
     switch (activeView) {
         case 'overview':
         case 'home':
@@ -34,7 +36,9 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user }) => 
         case 'creative-panel':
             return <AllyoCreativePanelView />;
         case 'clients':
-            return <AllyoClientsView />;
+            return <AllyoClientsView canManage={canManageAccess} />;
+        case 'users':
+            return canManageAccess ? <AllyoUsersView /> : <AccessDenied />;
         case 'task-detail':
             return <AllyoTaskDetailView userName={user?.name} />;
         default: {
@@ -54,5 +58,14 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user }) => 
         }
     }
 };
+
+const AccessDenied = () => (
+    <div className="h-full overflow-y-auto bg-white dark:bg-zinc-950">
+        <AllyoPageHeader title="Usuários e hierarquia" />
+        <div className="flex min-h-[420px] items-center justify-center px-6 text-center">
+            <div className="max-w-sm"><h2 className="font-season text-2xl text-black dark:text-white">Acesso restrito</h2><p className="mt-3 text-sm leading-6 text-[#7f7f7f] dark:text-zinc-400">Somente administradores da Allyo podem gerenciar usuários e níveis de acesso.</p></div>
+        </div>
+    </div>
+);
 
 export default AllyoDashboard;

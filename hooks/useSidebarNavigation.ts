@@ -67,7 +67,8 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 { id: 'overview', label: 'Início', icon: Home },
                 { id: 'tasks', label: 'Tarefas', icon: ListChecks },
                 { id: 'earnings', label: 'Ganhos', icon: BadgeDollarSign },
-                { id: 'clients', label: 'Clientes', icon: Users },
+                { id: 'clients', label: 'Clientes', icon: Building2 },
+                { id: 'users', label: 'Usuários', icon: Users },
                 { id: 'catalog', label: 'Catálogo', icon: BookOpen },
                 { id: 'settings', label: 'Configurações', icon: Settings },
                 { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
@@ -172,6 +173,9 @@ export const useSidebarNavigation = (currentOrg: Organization) => {
                 // Mantém a central visível durante a restauração da sessão/API.
                 // O backend continua sendo a autoridade para leitura e gerenciamento.
                 return items.filter((item) => !['team', 'settings'].includes(item.id));
+            }
+            if (currentOrg.slug === 'allyo') {
+                return items.filter((item) => !['users', 'settings'].includes(item.id));
             }
             return items;
         }

@@ -35,11 +35,94 @@ export interface AllyoClient {
     logo?: string;
     projectsCount?: number;
     usersCount?: number;
+    legalName?: string;
+    document?: string;
+    area?: string;
+    tier?: '1' | '2' | '3' | string;
+    contractStart?: string;
+    responsibleEmail?: string;
+    fileNamingPattern?: string;
+    aiRestricted?: boolean;
+    requireTwoFactor?: boolean;
+    billingStatus?: 'OK' | 'Aviso' | 'Bloqueado' | string;
+    notes?: string;
+    creativeDirection?: string;
 }
 
 export interface ClientsResponse {
     count: number;
     clients: AllyoClient[];
+}
+
+export type AllyoUserCategory =
+    | 'ATENDIMENTO'
+    | 'CRIATIVO'
+    | 'CLIENTE'
+    | 'ADMIN_ATENDIMENTO'
+    | 'ADMIN_CRIATIVO'
+    | 'CRIATIVO_SMB'
+    | 'SQUAD_LEADER'
+    | 'CREATIVE_EXCELLENCE_SR_MANAGER'
+    | 'CREATIVE_ACCOUNT_MANAGER'
+    | 'CREATIVE_QUALITY_SPECIALIST'
+    | 'CREATIVE_ACCOUNT_SUPPORT'
+    | 'CUSTOMER_SUPPORT'
+    | 'ART_DIRECTOR';
+
+export interface AllyoUser {
+    id: string;
+    name: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string;
+    category: AllyoUserCategory;
+    categoryLabel?: string;
+    role?: string;
+    jobTitle?: string;
+    team?: string;
+    language?: string;
+    status?: 'Ativo' | 'Convite enviado' | 'Inativo' | string;
+    hierarchy?: { level: number; label: string };
+    client?: { id: string; name: string } | null;
+    createdAt?: string;
+}
+
+export interface UsersResponse {
+    count: number;
+    users: AllyoUser[];
+}
+
+export interface CreateAllyoUserPayload {
+    name: string;
+    email: string;
+    phone?: string;
+    avatarUrl?: string;
+    category: AllyoUserCategory;
+    jobTitle?: string;
+    team?: string;
+    language: string;
+    clientId?: string;
+}
+
+export interface CreateAllyoClientPayload {
+    name: string;
+    legalName?: string;
+    document?: string;
+    segment: string;
+    area?: string;
+    tier: '1' | '2' | '3';
+    monthlyCredits: number;
+    contractStart?: string;
+    contractEnd?: string;
+    cam?: string;
+    responsibleEmail?: string;
+    logo?: string;
+    fileNamingPattern?: string;
+    aiRestricted: boolean;
+    requireTwoFactor: boolean;
+    billingStatus: 'OK' | 'Aviso' | 'Bloqueado';
+    notes?: string;
+    creativeDirection?: string;
 }
 
 export interface AllyoDemand {
@@ -97,6 +180,30 @@ export const allyoService = {
      */
     async getClients(): Promise<ClientsResponse> {
         const response = await api.get('/allyo/clients');
+        return response.data;
+    },
+
+    /**
+     * Cadastra uma empresa que responde contratualmente pelos projetos.
+     */
+    async createClient(data: CreateAllyoClientPayload): Promise<{ client: AllyoClient }> {
+        const response = await api.post('/allyo/clients', data);
+        return response.data;
+    },
+
+    /**
+     * Lista usuários internos e usuários dos clientes com sua posição hierárquica.
+     */
+    async getUsers(params?: { category?: AllyoUserCategory; clientId?: string }): Promise<UsersResponse> {
+        const response = await api.get('/allyo/users', { params });
+        return response.data;
+    },
+
+    /**
+     * Cria um usuário e deriva suas permissões a partir da categoria informada.
+     */
+    async createUser(data: CreateAllyoUserPayload): Promise<{ user: AllyoUser }> {
+        const response = await api.post('/allyo/users', data);
         return response.data;
     },
 
