@@ -68,9 +68,9 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 { id: 'tasks', label: 'Tarefas', icon: ListChecks },
                 { id: 'earnings', label: 'Ganhos', icon: BadgeDollarSign },
                 { id: 'clients', label: 'Meus clientes', icon: Building2 },
-                { id: 'catalog', label: 'Catálogo', icon: BookOpen },
                 { id: 'management-clients', label: 'Empresas e contratos', icon: Building2, section: 'ADMINISTRAÇÃO' },
                 { id: 'management-users', label: 'Usuários e hierarquia', icon: Users, section: 'ADMINISTRAÇÃO' },
+                { id: 'management-catalog', label: 'Catálogo de produtos', icon: BookOpen, section: 'ADMINISTRAÇÃO' },
                 { id: 'settings', label: 'Configurações', icon: Settings, section: 'ADMINISTRAÇÃO' },
                 { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
                 { id: 'help-center', label: 'Central de Ajuda', icon: LifeBuoy, section: 'SUPORTE' },
@@ -178,13 +178,13 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 return items.filter((item) => !['team', 'settings'].includes(item.id));
             }
             if (currentOrg.slug === 'allyo') {
-                return items.filter((item) => !['management-clients', 'management-users', 'settings'].includes(item.id));
+                return items.filter((item) => !['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id));
             }
             return items;
         }
 
         return items.filter(item => {
-            if (currentOrg.slug === 'allyo' && ['management-clients', 'management-users', 'settings'].includes(item.id)) {
+            if (currentOrg.slug === 'allyo' && ['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id)) {
                 return false;
             }
 

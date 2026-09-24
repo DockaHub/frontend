@@ -6,6 +6,7 @@ import AllyoEarningsView from './allyo/AllyoEarningsView';
 import AllyoCreativePanelView from './allyo/AllyoCreativePanelView';
 import AllyoClientsView from './allyo/AllyoClientsView';
 import AllyoUsersView from './allyo/AllyoUsersView';
+import AllyoCatalogView from './allyo/AllyoCatalogView';
 import AllyoTaskDetailView from './allyo/AllyoTaskDetailView';
 import { AllyoPageHeader } from './allyo/AllyoUI';
 
@@ -17,7 +18,6 @@ interface AllyoDashboardProps {
 
 const placeholderLabels: Record<string, { title: string; description: string }> = {
     clients: { title: 'Meus clientes', description: 'Os clientes dos projetos em que você participa aparecerão aqui.' },
-    catalog: { title: 'Catálogo', description: 'Serviços, formatos e créditos criativos serão organizados aqui.' },
     settings: { title: 'Configurações', description: 'Preferências da operação, equipe e permissões da Allyo.' },
     'creative-panel': { title: 'Painel Criativo', description: 'Visão de capacidade, qualidade e desempenho do time criativo.' },
     'help-center': { title: 'Central de Ajuda', description: 'Documentação e suporte para a operação Allyo.' },
@@ -43,6 +43,9 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organ
         case 'management-users':
         case 'users':
             return canManageAccess ? <AllyoUsersView /> : <AccessDenied title="Usuários e hierarquia" />;
+        case 'management-catalog':
+        case 'catalog':
+            return canManageAccess ? <AllyoCatalogView /> : <AccessDenied title="Catálogo de produtos" />;
         case 'task-detail':
             return <AllyoTaskDetailView userName={user?.name} />;
         default: {

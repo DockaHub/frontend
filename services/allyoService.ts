@@ -95,6 +95,67 @@ export interface UsersResponse {
     users: AllyoUser[];
 }
 
+export type AllyoCatalogProductStatus = 'draft' | 'published' | 'archived';
+
+export interface AllyoCatalogProduct {
+    code: string;
+    name: string;
+    description: string;
+    category: string;
+    subcategory?: string | null;
+    specialistRole: string;
+    status: AllyoCatalogProductStatus;
+    catalogVisibility: 'public' | 'internal';
+    publishedInPublicCatalog: boolean;
+    visibleToClient: boolean;
+    slaHours: number;
+    deliveryQuantity?: number | null;
+    billing: {
+        label?: string | null;
+        ruleKey?: string | null;
+        unit: string;
+        step: number;
+        includedGroups: number;
+        includedQuantity: number;
+        countablePieces: boolean;
+        maxQuantity?: number | null;
+        unitNote?: string | null;
+        wordsPerUnit?: number | null;
+        characterCredits?: number | null;
+    };
+    credits: {
+        original: number;
+        additional?: number | null;
+        resize?: number | null;
+        variation?: number | null;
+        additionalAllowed: boolean;
+        resizeAllowed: boolean;
+        variationAllowed: boolean;
+    };
+    formats: {
+        editable: string[];
+        final: string[];
+        available: string[];
+        sizesAndRatios: string[];
+        channels: string[];
+    };
+    addons: Array<{ code: string; name: string; credits: number; billable: boolean }>;
+    relatedOptions: string[];
+    sourceUrl?: string | null;
+    version?: number;
+    effectiveFrom?: string | null;
+    effectiveUntil?: string | null;
+}
+
+export interface AllyoCatalogResponse {
+    products: AllyoCatalogProduct[];
+    engine?: Record<string, unknown>;
+    managementPolicy?: Record<string, unknown>;
+    schemaVersion?: string;
+}
+
+export type AllyoCatalogProductPayload = Omit<AllyoCatalogProduct, 'version' | 'effectiveFrom' | 'effectiveUntil'>;
+
 export interface CreateAllyoUserPayload {
     name: string;
     email: string;
@@ -174,6 +235,31 @@ export interface ProjectMessagePayload {
 }
 
 export const allyoService = {
+    async getCatalog(): Promise<AllyoCatalogResponse> {
+        const response = await api.get('/allyo/catalog');
+        return response.data;
+    },
+
+    async createCatalogProduct(data: AllyoCatalogProductPayload): Promise<{ product: AllyoCatalogProduct }> {
+        const response = await api.post('/allyo/catalog/products', data);
+        return response.data;
+    },
+
+    async updateCatalogProduct(code: string, data: Partial<AllyoCatalogProductPayload> & { expectedVersion?: number }): Promise<{ product: AllyoCatalogProduct }> {
+        const response = await api.patch(`/allyo/catalog/products/${encodeURIComponent(code)}`, data);
+        return response.data;
+    },
+
+    async publishCatalogProduct(code: string, expectedVersion?: number): Promise<{ product: AllyoCatalogProduct }> {
+        const response = await api.post(`/allyo/catalog/products/${encodeURIComponent(code)}/publish`, expectedVersion ? { expectedVersion } : {});
+        return response.data;
+    },
+
+    async archiveCatalogProduct(code: string): Promise<{ success: boolean; code: string; status: 'archived' }> {
+        const response = await api.delete(`/allyo/catalog/products/${encodeURIComponent(code)}`);
+        return response.data;
+    },
+
     /**
      * Busca todas as demandas dos clientes no Allyo Space
      */
