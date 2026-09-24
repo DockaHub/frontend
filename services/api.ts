@@ -50,6 +50,9 @@ api.interceptors.response.use(
     (error: AxiosError) => {
         if (error.response?.status === 401) {
             const requestUrl = error.config?.url || '';
+            const responseError = (error.response?.data as { error?: unknown } | undefined)?.error;
+            const isManySpaceSessionError = responseError === 'No token provided'
+                || responseError === 'Invalid or expired token';
             const isAuthRoute = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
             const isPublicOrLoginPage = 
                 window.location.pathname.startsWith('/portal') || 
@@ -57,7 +60,7 @@ api.interceptors.response.use(
                 window.location.pathname === '/login' ||
                 window.location.pathname.startsWith('/login');
 
-            if (!isAuthRoute && !isPublicOrLoginPage) {
+            if (isManySpaceSessionError && !isAuthRoute && !isPublicOrLoginPage) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/login';
