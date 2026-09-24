@@ -3,7 +3,7 @@ import {
     BarChart3, Settings, Headphones, FolderOpen,
     Zap, Briefcase, Building2, Scale, Home, Key, Car, ShieldAlert,
     Network, Search, Trophy, Wallet, MapPinned, ListChecks, BadgeDollarSign,
-    BookOpen, LifeBuoy, PanelsTopLeft, ShieldCheck
+    BookOpen, LifeBuoy, PanelsTopLeft
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Organization, User } from '../types';
@@ -69,17 +69,9 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 { id: 'earnings', label: 'Ganhos', icon: BadgeDollarSign },
                 { id: 'clients', label: 'Meus clientes', icon: Building2 },
                 { id: 'catalog', label: 'Catálogo', icon: BookOpen },
-                {
-                    id: 'management',
-                    label: 'Gestão',
-                    icon: ShieldCheck,
-                    section: 'ADMINISTRAÇÃO',
-                    children: [
-                        { id: 'management-clients', label: 'Empresas e contratos' },
-                        { id: 'management-users', label: 'Usuários e hierarquia' },
-                        { id: 'settings', label: 'Configurações' },
-                    ],
-                },
+                { id: 'management-clients', label: 'Empresas e contratos', icon: Building2, section: 'ADMINISTRAÇÃO' },
+                { id: 'management-users', label: 'Usuários e hierarquia', icon: Users, section: 'ADMINISTRAÇÃO' },
+                { id: 'settings', label: 'Configurações', icon: Settings, section: 'ADMINISTRAÇÃO' },
                 { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
                 { id: 'help-center', label: 'Central de Ajuda', icon: LifeBuoy, section: 'SUPORTE' },
             ];
@@ -186,13 +178,13 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 return items.filter((item) => !['team', 'settings'].includes(item.id));
             }
             if (currentOrg.slug === 'allyo') {
-                return items.filter((item) => item.id !== 'management');
+                return items.filter((item) => !['management-clients', 'management-users', 'settings'].includes(item.id));
             }
             return items;
         }
 
         return items.filter(item => {
-            if (currentOrg.slug === 'allyo' && item.id === 'management') {
+            if (currentOrg.slug === 'allyo' && ['management-clients', 'management-users', 'settings'].includes(item.id)) {
                 return false;
             }
 
