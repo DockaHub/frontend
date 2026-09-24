@@ -9,23 +9,25 @@ export const CURRENT_USER: User = {
   role: 'admin',
 };
 
-export const ALLYO_PREVIEW_ORGANIZATION: Organization = {
-  id: 'allyo-preview',
+export const ALLYO_ORGANIZATION: Organization = {
+  id: '709138ae-6ced-4921-a896-f42dcb245e42',
   name: 'Allyo',
   slug: 'allyo',
   logoColor: 'bg-[#0d1e1d]',
   type: 'SAAS',
-  features: { calendar: true, drive: true, contacts: true },
+  features: { calendar: true, drive: true, contacts: true, tasks: true },
   memberRole: 'MEMBER',
 };
 
+export const ALLYO_PREVIEW_ORGANIZATION = ALLYO_ORGANIZATION;
+
 export const ORGANIZATIONS: Organization[] = [
   { id: 'ae14ea68-91f6-4be3-bd67-d6c1d9762e67', name: 'ManySpace', slug: 'manyspace', logoColor: 'bg-manyspace-orange', type: 'SAAS', features: { calendar: true, drive: true, contacts: true } },
-  { id: 'org_2', name: 'Fauves', slug: 'fauves', logoColor: 'bg-amber-700', type: 'EVENT_TECH', features: { calendar: true, drive: true, contacts: true } },
+  { id: 'adadf869-df8e-47d7-a325-89391837a5c4', name: 'Fauves', slug: 'fauves', logoColor: 'bg-amber-700', type: 'EVENT_TECH', features: { calendar: true, drive: true, contacts: true } },
   { id: '2a89b3f0-643f-4514-b201-3c7e43db859a', name: 'Tokyon', slug: 'tokyon', logoColor: 'bg-red-600', type: 'INFRASTRUCTURE', features: { calendar: false, drive: false, contacts: false } },
-  { id: 'org_4', name: 'Asterysko', slug: 'asterysko', logoColor: 'bg-blue-600', type: 'AGENCY' },
-  { id: 'org_7', name: 'Uma Chave', slug: 'umachave', logoColor: 'bg-orange-500', type: 'AGENCY' },
-  ALLYO_PREVIEW_ORGANIZATION,
+  { id: 'd91bda5d-1309-440d-948b-a9e527c97d9e', name: 'Asterysko', slug: 'asterysko', logoColor: 'bg-blue-600', type: 'AGENCY' },
+  { id: '90dabaed-09c3-4831-8ef7-58a9769b311e', name: 'Uma Chave', slug: 'umachave', logoColor: 'bg-orange-500', type: 'AGENCY' },
+  ALLYO_ORGANIZATION,
 ];
 
 export const INITIAL_DOMAINS: Domain[] = [

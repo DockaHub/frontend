@@ -57,6 +57,11 @@ export const organizationService = {
         await api.patch(`/organizations/${id}/members/${userId}/permissions`, { permissions });
     },
 
+    // Update member role (e.g. MEMBER, ADMIN)
+    async updateMemberRole(id: string, userId: string, role: string): Promise<void> {
+        await api.patch(`/organizations/${id}/members/${userId}/role`, { role });
+    },
+
     // Remove a member from the organization
     async removeMember(id: string, userId: string): Promise<void> {
         await api.delete(`/organizations/${id}/members/${userId}`);

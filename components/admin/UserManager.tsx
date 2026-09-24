@@ -226,6 +226,18 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
         }
     };
 
+    const handleUpdateMemberRole = async (orgId: string, newRole: string) => {
+        if (!selectedUser) return;
+        try {
+            await organizationService.updateMemberRole(orgId, selectedUser.id, newRole);
+            setUserOrgs(userOrgs.map(o => o.id === orgId ? { ...o, memberRole: newRole } : o));
+            addToast({ type: 'success', title: 'Função atualizada com sucesso', duration: 2500 });
+        } catch (error: any) {
+            console.error("Failed to update member role", error);
+            addToast({ type: 'error', title: error.response?.data?.error || 'Erro ao atualizar função', duration: 3000 });
+        }
+    };
+
     const handleSaveProfile = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedUser) return;
@@ -751,9 +763,20 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                                                             <tr key={org.id} className="bg-white">
                                                                 <td className="px-4 py-3 font-medium text-docka-900">{org.name}</td>
                                                                 <td className="px-4 py-3">
-                                                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-docka-100 text-docka-600 border border-docka-200">
-                                                                        {org.memberRole || 'MEMBER'}
-                                                                    </span>
+                                                                    {org.memberRole === 'OWNER' ? (
+                                                                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                                                                            OWNER
+                                                                        </span>
+                                                                    ) : (
+                                                                        <select
+                                                                            value={org.memberRole || 'MEMBER'}
+                                                                            onChange={(e) => handleUpdateMemberRole(org.id, e.target.value)}
+                                                                            className="text-xs font-medium bg-docka-50 border border-docka-300 rounded px-2 py-1 focus:ring-1 focus:ring-docka-500 outline-none text-docka-800"
+                                                                        >
+                                                                            <option value="MEMBER">Membro</option>
+                                                                            <option value="ADMIN">Admin</option>
+                                                                        </select>
+                                                                    )}
                                                                 </td>
                                                                 <td className="px-4 py-3 text-center">
                                                                     <input 

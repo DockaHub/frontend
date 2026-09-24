@@ -162,21 +162,6 @@ const AppContent: React.FC = () => {
               features: org.features || { calendar: true, drive: true, contacts: true, tasks: true, meet: true }
             }));
 
-            // Allyo is currently a frontend preview workspace. Keep the real
-            // organization returned by the API when it exists; otherwise make
-            // the approved first-stage dashboard available to internal users.
-            if (!enhancedOrgs.some((org) => org.slug === 'allyo') && user.role !== 'CLIENT') {
-              enhancedOrgs.push({
-                ...ALLYO_PREVIEW_ORGANIZATION,
-                membersPreview: [{
-                  id: `allyo-preview-${user.id}`,
-                  role: 'MEMBER',
-                  user: { id: user.id, name: user.name, email: user.email, avatar: user.avatar },
-                }],
-                _count: { members: 1 },
-              });
-            }
-
             if (enhancedOrgs.length > 0) {
               setUserOrgs(enhancedOrgs);
 

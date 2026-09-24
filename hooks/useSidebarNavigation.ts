@@ -197,7 +197,7 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
             }
 
             // Regras para Financeiro
-            if (['financial', 'finance', 'billing', 'financeiro'].includes(item.id.toLowerCase())) {
+            if (['financial', 'finance', 'billing', 'financeiro', 'earnings'].includes(item.id.toLowerCase())) {
                 return perms.canAccessFinance !== false;
             }
             
