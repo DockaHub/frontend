@@ -28,9 +28,12 @@ export interface AllyoClient {
     slug?: string;
     segment: string;
     monthlyCredits: number;
+    creditBank?: number;
+    availableCredits?: number;
     usedCredits: number;
     cam: string;
     contractEnd: string;
+    contractEndDate?: string;
     since: string;
     logo?: string;
     projectsCount?: number;
@@ -102,6 +105,10 @@ export interface CreateAllyoUserPayload {
     team?: string;
     language: string;
     clientId?: string;
+}
+
+export interface UpdateAllyoUserPayload extends Omit<CreateAllyoUserPayload, 'email' | 'avatarUrl'> {
+    status?: 'Ativo' | 'Convite enviado' | 'Inativo';
 }
 
 export interface CreateAllyoClientPayload {
@@ -191,6 +198,16 @@ export const allyoService = {
         return response.data;
     },
 
+    async updateClient(id: string, data: CreateAllyoClientPayload): Promise<{ client: AllyoClient }> {
+        const response = await api.patch(`/allyo/clients/${id}`, data);
+        return response.data;
+    },
+
+    async addClientCredits(id: string, data: { amount: number; note?: string }): Promise<{ client: AllyoClient }> {
+        const response = await api.post(`/allyo/clients/${id}/credits`, data);
+        return response.data;
+    },
+
     /**
      * Lista usuários internos e usuários dos clientes com sua posição hierárquica.
      */
@@ -204,6 +221,11 @@ export const allyoService = {
      */
     async createUser(data: CreateAllyoUserPayload): Promise<{ user: AllyoUser }> {
         const response = await api.post('/allyo/users', data);
+        return response.data;
+    },
+
+    async updateUser(id: string, data: UpdateAllyoUserPayload): Promise<{ user: AllyoUser }> {
+        const response = await api.patch(`/allyo/users/${id}`, data);
         return response.data;
     },
 

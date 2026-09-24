@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BadgeCheck, CalendarClock, Camera, ChevronRight, CircleGauge, Plus, UserRound, Building2 } from 'lucide-react';
+import { BadgeCheck, CalendarClock, Camera, ChevronRight, CircleGauge, Coins, Pencil, Plus, UserRound, Building2 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
 import { ALLYO_BORDER, AllyoPageHeader, DataCell } from './AllyoUI';
@@ -13,6 +13,13 @@ const emptyClientForm = {
     requireTwoFactor: false, billingStatus: 'OK' as 'OK' | 'Aviso' | 'Bloqueado', notes: '', creativeDirection: '',
 };
 
+const clientToForm = (client: AllyoClient) => ({
+    name: client.name || '', legalName: client.legalName || '', document: client.document || '', segment: client.segment || '', area: client.area || '', tier: (client.tier || '2') as '1' | '2' | '3',
+    monthlyCredits: String(client.monthlyCredits || 1), contractStart: client.contractStart || '', contractEnd: client.contractEndDate || '', cam: client.cam === 'Não definido' ? '' : client.cam || '', responsibleEmail: client.responsibleEmail || '', logo: client.logo || '',
+    fileNamingPattern: client.fileNamingPattern || '{{client_name}}_{{project_name}}_{{task_id}}', aiRestricted: Boolean(client.aiRestricted),
+    requireTwoFactor: Boolean(client.requireTwoFactor), billingStatus: (client.billingStatus || 'OK') as 'OK' | 'Aviso' | 'Bloqueado', notes: client.notes || '', creativeDirection: client.creativeDirection || '',
+});
+
 const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
     const canManage = mode === 'management';
     const { addToast } = useToast();
@@ -20,6 +27,13 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
     const [selected, setSelected] = useState<AllyoClient | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [editingClient, setEditingClient] = useState<AllyoClient | null>(null);
+    const [creditClient, setCreditClient] = useState<AllyoClient | null>(null);
+
+    const replaceClient = (client: AllyoClient) => {
+        setClients((current) => current.map((item) => item.id === client.id ? client : item));
+        setSelected((current) => current?.id === client.id ? client : current);
+    };
 
     useEffect(() => {
         setIsLoading(true);
@@ -71,22 +85,24 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
                 )}
             </section>
 
-            <ClientDetailsModal client={selected} onClose={() => setSelected(null)} />
-            <CreateClientModal
+            <ClientDetailsModal client={selected} canManage={canManage} onClose={() => setSelected(null)} onEdit={(client) => { setSelected(null); setEditingClient(client); }} onAddCredits={(client) => { setSelected(null); setCreditClient(client); }} />
+            <ClientFormModal
                 isOpen={isCreateOpen}
                 onClose={() => setIsCreateOpen(false)}
-                onCreated={(client) => {
+                onSaved={(client) => {
                     setClients((current) => [client, ...current.filter((item) => item.id !== client.id)]);
                     setIsCreateOpen(false);
                     addToast({ type: 'success', title: 'Empresa cadastrada', message: `${client.name} já pode receber projetos e usuários.` });
                 }}
             />
+            <ClientFormModal client={editingClient} isOpen={Boolean(editingClient)} onClose={() => setEditingClient(null)} onSaved={(client) => { replaceClient(client); setEditingClient(null); addToast({ type: 'success', title: 'Empresa atualizada', message: 'Os dados e o contrato foram salvos.' }); }} />
+            <AddCreditsModal client={creditClient} onClose={() => setCreditClient(null)} onSaved={(client) => { replaceClient(client); setCreditClient(null); }} />
         </div>
     );
 };
 
-const ClientDetailsModal = ({ client, onClose }: { client: AllyoClient | null; onClose: () => void }) => (
-    <Modal isOpen={Boolean(client)} onClose={onClose} title="Detalhes do cliente" size="lg">
+const ClientDetailsModal = ({ client, canManage, onClose, onEdit, onAddCredits }: { client: AllyoClient | null; canManage: boolean; onClose: () => void; onEdit: (client: AllyoClient) => void; onAddCredits: (client: AllyoClient) => void }) => (
+    <Modal isOpen={Boolean(client)} onClose={onClose} title="Detalhes do cliente" size="lg" footer={client && canManage ? <><AllyoSecondaryButton type="button" onClick={() => onAddCredits(client)}><Coins size={15} /> Adicionar créditos</AllyoSecondaryButton><AllyoPrimaryButton type="button" onClick={() => onEdit(client)}><Pencil size={14} /> Editar empresa</AllyoPrimaryButton></> : undefined}>
         {client && (
             <div>
                 <div className="flex items-center gap-4">
@@ -125,7 +141,7 @@ const ClientDetailsModal = ({ client, onClose }: { client: AllyoClient | null; o
                         />
                     </div>
                     <p className="mt-3 text-xs leading-5 text-[#7f7f7f] dark:text-zinc-400">
-                        Restam {Math.max(0, client.monthlyCredits - client.usedCredits)} créditos disponíveis neste ciclo.
+                        Saldo disponível: {client.availableCredits ?? Math.max(0, client.monthlyCredits - client.usedCredits)} créditos{client.creditBank ? `, incluindo ${client.creditBank} extras no banco.` : '.'}
                     </p>
                 </div>
             </div>
@@ -140,12 +156,12 @@ const ClientMetric = ({ icon, label, value, bordered = false }: { icon: React.Re
     </div>
 );
 
-const CreateClientModal = ({ isOpen, onClose, onCreated }: { isOpen: boolean; onClose: () => void; onCreated: (client: AllyoClient) => void }) => {
+const ClientFormModal = ({ isOpen, client, onClose, onSaved }: { isOpen: boolean; client?: AllyoClient | null; onClose: () => void; onSaved: (client: AllyoClient) => void }) => {
     const { addToast } = useToast();
     const [form, setForm] = useState(emptyClientForm);
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => { if (!isOpen) setForm(emptyClientForm); }, [isOpen]);
+    useEffect(() => { setForm(client ? clientToForm(client) : emptyClientForm); }, [client, isOpen]);
 
     const update = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [field]: value }));
 
@@ -165,7 +181,7 @@ const CreateClientModal = ({ isOpen, onClose, onCreated }: { isOpen: boolean; on
         event.preventDefault();
         setIsSaving(true);
         try {
-            const result = await allyoService.createClient({
+            const payload = {
                 name: form.name.trim(), legalName: form.legalName.trim() || undefined,
                 document: form.document.trim() || undefined, segment: form.segment,
                 area: form.area || undefined, tier: form.tier, monthlyCredits: Number(form.monthlyCredits),
@@ -175,15 +191,16 @@ const CreateClientModal = ({ isOpen, onClose, onCreated }: { isOpen: boolean; on
                 aiRestricted: form.aiRestricted, requireTwoFactor: form.requireTwoFactor,
                 billingStatus: form.billingStatus, notes: form.notes.trim() || undefined,
                 creativeDirection: form.creativeDirection.trim() || undefined,
-            });
-            onCreated(result.client);
+            };
+            const result = client ? await allyoService.updateClient(client.id, payload) : await allyoService.createClient(payload);
+            onSaved(result.client);
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Não foi possível cadastrar a empresa', message: error.response?.data?.message || error.response?.data?.error || 'Revise os dados e tente novamente.' });
+            addToast({ type: 'error', title: client ? 'Não foi possível atualizar a empresa' : 'Não foi possível cadastrar a empresa', message: error.response?.data?.message || error.response?.data?.error || 'Revise os dados e tente novamente.' });
         } finally { setIsSaving(false); }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Nova empresa cliente" size="xl" footer={<><AllyoSecondaryButton type="button" onClick={onClose}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-client-form" disabled={isSaving}>{isSaving ? 'Cadastrando...' : 'Cadastrar empresa'}</AllyoPrimaryButton></>}>
+        <Modal isOpen={isOpen} onClose={onClose} title={client ? 'Editar empresa e contrato' : 'Nova empresa cliente'} size="xl" footer={<><AllyoSecondaryButton type="button" onClick={onClose}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-client-form" disabled={isSaving}>{isSaving ? 'Salvando...' : client ? 'Salvar alterações' : 'Cadastrar empresa'}</AllyoPrimaryButton></>}>
             <form id="allyo-client-form" onSubmit={submit} className="space-y-7">
                 <div className="flex items-center gap-4">
                     <label className="group relative flex h-16 w-16 cursor-pointer items-center justify-center overflow-hidden rounded-[14px] bg-[#0d1e1d] text-[#9db669]">
@@ -225,6 +242,47 @@ const CreateClientModal = ({ isOpen, onClose, onCreated }: { isOpen: boolean; on
                     <div className="grid gap-4 sm:grid-cols-2"><AllyoField label="Observações" hint="opcional"><AllyoTextarea value={form.notes} onChange={(event) => update('notes', event.target.value)} placeholder="Acordos, particularidades e contatos importantes." /></AllyoField><AllyoField label="Direção criativa" hint="opcional"><AllyoTextarea value={form.creativeDirection} onChange={(event) => update('creativeDirection', event.target.value)} placeholder="Princípios visuais, tom e orientações permanentes da marca." /></AllyoField></div>
                 </FormSection>
             </form>
+        </Modal>
+    );
+};
+
+const AddCreditsModal = ({ client, onClose, onSaved }: { client: AllyoClient | null; onClose: () => void; onSaved: (client: AllyoClient) => void }) => {
+    const { addToast } = useToast();
+    const [amount, setAmount] = useState('');
+    const [note, setNote] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
+
+    useEffect(() => { if (client) { setAmount(''); setNote(''); } }, [client]);
+
+    const submit = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!client) return;
+        const credits = Number(amount);
+        if (!Number.isInteger(credits) || credits < 1) {
+            addToast({ type: 'warning', title: 'Informe uma quantidade válida' });
+            return;
+        }
+        setIsSaving(true);
+        try {
+            const result = await allyoService.addClientCredits(client.id, { amount: credits, note: note.trim() || undefined });
+            onSaved(result.client);
+            addToast({ type: 'success', title: 'Créditos adicionados', message: `${credits} créditos foram lançados no banco de ${client.name}.` });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível adicionar créditos', message: error.response?.data?.message || error.response?.data?.error || 'Tente novamente.' });
+        } finally { setIsSaving(false); }
+    };
+
+    return (
+        <Modal isOpen={Boolean(client)} onClose={onClose} title="Adicionar créditos" size="sm" footer={<><AllyoSecondaryButton type="button" onClick={onClose}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-add-credits-form" disabled={isSaving}>{isSaving ? 'Adicionando...' : 'Adicionar créditos'}</AllyoPrimaryButton></>}>
+            {client && <form id="allyo-add-credits-form" onSubmit={submit} className="space-y-5">
+                <div className="rounded-[12px] border border-[#dce5c9] bg-[#f6f8f1] p-4 dark:border-[#9db669]/30 dark:bg-[#9db669]/10">
+                    <span className="text-[10px] font-bold uppercase tracking-[.06em] text-[#718548]">{client.name}</span>
+                    <div className="mt-2 flex gap-5 text-xs"><span>Saldo: <strong>{client.availableCredits ?? client.monthlyCredits}</strong></span><span>Banco extra: <strong>{client.creditBank || 0}</strong></span></div>
+                </div>
+                <AllyoField label="Quantidade de créditos" required><AllyoInput autoFocus required type="number" min="1" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Ex.: 10" /></AllyoField>
+                <AllyoField label="Motivo do lançamento" hint="opcional"><AllyoTextarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ex.: Créditos adicionais previstos no aditivo contratual." /></AllyoField>
+                <p className="text-[11px] leading-4 text-[#777] dark:text-zinc-400">O lançamento será registrado no histórico de créditos da empresa.</p>
+            </form>}
         </Modal>
     );
 };

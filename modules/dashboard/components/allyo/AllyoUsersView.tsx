@@ -28,7 +28,7 @@ const CATEGORY_GROUPS: HierarchyGroup[] = ['Direção', 'Gestão', 'Operação',
 
 const emptyForm = {
     name: '', email: '', phone: '', category: 'CRIATIVO' as AllyoUserCategory,
-    jobTitle: '', team: '', language: 'pt-BR', clientId: '',
+    jobTitle: '', team: '', language: 'pt-BR', clientId: '', status: 'Convite enviado' as 'Ativo' | 'Convite enviado' | 'Inativo',
 };
 
 const AllyoUsersView = () => {
@@ -37,6 +37,7 @@ const AllyoUsersView = () => {
     const [clients, setClients] = useState<AllyoClient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [editingUser, setEditingUser] = useState<AllyoUser | null>(null);
     const [search, setSearch] = useState('');
     const [group, setGroup] = useState<'Todos' | HierarchyGroup>('Todos');
 
@@ -100,7 +101,7 @@ const AllyoUsersView = () => {
                 {visibleUsers.map((user) => {
                     const config = CATEGORY_CONFIG[user.category] || CATEGORY_CONFIG.CRIATIVO;
                     return (
-                        <div key={user.id} className={`grid min-h-[78px] grid-cols-[minmax(210px,1.3fr)_190px_130px_minmax(160px,1fr)_110px_18px] items-center gap-7 border-b px-5 py-4 sm:px-[30px] max-xl:grid-cols-[minmax(210px,1.3fr)_180px_minmax(160px,1fr)_110px_18px] max-lg:grid-cols-[minmax(210px,1.2fr)_180px_110px_18px] max-sm:grid-cols-[minmax(0,1fr)_100px_18px] ${ALLYO_BORDER}`}>
+                        <button type="button" onClick={() => setEditingUser(user)} key={user.id} className={`grid min-h-[78px] w-full grid-cols-[minmax(210px,1.3fr)_190px_130px_minmax(160px,1fr)_110px_18px] items-center gap-7 border-b px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9db669] sm:px-[30px] max-xl:grid-cols-[minmax(210px,1.3fr)_180px_minmax(160px,1fr)_110px_18px] max-lg:grid-cols-[minmax(210px,1.2fr)_180px_110px_18px] max-sm:grid-cols-[minmax(0,1fr)_100px_18px] dark:hover:bg-zinc-900 ${ALLYO_BORDER}`}>
                             <div className="flex min-w-0 items-center gap-3">
                                 <UserAvatar user={user} />
                                 <span className="min-w-0"><strong className="block truncate text-sm font-semibold">{user.name}</strong><span className="mt-1 block truncate text-[11px] text-[#777] dark:text-zinc-400">{user.email}</span></span>
@@ -110,7 +111,7 @@ const AllyoUsersView = () => {
                             <DataCell label={config.group === 'Cliente' ? 'EMPRESA' : 'EQUIPE / CARGO'} value={user.client?.name || user.team || user.jobTitle || 'Não informado'} className="max-lg:hidden" />
                             <span className="max-sm:hidden"><span className="inline-flex rounded-full bg-[#edf2e2] px-2.5 py-1.5 text-[10px] font-semibold text-[#607738] dark:bg-[#9db669]/15 dark:text-[#cce18e]">{user.status || 'Ativo'}</span></span>
                             <ChevronRight size={18} className="text-[#aaa]" />
-                        </div>
+                        </button>
                     );
                 })}
 
@@ -119,7 +120,8 @@ const AllyoUsersView = () => {
                 )}
             </section>
 
-            <CreateUserModal isOpen={isCreateOpen} clients={clients} onClose={() => setIsCreateOpen(false)} onCreated={handleCreated} />
+            <UserFormModal isOpen={isCreateOpen} clients={clients} onClose={() => setIsCreateOpen(false)} onSaved={handleCreated} />
+            <UserFormModal user={editingUser} isOpen={Boolean(editingUser)} clients={clients} onClose={() => setEditingUser(null)} onSaved={(user) => { setUsers((current) => current.map((item) => item.id === user.id ? user : item)); setEditingUser(null); addToast({ type: 'success', title: 'Usuário atualizado', message: 'Dados, vínculo e nível de acesso foram salvos.' }); }} />
         </div>
     );
 };
@@ -136,16 +138,21 @@ const UserAvatar = ({ user }: { user: AllyoUser }) => {
     return <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0d1e1d] text-[11px] font-bold text-[#d7e7b1]">{user.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : initials}</span>;
 };
 
-const CreateUserModal = ({ isOpen, clients, onClose, onCreated }: { isOpen: boolean; clients: AllyoClient[]; onClose: () => void; onCreated: (user: AllyoUser) => void }) => {
+const UserFormModal = ({ isOpen, user, clients, onClose, onSaved }: { isOpen: boolean; user?: AllyoUser | null; clients: AllyoClient[]; onClose: () => void; onSaved: (user: AllyoUser) => void }) => {
     const { addToast } = useToast();
     const [form, setForm] = useState(emptyForm);
     const [isSaving, setIsSaving] = useState(false);
     const config = CATEGORY_CONFIG[form.category];
     const clientRequired = form.category === 'CLIENTE';
 
-    useEffect(() => { if (!isOpen) setForm(emptyForm); }, [isOpen]);
+    useEffect(() => {
+        setForm(user ? {
+            name: user.name || '', email: user.email || '', phone: user.phone || '', category: user.category,
+            jobTitle: user.jobTitle || '', team: user.team || '', language: user.language || 'pt-BR', clientId: user.client?.id || '', status: (user.status || 'Ativo') as 'Ativo' | 'Convite enviado' | 'Inativo',
+        } : emptyForm);
+    }, [isOpen, user]);
 
-    const update = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
+    const update = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [field]: value }));
 
     const submit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -155,30 +162,32 @@ const CreateUserModal = ({ isOpen, clients, onClose, onCreated }: { isOpen: bool
         }
         setIsSaving(true);
         try {
-            const result = await allyoService.createUser({
-                name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim() || undefined,
+            const payload = {
+                name: form.name.trim(), phone: form.phone.trim() || undefined,
                 category: form.category, jobTitle: form.jobTitle.trim() || undefined,
                 team: form.team.trim() || undefined, language: form.language, clientId: clientRequired ? form.clientId : undefined,
-            });
-            onCreated(result.user);
-            addToast({ type: 'success', title: 'Usuário criado', message: `${form.name.trim()} já pode receber o acesso à Allyo.` });
+            };
+            const result = user ? await allyoService.updateUser(user.id, { ...payload, status: form.status }) : await allyoService.createUser({ ...payload, email: form.email.trim() });
+            onSaved(result.user);
+            if (!user) addToast({ type: 'success', title: 'Usuário criado', message: `${form.name.trim()} já pode receber o acesso à Allyo.` });
         } catch (error: any) {
-            addToast({ type: 'error', title: 'Não foi possível criar o usuário', message: error.response?.data?.message || error.response?.data?.error || 'Revise os dados e tente novamente.' });
+            addToast({ type: 'error', title: user ? 'Não foi possível atualizar o usuário' : 'Não foi possível criar o usuário', message: error.response?.data?.message || error.response?.data?.error || 'Revise os dados e tente novamente.' });
         } finally { setIsSaving(false); }
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title="Novo usuário" size="lg" footer={<><AllyoSecondaryButton type="button" onClick={onClose}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-user-form" disabled={isSaving}>{isSaving ? 'Criando...' : 'Criar usuário'}</AllyoPrimaryButton></>}>
+        <Modal isOpen={isOpen} onClose={onClose} title={user ? 'Editar usuário' : 'Novo usuário'} size="lg" footer={<><AllyoSecondaryButton type="button" onClick={onClose}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-user-form" disabled={isSaving}>{isSaving ? 'Salvando...' : user ? 'Salvar alterações' : 'Criar usuário'}</AllyoPrimaryButton></>}>
             <form id="allyo-user-form" onSubmit={submit} className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                    <AllyoField label="Categoria" required className="sm:col-span-2"><AllyoSelect value={form.category} onChange={(event) => update('category', event.target.value)}>
+                    <AllyoField label="Categoria" required className="sm:col-span-2"><AllyoSelect value={form.category} onChange={(event) => update('category', event.target.value as AllyoUserCategory)}>
                         {CATEGORY_GROUPS.map((categoryGroup) => <optgroup key={categoryGroup} label={categoryGroup}>{(Object.entries(CATEGORY_CONFIG) as [AllyoUserCategory, typeof config][]).filter(([, item]) => item.group === categoryGroup).map(([value, item]) => <option key={value} value={value}>{item.label}</option>)}</optgroup>)}
                     </AllyoSelect></AllyoField>
                     <div className="sm:col-span-2 rounded-[12px] border border-[#dce5c9] bg-[#f6f8f1] p-3 dark:border-[#9db669]/30 dark:bg-[#9db669]/10"><span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#718548]">Nível {config.level} · {config.group}</span><p className="mt-1 text-xs leading-5 text-[#596442] dark:text-[#d1dcba]">{config.permission}</p></div>
                     <AllyoField label="Nome completo" required><AllyoInput required minLength={2} value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Ex.: João da Silva" /></AllyoField>
-                    <AllyoField label="E-mail" required><AllyoInput required type="email" value={form.email} onChange={(event) => update('email', event.target.value)} placeholder="joao@empresa.com" /></AllyoField>
+                    <AllyoField label="E-mail" required hint={user ? 'identificador da conta' : undefined}><AllyoInput required disabled={Boolean(user)} type="email" value={form.email} onChange={(event) => update('email', event.target.value)} placeholder="joao@empresa.com" /></AllyoField>
                     <AllyoField label="Telefone" hint="opcional"><AllyoInput value={form.phone} onChange={(event) => update('phone', event.target.value)} placeholder="+55 (11) 99999-9999" /></AllyoField>
                     <AllyoField label="Idioma"><AllyoSelect value={form.language} onChange={(event) => update('language', event.target.value)}><option value="pt-BR">Português (Brasil)</option><option value="en">English</option><option value="es">Español</option></AllyoSelect></AllyoField>
+                    {user && <AllyoField label="Status"><AllyoSelect value={form.status} onChange={(event) => update('status', event.target.value as typeof form.status)}><option value="Ativo">Ativo</option><option value="Convite enviado">Convite enviado</option><option value="Inativo">Inativo</option></AllyoSelect></AllyoField>}
                     {clientRequired && <AllyoField label="Empresa contratual" required className="sm:col-span-2"><AllyoSelect required value={form.clientId} onChange={(event) => update('clientId', event.target.value)}><option value="">Selecione a empresa</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</AllyoSelect></AllyoField>}
                     <AllyoField label="Cargo" hint="opcional"><AllyoInput value={form.jobTitle} onChange={(event) => update('jobTitle', event.target.value)} placeholder={clientRequired ? 'Ex.: Gerente de Marketing' : 'Ex.: Motion Designer'} /></AllyoField>
                     <AllyoField label="Equipe" hint="opcional"><AllyoInput value={form.team} onChange={(event) => update('team', event.target.value)} placeholder={clientRequired ? 'Ex.: Marketing' : 'Ex.: Squad Growth'} /></AllyoField>
