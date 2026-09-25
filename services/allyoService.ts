@@ -8,6 +8,7 @@ export interface AllyoDemandBriefing {
     creativeDirection?: string[];
     references?: string;
     notes?: string;
+    creditsEstimated?: number;
 }
 
 export interface AllyoDesignAsset {
@@ -208,11 +209,25 @@ export interface AllyoDemand {
     description?: string;
     workspace?: { id: string; name: string; plan?: string };
     briefing?: AllyoDemandBriefing | null;
+    tasksList?: AllyoDemandTask[];
     designsCount: number;
     designs?: AllyoDesignAsset[];
     messagesCount: number;
     createdAt: string;
     updatedAt: string;
+}
+
+export interface AllyoDemandTask {
+    id: string;
+    projectId: string;
+    title: string;
+    team: string;
+    status: 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Concluído' | string;
+    delivery?: string | null;
+    deadlineDays?: number;
+    orderIndex?: number;
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 export interface DemandsResponse {
@@ -345,6 +360,11 @@ export const allyoService = {
         }
     ) {
         const response = await api.post(`/allyo/projects/${projectId}/status`, data);
+        return response.data;
+    },
+
+    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; delivery?: string | null }) {
+        const response = await api.patch(`/allyo/tasks/${encodeURIComponent(taskId)}`, data);
         return response.data;
     },
 

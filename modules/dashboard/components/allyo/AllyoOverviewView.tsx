@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ALLYO_BORDER, AllyoPageHeader, mapDemandToTask, TaskRow, AllyoTask } from './AllyoUI';
+import { ALLYO_BORDER, AllyoPageHeader, mapDemandToTasks, TaskRow, AllyoTask } from './AllyoUI';
 import { allyoService } from '../../../../services/allyoService';
 import { socketService } from '../../../../services/socketService';
 import { Inbox } from 'lucide-react';
@@ -35,7 +35,7 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
         try {
             const res = await allyoService.getDemands();
             if (res && Array.isArray(res.demands)) {
-                setLiveTasks(res.demands.map(mapDemandToTask));
+                setLiveTasks(res.demands.flatMap(mapDemandToTasks));
             }
         } catch (err) {
             console.warn('[AllyoOverviewView] Erro ao carregar demandas:', err);

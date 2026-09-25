@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Clock3, Layers3, Palette, UserRound } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
-import { ALLYO_BORDER, AllyoPageHeader, FilterSelect } from './AllyoUI';
+import { ALLYO_BORDER, AllyoPageHeader, FilterSelect, numericTaskId } from './AllyoUI';
 import { allyoService } from '../../../../services/allyoService';
 
 interface CreativeAsset {
     id: string;
     taskId: string;
+    taskPublicId: string;
     taskName: string;
     client: string;
     designer: string;
@@ -34,9 +35,11 @@ const AllyoCreativePanelView = () => {
                     res.demands.forEach((d) => {
                         if (d.designs && d.designs.length > 0) {
                             d.designs.forEach((design) => {
+                                const relatedTask = d.tasksList?.[0];
                                 list.push({
                                     id: String(design.id),
-                                    taskId: d.id,
+                                    taskId: relatedTask?.id || d.id,
+                                    taskPublicId: numericTaskId(relatedTask?.id || d.id),
                                     taskName: `${d.name} — ${design.name}`,
                                     client: d.workspace?.name || 'Cliente Allyo',
                                     designer: d.team?.[0] || 'Levy Camará',
@@ -131,7 +134,7 @@ const CreativeDetailsModal = ({ creative, onClose }: { creative: CreativeAsset |
                 <div className="min-w-0">
                     <span className="text-[10px] font-bold uppercase tracking-[.08em] text-[#9db669]">{creative.client}</span>
                     <h2 className="mt-2 font-season text-[28px] font-normal leading-tight text-black dark:text-white">{creative.taskName}</h2>
-                    <p className="mt-2 font-mono text-[11px] text-[#9f9f9f]">ID da tarefa #{creative.taskId}</p>
+                    <p className="mt-2 font-mono text-[11px] text-[#9f9f9f]">ID da tarefa #{creative.taskPublicId}</p>
 
                     <div className={`mt-6 grid grid-cols-2 border-y ${ALLYO_BORDER}`}>
                         <Detail icon={<UserRound size={16} />} label="DESIGNER RESPONSÁVEL" value={creative.designer} detail={creative.specialty} />

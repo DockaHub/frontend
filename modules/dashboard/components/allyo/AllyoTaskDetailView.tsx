@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTask, AllyoTask } from './AllyoUI';
+import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTasks, AllyoTask } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
 import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
 import AllyoTaskChat from './AllyoTaskChat';
@@ -44,9 +44,9 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         if (!taskId) return;
         allyoService.getDemands().then((res) => {
             if (res && Array.isArray(res.demands)) {
-                const found = res.demands.find((d) => d.id === taskId);
+                const found = res.demands.find((d) => d.id === taskId || d.tasksList?.some((item) => item.id === taskId));
                 if (found) {
-                    setLiveTask(mapDemandToTask(found));
+                    setLiveTask(mapDemandToTasks(found).find((item) => item.id === taskId) || mapDemandToTasks(found)[0]);
                 }
             }
         }).catch((err) => console.warn('[AllyoTaskDetailView] Erro ao carregar demanda da API:', err));
@@ -114,9 +114,8 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         setSavedLabel('Status atualizado agora');
 
         try {
-            const projectId = task.projectId || task.id;
-            const apiStatusMap: Record<string, 'Em andamento' | 'Em revisão' | 'Concluído' | 'Rascunho'> = {
-                'Nova': 'Rascunho',
+            const apiStatusMap: Record<string, 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Concluído'> = {
+                'Nova': 'A iniciar',
                 'Em andamento': 'Em andamento',
                 'Em revisão': 'Em revisão',
                 'Pronta para entrega': 'Em revisão',
@@ -124,7 +123,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             };
             const mapped = apiStatusMap[nextStatus];
             if (mapped) {
-                await allyoService.updateProjectStatus(projectId, { status: mapped });
+                await allyoService.updateTask(task.id, { status: mapped });
             }
         } catch (err) {
             console.warn('[AllyoTaskDetailView] Erro ao sincronizar status com Railway:', err);
@@ -171,7 +170,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                     <button type="button" onClick={goBack} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#e5e5e5] text-black transition hover:border-[#9db669] hover:text-[#739044] dark:border-zinc-700 dark:text-white" aria-label="Voltar para tarefas"><ArrowLeft size={16} /></button>
                     <div className="min-w-0">
                         <h1 className="truncate font-season text-[22px] font-normal leading-tight">{task.name}</h1>
-                        <p className="mt-1 truncate text-[11px] font-medium text-[#a4a4a4] sm:text-sm">{task.projectName} • {task.client} • {task.category} • #{task.id}</p>
+                        <p className="mt-1 truncate text-[11px] font-medium text-[#a4a4a4] sm:text-sm">{task.projectName} • {task.client} • {task.category} • #{task.publicId || task.id}</p>
                     </div>
                 </div>
                 <div className="hidden shrink-0 items-center gap-[5px] text-sm font-semibold md:flex"><CalendarDays size={18} className="text-[#9f9f9f]" />{todayLabel()}</div>

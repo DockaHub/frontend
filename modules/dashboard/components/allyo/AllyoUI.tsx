@@ -25,6 +25,7 @@ export interface AllyoDeliverable {
 
 export interface AllyoTask {
     id: string;
+    publicId?: string;
     name: string;
     projectId: string;
     projectName: string;
@@ -39,46 +40,64 @@ export interface AllyoTask {
     deliverables?: AllyoDeliverable[];
 }
 
-export function mapDemandToTask(demand: any): AllyoTask {
+export const numericTaskId = (value: string) => {
+    let hash = 2166136261;
+    for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+    return String(100000 + ((hash >>> 0) % 900000));
+};
+
+const mapTaskStatus = (status: string): AllyoTask['status'] => {
     const statusMap: Record<string, 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída'> = {
+        'A iniciar': 'Iniciar',
         'Rascunho': 'Iniciar',
         'Em andamento': 'Em andamento',
         'Em revisão': 'Em revisão',
         'Concluído': 'Concluída',
         'Concluída': 'Concluída',
     };
+    return statusMap[status] || 'Em andamento';
+};
 
-    const status = statusMap[demand.status] || 'Em andamento';
+const demandDeliverables = (demand: any): AllyoDeliverable[] | undefined => Array.isArray(demand.briefing?.deliverables)
+    ? demand.briefing.deliverables.map((d: any, idx: number) => ({
+        id: `deliv-${idx}`,
+        title: typeof d === 'string' ? d : d.title || `Entregável ${idx + 1}`,
+        type: (typeof d === 'string' && d.toLowerCase().includes('carrossel')) ? 'Carrossel' as const : 'Estático' as const,
+        format: '1080x1350',
+        approvalFormat: 'PNG',
+        software: 'Figma',
+        scenes: [],
+    }))
+    : undefined;
+
+export function mapDemandToTasks(demand: any): AllyoTask[] {
     const creative = Array.isArray(demand.team) && demand.team[0] ? demand.team[0] : 'Levy';
     const client = demand.workspace?.name || 'Cliente Allyo';
-    const category = demand.service || 'Design';
-    const deliverables = Array.isArray(demand.briefing?.deliverables)
-        ? demand.briefing.deliverables.map((d: any, idx: number) => ({
-            id: `deliv-${idx}`,
-            title: typeof d === 'string' ? d : d.title || `Entregável ${idx + 1}`,
-            type: (typeof d === 'string' && d.toLowerCase().includes('carrossel')) ? 'Carrossel' as const : 'Estático' as const,
-            format: '1080x1350',
-            approvalFormat: 'PNG',
-            software: 'Figma',
-            scenes: [],
-        }))
-        : undefined;
+    const sourceTasks = Array.isArray(demand.tasksList) && demand.tasksList.length > 0
+        ? demand.tasksList
+        : [{ id: demand.id, projectId: demand.id, title: demand.name, team: demand.service || 'Design', status: demand.status }];
+    const estimatedCredits = Number(demand.briefing?.creditsEstimated || demand.tasks || 1);
 
-    return {
-        id: demand.id,
-        name: demand.name,
+    return sourceTasks.map((task: any, index: number) => ({
+        id: task.id,
+        publicId: numericTaskId(task.id),
+        name: task.title || demand.name,
         projectId: demand.id,
         projectName: demand.name,
-        credits: demand.tasks || 1,
-        category,
+        credits: Math.max(0.01, estimatedCredits / sourceTasks.length),
+        category: task.team || demand.service || 'Design',
         client,
         deadline: demand.deadline || new Date(demand.createdAt || Date.now()).toLocaleDateString('pt-BR'),
         time: '18h00min',
-        status,
+        status: mapTaskStatus(task.status || demand.status),
         cam: 'Marina',
         creative,
-        deliverables,
-    };
+        deliverables: index === 0 ? demandDeliverables(demand) : undefined,
+    }));
+}
+
+export function mapDemandToTask(demand: any): AllyoTask {
+    return mapDemandToTasks(demand)[0];
 }
 
 export const ALLYO_TASKS: AllyoTask[] = [
@@ -206,7 +225,7 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
                     <span className="block text-[9px] font-medium leading-none text-[#616161] dark:text-zinc-500">CRÉDITOS</span>
                     <span className="mt-[10px] flex items-center gap-1.5 text-sm font-medium leading-none text-black dark:text-zinc-200"><span aria-hidden="true" className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#9db669] text-[9px] font-bold text-[#72894c] dark:text-[#d0f08e]">C</span>{task.credits.toLocaleString('pt-BR')}</span>
                 </span>
-                <DataCell label="ID" value={task.id} className="max-lg:hidden" />
+                <DataCell label="ID" value={task.publicId || task.id} className="max-lg:hidden" />
                 <DataCell label="CLIENTE" value={task.client} className="max-lg:hidden" />
                 <DataCell label="DEADLINE" value={`${task.deadline} • ${task.time}`} className="max-md:hidden" />
                 <DataCell label="STATUS" value={task.status} valueClassName={statusColor[task.status]} className="max-sm:hidden" />
