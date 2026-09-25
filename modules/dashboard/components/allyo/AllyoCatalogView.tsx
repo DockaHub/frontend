@@ -71,10 +71,52 @@ const parseList = (value: string) => value.split(',').map((item) => item.trim())
 const formatList = (value?: string[]) => (value || []).join(', ');
 const formatCredits = (value?: number | null) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+const CATALOG_SOURCE_IMAGE_LIMIT = 20 * 1024 * 1024;
+const CATALOG_UPLOAD_IMAGE_LIMIT = 5 * 1024 * 1024;
+
+const optimizeCatalogImage = (file: File): Promise<File> => new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    const finish = () => URL.revokeObjectURL(objectUrl);
+    image.onerror = () => {
+        finish();
+        reject(new Error('Não foi possível ler esta imagem. Escolha outro arquivo.'));
+    };
+    image.onload = () => {
+        const maxWidth = 1600;
+        const maxHeight = 1200;
+        const scale = Math.min(1, maxWidth / image.naturalWidth, maxHeight / image.naturalHeight);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+            finish();
+            reject(new Error('Seu navegador não conseguiu preparar a imagem.'));
+            return;
+        }
+
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+            finish();
+            if (!blob) {
+                reject(new Error('Não foi possível otimizar esta imagem.'));
+                return;
+            }
+            const neutralId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+            resolve(new File([blob], `produto-${neutralId}.webp`, { type: 'image/webp', lastModified: Date.now() }));
+        }, 'image/webp', 0.82);
+    };
+    image.src = objectUrl;
+});
 
 const apiErrorMessage = (error: any, fallback: string) => {
     const details = error?.response?.data?.details;
     if (typeof details === 'string') return details;
+    if (error?.code === 'ERR_NETWORK' || error?.message === 'Network Error') return 'O navegador não conseguiu concluir o envio. Verifique a conexão e tente novamente com a imagem otimizada.';
     return error?.response?.data?.message || error?.response?.data?.error || error?.message || fallback;
 };
 
@@ -268,13 +310,15 @@ const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: All
             setError('Escolha uma imagem em PNG, JPG ou WebP.');
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            setError('A imagem precisa ter no máximo 5 MB.');
+        if (file.size > CATALOG_SOURCE_IMAGE_LIMIT) {
+            setError('A imagem original precisa ter no máximo 20 MB.');
             return;
         }
         setIsUploadingImage(true);
         try {
-            const uploaded = await allyoService.uploadCatalogProductImage(file);
+            const optimizedFile = await optimizeCatalogImage(file);
+            if (optimizedFile.size > CATALOG_UPLOAD_IMAGE_LIMIT) throw new Error('Mesmo após a otimização, a imagem ficou maior que 5 MB. Escolha outra imagem.');
+            const uploaded = await allyoService.uploadCatalogProductImage(optimizedFile);
             setRoot('imageUrl', uploaded.imageUrl);
         } catch (uploadError) {
             setError(apiErrorMessage(uploadError, 'Não foi possível enviar a imagem do produto.'));
@@ -376,7 +420,7 @@ const CatalogImageField = ({ imageUrl, productName, uploading, onFile, onRemove 
             </div>
             <div>
                 <strong className="block text-sm font-semibold">Imagem de apresentação</strong>
-                <p className="mt-1.5 max-w-md text-xs leading-5 text-[#6f6f6f] dark:text-zinc-400">Use uma imagem horizontal, de preferência 1600 × 1000 px. Formatos PNG, JPG ou WebP, com até 5 MB.</p>
+                <p className="mt-1.5 max-w-md text-xs leading-5 text-[#6f6f6f] dark:text-zinc-400">Use uma imagem horizontal. PNG, JPG ou WebP de até 20 MB; reduzimos para no máximo 1600 × 1200 px, convertemos para WebP e removemos o nome e os metadados do arquivo.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                     <label className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0d1e1d] px-4 text-xs font-semibold text-white transition hover:bg-[#1d3432] dark:bg-[#9db669] dark:text-[#0d1e1d] ${uploading ? 'pointer-events-none opacity-50' : ''}`}>
                         <UploadCloud size={15} /> {imageUrl ? 'Trocar imagem' : 'Escolher imagem'}
