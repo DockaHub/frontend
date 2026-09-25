@@ -6,7 +6,7 @@ import { socketService } from '../../../../services/socketService';
 const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean)));
 
 const AllyoTasksView = () => {
-    const [state, setState] = useState('Todos');
+    const [state, setState] = useState('Ativas');
     const [client, setClient] = useState('Todos');
     const [project, setProject] = useState('Todos');
     const [cam, setCam] = useState('Todos');
@@ -46,8 +46,9 @@ const AllyoTasksView = () => {
     const allTasks = liveTasks;
 
     const tasks = useMemo(() => allTasks.filter((task) => {
-        if (state === 'Ativas' && task.status === 'Concluída') return false;
+        if (state === 'Ativas' && (task.status === 'Concluída' || task.status === 'Inativa')) return false;
         if (state === 'Concluídas' && task.status !== 'Concluída') return false;
+        if (state === 'Inativas' && task.status !== 'Inativa') return false;
         if (client !== 'Todos' && task.client !== client) return false;
         if (project !== 'Todos' && task.projectName !== project) return false;
         if (cam !== 'Todos' && task.cam !== cam) return false;
@@ -62,7 +63,7 @@ const AllyoTasksView = () => {
 
             <div className={`relative z-30 flex min-h-[64px] flex-wrap items-center gap-[10px] border-b px-5 py-3 sm:px-[30px] ${ALLYO_BORDER}`}>
                 <span className="mr-1 shrink-0 text-sm font-medium">Filtros</span>
-                <FilterSelect label="Tarefas ativas" value={state} options={['Ativas', 'Concluídas']} onChange={setState} />
+                <FilterSelect label="Tarefas ativas" value={state} options={['Ativas', 'Concluídas', 'Inativas']} onChange={setState} />
                 <FilterSelect label="Período" value={period} options={['Esta semana', 'Este mês', 'Próximos 30 dias']} onChange={setPeriod} />
                 <FilterSelect label="Clientes" value={client} options={unique(allTasks.map((task) => task.client))} onChange={setClient} />
                 <FilterSelect label="Projetos" value={project} options={unique(allTasks.map((task) => task.projectName))} onChange={setProject} />

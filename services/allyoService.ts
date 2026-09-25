@@ -96,6 +96,13 @@ export interface UsersResponse {
     users: AllyoUser[];
 }
 
+export interface AllyoPermissions {
+    canManageWorkspace: boolean;
+    canManageProjects: boolean;
+    category: AllyoUserCategory | null;
+    source: 'workspace' | 'allyo-category' | 'none';
+}
+
 export type AllyoCatalogProductStatus = 'draft' | 'published' | 'archived';
 
 export interface AllyoCatalogProduct {
@@ -263,6 +270,11 @@ export interface ProjectMessagePayload {
 }
 
 export const allyoService = {
+    async getPermissions(): Promise<AllyoPermissions> {
+        const response = await api.get('/allyo/permissions');
+        return response.data;
+    },
+
     async getCatalog(): Promise<AllyoCatalogResponse> {
         const response = await api.get('/allyo/catalog');
         return response.data;
@@ -371,12 +383,22 @@ export const allyoService = {
             tasks?: number;
         }
     ) {
-        const response = await api.post(`/allyo/projects/${projectId}/status`, data);
+        const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/status`, data);
         return response.data;
     },
 
-    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; delivery?: string | null }) {
+    async createProjectTask(projectId: string, data: { title: string; team?: string; status?: string; delivery?: string | null; deadlineDays?: number; orderIndex?: number }) {
+        const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/tasks`, data);
+        return response.data;
+    },
+
+    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; delivery?: string | null; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.patch(`/allyo/tasks/${encodeURIComponent(taskId)}`, data);
+        return response.data;
+    },
+
+    async deleteTask(taskId: string) {
+        const response = await api.delete(`/allyo/tasks/${encodeURIComponent(taskId)}`);
         return response.data;
     },
 
@@ -400,7 +422,7 @@ export const allyoService = {
      * Atribui criativos à equipe da demanda
      */
     async assignProjectTeam(projectId: string, team: string[]) {
-        const response = await api.post(`/allyo/projects/${projectId}/assign`, { team });
+        const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/assign`, { team });
         return response.data;
     },
 

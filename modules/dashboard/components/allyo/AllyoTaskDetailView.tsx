@@ -7,6 +7,7 @@ import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
 import AllyoTaskChat from './AllyoTaskChat';
 import AllyoProjectFlow from './AllyoProjectFlow';
 import AllyoTaskResources from './AllyoTaskResources';
+import AllyoTaskActions from './AllyoTaskActions';
 import { addTaskActivity, readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
 import { getAllyoProject } from './allyoProjects';
 import { getTaskResources } from './allyoTaskResourceData';
@@ -39,6 +40,8 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const taskId = searchParams.get('task');
     const [liveTask, setLiveTask] = useState<AllyoTask | null>(null);
+    const [taskChanges, setTaskChanges] = useState<Partial<AllyoTask>>({});
+    const [canManageTask, setCanManageTask] = useState(false);
 
     useEffect(() => {
         if (!taskId) return;
@@ -52,7 +55,16 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         }).catch((err) => console.warn('[AllyoTaskDetailView] Erro ao carregar demanda da API:', err));
     }, [taskId]);
 
-    const task = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || ALLYO_TASKS[0];
+    useEffect(() => {
+        let active = true;
+        allyoService.getPermissions()
+            .then((permissions) => { if (active) setCanManageTask(permissions.canManageProjects); })
+            .catch(() => { if (active) setCanManageTask(false); });
+        return () => { active = false; };
+    }, []);
+
+    const sourceTask = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || ALLYO_TASKS[0];
+    const task = { ...sourceTask, ...taskChanges };
     const project = getAllyoProject(task.projectId);
     const projectTasks = project?.stages.flatMap((stage) => stage.tasks) || [];
     const projectTask = projectTasks.find((item) => item.id === task.id);
@@ -83,8 +95,11 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [readyDeliverables, setReadyDeliverables] = useState(0);
     const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
     const [clientChanges, setClientChanges] = useState(() => readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
+    const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
-    const canSendForReview = !isTaskBlocked && (isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0);
+    const isCurrentlyBlocked = administrativeBlock ?? (isTaskBlocked || status === 'Bloqueada');
+    const isInactive = status === 'Inativa';
+    const canSendForReview = !isCurrentlyBlocked && !isInactive && (isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0);
 
     useEffect(() => {
         const refresh = () => setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
@@ -94,10 +109,12 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
 
     useEffect(() => {
         setStatus(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
+        setTaskChanges({});
+        setAdministrativeBlock(null);
         setDeliveryVersion('Versão 1');
         setFilesByVersion({ 'Versão 1': { approval: [], source: [] } });
         setActiveTab('details');
-    }, [isTaskBlocked, task.id, task.status]);
+    }, [isTaskBlocked, sourceTask.id, sourceTask.status]);
 
     const goBack = () => {
         setSearchParams((current) => {
@@ -181,11 +198,14 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                         <p className="mt-1 truncate text-[11px] font-medium text-[#a4a4a4] sm:text-sm">{task.projectName} • {task.client} • {task.category} • #{task.publicId || task.id}</p>
                     </div>
                 </div>
-                <div className="hidden shrink-0 items-center gap-[5px] text-sm font-semibold md:flex"><CalendarDays size={18} className="text-[#9f9f9f]" />{todayLabel()}</div>
+                <div className="flex shrink-0 items-center gap-3">
+                    <div className="hidden items-center gap-[5px] text-sm font-semibold md:flex"><CalendarDays size={18} className="text-[#9f9f9f]" />{todayLabel()}</div>
+                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={(changes) => setTaskChanges((current) => ({ ...current, ...changes }))} onStatusChanged={(nextStatus) => { setStatus(nextStatus); setAdministrativeBlock(nextStatus === 'Bloqueada'); setSavedLabel('Status atualizado agora'); }} onDeleted={goBack} />}
+                </div>
             </header>
 
             <section className={`sticky top-[75px] z-30 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
-                <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isTaskBlocked ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f2ef] px-3 py-2 text-xs font-semibold text-[#737a72] dark:bg-zinc-800 dark:text-zinc-300"><span className="h-1.5 w-1.5 rounded-full bg-[#8e958d]" />Bloqueada</span> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} />}</div>
+                <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isCurrentlyBlocked || isInactive ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f2ef] px-3 py-2 text-xs font-semibold text-[#737a72] dark:bg-zinc-800 dark:text-zinc-300"><span className={`h-1.5 w-1.5 rounded-full ${isInactive ? 'bg-red-400' : 'bg-[#8e958d]'}`} />{isInactive ? 'Inativa' : 'Bloqueada'}</span> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} />}</div>
                 <MetaItem label="Créditos da tarefa" value={formatTaskCredits(task.credits)} />
                 <MetaItem label="Deadline" value={`${task.deadline}, ${task.time}`} icon={<Clock3 size={14} />} />
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
@@ -223,11 +243,11 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                 <aside className="min-w-0 bg-[#fdfdfc] dark:bg-zinc-950">
                     <div className="sticky top-[139px]">
                         <div className={`border-b p-5 ${ALLYO_BORDER}`}>
-                            <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">{isTaskBlocked ? 'Dependência do projeto' : 'Próxima ação'}</span>
-                            <h2 className="mt-2 font-season text-xl font-normal">{isTaskBlocked ? 'Aguardando etapa anterior' : isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
-                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isTaskBlocked ? `Esta tarefa será liberada quando ${blockingTasks.join(' e ') || 'a dependência anterior'} for entregue.` : isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
+                            <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">{isInactive ? 'Tarefa inativa' : isCurrentlyBlocked ? 'Dependência do projeto' : 'Próxima ação'}</span>
+                            <h2 className="mt-2 font-season text-xl font-normal">{isInactive ? 'Execução pausada' : isCurrentlyBlocked ? 'Aguardando liberação' : isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
+                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isInactive ? 'A equipe administrativa pode reativar esta tarefa pelo menu de ações.' : isCurrentlyBlocked ? `Esta tarefa será liberada quando ${blockingTasks.join(' e ') || 'o bloqueio administrativo'} for removido.` : isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
                             <button type="button" disabled={!canSendForReview} onClick={sendForReview} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {isMultiDeliverable ? readyDeliverables > 0 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão` : 'Nenhum pedido pronto' : 'Enviar para revisão'}</button>
-                            {!canSendForReview && <p className="mt-2 text-center text-xs text-[#8f8f8f]">{isTaskBlocked ? 'O envio será liberado automaticamente com a dependência.' : 'Anexe o material para liberar o envio.'}</p>}
+                            {!canSendForReview && <p className="mt-2 text-center text-xs text-[#8f8f8f]">{isInactive ? 'Reative a tarefa para continuar.' : isCurrentlyBlocked ? 'O envio será liberado quando o bloqueio for removido.' : 'Anexe o material para liberar o envio.'}</p>}
                         </div>
                         <AllyoTaskResources resources={taskResources} onOpenTask={openReferencedTask} />
                         <button type="button" onClick={() => setBrandKitOpen((value) => !value)} className={`flex w-full items-center justify-between border-b p-5 text-left ${ALLYO_BORDER}`}><span className="font-season text-base">Brand Kit</span>{brandKitOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>

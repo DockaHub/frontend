@@ -1,6 +1,6 @@
 export type AllyoActivity = {
     id: string;
-    type: 'message' | 'approval_sent' | 'client_file_change';
+    type: 'message' | 'approval_sent' | 'client_file_change' | 'management_action';
     createdAt: string;
     author: string;
     role: 'creative' | 'client' | 'system';

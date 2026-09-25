@@ -34,7 +34,7 @@ export interface AllyoTask {
     client: string;
     deadline: string;
     time: string;
-    status: 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída';
+    status: 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída' | 'Bloqueada' | 'Inativa';
     cam: string;
     creative: string;
     deliverables?: AllyoDeliverable[];
@@ -57,13 +57,15 @@ export const numericTaskId = (value: string) => {
 };
 
 const mapTaskStatus = (status: string): AllyoTask['status'] => {
-    const statusMap: Record<string, 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída'> = {
+    const statusMap: Record<string, AllyoTask['status']> = {
         'A iniciar': 'Iniciar',
         'Rascunho': 'Iniciar',
         'Em andamento': 'Em andamento',
         'Em revisão': 'Em revisão',
         'Concluído': 'Concluída',
         'Concluída': 'Concluída',
+        'Bloqueada': 'Bloqueada',
+        'Inativa': 'Inativa',
     };
     return statusMap[status] || 'Em andamento';
 };
@@ -196,6 +198,8 @@ const statusColor: Record<AllyoTask['status'], string> = {
     'Em andamento': 'text-[#2a2ad7] dark:text-indigo-300',
     'Em revisão': 'text-[#fd6b32]',
     'Concluída': 'text-emerald-600 dark:text-emerald-400',
+    'Bloqueada': 'text-[#737a72] dark:text-zinc-400',
+    'Inativa': 'text-red-500 dark:text-red-400',
 };
 
 export const TaskRow = ({ task }: { task: AllyoTask }) => {
