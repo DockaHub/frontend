@@ -244,7 +244,10 @@ export const allyoService = {
     async uploadCatalogProductImage(file: File): Promise<{ imageUrl: string }> {
         const formData = new FormData();
         formData.append('file', file);
-        const response = await api.post('/allyo/catalog/images', formData, { timeout: 45_000 });
+        const response = await api.post('/allyo/catalog/images', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 45_000,
+        });
         return response.data;
     },
 
