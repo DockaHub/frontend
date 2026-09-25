@@ -241,13 +241,19 @@ export const allyoService = {
         return response.data;
     },
 
-    async uploadCatalogProductImage(file: File): Promise<{ imageUrl: string }> {
+    async uploadCatalogProductImage(file: File, productCode?: string): Promise<{ imageUrl: string; persisted: boolean }> {
         const formData = new FormData();
         formData.append('file', file);
+        if (productCode) formData.append('productCode', productCode);
         const response = await api.post('/allyo/catalog/images', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
             timeout: 45_000,
         });
+        return response.data;
+    },
+
+    async removeCatalogProductImage(code: string): Promise<{ success: boolean; productCode: string }> {
+        const response = await api.delete(`/allyo/catalog/products/${encodeURIComponent(code)}/image`);
         return response.data;
     },
 
