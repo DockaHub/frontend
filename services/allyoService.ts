@@ -101,6 +101,7 @@ export interface AllyoCatalogProduct {
     code: string;
     name: string;
     description: string;
+    imageUrl?: string | null;
     category: string;
     subcategory?: string | null;
     specialistRole: string;
@@ -237,6 +238,15 @@ export interface ProjectMessagePayload {
 export const allyoService = {
     async getCatalog(): Promise<AllyoCatalogResponse> {
         const response = await api.get('/allyo/catalog');
+        return response.data;
+    },
+
+    async uploadCatalogProductImage(file: File): Promise<{ imageUrl: string }> {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post('/allyo/catalog/images', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
         return response.data;
     },
 

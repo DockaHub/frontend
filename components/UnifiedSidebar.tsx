@@ -15,6 +15,7 @@ import { getBackendUrl } from '../services/api';
 const getLogoUrl = (logo?: string) => {
     if (!logo) return undefined;
     if (/^(https?:|data:|blob:)/.test(logo)) return logo;
+    if (/^\/?(brands|assets|favicon)(\/|\.)/.test(logo)) return logo.startsWith('/') ? logo : `/${logo}`;
     return `${getBackendUrl()}${logo.startsWith('/') ? '' : '/'}${logo}`;
 };
 
@@ -50,6 +51,7 @@ const getBgColorForSlug = (slug: string) => {
         case 'fauves': return '#2a2ad7';
         case 'tokyon': return '#dc2626';
         case 'asterysko': return '#0412dd';
+        case 'allyo': return '#0d1e1d';
         case 'umachave': return '#f97316';
         default: return '#3b82f6';
     }
@@ -61,18 +63,20 @@ export const BrandLogo: React.FC<{
     className?: string;
 }> = ({ org, size = 'md', className = '' }) => {
     const slug = org.slug?.toLowerCase() || '';
+    const [failedLogo, setFailedLogo] = useState<string>();
 
     const dim = size === 'sm' ? 'w-5 h-5' : size === 'lg' ? 'w-[40px] h-[40px]' : 'w-9 h-9';
     const iconDim = size === 'sm' ? 'w-3.5 h-3.5' : size === 'lg' ? 'w-[22px] h-[22px]' : 'w-5 h-5';
 
     // 1. Uploaded custom logo image
-    if (org.logo) {
+    if (org.logo && failedLogo !== org.logo) {
         const logoUrl = getLogoUrl(org.logo);
         if (logoUrl) {
             return (
                 <img
                     src={logoUrl}
                     alt={org.name}
+                    onError={() => setFailedLogo(org.logo)}
                     className={`${dim} shrink-0 rounded-xl bg-white object-contain dark:bg-zinc-800 ${className}`}
                 />
             );
