@@ -298,6 +298,7 @@ const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: All
     const [section, setSection] = useState<EditorSection>('product');
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [hasPendingImageChange, setHasPendingImageChange] = useState(false);
     const [error, setError] = useState('');
 
     const setRoot = <K extends keyof AllyoCatalogProductPayload>(key: K, value: AllyoCatalogProductPayload[K]) => setForm((current) => ({ ...current, [key]: value }));
@@ -322,6 +323,7 @@ const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: All
             if (optimizedFile.size > CATALOG_UPLOAD_IMAGE_LIMIT) throw new Error('Mesmo após a otimização, a imagem ficou maior que 5 MB. Escolha outra imagem.');
             const uploaded = await allyoService.uploadCatalogProductImage(optimizedFile);
             setRoot('imageUrl', uploaded.imageUrl);
+            setHasPendingImageChange(true);
         } catch (uploadError) {
             setError(apiErrorMessage(uploadError, 'Não foi possível enviar a imagem do produto.'));
         } finally {
@@ -375,7 +377,7 @@ const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: All
             <div className="min-w-0">
                 {error && <div className="mb-5 rounded-[10px] border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{error}</div>}
                 {section === 'product' && <section><SectionTitle title="Informações do produto" description="Dados usados para encontrar, distribuir e apresentar este serviço." />
-                    <CatalogImageField imageUrl={form.imageUrl} productName={form.name} uploading={isUploadingImage} onFile={(file) => void uploadImage(file)} onRemove={() => setRoot('imageUrl', null)} />
+                    <CatalogImageField imageUrl={form.imageUrl} productName={form.name} uploading={isUploadingImage} pending={hasPendingImageChange} saveLabel={isNew ? 'Criar rascunho' : 'Salvar nova versão'} onFile={(file) => void uploadImage(file)} onRemove={() => { setRoot('imageUrl', null); setHasPendingImageChange(true); }} />
                     <div className="mt-6 grid gap-4 sm:grid-cols-2">
                     <AllyoField label="Código" required hint={isNew ? 'não poderá ser alterado' : 'imutável'}><AllyoInput value={form.code} disabled={!isNew} onChange={(event) => setRoot('code', event.target.value)} placeholder="Ex.: SOCIAL-POST" /></AllyoField>
                     <AllyoField label="Nome do produto" required><AllyoInput value={form.name} onChange={(event) => setRoot('name', event.target.value)} placeholder="Ex.: Post para redes sociais" /></AllyoField>
@@ -413,7 +415,7 @@ const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: All
     </Modal>;
 };
 
-const CatalogImageField = ({ imageUrl, productName, uploading, onFile, onRemove }: { imageUrl?: string | null; productName: string; uploading: boolean; onFile: (file?: File) => void; onRemove: () => void }) => (
+const CatalogImageField = ({ imageUrl, productName, uploading, pending, saveLabel, onFile, onRemove }: { imageUrl?: string | null; productName: string; uploading: boolean; pending: boolean; saveLabel: string; onFile: (file?: File) => void; onRemove: () => void }) => (
     <div className="mt-6 rounded-[14px] border border-[#e1e4dc] bg-[#fbfcf8] p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
         <div className="grid items-center gap-5 sm:grid-cols-[220px_minmax(0,1fr)]">
             <div className="relative aspect-[16/10] overflow-hidden rounded-[12px] border border-[#dfe3d8] bg-[#edf2e2] dark:border-zinc-700 dark:bg-zinc-800">
@@ -430,6 +432,7 @@ const CatalogImageField = ({ imageUrl, productName, uploading, onFile, onRemove 
                     </label>
                     {imageUrl && <button type="button" disabled={uploading} onClick={onRemove} className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d7d7d7] px-4 text-xs font-semibold text-[#555] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-red-950/30"><X size={14} /> Remover</button>}
                 </div>
+                {pending && <p className="mt-3 text-xs font-semibold text-amber-700 dark:text-amber-300">Imagem pronta. Clique em “{saveLabel}” para concluir.</p>}
             </div>
         </div>
     </div>
