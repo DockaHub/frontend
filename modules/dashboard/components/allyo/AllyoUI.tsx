@@ -38,6 +38,16 @@ export interface AllyoTask {
     cam: string;
     creative: string;
     deliverables?: AllyoDeliverable[];
+    briefing?: {
+        inheritedFromProject: boolean;
+        overview?: string | null;
+        objective?: string | null;
+        audience?: string | null;
+        tone?: string | null;
+        deliverables: string[];
+        formats: string[];
+        creativeDirection: string[];
+    };
 }
 
 export const numericTaskId = (value: string) => {
@@ -80,7 +90,7 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
 
     return sourceTasks.map((task: any, index: number) => ({
         id: task.id,
-        publicId: numericTaskId(task.id),
+        publicId: task.publicId || numericTaskId(task.id),
         name: task.title || demand.name,
         projectId: demand.id,
         projectName: demand.name,
@@ -93,6 +103,7 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         cam: 'Marina',
         creative,
         deliverables: index === 0 ? demandDeliverables(demand) : undefined,
+        briefing: task.briefing,
     }));
 }
 

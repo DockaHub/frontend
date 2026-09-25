@@ -61,7 +61,15 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const taskResources = getTaskResources(task.id);
     const deliverableKind = getDeliverableKind(task);
     const requestCopy = deliverableCopy[deliverableKind];
-    const briefing = briefingByKind[deliverableKind];
+    const briefing = task.briefing
+        ? [
+            { title: '1. Objetivo desta tarefa', items: [task.briefing.objective].filter((item): item is string => Boolean(item)) },
+            { title: '2. Contexto herdado do projeto', items: [task.briefing.overview, task.briefing.audience ? `Público: ${task.briefing.audience}` : null, task.briefing.tone ? `Tom: ${task.briefing.tone}` : null].filter((item): item is string => Boolean(item)) },
+            { title: '3. Entregáveis', items: task.briefing.deliverables || [] },
+            { title: '4. Formatos', items: task.briefing.formats || [] },
+            { title: '5. Direção criativa', items: task.briefing.creativeDirection || [] },
+        ].filter((block) => block.items.length > 0)
+        : briefingByKind[deliverableKind];
     const isMultiDeliverable = Boolean(task.deliverables && task.deliverables.length > 1);
     const [status, setStatus] = useState(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
     const [descriptionOpen, setDescriptionOpen] = useState(true);

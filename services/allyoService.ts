@@ -219,6 +219,7 @@ export interface AllyoDemand {
 
 export interface AllyoDemandTask {
     id: string;
+    publicId: string;
     projectId: string;
     title: string;
     team: string;
@@ -226,6 +227,17 @@ export interface AllyoDemandTask {
     delivery?: string | null;
     deadlineDays?: number;
     orderIndex?: number;
+    briefing?: {
+        inheritedFromProject: boolean;
+        catalogCode?: string | null;
+        overview?: string | null;
+        objective?: string | null;
+        audience?: string | null;
+        tone?: string | null;
+        deliverables: string[];
+        formats: string[];
+        creativeDirection: string[];
+    };
     createdAt?: string;
     updatedAt?: string;
 }
