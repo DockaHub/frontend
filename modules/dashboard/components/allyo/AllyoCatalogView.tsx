@@ -107,7 +107,9 @@ const optimizeCatalogImage = (file: File): Promise<File> => new Promise((resolve
                 return;
             }
             const neutralId = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
-            resolve(new File([blob], `produto-${neutralId}.webp`, { type: 'image/webp', lastModified: Date.now() }));
+            const outputType = blob.type === 'image/webp' ? 'image/webp' : blob.type === 'image/jpeg' ? 'image/jpeg' : 'image/png';
+            const outputExtension = outputType === 'image/webp' ? 'webp' : outputType === 'image/jpeg' ? 'jpg' : 'png';
+            resolve(new File([blob], `produto-${neutralId}.${outputExtension}`, { type: outputType, lastModified: Date.now() }));
         }, 'image/webp', 0.82);
     };
     image.src = objectUrl;
