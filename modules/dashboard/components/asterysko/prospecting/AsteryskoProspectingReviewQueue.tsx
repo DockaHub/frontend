@@ -3,7 +3,7 @@ import {
     CheckCircle2, XCircle, ShieldAlert, Copy,
     ChevronLeft, ChevronRight, Phone, Mail,
     Calendar, MapPin, DollarSign, Users, AlertTriangle,
-    RefreshCw, Search, Send, Zap
+    RefreshCw, Search, Send, Zap, Database
 } from 'lucide-react';
 import api from '../../../../../services/api';
 
@@ -96,6 +96,29 @@ export const AsteryskoProspectingReviewQueue: React.FC<Props> = ({ organizationI
     const reqHeaders = useMemo(() => (
         organizationId ? { headers: { 'x-organization-id': organizationId } } : undefined
     ), [organizationId]);
+
+    const [syncLoading, setSyncLoading] = useState(false);
+
+    const handleSyncReceita = async () => {
+        if (!organizationId) return;
+        setSyncLoading(true);
+        try {
+            const res = await api.post('/asterysko/prospecting/sync-rf', { useFeedSeed: true }, reqHeaders);
+            if (res.data?.status === 'success') {
+                setFeedback({
+                    type: 'success',
+                    message: `${res.data.companiesInserted} empresas processadas e ${res.data.leadsGenerated} leads gerados no Inbox!`
+                });
+                await loadQueue();
+            } else {
+                setFeedback({ type: 'error', message: res.data?.message || 'Falha na sincronização.' });
+            }
+        } catch (e: any) {
+            setFeedback({ type: 'error', message: 'Falha ao sincronizar: ' + (e?.message || 'Erro desconhecido') });
+        } finally {
+            setSyncLoading(false);
+        }
+    };
 
     // Carrega presets de CNAE
     useEffect(() => {
@@ -402,6 +425,16 @@ export const AsteryskoProspectingReviewQueue: React.FC<Props> = ({ organizationI
                         >
                             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                         </button>
+
+                        <button
+                            onClick={() => void handleSyncReceita()}
+                            disabled={syncLoading}
+                            className="flex items-center gap-1.5 rounded-xl bg-[#0412dd] px-3 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]"
+                            title="Sincronizar Novos CNPJs da Receita Federal"
+                        >
+                            <Database size={13} className={syncLoading ? 'animate-spin' : ''} />
+                            <span className="hidden sm:inline">{syncLoading ? 'Sincronizando...' : 'Sincronizar RF'}</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -438,12 +471,22 @@ export const AsteryskoProspectingReviewQueue: React.FC<Props> = ({ organizationI
                     <p className="mt-1 max-w-md text-xs text-zinc-500 dark:text-zinc-400">
                         Todos os leads pré-qualificados foram analisados. Altere os filtros de data, presets de CNAE ou importe novos dados abertos da Receita Federal.
                     </p>
-                    <button
-                        onClick={() => { setDatePreset('all'); setSelectedSegment('all'); }}
-                        className="mt-4 rounded-xl bg-zinc-900 px-4 py-2 text-xs font-bold text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
-                    >
-                        Ver todos os períodos
-                    </button>
+                    <div className="flex flex-wrap items-center justify-center gap-3 mt-4">
+                        <button
+                            onClick={() => { setDatePreset('all'); setSelectedSegment('all'); }}
+                            className="rounded-xl bg-zinc-900 px-4 py-2 text-xs font-bold text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900"
+                        >
+                            Ver todos os períodos
+                        </button>
+                        <button
+                            onClick={() => void handleSyncReceita()}
+                            disabled={syncLoading}
+                            className="flex items-center gap-2 rounded-xl bg-[#0412dd] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]"
+                        >
+                            <Database size={14} className={syncLoading ? 'animate-spin' : ''} />
+                            <span>{syncLoading ? 'Sincronizando Base...' : 'Sincronizar Novos CNPJs da Receita'}</span>
+                        </button>
+                    </div>
                 </div>
             ) : activeLead && (
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
