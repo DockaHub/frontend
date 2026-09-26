@@ -3,14 +3,16 @@ import { BadgeCheck, CalendarClock, Camera, ChevronRight, CircleGauge, Coins, Pe
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
 import { ALLYO_BORDER, AllyoPageHeader, DataCell } from './AllyoUI';
-import { allyoService, AllyoClient } from '../../../../services/allyoService';
+import { allyoService, AllyoClient, AllyoUser } from '../../../../services/allyoService';
 import { AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton, AllyoSelect, AllyoTextarea, AllyoToggle } from './AllyoForm';
+import AllyoUserPicker from './AllyoUserPicker';
+import { allyoUserRoleLabel } from './allyoUserPresentation';
 
 const emptyClientForm = {
     name: '', legalName: '', document: '', segment: '', area: '', tier: '2' as '1' | '2' | '3',
     monthlyCredits: '20', contractStart: '', contractEnd: '', cam: '', responsibleEmail: '', logo: '',
     fileNamingPattern: '{{client_name}}_{{project_name}}_{{task_id}}', aiRestricted: false,
-    requireTwoFactor: false, billingStatus: 'OK' as 'OK' | 'Aviso' | 'Bloqueado', notes: '', creativeDirection: '',
+    requireTwoFactor: false, billingStatus: 'OK' as 'OK' | 'Aviso' | 'Bloqueado', notes: '', creativeDirection: '', teamMemberIds: [] as string[],
 };
 
 const clientToForm = (client: AllyoClient) => ({
@@ -18,6 +20,7 @@ const clientToForm = (client: AllyoClient) => ({
     monthlyCredits: String(client.monthlyCredits || 1), contractStart: client.contractStart || '', contractEnd: client.contractEndDate || '', cam: client.cam === 'Não definido' ? '' : client.cam || '', responsibleEmail: client.responsibleEmail || '', logo: client.logo || '',
     fileNamingPattern: client.fileNamingPattern || '{{client_name}}_{{project_name}}_{{task_id}}', aiRestricted: Boolean(client.aiRestricted),
     requireTwoFactor: Boolean(client.requireTwoFactor), billingStatus: (client.billingStatus || 'OK') as 'OK' | 'Aviso' | 'Bloqueado', notes: client.notes || '', creativeDirection: client.creativeDirection || '',
+    teamMemberIds: client.teamMemberIds || client.teamMembers?.map((member) => member.id) || [],
 });
 
 const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
@@ -29,6 +32,7 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<AllyoClient | null>(null);
     const [creditClient, setCreditClient] = useState<AllyoClient | null>(null);
+    const [users, setUsers] = useState<AllyoUser[]>([]);
 
     const replaceClient = (client: AllyoClient) => {
         setClients((current) => current.map((item) => item.id === client.id ? client : item));
@@ -46,6 +50,11 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
             .catch((err) => console.warn('[AllyoClientsView] Erro ao carregar clientes:', err))
             .finally(() => setIsLoading(false));
     }, [mode]);
+
+    useEffect(() => {
+        if (!canManage) return;
+        allyoService.getUsers().then((response) => setUsers(response.users || [])).catch((error) => console.warn('[AllyoClientsView] Erro ao carregar equipe interna:', error));
+    }, [canManage]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
@@ -85,8 +94,9 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
                 )}
             </section>
 
-            <ClientDetailsModal client={selected} canManage={canManage} onClose={() => setSelected(null)} onEdit={(client) => { setSelected(null); setEditingClient(client); }} onAddCredits={(client) => { setSelected(null); setCreditClient(client); }} />
+            <ClientDetailsModal client={selected} users={users} canManage={canManage} onClose={() => setSelected(null)} onEdit={(client) => { setSelected(null); setEditingClient(client); }} onAddCredits={(client) => { setSelected(null); setCreditClient(client); }} />
             <ClientFormModal
+                users={users}
                 isOpen={isCreateOpen}
                 onClose={() => setIsCreateOpen(false)}
                 onSaved={(client) => {
@@ -95,13 +105,13 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
                     addToast({ type: 'success', title: 'Empresa cadastrada', message: `${client.name} já pode receber projetos e usuários.` });
                 }}
             />
-            <ClientFormModal client={editingClient} isOpen={Boolean(editingClient)} onClose={() => setEditingClient(null)} onSaved={(client) => { replaceClient(client); setEditingClient(null); addToast({ type: 'success', title: 'Empresa atualizada', message: 'Os dados e o contrato foram salvos.' }); }} />
+            <ClientFormModal users={users} client={editingClient} isOpen={Boolean(editingClient)} onClose={() => setEditingClient(null)} onSaved={(client) => { replaceClient(client); setEditingClient(null); addToast({ type: 'success', title: 'Empresa atualizada', message: 'Os dados, o contrato e a equipe inicial foram salvos.' }); }} />
             <AddCreditsModal client={creditClient} onClose={() => setCreditClient(null)} onSaved={(client) => { replaceClient(client); setCreditClient(null); }} />
         </div>
     );
 };
 
-const ClientDetailsModal = ({ client, canManage, onClose, onEdit, onAddCredits }: { client: AllyoClient | null; canManage: boolean; onClose: () => void; onEdit: (client: AllyoClient) => void; onAddCredits: (client: AllyoClient) => void }) => (
+const ClientDetailsModal = ({ client, users, canManage, onClose, onEdit, onAddCredits }: { client: AllyoClient | null; users: AllyoUser[]; canManage: boolean; onClose: () => void; onEdit: (client: AllyoClient) => void; onAddCredits: (client: AllyoClient) => void }) => (
     <Modal isOpen={Boolean(client)} onClose={onClose} title="Detalhes do cliente" size="lg" footer={client && canManage ? <><AllyoSecondaryButton type="button" onClick={() => onAddCredits(client)}><Coins size={15} /> Adicionar créditos</AllyoSecondaryButton><AllyoPrimaryButton type="button" onClick={() => onEdit(client)}><Pencil size={14} /> Editar empresa</AllyoPrimaryButton></> : undefined}>
         {client && (
             <div>
@@ -126,6 +136,13 @@ const ClientDetailsModal = ({ client, canManage, onClose, onEdit, onAddCredits }
                     <ClientMetric icon={<UserRound size={16} />} label="CAM RESPONSÁVEL" value={client.cam} bordered />
                     <ClientMetric icon={<CalendarClock size={16} />} label="VENCIMENTO" value={client.contractEnd} bordered />
                 </div>
+
+                {(() => {
+                    const ids = new Set(client.teamMemberIds || []);
+                    const names = new Set((client.team || []).map((name) => name.trim().toLocaleLowerCase('pt-BR')));
+                    const members = client.teamMembers?.length ? client.teamMembers : users.filter((user) => ids.has(user.id) || names.has(user.name.trim().toLocaleLowerCase('pt-BR')));
+                    return members.length > 0 ? <div className="mt-6"><span className="text-[9px] font-bold uppercase tracking-[.06em] text-[#888]">Equipe responsável</span><div className="mt-2 flex flex-wrap gap-2">{members.map((member) => <span key={member.id} className="rounded-full border border-[#dce5c9] bg-[#f6f8f1] px-3 py-1.5 text-xs dark:border-[#9db669]/30 dark:bg-[#9db669]/10"><strong>{member.name}</strong><span className="ml-1 text-[#718548]">· {allyoUserRoleLabel(member)}</span></span>)}</div></div> : null;
+                })()}
 
                 <div className="mt-6">
                     <div className="flex items-center justify-between text-xs">
@@ -156,12 +173,23 @@ const ClientMetric = ({ icon, label, value, bordered = false }: { icon: React.Re
     </div>
 );
 
-const ClientFormModal = ({ isOpen, client, onClose, onSaved }: { isOpen: boolean; client?: AllyoClient | null; onClose: () => void; onSaved: (client: AllyoClient) => void }) => {
+const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: boolean; client?: AllyoClient | null; users: AllyoUser[]; onClose: () => void; onSaved: (client: AllyoClient) => void }) => {
     const { addToast } = useToast();
     const [form, setForm] = useState(emptyClientForm);
     const [isSaving, setIsSaving] = useState(false);
 
-    useEffect(() => { setForm(client ? clientToForm(client) : emptyClientForm); }, [client, isOpen]);
+    useEffect(() => {
+        if (!client) {
+            setForm(emptyClientForm);
+            return;
+        }
+        const next = clientToForm(client);
+        if (next.teamMemberIds.length === 0 && client.team?.length) {
+            const teamNames = new Set(client.team.map((name) => name.trim().toLocaleLowerCase('pt-BR')));
+            next.teamMemberIds = users.filter((user) => teamNames.has(user.name.trim().toLocaleLowerCase('pt-BR'))).map((user) => user.id);
+        }
+        setForm(next);
+    }, [client, isOpen, users]);
 
     const update = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [field]: value }));
 
@@ -179,6 +207,10 @@ const ClientFormModal = ({ isOpen, client, onClose, onSaved }: { isOpen: boolean
 
     const submit = async (event: React.FormEvent) => {
         event.preventDefault();
+        if (form.teamMemberIds.length === 0) {
+            addToast({ type: 'warning', title: 'Defina a equipe inicial', message: 'Selecione ao menos um usuário interno para receber os projetos e tarefas desta empresa.' });
+            return;
+        }
         setIsSaving(true);
         try {
             const payload = {
@@ -191,6 +223,7 @@ const ClientFormModal = ({ isOpen, client, onClose, onSaved }: { isOpen: boolean
                 aiRestricted: form.aiRestricted, requireTwoFactor: form.requireTwoFactor,
                 billingStatus: form.billingStatus, notes: form.notes.trim() || undefined,
                 creativeDirection: form.creativeDirection.trim() || undefined,
+                teamMemberIds: form.teamMemberIds,
             };
             const result = client ? await allyoService.updateClient(client.id, payload) : await allyoService.createClient(payload);
             onSaved(result.client);
@@ -231,6 +264,12 @@ const ClientFormModal = ({ isOpen, client, onClose, onSaved }: { isOpen: boolean
                         <AllyoField label="CAM responsável" hint="opcional" className="lg:col-span-2"><AllyoInput value={form.cam} onChange={(event) => update('cam', event.target.value)} placeholder="Nome do responsável de atendimento" /></AllyoField>
                         <AllyoField label="Inadimplência"><AllyoSelect value={form.billingStatus} onChange={(event) => update('billingStatus', event.target.value as 'OK' | 'Aviso' | 'Bloqueado')}><option value="OK">OK</option><option value="Aviso">Aviso</option><option value="Bloqueado">Bloqueado</option></AllyoSelect></AllyoField>
                     </div>
+                </FormSection>
+
+                <FormSection title="Equipe inicial" description="Esta equipe será herdada pelos projetos da empresa. Cada tarefa será direcionada ao integrante cujo cargo corresponda à especialidade solicitada.">
+                    <AllyoField label="Responsáveis internos" required hint="busque pelo nome cadastrado">
+                        <AllyoUserPicker users={users} selectedIds={form.teamMemberIds} onChange={(ids) => update('teamMemberIds', ids)} placeholder="Busque Art Director, Copywriter, Motion Designer…" />
+                    </AllyoField>
                 </FormSection>
 
                 <FormSection title="Regras da conta">

@@ -144,6 +144,7 @@ const UserFormModal = ({ isOpen, user, clients, onClose, onSaved }: { isOpen: bo
     const [isSaving, setIsSaving] = useState(false);
     const config = CATEGORY_CONFIG[form.category];
     const clientRequired = form.category === 'CLIENTE';
+    const creativeRoleRequired = form.category === 'CRIATIVO' || form.category === 'CRIATIVO_SMB';
 
     useEffect(() => {
         setForm(user ? {
@@ -158,6 +159,10 @@ const UserFormModal = ({ isOpen, user, clients, onClose, onSaved }: { isOpen: bo
         event.preventDefault();
         if (clientRequired && !form.clientId) {
             addToast({ type: 'warning', title: 'Selecione a empresa do cliente' });
+            return;
+        }
+        if (creativeRoleRequired && !form.jobTitle.trim()) {
+            addToast({ type: 'warning', title: 'Informe a especialidade do criativo', message: 'O cargo é usado para encaminhar Design, Copy, Motion e outras tarefas à pessoa correta.' });
             return;
         }
         setIsSaving(true);
@@ -189,7 +194,7 @@ const UserFormModal = ({ isOpen, user, clients, onClose, onSaved }: { isOpen: bo
                     <AllyoField label="Idioma"><AllyoSelect value={form.language} onChange={(event) => update('language', event.target.value)}><option value="pt-BR">Português (Brasil)</option><option value="en">English</option><option value="es">Español</option></AllyoSelect></AllyoField>
                     {user && <AllyoField label="Status"><AllyoSelect value={form.status} onChange={(event) => update('status', event.target.value as typeof form.status)}><option value="Ativo">Ativo</option><option value="Convite enviado">Convite enviado</option><option value="Inativo">Inativo</option></AllyoSelect></AllyoField>}
                     {clientRequired && <AllyoField label="Empresa contratual" required className="sm:col-span-2"><AllyoSelect required value={form.clientId} onChange={(event) => update('clientId', event.target.value)}><option value="">Selecione a empresa</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</AllyoSelect></AllyoField>}
-                    <AllyoField label="Cargo" hint="opcional"><AllyoInput value={form.jobTitle} onChange={(event) => update('jobTitle', event.target.value)} placeholder={clientRequired ? 'Ex.: Gerente de Marketing' : 'Ex.: Motion Designer'} /></AllyoField>
+                    <AllyoField label="Cargo / especialidade" required={creativeRoleRequired} hint={creativeRoleRequired ? 'usado no direcionamento automático' : 'opcional'}><AllyoInput required={creativeRoleRequired} value={form.jobTitle} onChange={(event) => update('jobTitle', event.target.value)} placeholder={clientRequired ? 'Ex.: Gerente de Marketing' : 'Ex.: Copywriter ou Motion Designer'} /></AllyoField>
                     <AllyoField label="Equipe" hint="opcional"><AllyoInput value={form.team} onChange={(event) => update('team', event.target.value)} placeholder={clientRequired ? 'Ex.: Marketing' : 'Ex.: Squad Growth'} /></AllyoField>
                 </div>
             </form>

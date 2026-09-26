@@ -3,10 +3,11 @@ import { BriefcaseBusiness, ChevronRight, FolderKanban, Loader2, Search, UsersRo
 import { useSearchParams } from 'react-router-dom';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
-import { allyoService, type AllyoDemand } from '../../../../services/allyoService';
+import { allyoService, type AllyoDemand, type AllyoUser } from '../../../../services/allyoService';
 import { socketService } from '../../../../services/socketService';
 import { AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton, AllyoSelect } from './AllyoForm';
 import { ALLYO_BORDER, AllyoPageHeader, DataCell, FilterSelect, mapDemandToTasks } from './AllyoUI';
+import AllyoUserPicker from './AllyoUserPicker';
 
 const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
@@ -155,7 +156,8 @@ const ProjectRow = ({ project, onClick }: { project: AllyoDemand; onClick: () =>
 const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTask }: { project: AllyoDemand | null; onClose: () => void; onSaved: (project: AllyoDemand) => void; onDeleted: (projectId: string) => void; onOpenTask: (taskId: string) => void }) => {
     const { addToast } = useToast();
     const [status, setStatus] = useState('Em andamento');
-    const [team, setTeam] = useState('');
+    const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
+    const [users, setUsers] = useState<AllyoUser[]>([]);
     const [isSaving, setIsSaving] = useState(false);
     const [confirmInactive, setConfirmInactive] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -164,10 +166,22 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTa
     useEffect(() => {
         if (!project) return;
         setStatus(project.status === 'Inativo' ? 'Em andamento' : project.status || 'Em andamento');
-        setTeam((project.team || []).join(', '));
+        setTeamMemberIds([]);
         setConfirmInactive(false);
         setConfirmDelete(false);
         setDeleteConfirmation('');
+    }, [project]);
+
+    useEffect(() => {
+        if (!project) return;
+        allyoService.getUsers()
+            .then((response) => {
+                const loadedUsers = response.users || [];
+                const projectNames = new Set((project.team || []).map((name) => name.trim().toLocaleLowerCase('pt-BR')));
+                setUsers(loadedUsers);
+                setTeamMemberIds(loadedUsers.filter((user) => projectNames.has(user.name.trim().toLocaleLowerCase('pt-BR'))).map((user) => user.id));
+            })
+            .catch((error) => addToast({ type: 'error', title: 'Não foi possível carregar os responsáveis', message: error.response?.data?.message || 'Tente novamente.' }));
     }, [project]);
 
     if (!project) return null;
@@ -175,14 +189,14 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTa
 
     const save = async (event: React.FormEvent) => {
         event.preventDefault();
-        const teamMembers = team.split(',').map((item) => item.trim()).filter(Boolean);
+        const teamMembers = teamMemberIds.map((id) => users.find((user) => user.id === id)?.name).filter((name): name is string => Boolean(name));
         setIsSaving(true);
         try {
             await Promise.all([
                 allyoService.updateProjectStatus(project.id, { status }),
-                ...(teamMembers.length > 0 ? [allyoService.assignProjectTeam(project.id, teamMembers)] : []),
+                allyoService.assignProjectTeam(project.id, teamMemberIds),
             ]);
-            onSaved({ ...project, status, team: teamMembers.length > 0 ? teamMembers : project.team });
+            onSaved({ ...project, status, team: teamMembers });
             addToast({ type: 'success', title: 'Projeto atualizado', message: 'Status e responsáveis foram salvos.' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível atualizar o projeto', message: error.response?.data?.message || 'Tente novamente.' });
@@ -232,7 +246,7 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTa
                 <div className="grid gap-4 sm:grid-cols-2">
                     <AllyoField label="Status do projeto"><AllyoSelect value={status} onChange={(event) => setStatus(event.target.value)}><option>Rascunho</option><option>Em andamento</option><option>Em revisão</option><option>Concluído</option></AllyoSelect></AllyoField>
                     <AllyoField label="Deadline automático"><div className="flex min-h-11 items-center rounded-[10px] border border-[#dedede] bg-[#f7f8f5] px-3 text-sm text-[#555] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">{formatProjectDeadline(project.deadline)}</div></AllyoField>
-                    <AllyoField label="Responsáveis" hint="separe por vírgulas" className="sm:col-span-2"><AllyoInput value={team} onChange={(event) => setTeam(event.target.value)} placeholder="CAM, CQS, Art Director e criativos" /></AllyoField>
+                    <AllyoField label="Responsáveis" hint="busque usuários cadastrados" className="sm:col-span-2"><AllyoUserPicker users={users} selectedIds={teamMemberIds} onChange={setTeamMemberIds} placeholder="Digite o nome do responsável" /></AllyoField>
                 </div>
 
                 <section>

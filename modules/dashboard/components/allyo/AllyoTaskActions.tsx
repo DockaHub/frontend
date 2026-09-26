@@ -5,10 +5,11 @@ import {
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
-import { allyoService, type AllyoDemandTask } from '../../../../services/allyoService';
+import { allyoService, type AllyoDemandTask, type AllyoUser } from '../../../../services/allyoService';
 import { AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton, AllyoSelect } from './AllyoForm';
 import type { AllyoTask } from './AllyoUI';
 import { addTaskActivity, readTaskActivity } from './allyoTaskActivity';
+import AllyoUserPicker from './AllyoUserPicker';
 
 type Confirmation = 'deactivate-project' | 'deactivate-task' | 'delete-task' | null;
 
@@ -50,7 +51,8 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     const [title, setTitle] = useState(task.name);
     const [team, setTeam] = useState(task.category);
     const [credits, setCredits] = useState(task.credits);
-    const [responsible, setResponsible] = useState(task.creative);
+    const [responsibleId, setResponsibleId] = useState<string[]>([]);
+    const [responsibleUsers, setResponsibleUsers] = useState<AllyoUser[]>([]);
     const [stackTasks, setStackTasks] = useState<AllyoDemandTask[]>([]);
     const [dependsOn, setDependsOn] = useState<string[]>(task.dependsOn || []);
     const [workflowStage, setWorkflowStage] = useState(task.workflowStage || 'Produção');
@@ -65,8 +67,22 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         setTitle(task.name);
         setTeam(task.category);
         setCredits(task.credits);
-        setResponsible(task.creative);
     }, [task.category, task.creative, task.credits, task.id, task.name]);
+
+    useEffect(() => {
+        if (modal !== 'responsible') return;
+        allyoService.getUsers()
+            .then((response) => {
+                const users = response.users || [];
+                setResponsibleUsers(users);
+                const current = users.find((user) => user.name.trim().toLocaleLowerCase('pt-BR') === task.creative.trim().toLocaleLowerCase('pt-BR'));
+                setResponsibleId(current ? [current.id] : []);
+            })
+            .catch(() => {
+                setResponsibleUsers([]);
+                setResponsibleId([]);
+            });
+    }, [modal, task.creative]);
 
     useEffect(() => {
         if (modal !== 'stack') return;
@@ -100,7 +116,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
             setTeam(task.category);
             setCredits(task.credits);
         }
-        if (next === 'responsible') setResponsible(task.creative);
+        if (next === 'responsible') setResponsibleId([]);
         if (next === 'project') {
             setProjectStatus(task.status === 'Concluída' ? 'Concluído' : task.status === 'Em revisão' ? 'Em revisão' : 'Em andamento');
         }
@@ -135,13 +151,16 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
 
     const saveResponsible = async (event: React.FormEvent) => {
         event.preventDefault();
-        const normalizedResponsible = responsible.trim();
-        if (!normalizedResponsible) return;
+        const selected = responsibleUsers.find((user) => user.id === responsibleId[0]);
+        if (!selected) {
+            addToast({ type: 'warning', title: 'Selecione um usuário cadastrado' });
+            return;
+        }
         setIsSaving(true);
         try {
-            await allyoService.updateTask(task.id, { assignee: normalizedResponsible });
-            onTaskEdited({ creative: normalizedResponsible });
-            recordAction(`Alterou o responsável da tarefa para “${normalizedResponsible}”.`);
+            await allyoService.updateTask(task.id, { assigneeId: selected.id });
+            onTaskEdited({ creative: selected.name });
+            recordAction(`Alterou o responsável da tarefa para “${selected.name}”.`);
             setModal(null);
             addToast({ type: 'success', title: 'Responsável atualizado' });
         } catch (error: any) {
@@ -330,8 +349,8 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
 
             <Modal isOpen={modal === 'responsible'} onClose={() => setModal(null)} title="Editar responsáveis" size="sm" footer={<><AllyoSecondaryButton type="button" onClick={() => setModal(null)}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-edit-responsible" disabled={isSaving}>{isSaving ? 'Salvando...' : 'Alterar'}</AllyoPrimaryButton></>}>
                 <form id="allyo-edit-responsible" onSubmit={saveResponsible}>
-                    <p className="mb-4 text-sm leading-6 text-[#777] dark:text-zinc-400">Defina o time, CQS ou Art Director responsável por esta tarefa.</p>
-                    <AllyoField label="Responsável" required><AllyoInput required value={responsible} onChange={(event) => setResponsible(event.target.value)} placeholder="Nome do CAM, CQS ou Art Director" /></AllyoField>
+                    <p className="mb-4 text-sm leading-6 text-[#777] dark:text-zinc-400">Selecione um usuário interno. O cargo exibido ao lado do nome ajuda a direcionar a tarefa à especialidade correta.</p>
+                    <AllyoField label="Responsável" required><AllyoUserPicker users={responsibleUsers} selectedIds={responsibleId} onChange={setResponsibleId} multiple={false} placeholder="Digite o nome do responsável" /></AllyoField>
                 </form>
             </Modal>
 

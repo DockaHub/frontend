@@ -43,21 +43,24 @@ const AllyoEarningsView = () => {
             .finally(() => setIsLoading(false));
     }, []);
 
-    const approvedDemands = useMemo(() => {
-        return demands.filter((d) => d.status === 'Concluído' || d.status === 'Concluída');
-    }, [demands]);
+    const taskEntries = useMemo(() => demands.flatMap((demand) => (demand.tasksList || []).map((task) => {
+        const taskDesigns = (demand.designs || []).filter((design) => design.taskId === task.id || (!design.taskId && (demand.tasksList || []).length === 1));
+        const hasSubmittedVersion = taskDesigns.length > 0 || ((demand.tasksList || []).length === 1 && demand.designsCount > 0);
+        const completed = task.status === 'Concluído' || task.status === 'Concluída';
+        const approved = taskDesigns.some((design) => design.approved) || (completed && hasSubmittedVersion && taskDesigns.length === 0);
+        return { demand, task, taskDesigns, hasSubmittedVersion, approved };
+    })), [demands]);
 
-    const pendingDemands = useMemo(() => {
-        return demands.filter((d) => d.status === 'Em revisão' || d.status === 'Em andamento');
-    }, [demands]);
+    const approvedTasks = useMemo(() => taskEntries.filter((entry) => entry.approved), [taskEntries]);
+    const pendingTasks = useMemo(() => taskEntries.filter((entry) => !entry.approved && entry.hasSubmittedVersion), [taskEntries]);
 
     const approvedCredits = useMemo(() => {
-        return approvedDemands.reduce((sum, demand) => sum + (demand.tasksList || []).reduce((taskSum, task) => taskSum + Number(task.credits ?? 0), 0), 0);
-    }, [approvedDemands]);
+        return approvedTasks.reduce((sum, entry) => sum + Number(entry.task.credits ?? 0), 0);
+    }, [approvedTasks]);
 
     const pendingCredits = useMemo(() => {
-        return pendingDemands.reduce((sum, demand) => sum + (demand.tasksList || []).reduce((taskSum, task) => taskSum + Number(task.credits ?? 0), 0), 0);
-    }, [pendingDemands]);
+        return pendingTasks.reduce((sum, entry) => sum + Number(entry.task.credits ?? 0), 0);
+    }, [pendingTasks]);
 
     // Cálculo de saldo com base no valor progressivo por crédito
     const totalEarnings = useMemo(() => {
@@ -67,14 +70,14 @@ const AllyoEarningsView = () => {
     }, [approvedCredits]);
 
     const deliveries: DeliveryRow[] = useMemo(() => {
-        return approvedDemands.map((d) => ({
-            id: d.id,
-            approvedAt: new Date(d.updatedAt || d.createdAt).toLocaleDateString('pt-BR'),
-            versions: d.designsCount || 1,
-            credits: (d.tasksList || []).reduce((sum, task) => sum + Number(task.credits ?? 0), 0),
+        return approvedTasks.map(({ demand, task, taskDesigns }) => ({
+            id: task.publicId || task.id,
+            approvedAt: new Date(task.updatedAt || demand.updatedAt || demand.createdAt).toLocaleDateString('pt-BR'),
+            versions: taskDesigns.length || (demand.tasksList?.length === 1 ? demand.designsCount : 1) || 1,
+            credits: Number(task.credits ?? 0),
             boosters: 0,
         }));
-    }, [approvedDemands]);
+    }, [approvedTasks]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
@@ -113,6 +116,7 @@ const AllyoEarningsView = () => {
                         <p className="mt-[10px] text-xs leading-[1.35] text-[#858585]">
                             Atualmente, <strong>{pendingCredits.toLocaleString('pt-BR')} créditos</strong> aguardam aprovação do cliente. Após aprovação, serão transferidos para sua lista de créditos aprovados.
                         </p>
+                        <p className="mt-2 text-[10px] leading-4 text-[#999]">O crédito só entra como pendente depois do envio da primeira versão para aprovação.</p>
                     </div>
                 </aside>
 

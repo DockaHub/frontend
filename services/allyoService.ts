@@ -55,6 +55,9 @@ export interface AllyoClient {
     billingStatus?: 'OK' | 'Aviso' | 'Bloqueado' | string;
     notes?: string;
     creativeDirection?: string;
+    team?: string[];
+    teamMemberIds?: string[];
+    teamMembers?: AllyoUser[];
 }
 
 export interface ClientsResponse {
@@ -204,6 +207,7 @@ export interface CreateAllyoClientPayload {
     billingStatus: 'OK' | 'Aviso' | 'Bloqueado';
     notes?: string;
     creativeDirection?: string;
+    teamMemberIds: string[];
 }
 
 export interface AllyoDemand {
@@ -235,6 +239,7 @@ export interface AllyoDemandTask {
     title: string;
     team: string;
     assignee?: string | null;
+    assigneeId?: string | null;
     status: 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Concluído' | string;
     delivery?: string | null;
     workflowStage?: string;
@@ -407,12 +412,12 @@ export const allyoService = {
         return response.data;
     },
 
-    async createProjectTask(projectId: string, data: { title: string; team?: string; assignee?: string | null; status?: string; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
+    async createProjectTask(projectId: string, data: { title: string; team?: string; assignee?: string | null; assigneeId?: string | null; status?: string; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/tasks`, data);
         return response.data;
     },
 
-    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
+    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; assigneeId?: string | null; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.patch(`/allyo/tasks/${encodeURIComponent(taskId)}`, data);
         return response.data;
     },
@@ -441,8 +446,8 @@ export const allyoService = {
     /**
      * Atribui criativos à equipe da demanda
      */
-    async assignProjectTeam(projectId: string, team: string[]) {
-        const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/assign`, { team });
+    async assignProjectTeam(projectId: string, teamMemberIds: string[]) {
+        const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/assign`, { teamMemberIds });
         return response.data;
     },
 
