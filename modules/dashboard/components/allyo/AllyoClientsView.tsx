@@ -49,7 +49,7 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
-            <AllyoPageHeader title={canManage ? 'Empresas e contratos' : 'Meus clientes'} actions={canManage ? <AllyoPrimaryButton onClick={() => setIsCreateOpen(true)}><Plus size={15} /> Nova empresa</AllyoPrimaryButton> : undefined} />
+            <AllyoPageHeader title={canManage ? 'Clientes' : 'Meus clientes'} actions={canManage ? <AllyoPrimaryButton onClick={() => setIsCreateOpen(true)}><Plus size={15} /> Novo cliente</AllyoPrimaryButton> : undefined} />
             <section aria-label="Clientes ativos">
                 {clients.map((client) => (
                     <button

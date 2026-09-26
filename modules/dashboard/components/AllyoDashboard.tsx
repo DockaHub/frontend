@@ -8,6 +8,7 @@ import AllyoClientsView from './allyo/AllyoClientsView';
 import AllyoUsersView from './allyo/AllyoUsersView';
 import AllyoCatalogView from './allyo/AllyoCatalogView';
 import AllyoTaskDetailView from './allyo/AllyoTaskDetailView';
+import AllyoProjectsView from './allyo/AllyoProjectsView';
 import { AllyoPageHeader } from './allyo/AllyoUI';
 
 interface AllyoDashboardProps {
@@ -38,14 +39,17 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organ
             return <AllyoCreativePanelView />;
         case 'clients':
             return <AllyoClientsView mode="assigned" />;
+        case 'management-projects':
+        case 'projects':
+            return <AllyoProjectsView />;
         case 'management-clients':
-            return canManageAccess ? <AllyoClientsView mode="management" /> : <AccessDenied title="Empresas e contratos" />;
+            return canManageAccess ? <AllyoClientsView mode="management" /> : <AccessDenied title="Clientes" />;
         case 'management-users':
         case 'users':
-            return canManageAccess ? <AllyoUsersView /> : <AccessDenied title="Usuários e hierarquia" />;
+            return canManageAccess ? <AllyoUsersView /> : <AccessDenied title="Usuários" />;
         case 'management-catalog':
         case 'catalog':
-            return canManageAccess ? <AllyoCatalogView /> : <AccessDenied title="Catálogo de produtos" />;
+            return canManageAccess ? <AllyoCatalogView /> : <AccessDenied title="Produtos" />;
         case 'task-detail':
             return <AllyoTaskDetailView userName={user?.name} />;
         default: {

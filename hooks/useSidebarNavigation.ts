@@ -21,6 +21,7 @@ export interface MenuItem {
 
 export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User, 'role'>) => {
     const [unreadLeads, setUnreadLeads] = useState(0);
+    const [allyoCanManageProjects, setAllyoCanManageProjects] = useState(false);
 
     // Fetch unread leads specifically for Asterysko
     useEffect(() => {
@@ -58,6 +59,18 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
         }
     }, [currentOrg?.slug]);
 
+    useEffect(() => {
+        let active = true;
+        if (currentOrg?.slug !== 'allyo') {
+            setAllyoCanManageProjects(false);
+            return () => { active = false; };
+        }
+        api.get('/allyo/permissions')
+            .then((response) => { if (active) setAllyoCanManageProjects(Boolean(response.data?.canManageProjects)); })
+            .catch(() => { if (active) setAllyoCanManageProjects(false); });
+        return () => { active = false; };
+    }, [currentOrg?.id, currentOrg?.slug]);
+
     const getOrgMenu = (): MenuItem[] => {
         if (!currentOrg) return [];
 
@@ -68,9 +81,10 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 { id: 'tasks', label: 'Tarefas', icon: ListChecks },
                 { id: 'earnings', label: 'Ganhos', icon: BadgeDollarSign },
                 { id: 'clients', label: 'Meus clientes', icon: Building2 },
-                { id: 'management-clients', label: 'Empresas e contratos', icon: Building2, section: 'ADMINISTRAÇÃO' },
-                { id: 'management-users', label: 'Usuários e hierarquia', icon: Users, section: 'ADMINISTRAÇÃO' },
-                { id: 'management-catalog', label: 'Catálogo de produtos', icon: BookOpen, section: 'ADMINISTRAÇÃO' },
+                { id: 'management-projects', label: 'Projetos', icon: Briefcase, section: 'ADMINISTRAÇÃO' },
+                { id: 'management-clients', label: 'Clientes', icon: Building2, section: 'ADMINISTRAÇÃO' },
+                { id: 'management-users', label: 'Usuários', icon: Users, section: 'ADMINISTRAÇÃO' },
+                { id: 'management-catalog', label: 'Produtos', icon: BookOpen, section: 'ADMINISTRAÇÃO' },
                 { id: 'settings', label: 'Configurações', icon: Settings, section: 'ADMINISTRAÇÃO' },
                 { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
                 { id: 'help-center', label: 'Central de Ajuda', icon: LifeBuoy, section: 'SUPORTE' },
@@ -178,14 +192,17 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 return items.filter((item) => !['team', 'settings'].includes(item.id));
             }
             if (currentOrg.slug === 'allyo') {
-                return items.filter((item) => !['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id));
+                return items.filter((item) => item.id === 'management-projects'
+                    ? allyoCanManageProjects
+                    : !['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id));
             }
             return items;
         }
 
         return items.filter(item => {
-            if (currentOrg.slug === 'allyo' && ['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id)) {
-                return false;
+            if (currentOrg.slug === 'allyo') {
+                if (item.id === 'management-projects') return allyoCanManageProjects;
+                if (['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id)) return false;
             }
 
             // Regras específicas da Asterysko

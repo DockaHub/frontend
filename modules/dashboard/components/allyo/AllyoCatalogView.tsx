@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-    Archive, BookOpen, Check, ChevronRight, CircleDollarSign, Clock3, Edit3,
-    Eye, EyeOff, FileStack, Image as ImageIcon, Loader2, PackageOpen, Plus,
-    RefreshCw, Search, Send, Sparkles, Trash2, Undo2, UploadCloud, X,
+    Archive, BookOpen, Check, ChevronRight, CircleDollarSign, Edit3,
+    FileStack, Image as ImageIcon, Loader2, PackageOpen, Plus,
+    RefreshCw, Search, Send, Trash2, Undo2, UploadCloud, X,
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import {
@@ -11,7 +11,7 @@ import {
     type AllyoCatalogProductPayload,
     type AllyoCatalogProductStatus,
 } from '../../../../services/allyoService';
-import { ALLYO_BORDER, AllyoPageHeader } from './AllyoUI';
+import { ALLYO_BORDER, AllyoPageHeader, DataCell, FilterSelect } from './AllyoUI';
 import {
     AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton,
     AllyoTextarea, AllyoToggle,
@@ -61,10 +61,10 @@ const emptyProduct = (): AllyoCatalogProductPayload => ({
     sourceUrl: null,
 });
 
-const statusMeta: Record<AllyoCatalogProductStatus, { label: string; classes: string }> = {
-    draft: { label: 'Rascunho', classes: 'bg-amber-50 text-amber-700 dark:bg-amber-950/35 dark:text-amber-300' },
-    published: { label: 'Publicado', classes: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/35 dark:text-emerald-300' },
-    archived: { label: 'Arquivado', classes: 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400' },
+const statusMeta: Record<AllyoCatalogProductStatus, { label: string; textClasses: string }> = {
+    draft: { label: 'Rascunho', textClasses: 'text-amber-700 dark:text-amber-300' },
+    published: { label: 'Publicado', textClasses: 'text-emerald-700 dark:text-emerald-300' },
+    archived: { label: 'Arquivado', textClasses: 'text-zinc-500 dark:text-zinc-400' },
 };
 
 const parseList = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
@@ -149,10 +149,6 @@ const AllyoCatalogView = () => {
     useEffect(() => { void loadCatalog(); }, []);
 
     const categories = useMemo(() => [...new Set(products.map((product) => product.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR')), [products]);
-    const categoryCounts = useMemo(() => products.reduce<Record<string, number>>((acc, product) => {
-        acc[product.category] = (acc[product.category] || 0) + 1;
-        return acc;
-    }, {}), [products]);
     const filtered = useMemo(() => products.filter((product) => {
         const term = query.trim().toLocaleLowerCase('pt-BR');
         if (term && ![product.name, product.code, product.category, product.subcategory, product.specialistRole].some((value) => String(value || '').toLocaleLowerCase('pt-BR').includes(term))) return false;
@@ -184,96 +180,48 @@ const AllyoCatalogView = () => {
         }
     };
 
-    const published = products.filter((product) => product.status === 'published').length;
-    const drafts = products.filter((product) => product.status === 'draft').length;
-    const hidden = products.filter((product) => !product.visibleToClient).length;
-
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
-            <AllyoPageHeader title="Catálogo de produtos" actions={<AllyoPrimaryButton onClick={() => setEditing(null)}><Plus size={15} /> Novo produto</AllyoPrimaryButton>} />
+            <AllyoPageHeader title="Produtos" actions={<AllyoPrimaryButton onClick={() => setEditing(null)}><Plus size={15} /> Novo produto</AllyoPrimaryButton>} />
 
-            <section className={`border-b px-5 py-7 sm:px-[30px] ${ALLYO_BORDER}`}>
-                <div className="mx-auto max-w-[1500px]">
-                    <div className="mb-5 max-w-2xl">
-                        <h2 className="font-season text-[26px] font-normal leading-tight">Serviços disponíveis na Allyo</h2>
-                        <p className="mt-2 text-sm leading-6 text-[#686868] dark:text-zinc-400">Organize imagens, escopo, créditos e prazos dos produtos usados na criação de novos projetos.</p>
-                    </div>
-                    <div className="grid overflow-hidden rounded-[14px] border border-[#e0e3dc] bg-[#fbfcf8] sm:grid-cols-2 xl:grid-cols-4 dark:border-zinc-800 dark:bg-zinc-900">
-                        <CatalogMetric icon={<BookOpen size={17} />} label="Produtos" value={products.length} />
-                        <CatalogMetric icon={<Eye size={17} />} label="Publicados" value={published} tone="text-emerald-600" />
-                        <CatalogMetric icon={<Edit3 size={17} />} label="Em preparação" value={drafts} tone="text-amber-600" />
-                        <CatalogMetric icon={<EyeOff size={17} />} label="Internos ou ocultos" value={hidden} />
-                    </div>
-                </div>
-            </section>
-
-            <div className="mx-auto max-w-[1500px] p-4 sm:p-6 lg:p-[30px]">
-                {notice && <div className="mt-4 flex items-center justify-between rounded-[12px] border border-[#cbd9ad] bg-[#f3f7e9] px-4 py-3 text-xs text-[#566a2f] dark:border-[#9db669]/30 dark:bg-[#9db669]/10 dark:text-[#d0f08e]"><span className="flex items-center gap-2"><Check size={15} /> {notice}</span><button onClick={() => setNotice('')} className="font-semibold">Fechar</button></div>}
-                {error && <div className="mt-4 flex items-center justify-between gap-4 rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300"><span>{error}</span><button onClick={() => void loadCatalog()} className="flex shrink-0 items-center gap-1 font-semibold"><RefreshCw size={13} /> Tentar novamente</button></div>}
-
-                <div className="grid min-h-[560px] overflow-hidden rounded-[16px] border border-[#e0e3dc] bg-white lg:grid-cols-[240px_minmax(0,1fr)] dark:border-zinc-800 dark:bg-zinc-900">
-                    <aside className="border-b border-[#e5e5e5] p-5 lg:border-b-0 lg:border-r dark:border-zinc-800">
-                        <p className="px-2 text-[11px] font-bold uppercase tracking-[.12em] text-[#73796f]">Categorias</p>
-                        <div className="mt-3 flex gap-2 overflow-x-auto lg:block lg:space-y-1">
-                            <CategoryButton active={category === 'Todos'} label="Todos os produtos" count={products.length} onClick={() => setCategory('Todos')} />
-                            {categories.map((item) => <CategoryButton key={item} active={category === item} label={item} count={categoryCounts[item]} onClick={() => setCategory(item)} />)}
-                        </div>
-                        <div className="mt-6 hidden rounded-[12px] bg-[#f4f6ef] p-4 text-xs leading-5 text-[#657052] lg:block dark:bg-zinc-800 dark:text-zinc-400">
-                            <Sparkles size={16} className="mb-2 text-[#9db669]" />
-                            O código identifica o produto para sempre. Alterações futuras criam uma nova versão sem mudar projetos antigos.
-                        </div>
-                    </aside>
-
-                    <main className="min-w-0">
-                        <div className={`flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center ${ALLYO_BORDER}`}>
-                            <div className="relative min-w-0 flex-1"><Search size={17} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8b8b8b]" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar produto, código ou especialidade" className="h-11 w-full rounded-full border border-[#dedede] bg-white pl-11 pr-4 text-sm outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/15 dark:border-zinc-700 dark:bg-zinc-950" /></div>
-                            <div className="flex gap-1 overflow-x-auto rounded-full bg-[#f1f2ee] p-1 dark:bg-zinc-800">
-                                {([['all', 'Todos'], ['published', 'Publicados'], ['draft', 'Rascunhos'], ['archived', 'Arquivados']] as const).map(([value, label]) => <button key={value} onClick={() => setStatus(value)} className={`h-9 whitespace-nowrap rounded-full px-4 text-xs font-semibold transition ${status === value ? 'bg-white text-black shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-[#696969] dark:text-zinc-400'}`}>{label}</button>)}
-                            </div>
-                        </div>
-
-                        {isLoading ? <CatalogLoading /> : filtered.length === 0 ? <CatalogEmpty hasProducts={products.length > 0} onCreate={() => setEditing(null)} /> : <ProductList products={filtered} busyCode={busyCode} onEdit={(product) => setEditing(product)} onAction={mutateProduct} />}
-                    </main>
-                </div>
+            <div className={`relative z-30 flex min-h-[64px] flex-wrap items-center gap-[10px] border-b px-5 py-3 sm:px-[30px] ${ALLYO_BORDER}`}>
+                <span className="mr-1 shrink-0 text-sm font-medium">Filtros</span>
+                <div className="relative min-w-[220px] flex-1 sm:max-w-[360px]"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar produto, código ou especialidade" className="h-9 w-full rounded-full border border-[#e5e5e5] bg-white pl-9 pr-4 text-xs outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/15 dark:border-zinc-700 dark:bg-zinc-900" /></div>
+                <FilterSelect label="Categorias" value={category} options={categories} onChange={setCategory} />
+                <FilterSelect label="Status" value={status === 'all' ? 'Todos' : statusMeta[status].label} options={['Publicado', 'Rascunho', 'Arquivado']} onChange={(value) => setStatus(value === 'Todos' ? 'all' : value === 'Publicado' ? 'published' : value === 'Rascunho' ? 'draft' : 'archived')} />
+                <span className="ml-auto text-[11px] font-medium text-[#8f8f8f]">{filtered.length} {filtered.length === 1 ? 'produto' : 'produtos'}</span>
             </div>
+
+            {notice && <div className={`flex items-center justify-between border-b bg-[#f3f7e9] px-5 py-3 text-xs text-[#566a2f] sm:px-[30px] dark:bg-[#9db669]/10 dark:text-[#d0f08e] ${ALLYO_BORDER}`}><span className="flex items-center gap-2"><Check size={15} /> {notice}</span><button onClick={() => setNotice('')} className="font-semibold">Fechar</button></div>}
+            {error && <div className={`flex items-center justify-between gap-4 border-b bg-red-50 px-5 py-3 text-xs text-red-700 sm:px-[30px] dark:bg-red-950/30 dark:text-red-300 ${ALLYO_BORDER}`}><span>{error}</span><button onClick={() => void loadCatalog()} className="flex shrink-0 items-center gap-1 font-semibold"><RefreshCw size={13} /> Tentar novamente</button></div>}
+
+            <section aria-live="polite" aria-label="Produtos do catálogo">
+                {isLoading ? <CatalogLoading /> : filtered.length === 0 ? <CatalogEmpty hasProducts={products.length > 0} onCreate={() => setEditing(null)} /> : <ProductList products={filtered} busyCode={busyCode} onEdit={(product) => setEditing(product)} onAction={mutateProduct} />}
+            </section>
 
             {editing !== undefined && <CatalogEditor product={editing} categories={categories} onClose={() => setEditing(undefined)} onSaved={async (message) => { setEditing(undefined); setNotice(message); await loadCatalog(); }} />}
         </div>
     );
 };
 
-const CatalogMetric = ({ icon, label, value, tone = 'text-[#738259]' }: { icon: React.ReactNode; label: string; value: number; tone?: string }) => (
-    <div className="flex min-h-[96px] items-center gap-4 border-b border-r border-[#e5e5e5] px-5 last:border-r-0 sm:px-6 sm:[&:nth-child(3)]:border-b-0 sm:[&:nth-child(4)]:border-b-0 xl:border-b-0 dark:border-zinc-800">
-        <span className={`flex h-10 w-10 items-center justify-center rounded-full bg-[#edf2e2] ${tone} dark:bg-[#9db669]/10`}>{icon}</span>
-        <span><strong className="block font-season text-[28px] font-normal leading-none">{value}</strong><small className="mt-1 block text-xs text-[#6f6f6f] dark:text-zinc-400">{label}</small></span>
-    </div>
-);
-
-const CategoryButton = ({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) => (
-    <button onClick={onClick} className={`flex min-w-max items-center justify-between gap-4 rounded-[10px] px-3 py-3 text-left text-[13px] transition lg:w-full ${active ? 'bg-[#eaf0dd] font-semibold text-[#52672f] dark:bg-[#9db669]/15 dark:text-[#d0f08e]' : 'text-[#595959] hover:bg-[#f5f5f2] dark:text-zinc-400 dark:hover:bg-zinc-800'}`}><span>{label}</span><span className="rounded-full bg-white/80 px-2 py-0.5 text-[11px] dark:bg-zinc-900/60">{count}</span></button>
-);
-
 const ProductList = ({ products, busyCode, onEdit, onAction }: { products: AllyoCatalogProduct[]; busyCode: string; onEdit: (product: AllyoCatalogProduct) => void; onAction: (product: AllyoCatalogProduct, action: 'publish' | 'archive' | 'restore') => void }) => (
     <div>
-        <div className="hidden grid-cols-[minmax(300px,1.6fr)_110px_100px_120px_120px] gap-5 border-b border-[#eceee9] px-6 py-4 text-[11px] font-bold uppercase tracking-[.08em] text-[#747474] xl:grid dark:border-zinc-800">
-            <span>Produto</span><span>Créditos</span><span>Prazo</span><span>Visibilidade</span><span className="text-right">Ações</span>
-        </div>
         {products.map((product) => {
             const meta = statusMeta[product.status];
             const busy = busyCode === product.code;
-            return <div key={product.code} className="group border-b border-[#eceee9] p-4 last:border-b-0 hover:bg-[#fafbf8] sm:p-5 xl:grid xl:grid-cols-[minmax(300px,1.6fr)_110px_100px_120px_120px] xl:items-center xl:gap-5 xl:px-6 dark:border-zinc-800 dark:hover:bg-zinc-800/35">
-                <button onClick={() => onEdit(product)} className="flex min-w-0 items-center gap-4 text-left">
+            return <div key={product.code} className={`grid min-h-[78px] grid-cols-[minmax(250px,1.45fr)_90px_90px_110px_110px_112px] items-center gap-5 border-b px-5 py-3 transition hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-xl:grid-cols-[minmax(230px,1.4fr)_90px_110px_110px_112px] max-lg:grid-cols-[minmax(210px,1fr)_90px_110px_112px] max-sm:grid-cols-[minmax(0,1fr)_62px_104px] ${ALLYO_BORDER}`}>
+                <button onClick={() => onEdit(product)} className="flex min-w-0 items-center gap-[10px] text-left">
                     <ProductImage product={product} />
                     <span className="min-w-0 flex-1">
-                        <span className="flex min-w-0 items-center gap-2"><strong className="truncate text-[15px] font-semibold">{product.name}</strong><span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold ${meta.classes}`}>{meta.label}</span></span>
-                        <span className="mt-1.5 block truncate text-xs text-[#6f6f6f] dark:text-zinc-400">{product.code} · {product.subcategory || product.category}</span>
-                        <span className="mt-1 block truncate text-xs text-[#969696]">{product.specialistRole}</span>
+                        <strong className="block truncate text-sm font-medium">{product.name}</strong>
+                        <span className="mt-1 block truncate text-[11px] text-[#777] dark:text-zinc-400">{product.code} · {product.subcategory || product.category} · {product.specialistRole}</span>
                     </span>
                 </button>
-                <div className="mt-4 flex items-center justify-between xl:mt-0 xl:block"><span className="text-xs text-[#777] xl:hidden">Créditos</span><span className="flex items-center gap-2 text-sm font-semibold"><CircleDollarSign size={15} className="text-[#819b52]" /> {formatCredits(product.credits.original)}</span></div>
-                <div className="mt-2 flex items-center justify-between xl:mt-0 xl:block"><span className="text-xs text-[#777] xl:hidden">Prazo</span><span className="flex items-center gap-2 text-sm"><Clock3 size={15} className="text-[#888]" /> {product.slaHours}h</span></div>
-                <div className="mt-2 flex items-center justify-between xl:mt-0"><span className="text-xs text-[#777] xl:hidden">Visibilidade</span><span className={`flex items-center gap-2 text-xs font-medium ${product.visibleToClient ? 'text-emerald-600' : 'text-[#777]'}`}>{product.visibleToClient ? <Eye size={15} /> : <EyeOff size={15} />}{product.visibleToClient ? 'Cliente' : 'Interno'}</span></div>
-                <div className="mt-4 flex justify-end gap-1 xl:mt-0">
+                <DataCell label="CRÉDITOS" value={formatCredits(product.credits.original)} />
+                <DataCell label="PRAZO" value={`${product.slaHours}h`} className="max-xl:hidden" />
+                <DataCell label="VISIBILIDADE" value={product.visibleToClient ? 'Cliente' : 'Interno'} className="max-lg:hidden" />
+                <DataCell label="STATUS" value={meta.label} valueClassName={meta.textClasses} className="max-sm:hidden" />
+                <div className="flex justify-end gap-1">
                     <button disabled={busy} onClick={() => onEdit(product)} title="Editar" aria-label={`Editar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-[#eef2e6] hover:text-[#63783b] disabled:opacity-40 dark:hover:bg-zinc-700"><Edit3 size={16} /></button>
                     {product.status === 'draft' && <button disabled={busy} onClick={() => onAction(product, 'publish')} title="Publicar" aria-label={`Publicar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40 dark:hover:bg-emerald-950/40">{busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}</button>}
                     {product.status === 'archived' ? <button disabled={busy} onClick={() => onAction(product, 'restore')} title="Restaurar" aria-label={`Restaurar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-amber-50 hover:text-amber-600 disabled:opacity-40 dark:hover:bg-amber-950/40">{busy ? <Loader2 size={16} className="animate-spin" /> : <Undo2 size={16} />}</button> : <button disabled={busy} onClick={() => onAction(product, 'archive')} title="Arquivar" aria-label={`Arquivar ${product.name}`} className="rounded-full p-2.5 text-[#999] hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/30"><Archive size={16} /></button>}
@@ -284,8 +232,8 @@ const ProductList = ({ products, busyCode, onEdit, onAction }: { products: Allyo
 );
 
 const ProductImage = ({ product }: { product: Pick<AllyoCatalogProduct, 'name' | 'imageUrl'> }) => (
-    <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[12px] border border-[#e3e6dd] bg-[#f2f5eb] text-[#829267] dark:border-zinc-700 dark:bg-zinc-800">
-        {product.imageUrl ? <img src={product.imageUrl} alt={`Imagem de ${product.name}`} className="h-full w-full object-cover" /> : <ImageIcon size={22} strokeWidth={1.6} />}
+    <span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#9db669] bg-[#f2f5eb] text-[#829267] dark:bg-zinc-800">
+        {product.imageUrl ? <img src={product.imageUrl} alt={`Imagem de ${product.name}`} className="h-full w-full object-cover" /> : <ImageIcon size={15} strokeWidth={1.6} />}
     </span>
 );
 

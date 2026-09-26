@@ -70,7 +70,7 @@ const AllyoUsersView = () => {
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
             <AllyoPageHeader
-                title="Usuários e hierarquia"
+                title="Usuários"
                 actions={<AllyoPrimaryButton onClick={() => setIsCreateOpen(true)}><UserPlus size={15} /> Novo usuário</AllyoPrimaryButton>}
             />
 
