@@ -9,9 +9,9 @@ import AllyoProjectFlow from './AllyoProjectFlow';
 import AllyoTaskResources from './AllyoTaskResources';
 import AllyoTaskActions from './AllyoTaskActions';
 import { addTaskActivity, readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
-import { getAllyoProject } from './allyoProjects';
+import { mapDemandToAllyoProject } from './allyoProjects';
 import { getTaskResources } from './allyoTaskResourceData';
-import { allyoService } from '../../../../services/allyoService';
+import { allyoService, type AllyoDemand } from '../../../../services/allyoService';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -40,15 +40,18 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const taskId = searchParams.get('task');
     const [liveTask, setLiveTask] = useState<AllyoTask | null>(null);
+    const [liveDemand, setLiveDemand] = useState<AllyoDemand | null>(null);
     const [taskChanges, setTaskChanges] = useState<Partial<AllyoTask>>({});
     const [canManageTask, setCanManageTask] = useState(false);
 
     useEffect(() => {
         if (!taskId) return;
+        setLiveDemand(null);
         allyoService.getDemands().then((res) => {
             if (res && Array.isArray(res.demands)) {
                 const found = res.demands.find((d) => d.id === taskId || d.tasksList?.some((item) => item.id === taskId));
                 if (found) {
+                    setLiveDemand(found);
                     setLiveTask(mapDemandToTasks(found).find((item) => item.id === taskId) || mapDemandToTasks(found)[0]);
                 }
             }
@@ -65,7 +68,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
 
     const sourceTask = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || ALLYO_TASKS[0];
     const task = { ...sourceTask, ...taskChanges };
-    const project = getAllyoProject(task.projectId);
+    const project = liveDemand ? mapDemandToAllyoProject(liveDemand) : null;
     const projectTasks = project?.stages.flatMap((stage) => stage.tasks) || [];
     const projectTask = projectTasks.find((item) => item.id === task.id);
     const isTaskBlocked = projectTask?.status === 'blocked';
@@ -163,6 +166,31 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         setSavedLabel(`${deliveryVersion} atualizada agora`);
     };
 
+    const applyTaskChanges = (changes: Partial<AllyoTask>) => {
+        setTaskChanges((current) => ({ ...current, ...changes }));
+        setLiveDemand((current) => current ? {
+            ...current,
+            tasksList: current.tasksList?.map((item) => item.id === task.id ? {
+                ...item,
+                ...(changes.name !== undefined ? { title: changes.name } : {}),
+                ...(changes.category !== undefined ? { team: changes.category } : {}),
+                ...(changes.creative !== undefined ? { assignee: changes.creative } : {}),
+                ...(changes.workflowStage !== undefined ? { workflowStage: changes.workflowStage } : {}),
+                ...(changes.dependsOn !== undefined ? { dependsOn: changes.dependsOn } : {}),
+                ...(changes.requiresClientApproval !== undefined ? { requiresClientApproval: changes.requiresClientApproval } : {}),
+                ...(changes.dependencyBlocked !== undefined ? { dependencyBlocked: changes.dependencyBlocked } : {}),
+            } : item),
+        } : current);
+    };
+
+    const applyStatusChange = (nextStatus: string) => {
+        setStatus(nextStatus);
+        setAdministrativeBlock(nextStatus === 'Bloqueada');
+        setSavedLabel('Status atualizado agora');
+        const apiStatus = nextStatus === 'Nova' ? 'A iniciar' : nextStatus === 'Entregue' ? 'Concluído' : nextStatus;
+        setLiveDemand((current) => current ? { ...current, tasksList: current.tasksList?.map((item) => item.id === task.id ? { ...item, status: apiStatus } : item) } : current);
+    };
+
     const sendForReview = async () => {
         const fileNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => file.name).join(', ');
         addTaskActivity(task.id, {
@@ -180,6 +208,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             const projectId = task.projectId || task.id;
             await allyoService.submitDesignRevision(projectId, {
                 name: fileNames || task.name,
+                taskId: task.id,
                 version: deliveryVersion,
                 color: '#d7ff70',
             });
@@ -208,7 +237,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
                 <div className="ml-auto flex items-center gap-3">
                     <span className="hidden text-[11px] font-medium text-[#8f8f8f] lg:inline" aria-live="polite">{savedLabel}</span>
-                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={(changes) => setTaskChanges((current) => ({ ...current, ...changes }))} onStatusChanged={(nextStatus) => { setStatus(nextStatus); setAdministrativeBlock(nextStatus === 'Bloqueada'); setSavedLabel('Status atualizado agora'); }} onDeleted={goBack} />}
+                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={applyTaskChanges} onStatusChanged={applyStatusChange} onDeleted={goBack} />}
                 </div>
             </section>
 

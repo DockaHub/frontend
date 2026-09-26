@@ -37,6 +37,11 @@ export interface AllyoTask {
     status: 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída' | 'Bloqueada' | 'Inativa';
     cam: string;
     creative: string;
+    workflowStage?: string;
+    dependsOn?: string[];
+    requiresClientApproval?: boolean;
+    dependencyBlocked?: boolean;
+    delivery?: string | null;
     deliverables?: AllyoDeliverable[];
     briefing?: {
         inheritedFromProject: boolean;
@@ -83,7 +88,7 @@ const demandDeliverables = (demand: any): AllyoDeliverable[] | undefined => Arra
     : undefined;
 
 export function mapDemandToTasks(demand: any): AllyoTask[] {
-    const creative = Array.isArray(demand.team) && demand.team[0] ? demand.team[0] : 'Levy';
+    const projectCreative = Array.isArray(demand.team) && demand.team[0] ? demand.team[0] : 'A definir';
     const client = demand.workspace?.name || 'Cliente Allyo';
     const sourceTasks = Array.isArray(demand.tasksList) && demand.tasksList.length > 0
         ? demand.tasksList
@@ -103,7 +108,12 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         time: '18h00min',
         status: mapTaskStatus(task.status || demand.status),
         cam: 'Marina',
-        creative,
+        creative: task.assignee || projectCreative,
+        workflowStage: task.workflowStage || 'Produção',
+        dependsOn: Array.isArray(task.dependsOn) ? task.dependsOn : [],
+        requiresClientApproval: Boolean(task.requiresClientApproval),
+        dependencyBlocked: Boolean(task.dependencyBlocked),
+        delivery: task.delivery,
         deliverables: index === 0 ? demandDeliverables(demand) : undefined,
         briefing: task.briefing,
     }));

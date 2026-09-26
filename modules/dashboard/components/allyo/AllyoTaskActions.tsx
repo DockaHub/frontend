@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     Activity, Ban, BriefcaseBusiness, CheckCircle2, Copy, EllipsisVertical,
-    Link2, LockKeyhole, Pencil, Power, Trash2, UserRoundCog,
+    Layers3, Link2, LockKeyhole, Pencil, Power, Trash2, UserRoundCog,
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
-import { allyoService } from '../../../../services/allyoService';
+import { allyoService, type AllyoDemandTask } from '../../../../services/allyoService';
 import { AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton, AllyoSelect } from './AllyoForm';
 import type { AllyoTask } from './AllyoUI';
 import { addTaskActivity, readTaskActivity } from './allyoTaskActivity';
@@ -44,12 +44,16 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     const { addToast } = useToast();
     const rootRef = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
-    const [modal, setModal] = useState<'edit' | 'responsible' | 'project' | 'activity' | null>(null);
+    const [modal, setModal] = useState<'edit' | 'responsible' | 'stack' | 'project' | 'activity' | null>(null);
     const [confirmation, setConfirmation] = useState<Confirmation>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [title, setTitle] = useState(task.name);
     const [team, setTeam] = useState(task.category);
     const [responsible, setResponsible] = useState(task.creative);
+    const [stackTasks, setStackTasks] = useState<AllyoDemandTask[]>([]);
+    const [dependsOn, setDependsOn] = useState<string[]>(task.dependsOn || []);
+    const [workflowStage, setWorkflowStage] = useState(task.workflowStage || 'Produção');
+    const [requiresClientApproval, setRequiresClientApproval] = useState(Boolean(task.requiresClientApproval));
     const [projectStatus, setProjectStatus] = useState('Em andamento');
     const [projectDeadline, setProjectDeadline] = useState('');
     const activities = modal === 'activity' ? readTaskActivity(task.id).slice().reverse() : [];
@@ -62,6 +66,16 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         setTeam(task.category);
         setResponsible(task.creative);
     }, [task.category, task.creative, task.id, task.name]);
+
+    useEffect(() => {
+        if (modal !== 'stack') return;
+        setDependsOn(task.dependsOn || []);
+        setWorkflowStage(task.workflowStage || 'Produção');
+        setRequiresClientApproval(Boolean(task.requiresClientApproval));
+        allyoService.getDemands()
+            .then((response) => setStackTasks(response.demands.find((project) => project.id === task.projectId)?.tasksList || []))
+            .catch(() => setStackTasks([]));
+    }, [modal, task.dependsOn, task.id, task.projectId, task.requiresClientApproval, task.workflowStage]);
 
     useEffect(() => {
         const closeOnOutsideClick = (event: MouseEvent) => {
@@ -124,13 +138,31 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         if (!normalizedResponsible) return;
         setIsSaving(true);
         try {
-            await allyoService.assignProjectTeam(task.projectId, [normalizedResponsible]);
+            await allyoService.updateTask(task.id, { assignee: normalizedResponsible });
             onTaskEdited({ creative: normalizedResponsible });
             recordAction(`Alterou o responsável da tarefa para “${normalizedResponsible}”.`);
             setModal(null);
             addToast({ type: 'success', title: 'Responsável atualizado' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível alterar o responsável', message: error.response?.data?.message || 'Tente novamente.' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const saveStack = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setIsSaving(true);
+        try {
+            const response = await allyoService.updateTask(task.id, { dependsOn, workflowStage, requiresClientApproval });
+            const updatedStatus = response?.task?.status === 'Bloqueada' ? 'Bloqueada' : response?.task?.status === 'A iniciar' ? 'Nova' : response?.task?.status;
+            onTaskEdited({ dependsOn, workflowStage, requiresClientApproval, dependencyBlocked: Boolean(response?.task?.dependencyBlocked) });
+            if (updatedStatus) onStatusChanged(updatedStatus);
+            recordAction(`Atualizou a stack da tarefa${dependsOn.length ? ` com ${dependsOn.length} dependência(s)` : ' sem dependências'}.`);
+            setModal(null);
+            addToast({ type: 'success', title: 'Stack atualizada', message: dependsOn.length ? 'A tarefa respeitará as aprovações e entregas anteriores.' : 'A tarefa não possui bloqueios automáticos.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível atualizar a stack', message: error.response?.data?.message || 'Tente novamente.' });
         } finally {
             setIsSaving(false);
         }
@@ -187,10 +219,11 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         const nextStatus = isBlocked ? 'A iniciar' : 'Bloqueada';
         setIsSaving(true);
         try {
-            await allyoService.updateTask(task.id, { status: nextStatus });
-            onStatusChanged(nextStatus === 'A iniciar' ? 'Nova' : nextStatus);
-            recordAction(isBlocked ? 'Removeu o bloqueio da tarefa.' : 'Bloqueou a tarefa.');
-            addToast({ type: 'success', title: isBlocked ? 'Bloqueio removido' : 'Tarefa bloqueada' });
+            const response = await allyoService.updateTask(task.id, { status: nextStatus });
+            const effectiveStatus = response?.task?.status || nextStatus;
+            onStatusChanged(effectiveStatus === 'A iniciar' ? 'Nova' : effectiveStatus);
+            recordAction(effectiveStatus === 'Bloqueada' ? 'Bloqueou a tarefa.' : 'Removeu o bloqueio da tarefa.');
+            addToast({ type: 'success', title: effectiveStatus === 'Bloqueada' ? 'Tarefa bloqueada' : 'Bloqueio removido', message: isBlocked && effectiveStatus === 'Bloqueada' ? 'A dependência da stack ainda está pendente.' : undefined });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível alterar o bloqueio', message: error.response?.data?.message || 'Tente novamente.' });
         } finally {
@@ -267,6 +300,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                         <div className="my-1.5 h-px bg-[#eceee9] dark:bg-zinc-800" />
                         <MenuItem icon={<BriefcaseBusiness size={15} />} label="Gerenciar projeto" onClick={() => showModal('project')} />
                         <MenuItem icon={<UserRoundCog size={15} />} label="Responsáveis" onClick={() => showModal('responsible')} />
+                        <MenuItem icon={<Layers3 size={15} />} label="Stack da tarefa" onClick={() => showModal('stack')} />
                         <MenuItem icon={<LockKeyhole size={15} />} label={isBlocked ? 'Remover bloqueio' : 'Bloquear tarefa'} onClick={() => void toggleBlocked()} />
 
                         <div className="my-1.5 h-px bg-[#eceee9] dark:bg-zinc-800" />
@@ -295,6 +329,15 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                 <form id="allyo-edit-responsible" onSubmit={saveResponsible}>
                     <p className="mb-4 text-sm leading-6 text-[#777] dark:text-zinc-400">Defina o time, CQS ou Art Director responsável por esta tarefa.</p>
                     <AllyoField label="Responsável" required><AllyoInput required value={responsible} onChange={(event) => setResponsible(event.target.value)} placeholder="Nome do CAM, CQS ou Art Director" /></AllyoField>
+                </form>
+            </Modal>
+
+            <Modal isOpen={modal === 'stack'} onClose={() => setModal(null)} title="Stack da tarefa" size="md" footer={<><AllyoSecondaryButton type="button" onClick={() => setModal(null)}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-edit-stack" disabled={isSaving}>{isSaving ? 'Salvando...' : 'Salvar stack'}</AllyoPrimaryButton></>}>
+                <form id="allyo-edit-stack" onSubmit={saveStack} className="space-y-5">
+                    <p className="text-sm leading-6 text-[#777] dark:text-zinc-400">Defina de quais entregas esta tarefa depende. Enquanto uma etapa anterior estiver pendente, esta tarefa permanecerá bloqueada.</p>
+                    <AllyoField label="Etapa do fluxo"><AllyoSelect value={workflowStage} onChange={(event) => setWorkflowStage(event.target.value)}><option>Conteúdo</option><option>Criação</option><option>Produção</option><option>Finalização</option></AllyoSelect></AllyoField>
+                    <label className="flex items-start gap-3 rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] p-4 dark:border-zinc-700 dark:bg-zinc-950"><input type="checkbox" checked={requiresClientApproval} onChange={(event) => setRequiresClientApproval(event.target.checked)} className="mt-0.5 h-4 w-4 accent-[#78904d]" /><span><strong className="block text-xs font-semibold">Exigir aprovação do cliente</strong><span className="mt-1 block text-[11px] leading-5 text-[#777]">As próximas tarefas que dependem desta só serão liberadas quando o cliente aprovar a versão.</span></span></label>
+                    <div><span className="text-xs font-semibold">Esta tarefa depende de</span><div className="mt-2 max-h-56 overflow-y-auto rounded-[12px] border border-[#e3e6df] dark:border-zinc-700">{stackTasks.filter((candidate) => candidate.id !== task.id).map((candidate) => <label key={candidate.id} className="flex cursor-pointer items-center gap-3 border-b border-[#eceee9] px-4 py-3 last:border-b-0 dark:border-zinc-800"><input type="checkbox" checked={dependsOn.includes(candidate.id)} onChange={(event) => setDependsOn((current) => event.target.checked ? [...new Set([...current, candidate.id])] : current.filter((id) => id !== candidate.id))} className="h-4 w-4 accent-[#78904d]" /><span className="min-w-0"><strong className="block truncate text-xs font-semibold">{candidate.title}</strong><span className="mt-1 block text-[10px] text-[#888]">{candidate.team} · {candidate.status}{candidate.requiresClientApproval ? ' · aprovação obrigatória' : ''}</span></span></label>)}{stackTasks.filter((candidate) => candidate.id !== task.id).length === 0 && <span className="block px-4 py-5 text-center text-xs text-[#888]">Crie outra tarefa no projeto para montar uma dependência.</span>}</div></div>
                 </form>
             </Modal>
 

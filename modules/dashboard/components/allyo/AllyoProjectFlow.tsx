@@ -89,7 +89,11 @@ const CompactFlow = ({ project, currentTaskId, inProgress, blocked }: { project:
 const FlowTaskCard = ({ task, current, tasksById, parallel }: { task: AllyoFlowTask; current: boolean; tasksById: Map<string, AllyoFlowTask>; parallel: boolean }) => {
     const status = statusCopy[task.status];
     const StatusIcon = status.icon;
-    const blockers = (task.dependsOn || []).map((id) => tasksById.get(id)?.title).filter(Boolean);
+    const blockers = (task.dependsOn || []).map((id) => {
+        const dependency = tasksById.get(id);
+        if (!dependency) return null;
+        return `${dependency.title}${dependency.requiresClientApproval ? ' (aprovação do cliente)' : ''}`;
+    }).filter((value): value is string => Boolean(value));
     return (
         <article className={`min-h-[132px] rounded-[12px] border bg-white p-3.5 transition dark:bg-zinc-900 ${current ? 'border-[#9db669] shadow-[0_0_0_2px_rgba(157,182,105,.13)]' : task.status === 'blocked' ? 'border-[#e5e7e2] opacity-80 dark:border-zinc-800' : ALLYO_BORDER}`} aria-current={current ? 'step' : undefined}>
             <div className="flex items-start justify-between gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[9px] font-bold ${status.className}`}><StatusIcon size={10} />{status.label}</span>{current && <span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#7e9252]">Sua tarefa</span>}</div>

@@ -26,6 +26,7 @@ const creatives = [
 
 const creditBarHeight = (value: number) => `${Math.min(100, (value / 250) * 100)}%`;
 const creditValue = (value: number) => value.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+const normalizePerson = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
 
 const AllyoOverviewView = ({ userName }: { userName?: string }) => {
     const firstName = userName?.trim().split(/\s+/)[0] || 'Criativo';
@@ -53,9 +54,15 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
         };
     }, []);
 
-    // 100% dados reais da API da Allyo
-    const effectiveTasks = liveTasks;
-    const openTasks = useMemo(() => effectiveTasks.filter((task) => task.status !== 'Concluída').slice(0, 3), [effectiveTasks]);
+    const openTasks = useMemo(() => {
+        const currentUser = normalizePerson(userName || '');
+        return liveTasks.filter((task) => {
+            if (task.status === 'Concluída' || task.status === 'Inativa') return false;
+            if (!currentUser) return true;
+            const assignee = normalizePerson(task.creative);
+            return assignee === currentUser || assignee.includes(currentUser) || currentUser.includes(assignee);
+        }).slice(0, 3);
+    }, [liveTasks, userName]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">

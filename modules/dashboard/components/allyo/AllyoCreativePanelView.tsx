@@ -35,7 +35,7 @@ const AllyoCreativePanelView = () => {
                     res.demands.forEach((d) => {
                         if (d.designs && d.designs.length > 0) {
                             d.designs.forEach((design) => {
-                                const relatedTask = d.tasksList?.[0];
+                                const relatedTask = d.tasksList?.find((task) => task.id === design.taskId) || d.tasksList?.[0];
                                 list.push({
                                     id: String(design.id),
                                     taskId: relatedTask?.id || d.id,
