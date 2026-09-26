@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
     Plus, Search, RefreshCw, Send, AlertOctagon,
-    ChevronLeft, ChevronRight, Eye, Loader2, Zap, X, Trash2
+    ChevronLeft, ChevronRight, Eye, Loader2, Zap, X, Trash2,
+    CheckSquare, BarChart3, ListFilter
 } from 'lucide-react';
 import api from '../../../../../services/api';
 import { formatStatusLabel } from '../utils/statusPresentation';
@@ -17,6 +18,8 @@ import {
     AsteryskoOpportunity,
     OpportunityCounts
 } from './asteryskoApiTypes';
+import { AsteryskoProspectingReviewQueue } from '../prospecting/AsteryskoProspectingReviewQueue';
+import { AsteryskoProspectingDashboard } from '../prospecting/AsteryskoProspectingDashboard';
 
 interface Props {
     organizationId?: string;
@@ -29,6 +32,7 @@ const opportunitiesCache = new Map<string, { data: any; expiresAt: number }>();
 const opportunityCountsCache = new Map<string, { data: any; expiresAt: number }>();
 
 export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onTotalChange }) => {
+    const [viewMode, setViewMode] = useState<'queue' | 'dashboard' | 'legacy'>('queue');
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<AsteryskoOpportunity[]>([]);
     const [counts, setCounts] = useState<OpportunityCounts>({
@@ -327,6 +331,63 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
 
     return (
         <div className="space-y-4 sm:space-y-6">
+            {/* View Mode Switcher */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-zinc-200 dark:border-zinc-800 pb-3">
+                <div className="flex items-center gap-1.5 overflow-x-auto p-1 bg-zinc-100 dark:bg-zinc-900 rounded-2xl">
+                    <button
+                        onClick={() => setViewMode('queue')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                            viewMode === 'queue'
+                                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                    >
+                        <CheckSquare size={15} className="text-[#0412dd] dark:text-[#3b48ff]" />
+                        <span>Fila de Aprovação</span>
+                        <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-[#0412dd] dark:bg-blue-950/40 dark:text-blue-400 text-[10px] font-black">
+                            Inbox Zero
+                        </span>
+                    </button>
+
+                    <button
+                        onClick={() => setViewMode('dashboard')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                            viewMode === 'dashboard'
+                                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                    >
+                        <BarChart3 size={15} className="text-emerald-600 dark:text-emerald-400" />
+                        <span>Métricas & Painel</span>
+                    </button>
+
+                    <button
+                        onClick={() => setViewMode('legacy')}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                            viewMode === 'legacy'
+                                ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white shadow-sm'
+                                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white'
+                        }`}
+                    >
+                        <ListFilter size={15} className="text-purple-600 dark:text-purple-400" />
+                        <span>Oportunidades Cadastradas ({counts.total})</span>
+                    </button>
+                </div>
+            </div>
+
+            {viewMode === 'queue' && (
+                <AsteryskoProspectingReviewQueue organizationId={organizationId} />
+            )}
+
+            {viewMode === 'dashboard' && (
+                <AsteryskoProspectingDashboard
+                    organizationId={organizationId}
+                    onNavigateToQueue={() => setViewMode('queue')}
+                />
+            )}
+
+            {viewMode === 'legacy' && (
+                <>
             {/* Header Secundário da Aba Oportunidades */}
             <div className="flex flex-col justify-between gap-4 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-6 md:flex-row md:items-center">
                 <div>
@@ -705,6 +766,8 @@ export const AsteryskoOpportunitiesTab: React.FC<Props> = ({ organizationId, onT
                     </div>
                 </div>
             </div>
+            </>
+            )}
 
             {/* Modais */}
             <AsteryskoNewOpportunityModal
