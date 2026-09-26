@@ -198,10 +198,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                         <p className="mt-1 truncate text-[11px] font-medium text-[#a4a4a4] sm:text-sm">{task.projectName} • {task.client} • {task.category} • #{task.publicId || task.id}</p>
                     </div>
                 </div>
-                <div className="flex shrink-0 items-center gap-3">
-                    <div className="hidden items-center gap-[5px] text-sm font-semibold md:flex"><CalendarDays size={18} className="text-[#9f9f9f]" />{todayLabel()}</div>
-                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={(changes) => setTaskChanges((current) => ({ ...current, ...changes }))} onStatusChanged={(nextStatus) => { setStatus(nextStatus); setAdministrativeBlock(nextStatus === 'Bloqueada'); setSavedLabel('Status atualizado agora'); }} onDeleted={goBack} />}
-                </div>
+                <div className="hidden shrink-0 items-center gap-[5px] text-sm font-semibold md:flex"><CalendarDays size={18} className="text-[#9f9f9f]" />{todayLabel()}</div>
             </header>
 
             <section className={`sticky top-[75px] z-30 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
@@ -209,7 +206,10 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                 <MetaItem label="Créditos da tarefa" value={formatTaskCredits(task.credits)} />
                 <MetaItem label="Deadline" value={`${task.deadline}, ${task.time}`} icon={<Clock3 size={14} />} />
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
-                <span className="ml-auto text-[11px] font-medium text-[#8f8f8f]" aria-live="polite">{savedLabel}</span>
+                <div className="ml-auto flex items-center gap-3">
+                    <span className="hidden text-[11px] font-medium text-[#8f8f8f] lg:inline" aria-live="polite">{savedLabel}</span>
+                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={(changes) => setTaskChanges((current) => ({ ...current, ...changes }))} onStatusChanged={(nextStatus) => { setStatus(nextStatus); setAdministrativeBlock(nextStatus === 'Bloqueada'); setSavedLabel('Status atualizado agora'); }} onDeleted={goBack} />}
+                </div>
             </section>
 
             <nav className={`flex items-center gap-7 border-b bg-white px-5 sm:px-[30px] dark:bg-zinc-950 ${ALLYO_BORDER}`} aria-label="Seções da tarefa">

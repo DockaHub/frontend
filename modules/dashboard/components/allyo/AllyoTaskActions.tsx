@@ -80,6 +80,15 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
 
     const showModal = (next: typeof modal) => {
         setOpen(false);
+        if (next === 'edit') {
+            setTitle(task.name);
+            setTeam(task.category);
+        }
+        if (next === 'responsible') setResponsible(task.creative);
+        if (next === 'project') {
+            setProjectStatus(task.status === 'Concluída' ? 'Concluído' : task.status === 'Em revisão' ? 'Em revisão' : 'Em andamento');
+            setProjectDeadline('');
+        }
         setModal(next);
     };
 
