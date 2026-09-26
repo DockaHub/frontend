@@ -30,6 +30,8 @@ export interface AllyoTask {
     projectId: string;
     projectName: string;
     credits: number;
+    creditsConsumed?: number;
+    estimatedHours?: number;
     category: string;
     client: string;
     deadline: string;
@@ -93,7 +95,6 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
     const sourceTasks = Array.isArray(demand.tasksList) && demand.tasksList.length > 0
         ? demand.tasksList
         : [{ id: demand.id, projectId: demand.id, title: demand.name, team: demand.service || 'Design', status: demand.status }];
-    const estimatedCredits = Number(demand.briefing?.creditsEstimated || demand.tasks || 1);
 
     return sourceTasks.map((task: any, index: number) => ({
         id: task.id,
@@ -101,11 +102,19 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         name: task.title || demand.name,
         projectId: demand.id,
         projectName: demand.name,
-        credits: Math.max(0.01, estimatedCredits / sourceTasks.length),
+        credits: Math.max(0.01, Number(task.credits ?? 1)),
+        creditsConsumed: Number(task.creditsConsumed || 0),
+        estimatedHours: Number(task.estimatedHours ?? (Number(task.credits ?? 1) * 12)),
         category: task.team || demand.service || 'Design',
         client,
-        deadline: demand.deadline || new Date(demand.createdAt || Date.now()).toLocaleDateString('pt-BR'),
-        time: '18h00min',
+        deadline: (() => {
+            const value = new Date(task.deadlineAt || demand.deadline || demand.createdAt || Date.now());
+            return Number.isNaN(value.getTime()) ? 'A definir' : value.toLocaleDateString('pt-BR');
+        })(),
+        time: (() => {
+            const value = new Date(task.deadlineAt || demand.deadline || '');
+            return Number.isNaN(value.getTime()) ? 'A definir' : `${value.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h')}min`;
+        })(),
         status: mapTaskStatus(task.status || demand.status),
         cam: 'Marina',
         creative: task.assignee || projectCreative,

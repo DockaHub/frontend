@@ -49,13 +49,13 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     const [isSaving, setIsSaving] = useState(false);
     const [title, setTitle] = useState(task.name);
     const [team, setTeam] = useState(task.category);
+    const [credits, setCredits] = useState(task.credits);
     const [responsible, setResponsible] = useState(task.creative);
     const [stackTasks, setStackTasks] = useState<AllyoDemandTask[]>([]);
     const [dependsOn, setDependsOn] = useState<string[]>(task.dependsOn || []);
     const [workflowStage, setWorkflowStage] = useState(task.workflowStage || 'Produção');
     const [requiresClientApproval, setRequiresClientApproval] = useState(Boolean(task.requiresClientApproval));
     const [projectStatus, setProjectStatus] = useState('Em andamento');
-    const [projectDeadline, setProjectDeadline] = useState('');
     const activities = modal === 'activity' ? readTaskActivity(task.id).slice().reverse() : [];
     const author = userName?.trim() || 'Equipe Allyo';
     const isBlocked = currentStatus === 'Bloqueada';
@@ -64,8 +64,9 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     useEffect(() => {
         setTitle(task.name);
         setTeam(task.category);
+        setCredits(task.credits);
         setResponsible(task.creative);
-    }, [task.category, task.creative, task.id, task.name]);
+    }, [task.category, task.creative, task.credits, task.id, task.name]);
 
     useEffect(() => {
         if (modal !== 'stack') return;
@@ -97,11 +98,11 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         if (next === 'edit') {
             setTitle(task.name);
             setTeam(task.category);
+            setCredits(task.credits);
         }
         if (next === 'responsible') setResponsible(task.creative);
         if (next === 'project') {
             setProjectStatus(task.status === 'Concluída' ? 'Concluído' : task.status === 'Em revisão' ? 'Em revisão' : 'Em andamento');
-            setProjectDeadline('');
         }
         setModal(next);
     };
@@ -117,12 +118,12 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         event.preventDefault();
         const normalizedTitle = title.trim();
         const normalizedTeam = team.trim();
-        if (normalizedTitle.length < 2 || !normalizedTeam) return;
+        if (normalizedTitle.length < 2 || !normalizedTeam || credits <= 0) return;
         setIsSaving(true);
         try {
-            await allyoService.updateTask(task.id, { title: normalizedTitle, team: normalizedTeam });
-            onTaskEdited({ name: normalizedTitle, category: normalizedTeam });
-            recordAction(`Editou a tarefa: título e equipe responsável foram atualizados.`);
+            await allyoService.updateTask(task.id, { title: normalizedTitle, team: normalizedTeam, credits });
+            onTaskEdited({ name: normalizedTitle, category: normalizedTeam, credits, estimatedHours: credits * 12 });
+            recordAction(`Editou a tarefa: título, equipe e custo de ${credits.toLocaleString('pt-BR')} crédito(s) foram atualizados.`);
             setModal(null);
             addToast({ type: 'success', title: 'Tarefa atualizada', message: 'As alterações foram salvas no projeto.' });
         } catch (error: any) {
@@ -174,7 +175,6 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         try {
             await allyoService.updateProjectStatus(task.projectId, {
                 status: projectStatus,
-                ...(projectDeadline ? { deadline: projectDeadline } : {}),
             });
             recordAction(`Atualizou o projeto “${task.projectName}” para ${projectStatus}.`);
             setModal(null);
@@ -193,6 +193,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
             await allyoService.createProjectTask(task.projectId, {
                 title: `${task.name} (cópia)`,
                 team: task.category,
+                credits: task.credits,
                 status: 'A iniciar',
             });
             recordAction('Criou uma cópia desta tarefa no mesmo projeto.');
@@ -322,6 +323,8 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                     <p className="text-sm leading-6 text-[#777] dark:text-zinc-400">Altere as informações operacionais sem sair do contexto do projeto.</p>
                     <AllyoField label="Nome da tarefa" required><AllyoInput required minLength={2} value={title} onChange={(event) => setTitle(event.target.value)} /></AllyoField>
                     <AllyoField label="Equipe ou especialidade" required><AllyoInput required value={team} onChange={(event) => setTeam(event.target.value)} placeholder="Ex.: Design, Motion ou Storyboard" /></AllyoField>
+                    <AllyoField label="Créditos da tarefa" hint="1 crédito = 12 horas"><AllyoInput required type="number" min="0.01" step="0.01" value={credits} onChange={(event) => setCredits(Number(event.target.value))} /></AllyoField>
+                    <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] px-4 py-3 text-xs text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">Prazo automático desta tarefa: <strong>{(credits * 12).toLocaleString('pt-BR')} horas</strong>.</div>
                 </form>
             </Modal>
 
@@ -345,7 +348,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                 <form id="allyo-manage-project" onSubmit={saveProject} className="space-y-4">
                     <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fafbf8] p-4 dark:border-zinc-800 dark:bg-zinc-950"><span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#829454]">Projeto</span><strong className="mt-1 block text-sm">{task.projectName}</strong></div>
                     <AllyoField label="Status"><AllyoSelect value={projectStatus} onChange={(event) => setProjectStatus(event.target.value)}><option>Em andamento</option><option>Em revisão</option><option>Concluído</option><option>Rascunho</option></AllyoSelect></AllyoField>
-                    <AllyoField label="Novo prazo" hint="opcional"><AllyoInput type="date" value={projectDeadline} onChange={(event) => setProjectDeadline(event.target.value)} /></AllyoField>
+                    <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] p-4 text-xs leading-5 text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">O deadline é calculado automaticamente pela stack: cada crédito representa 12 horas, tarefas dependentes são somadas e tarefas paralelas compartilham a mesma janela.</div>
                 </form>
             </Modal>
 

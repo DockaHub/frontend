@@ -9,6 +9,9 @@ export interface AllyoDemandBriefing {
     references?: string;
     notes?: string;
     creditsEstimated?: number;
+    creditsConsumed?: number;
+    estimatedHours?: number;
+    durationHours?: number;
 }
 
 export interface AllyoDesignAsset {
@@ -238,6 +241,10 @@ export interface AllyoDemandTask {
     dependsOn?: string[];
     requiresClientApproval?: boolean;
     dependencyBlocked?: boolean;
+    credits?: number;
+    creditsConsumed?: number;
+    estimatedHours?: number;
+    deadlineAt?: string | null;
     deadlineDays?: number;
     orderIndex?: number;
     briefing?: {
@@ -379,14 +386,13 @@ export const allyoService = {
     },
 
     /**
-     * Atualiza o status, progresso ou prazo de um projeto
+     * Atualiza o estado do projeto. O prazo é calculado automaticamente pela stack.
      */
     async updateProjectStatus(
         projectId: string,
         data: {
             status?: 'Em andamento' | 'Em revisão' | 'Concluído' | 'Rascunho' | string;
             progress?: number;
-            deadline?: string;
             tasks?: number;
         }
     ) {
@@ -401,12 +407,12 @@ export const allyoService = {
         return response.data;
     },
 
-    async createProjectTask(projectId: string, data: { title: string; team?: string; assignee?: string | null; status?: string; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; deadlineDays?: number; orderIndex?: number }) {
+    async createProjectTask(projectId: string, data: { title: string; team?: string; assignee?: string | null; status?: string; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/tasks`, data);
         return response.data;
     },
 
-    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; deadlineDays?: number; orderIndex?: number }) {
+    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.patch(`/allyo/tasks/${encodeURIComponent(taskId)}`, data);
         return response.data;
     },

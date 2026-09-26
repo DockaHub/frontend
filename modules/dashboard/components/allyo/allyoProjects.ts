@@ -48,8 +48,6 @@ const mapStatus = (task: AllyoDemandTask): AllyoFlowTaskStatus => {
 
 export const mapDemandToAllyoProject = (demand: AllyoDemand): AllyoProject => {
     const tasks = demand.tasksList || [];
-    const estimatedCredits = Number(demand.briefing?.creditsEstimated || demand.tasks || 1);
-    const creditsPerTask = tasks.length > 0 ? Math.max(0.01, estimatedCredits / tasks.length) : 0;
     const grouped = new Map<string, AllyoFlowTask[]>();
 
     tasks.forEach((task) => {
@@ -60,7 +58,7 @@ export const mapDemandToAllyoProject = (demand: AllyoDemand): AllyoProject => {
             title: task.title,
             specialty: task.team,
             assignee: task.assignee || demand.team?.[0] || 'A definir',
-            credits: creditsPerTask,
+            credits: Math.max(0.01, Number(task.credits ?? 1)),
             status: mapStatus(task),
             dependsOn: task.dependsOn || [],
             requiresClientApproval: task.requiresClientApproval,
@@ -80,7 +78,11 @@ export const mapDemandToAllyoProject = (demand: AllyoDemand): AllyoProject => {
         id: demand.id,
         name: demand.name,
         client: demand.workspace?.name || 'Cliente Allyo',
-        deadline: demand.deadline || 'A definir',
+        deadline: (() => {
+            if (!demand.deadline) return 'A definir';
+            const value = new Date(demand.deadline);
+            return Number.isNaN(value.getTime()) ? demand.deadline : value.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+        })(),
         stages,
     };
 };

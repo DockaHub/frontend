@@ -18,11 +18,10 @@ const projectStatusClass = (status: string) => {
     return 'text-[#2a2ad7] dark:text-indigo-300';
 };
 
-const toDateInput = (value?: string) => {
-    if (!value) return '';
-    if (/^\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10);
-    const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    return match ? `${match[3]}-${match[2]}-${match[1]}` : '';
+const formatProjectDeadline = (value?: string) => {
+    if (!value) return 'A definir';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 };
 
 const AllyoProjectsView = () => {
@@ -156,7 +155,6 @@ const ProjectRow = ({ project, onClick }: { project: AllyoDemand; onClick: () =>
 const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTask }: { project: AllyoDemand | null; onClose: () => void; onSaved: (project: AllyoDemand) => void; onDeleted: (projectId: string) => void; onOpenTask: (taskId: string) => void }) => {
     const { addToast } = useToast();
     const [status, setStatus] = useState('Em andamento');
-    const [deadline, setDeadline] = useState('');
     const [team, setTeam] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [confirmInactive, setConfirmInactive] = useState(false);
@@ -166,7 +164,6 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTa
     useEffect(() => {
         if (!project) return;
         setStatus(project.status === 'Inativo' ? 'Em andamento' : project.status || 'Em andamento');
-        setDeadline(toDateInput(project.deadline));
         setTeam((project.team || []).join(', '));
         setConfirmInactive(false);
         setConfirmDelete(false);
@@ -182,11 +179,11 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTa
         setIsSaving(true);
         try {
             await Promise.all([
-                allyoService.updateProjectStatus(project.id, { status, ...(deadline ? { deadline } : {}) }),
+                allyoService.updateProjectStatus(project.id, { status }),
                 ...(teamMembers.length > 0 ? [allyoService.assignProjectTeam(project.id, teamMembers)] : []),
             ]);
-            onSaved({ ...project, status, deadline: deadline || project.deadline, team: teamMembers.length > 0 ? teamMembers : project.team });
-            addToast({ type: 'success', title: 'Projeto atualizado', message: 'Status, prazo e responsáveis foram salvos.' });
+            onSaved({ ...project, status, team: teamMembers.length > 0 ? teamMembers : project.team });
+            addToast({ type: 'success', title: 'Projeto atualizado', message: 'Status e responsáveis foram salvos.' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível atualizar o projeto', message: error.response?.data?.message || 'Tente novamente.' });
         } finally {
@@ -234,7 +231,7 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTa
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <AllyoField label="Status do projeto"><AllyoSelect value={status} onChange={(event) => setStatus(event.target.value)}><option>Rascunho</option><option>Em andamento</option><option>Em revisão</option><option>Concluído</option></AllyoSelect></AllyoField>
-                    <AllyoField label="Deadline"><AllyoInput type="date" value={deadline} onChange={(event) => setDeadline(event.target.value)} /></AllyoField>
+                    <AllyoField label="Deadline automático"><div className="flex min-h-11 items-center rounded-[10px] border border-[#dedede] bg-[#f7f8f5] px-3 text-sm text-[#555] dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">{formatProjectDeadline(project.deadline)}</div></AllyoField>
                     <AllyoField label="Responsáveis" hint="separe por vírgulas" className="sm:col-span-2"><AllyoInput value={team} onChange={(event) => setTeam(event.target.value)} placeholder="CAM, CQS, Art Director e criativos" /></AllyoField>
                 </div>
 

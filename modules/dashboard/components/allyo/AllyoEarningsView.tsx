@@ -52,11 +52,11 @@ const AllyoEarningsView = () => {
     }, [demands]);
 
     const approvedCredits = useMemo(() => {
-        return approvedDemands.reduce((sum, d) => sum + (d.tasks || 1), 0);
+        return approvedDemands.reduce((sum, demand) => sum + (demand.tasksList || []).reduce((taskSum, task) => taskSum + Number(task.credits ?? 0), 0), 0);
     }, [approvedDemands]);
 
     const pendingCredits = useMemo(() => {
-        return pendingDemands.reduce((sum, d) => sum + (d.tasks || 1), 0);
+        return pendingDemands.reduce((sum, demand) => sum + (demand.tasksList || []).reduce((taskSum, task) => taskSum + Number(task.credits ?? 0), 0), 0);
     }, [pendingDemands]);
 
     // Cálculo de saldo com base no valor progressivo por crédito
@@ -71,7 +71,7 @@ const AllyoEarningsView = () => {
             id: d.id,
             approvedAt: new Date(d.updatedAt || d.createdAt).toLocaleDateString('pt-BR'),
             versions: d.designsCount || 1,
-            credits: d.tasks || 1,
+            credits: (d.tasksList || []).reduce((sum, task) => sum + Number(task.credits ?? 0), 0),
             boosters: 0,
         }));
     }, [approvedDemands]);
