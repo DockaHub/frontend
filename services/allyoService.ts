@@ -387,6 +387,13 @@ export const allyoService = {
         return response.data;
     },
 
+    async deleteProject(projectId: string): Promise<{ success: boolean; projectId: string }> {
+        const response = await api.delete(`/allyo/projects/${encodeURIComponent(projectId)}`, {
+            data: { confirmProjectId: projectId },
+        });
+        return response.data;
+    },
+
     async createProjectTask(projectId: string, data: { title: string; team?: string; status?: string; delivery?: string | null; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/tasks`, data);
         return response.data;

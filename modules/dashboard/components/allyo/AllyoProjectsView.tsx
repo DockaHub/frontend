@@ -96,6 +96,11 @@ const AllyoProjectsView = () => {
         setSelected(project);
     };
 
+    const removeProject = (projectId: string) => {
+        setProjects((current) => current.filter((item) => item.id !== projectId));
+        setSelected(null);
+    };
+
     if (!isLoading && canManage === false) {
         return (
             <div className="h-full overflow-y-auto bg-white dark:bg-zinc-950">
@@ -125,7 +130,7 @@ const AllyoProjectsView = () => {
                 {!isLoading && visibleProjects.length === 0 && <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center"><FolderKanban size={26} className="text-[#9db669]" /><strong className="mt-4 text-sm">Nenhum projeto encontrado</strong><span className="mt-2 text-xs text-[#7f7f7f]">Ajuste os filtros para consultar outros projetos.</span></div>}
             </section>
 
-            <ProjectManagementModal project={selected} onClose={() => setSelected(null)} onSaved={replaceProject} onOpenTask={openTask} />
+            <ProjectManagementModal project={selected} onClose={() => setSelected(null)} onSaved={replaceProject} onDeleted={removeProject} onOpenTask={openTask} />
         </div>
     );
 };
@@ -148,13 +153,15 @@ const ProjectRow = ({ project, onClick }: { project: AllyoDemand; onClick: () =>
     );
 };
 
-const ProjectManagementModal = ({ project, onClose, onSaved, onOpenTask }: { project: AllyoDemand | null; onClose: () => void; onSaved: (project: AllyoDemand) => void; onOpenTask: (taskId: string) => void }) => {
+const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTask }: { project: AllyoDemand | null; onClose: () => void; onSaved: (project: AllyoDemand) => void; onDeleted: (projectId: string) => void; onOpenTask: (taskId: string) => void }) => {
     const { addToast } = useToast();
     const [status, setStatus] = useState('Em andamento');
     const [deadline, setDeadline] = useState('');
     const [team, setTeam] = useState('');
     const [isSaving, setIsSaving] = useState(false);
     const [confirmInactive, setConfirmInactive] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
     useEffect(() => {
         if (!project) return;
@@ -162,6 +169,8 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onOpenTask }: { pro
         setDeadline(toDateInput(project.deadline));
         setTeam((project.team || []).join(', '));
         setConfirmInactive(false);
+        setConfirmDelete(false);
+        setDeleteConfirmation('');
     }, [project]);
 
     if (!project) return null;
@@ -200,12 +209,28 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onOpenTask }: { pro
         }
     };
 
+    const deleteProject = async () => {
+        if (deleteConfirmation !== project.name) return;
+        setIsSaving(true);
+        try {
+            await allyoService.deleteProject(project.id);
+            onDeleted(project.id);
+            addToast({ type: 'success', title: 'Projeto excluído', message: 'O projeto e todos os seus dados relacionados foram removidos definitivamente.' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível excluir o projeto', message: error.response?.data?.message || 'Tente novamente.' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     return (
-        <Modal isOpen title="Gerenciar projeto" size="xl" onClose={onClose} footer={<><button type="button" onClick={() => confirmInactive ? void inactivate() : setConfirmInactive(true)} disabled={isSaving} className="mr-auto inline-flex h-10 items-center justify-center rounded-full px-4 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30">{confirmInactive ? 'Confirmar inativação' : 'Inativar projeto'}</button><AllyoSecondaryButton type="button" onClick={onClose}>Fechar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-project-management" disabled={isSaving}>{isSaving ? 'Salvando...' : 'Salvar projeto'}</AllyoPrimaryButton></>}>
+        <Modal isOpen title="Gerenciar projeto" size="xl" onClose={onClose} footer={<><div className="mr-auto flex items-center gap-1"><button type="button" onClick={() => { if (confirmInactive) void inactivate(); else { setConfirmInactive(true); setConfirmDelete(false); setDeleteConfirmation(''); } }} disabled={isSaving} className="inline-flex h-10 items-center justify-center rounded-full px-4 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-950/30">{confirmInactive ? 'Confirmar inativação' : 'Inativar projeto'}</button><button type="button" onClick={() => { if (confirmDelete) void deleteProject(); else { setConfirmDelete(true); setConfirmInactive(false); } }} disabled={isSaving || (confirmDelete && deleteConfirmation !== project.name)} className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-xs font-semibold transition disabled:opacity-40 ${confirmDelete ? 'bg-red-600 text-white hover:bg-red-700' : 'text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30'}`}>{confirmDelete ? 'Excluir definitivamente' : 'Excluir projeto'}</button></div><AllyoSecondaryButton type="button" onClick={onClose}>Fechar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-project-management" disabled={isSaving}>{isSaving ? 'Salvando...' : 'Salvar projeto'}</AllyoPrimaryButton></>}>
             <form id="allyo-project-management" onSubmit={save} className="space-y-6">
                 <div className="flex items-start gap-4"><span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[12px] bg-[#edf2e2] text-[#708746] dark:bg-[#9db669]/15"><BriefcaseBusiness size={21} /></span><span className="min-w-0"><span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#829454]">{project.workspace?.name || 'Cliente Allyo'}</span><h2 className="mt-1 truncate font-season text-[25px] font-normal">{project.name}</h2><p className="mt-1 text-xs text-[#777]">{project.service} · {tasks.length} {tasks.length === 1 ? 'tarefa' : 'tarefas'} · {Math.round(Number(project.progress || 0))}% concluído</p></span></div>
 
                 {confirmInactive && <div className="rounded-[12px] border border-red-200 bg-red-50 px-4 py-3 text-xs leading-5 text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">Confirme no botão abaixo para retirar o projeto da operação ativa. O histórico e suas tarefas continuarão disponíveis.</div>}
+
+                {confirmDelete && <div className="rounded-[12px] border border-red-300 bg-red-50 p-4 text-red-800 dark:border-red-900 dark:bg-red-950/30 dark:text-red-200"><strong className="block text-sm">Esta exclusão não poderá ser desfeita.</strong><p className="mt-1 text-xs leading-5">Tarefas, briefing, mensagens, designs, comentários e arquivos vinculados serão removidos. Digite <strong>{project.name}</strong> para confirmar.</p><AllyoInput className="mt-3 border-red-300 bg-white dark:border-red-800 dark:bg-zinc-950" value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} placeholder={project.name} autoComplete="off" /></div>}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                     <AllyoField label="Status do projeto"><AllyoSelect value={status} onChange={(event) => setStatus(event.target.value)}><option>Rascunho</option><option>Em andamento</option><option>Em revisão</option><option>Concluído</option></AllyoSelect></AllyoField>
