@@ -153,6 +153,16 @@ export const AsteryskoReceitaFederalSettings: React.FC<{ organizationId?: string
         void loadStats();
     }, [loadStats]);
 
+    const navigateToInbox = () => {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('asterysko-navigate-tab', { detail: { tab: 'opportunities' } }));
+            const url = new URL(window.location.href);
+            url.searchParams.set('view', 'opportunities');
+            window.history.pushState({}, '', url.toString());
+            window.dispatchEvent(new PopStateEvent('popstate'));
+        }
+    };
+
     // Dispara Sincronização da Base da Receita Federal
     const handleSyncRf = async (customCnpjs?: string) => {
         setSyncingRf(true);
@@ -161,6 +171,7 @@ export const AsteryskoReceitaFederalSettings: React.FC<{ organizationId?: string
             const payload: any = {
                 useFeedSeed: true,
                 targetUfs: ['CE'],
+                batchSize: rfBatchSize,
             };
             if (customCnpjs && customCnpjs.trim()) {
                 payload.cnpjs = customCnpjs.trim();
@@ -470,15 +481,22 @@ export const AsteryskoReceitaFederalSettings: React.FC<{ organizationId?: string
                         <span className="text-[10px] text-zinc-400">CNPJs da Receita Federal</span>
                     </div>
 
-                    <div className="rounded-xl border border-zinc-200/80 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs">
+                    <div 
+                        onClick={navigateToInbox}
+                        className="rounded-xl border border-zinc-200/80 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs cursor-pointer hover:border-amber-400 dark:hover:border-amber-500/50 transition-all group"
+                        title="Clique para ir direto para o Inbox de Leads"
+                    >
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Fila de Revisão</span>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 group-hover:text-amber-500 transition-colors">Fila de Revisão</span>
                             <ListFilter size={14} className="text-amber-500" />
                         </div>
                         <span className="mt-1.5 block text-xl font-black text-amber-600 dark:text-amber-400">
                             {pendingLeads}
                         </span>
-                        <span className="text-[10px] text-zinc-400">aguardando validação no Inbox</span>
+                        <span className="text-[10px] text-zinc-400 flex items-center justify-between">
+                            <span>aguardando validação no Inbox</span>
+                            <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity text-amber-500" />
+                        </span>
                     </div>
 
                     <div className="rounded-xl border border-zinc-200/80 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-950 shadow-xs">
@@ -506,14 +524,24 @@ export const AsteryskoReceitaFederalSettings: React.FC<{ organizationId?: string
 
                 {/* Feedback da última sincronização realizada na sessão */}
                 {recentSyncLog && (
-                    <div className="mt-4 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-300">
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 size={15} className="text-emerald-600 dark:text-emerald-400" />
+                            <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400 shrink-0" />
                             <span>
                                 <strong>Última execução:</strong> {recentSyncLog.companies} empresas inseridas e {recentSyncLog.leads} novos leads gerados ({recentSyncLog.durationMs}ms).
                             </span>
                         </div>
-                        <span className="text-[10px] opacity-75">{formatDateTime(recentSyncLog.timestamp)}</span>
+                        <div className="flex items-center gap-3">
+                            <button
+                                type="button"
+                                onClick={navigateToInbox}
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700 shadow-xs cursor-pointer transition-colors"
+                            >
+                                <span>Ver Leads no Inbox</span>
+                                <ArrowUpRight size={13} />
+                            </button>
+                            <span className="text-[10px] opacity-75">{formatDateTime(recentSyncLog.timestamp)}</span>
+                        </div>
                     </div>
                 )}
 

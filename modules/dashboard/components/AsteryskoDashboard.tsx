@@ -46,6 +46,7 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ user, activeVie
         case 'research':
             return <AsteryskoResearchView />;
 
+        case 'opportunities':
         case 'crm':
             return <AsteryskoCRMView organization={organization} />;
         case 'processes':

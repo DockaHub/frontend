@@ -78,7 +78,7 @@ export const AsteryskoProspectingReviewQueue: React.FC<Props> = ({ organizationI
 
     // Filtros
     const [statusFilter, setStatusFilter] = useState('PENDING_REVIEW');
-    const [datePreset, setDatePreset] = useState<'all' | '7d' | '15d' | '30d' | '60d' | '90d' | 'historical'>('30d');
+    const [datePreset, setDatePreset] = useState<'all' | '7d' | '15d' | '30d' | '60d' | '90d' | 'historical'>('all');
     const [selectedSegment, setSelectedSegment] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [minScore, setMinScore] = useState<number | undefined>(undefined);
@@ -103,7 +103,7 @@ export const AsteryskoProspectingReviewQueue: React.FC<Props> = ({ organizationI
         if (!organizationId) return;
         setSyncLoading(true);
         try {
-            const res = await api.post('/asterysko/prospecting/sync-rf', { useFeedSeed: true }, reqHeaders);
+            const res = await api.post('/asterysko/prospecting/sync-rf', { useFeedSeed: true, batchSize: 50 }, reqHeaders);
             if (res.data?.status === 'success') {
                 setFeedback({
                     type: 'success',

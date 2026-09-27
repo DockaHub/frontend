@@ -74,6 +74,18 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
         }
     };
 
+    // Listen to external navigation events (e.g. from Settings or Ingestion modals)
+    useEffect(() => {
+        const handleExternalNav = (e: any) => {
+            const target = e.detail?.tab || e.detail?.view;
+            if (target && CRM_PHASES.some(p => p.id === target)) {
+                handleTabChange(target as CrmPhaseId);
+            }
+        };
+        window.addEventListener('asterysko-navigate-tab' as any, handleExternalNav);
+        return () => window.removeEventListener('asterysko-navigate-tab' as any, handleExternalNav);
+    }, []);
+
     // Show temporary toast notification
     const showToast = (message: string) => {
         setToastMessage(message);
