@@ -263,6 +263,12 @@ export interface AllyoDemandTask {
         formats: string[];
         creativeDirection: string[];
     };
+    feedback?: {
+        id?: string;
+        rating: number;
+        comment?: string | null;
+        createdAt?: string;
+    } | null;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -270,6 +276,18 @@ export interface AllyoDemandTask {
 export interface DemandsResponse {
     count: number;
     demands: AllyoDemand[];
+    metrics?: {
+        averageRating?: number | null;
+        ratingCount?: number;
+        recentFeedbacks?: Array<{
+            id: string;
+            rating: number;
+            comment?: string | null;
+            taskTitle?: string;
+            clientName?: string;
+            createdAt?: string;
+        }>;
+    };
 }
 
 export interface DesignSubmission {

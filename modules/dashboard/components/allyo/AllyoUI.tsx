@@ -55,6 +55,12 @@ export interface AllyoTask {
         formats: string[];
         creativeDirection: string[];
     };
+    feedback?: {
+        id?: string;
+        rating: number;
+        comment?: string | null;
+        createdAt?: string;
+    } | null;
 }
 
 export const numericTaskId = (value: string) => {
@@ -125,6 +131,7 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         delivery: task.delivery,
         deliverables: index === 0 ? demandDeliverables(demand) : undefined,
         briefing: task.briefing,
+        feedback: task.feedback || null,
     }));
 }
 
@@ -133,11 +140,11 @@ export function mapDemandToTask(demand: any): AllyoTask {
 }
 
 export const ALLYO_TASKS: AllyoTask[] = [
-    { id: '123456', name: 'KV campanha de lançamento', projectId: 'project-fauves-launch', projectName: 'Campanha de lançamento 2027', credits: 1, category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy' },
-    { id: '123457', name: 'Storyboard para filme manifesto', projectId: 'project-asterysko-security', projectName: 'Campanha Segurança 24h', credits: 1, category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana' },
-    { id: '123458', name: 'Motion para redes sociais', projectId: 'project-tokyon-institutional', projectName: 'Campanha institucional', credits: 1, category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy' },
+    { id: '123456', name: 'KV campanha de lançamento', projectId: 'project-fauves-launch', projectName: 'Campanha de lançamento 2027', credits: 1, category: 'Design', client: 'Fauves', deadline: '20/12/2026', time: '10h30min', status: 'Iniciar', cam: 'Marina', creative: 'Levy', feedback: { rating: 5, comment: 'Excelente entrega! Visual limpo, tipografia perfeita e rápida aprovação.' } },
+    { id: '123457', name: 'Storyboard para filme manifesto', projectId: 'project-asterysko-security', projectName: 'Campanha Segurança 24h', credits: 1, category: 'Storyboard', client: 'Asterysko', deadline: '21/12/2026', time: '14h00min', status: 'Em andamento', cam: 'Marina', creative: 'Joana', feedback: { rating: 5, comment: 'Storyboard muito bem estruturado e detalhado.' } },
+    { id: '123458', name: 'Motion para redes sociais', projectId: 'project-tokyon-institutional', projectName: 'Campanha institucional', credits: 1, category: 'Motion', client: 'Tokyon', deadline: '22/12/2026', time: '16h45min', status: 'Em revisão', cam: 'Bruno', creative: 'Levy', feedback: { rating: 5, comment: 'Motion fluido e objetivo, aprovado com louvor!' } },
     { id: '123459', name: 'Edição do case anual', projectId: 'project-fauves-launch', projectName: 'Campanha de lançamento 2027', credits: 1, category: 'Vídeo', client: 'Fauves', deadline: '23/12/2026', time: '09h00min', status: 'Iniciar', cam: 'Bruno', creative: 'Caio' },
-    { id: '123460', name: 'Landing page institucional', projectId: 'project-manyspace-brand', projectName: 'Reposicionamento digital', credits: 1, category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana' },
+    { id: '123460', name: 'Landing page institucional', projectId: 'project-manyspace-brand', projectName: 'Reposicionamento digital', credits: 1, category: 'Digital', client: 'ManySpace', deadline: '26/12/2026', time: '12h00min', status: 'Concluída', cam: 'Marina', creative: 'Joana', feedback: { rating: 4, comment: 'Ótima arquitetura de informação e fluidez visual.' } },
     {
         id: '123461',
         name: 'Peças para mídia paga',

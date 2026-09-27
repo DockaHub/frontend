@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTasks, AllyoTask } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
@@ -233,6 +233,12 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             <section className={`sticky top-[75px] z-30 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isCurrentlyBlocked || isInactive ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f2ef] px-3 py-2 text-xs font-semibold text-[#737a72] dark:bg-zinc-800 dark:text-zinc-300"><span className={`h-1.5 w-1.5 rounded-full ${isInactive ? 'bg-red-400' : 'bg-[#8e958d]'}`} />{isInactive ? 'Inativa' : 'Bloqueada'}</span> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} />}</div>
                 <MetaItem label="Créditos da tarefa" value={formatTaskCredits(task.credits)} />
+                {task.feedback && (
+                    <div className="flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950/30 dark:border-amber-800/50 dark:text-amber-200">
+                        <Star size={13} className="fill-amber-400 text-amber-400" />
+                        <span>Avaliação: {task.feedback.rating.toFixed(1)}</span>
+                    </div>
+                )}
                 <MetaItem label="Deadline" value={`${task.deadline}, ${task.time}`} icon={<Clock3 size={14} />} />
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
                 <div className="ml-auto flex items-center gap-3">
@@ -247,7 +253,47 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             </nav>
 
             {activeTab === 'messages' && <AllyoTaskChat key={task.id} task={task} userName={userName} />}
-            <div hidden={activeTab !== 'details'}><div className={`flex flex-wrap items-center gap-2 border-b px-5 py-4 text-sm text-[#a4a4a4] sm:px-[30px] ${ALLYO_BORDER}`}>
+            <div hidden={activeTab !== 'details'}>
+                {task.feedback && (
+                    <div className="mx-5 my-4 sm:mx-[30px] rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
+                        <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                        <CheckCircle2 size={13} className="text-emerald-600 dark:text-emerald-400" />
+                                        Aprovado com feedback
+                                    </span>
+                                    <div className="flex items-center gap-0.5 text-amber-500">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <Star
+                                                key={i}
+                                                size={15}
+                                                className={i < task.feedback!.rating ? 'fill-amber-400 text-amber-400' : 'text-zinc-300 dark:text-zinc-700'}
+                                            />
+                                        ))}
+                                        <span className="ml-1 text-xs font-bold text-amber-900 dark:text-amber-200">
+                                            {task.feedback.rating.toFixed(1)} / 5.0
+                                        </span>
+                                    </div>
+                                </div>
+                                {task.feedback.comment ? (
+                                    <p className="mt-2 text-sm italic text-zinc-800 dark:text-zinc-200">
+                                        "{task.feedback.comment}"
+                                    </p>
+                                ) : (
+                                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                                        Aprovado pelo cliente com nota {task.feedback.rating} de 5 estrelas.
+                                    </p>
+                                )}
+                            </div>
+                            {task.feedback.createdAt && (
+                                <span className="shrink-0 text-[11px] text-zinc-400">
+                                    {new Date(task.feedback.createdAt).toLocaleDateString('pt-BR')}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}<div className={`flex flex-wrap items-center gap-2 border-b px-5 py-4 text-sm text-[#a4a4a4] sm:px-[30px] ${ALLYO_BORDER}`}>
                 {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>PNG ou PDF</Tag><span>e um único pacote final de</span><Tag>arquivos editáveis</Tag></> : <><span>Isso é uma solicitação para</span><Tag>{requestCopy.type}</Tag><span>com</span><Tag>{requestCopy.count}</Tag><span>para aprovação em</span><Tag>{requestCopy.approval}</Tag><span>e</span><Tag>{requestCopy.editable}</Tag><span>no</span><Tag>{requestCopy.software}</Tag></>}
             </div>
 

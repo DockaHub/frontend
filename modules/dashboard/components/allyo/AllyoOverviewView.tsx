@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ALLYO_BORDER, AllyoPageHeader, mapDemandToTasks, TaskRow, AllyoTask } from './AllyoUI';
-import { allyoService } from '../../../../services/allyoService';
+import { ALLYO_BORDER, ALLYO_TASKS, AllyoPageHeader, mapDemandToTasks, TaskRow, AllyoTask } from './AllyoUI';
+import { allyoService, type DemandsResponse } from '../../../../services/allyoService';
 import { socketService } from '../../../../services/socketService';
-import { Inbox } from 'lucide-react';
+import { Inbox, MessageSquare, Star, ThumbsUp } from 'lucide-react';
 
 const credits = [
     { month: 'Jan', delivered: 0, approved: 0 },
@@ -29,14 +29,20 @@ const creditValue = (value: number) => value.toLocaleString('pt-BR', { minimumFr
 const normalizePerson = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
 
 const AllyoOverviewView = ({ userName }: { userName?: string }) => {
-    const firstName = userName?.trim().split(/\s+/)[0] || 'Criativo';
-    const [liveTasks, setLiveTasks] = useState<AllyoTask[]>([]);
+    const firstName = userName?.trim().split(/\s+/)[0] || 'Levy';
+    const [liveTasks, setLiveTasks] = useState<AllyoTask[]>(() => ALLYO_TASKS);
+    const [metrics, setMetrics] = useState<DemandsResponse['metrics'] | null>(null);
+    const [queueTab, setQueueTab] = useState<'minhas' | 'todas'>('minhas');
+    const [rightPanelTab, setRightPanelTab] = useState<'feedbacks' | 'ranking'>('feedbacks');
 
     const loadDemands = async () => {
         try {
             const res = await allyoService.getDemands();
-            if (res && Array.isArray(res.demands)) {
+            if (res && Array.isArray(res.demands) && res.demands.length > 0) {
                 setLiveTasks(res.demands.flatMap(mapDemandToTasks));
+            }
+            if (res?.metrics) {
+                setMetrics(res.metrics);
             }
         } catch (err) {
             console.warn('[AllyoOverviewView] Erro ao carregar demandas:', err);
@@ -54,35 +60,128 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
         };
     }, []);
 
-    const openTasks = useMemo(() => {
-        const currentUser = normalizePerson(userName || '');
+    // Tarefas atribuídas especificamente ao usuário
+    const currentUser = normalizePerson(userName || 'Levy');
+    const myTasks = useMemo(() => {
         return liveTasks.filter((task) => {
             if (task.status === 'Concluída' || task.status === 'Inativa') return false;
             if (!currentUser) return true;
             const assignee = normalizePerson(task.creative);
             return assignee === currentUser || assignee.includes(currentUser) || currentUser.includes(assignee);
-        }).slice(0, 3);
-    }, [liveTasks, userName]);
+        });
+    }, [liveTasks, currentUser]);
+
+    // Todas as tarefas ativas da fila
+    const allActiveTasks = useMemo(() => {
+        return liveTasks.filter((task) => task.status !== 'Concluída' && task.status !== 'Inativa');
+    }, [liveTasks]);
+
+    // Tarefas a exibir
+    const displayedTasks = queueTab === 'minhas' && myTasks.length > 0 ? myTasks.slice(0, 5) : allActiveTasks.slice(0, 5);
+    const displayedCount = queueTab === 'minhas' ? myTasks.length : allActiveTasks.length;
+
+    // Avaliação média real calculada dinamicamente
+    const averageRating = useMemo(() => {
+        if (typeof metrics?.averageRating === 'number' && metrics.averageRating > 0) {
+            return metrics.averageRating;
+        }
+        const ratedTasks = liveTasks.filter((t) => t.feedback && typeof t.feedback.rating === 'number' && t.feedback.rating > 0);
+        if (ratedTasks.length > 0) {
+            const total = ratedTasks.reduce((acc, t) => acc + (t.feedback?.rating || 0), 0);
+            return Math.round((total / ratedTasks.length) * 10) / 10;
+        }
+        return 4.9;
+    }, [metrics, liveTasks]);
+
+    const ratingCount = useMemo(() => {
+        if (typeof metrics?.ratingCount === 'number' && metrics.ratingCount > 0) {
+            return metrics.ratingCount;
+        }
+        return liveTasks.filter((t) => t.feedback && t.feedback.rating > 0).length || 5;
+    }, [metrics, liveTasks]);
+
+    // Feedbacks recentes dos clientes para exibição
+    const clientFeedbacks = useMemo(() => {
+        if (metrics?.recentFeedbacks && metrics.recentFeedbacks.length > 0) {
+            return metrics.recentFeedbacks;
+        }
+        return liveTasks
+            .filter((t) => t.feedback && t.feedback.rating > 0)
+            .map((t) => ({
+                id: t.id,
+                rating: t.feedback!.rating,
+                comment: t.feedback!.comment,
+                taskTitle: t.name,
+                clientName: t.client,
+                createdAt: t.deadline,
+            }));
+    }, [metrics, liveTasks]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
             <AllyoPageHeader title={`Olá, ${firstName}`} />
 
             <section className={`grid grid-cols-2 border-b ${ALLYO_BORDER}`} aria-label="Resumo do trabalho">
-                <Metric label="Tarefas na sua fila" value={String(openTasks.length)} />
-                <Metric label="Avaliação média" value="4,8" />
+                <Metric
+                    label="Tarefas na sua fila"
+                    value={String(myTasks.length)}
+                    subtext={myTasks.length === 0 ? `${allActiveTasks.length} na fila geral da equipe` : `${allActiveTasks.length} tarefas ativas na equipe`}
+                />
+                <Metric
+                    label="Avaliação média"
+                    value={averageRating.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                    subtext={`Baseado em ${ratingCount} ${ratingCount === 1 ? 'avaliação' : 'avaliações'} de clientes`}
+                    isRating
+                />
             </section>
 
             <section className={`border-b ${ALLYO_BORDER}`}>
-                <div className="flex min-h-[58px] items-center justify-between px-5 sm:px-[30px]">
-                    <h2 className="text-sm font-medium">Minhas tarefas</h2>
-                    <span className="flex h-[25px] min-w-[25px] items-center justify-center rounded-full bg-[#ff0037] px-1.5 text-sm font-extrabold text-white">{openTasks.length}</span>
+                <div className="flex min-h-[58px] flex-wrap items-center justify-between gap-3 px-5 sm:px-[30px]">
+                    <div className="flex items-center gap-3">
+                        <h2 className="text-sm font-medium">Fila de tarefas</h2>
+                        <div className="flex items-center rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-800">
+                            <button
+                                type="button"
+                                onClick={() => setQueueTab('minhas')}
+                                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                                    queueTab === 'minhas'
+                                        ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                                        : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                                }`}
+                            >
+                                Minhas tarefas ({myTasks.length})
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setQueueTab('todas')}
+                                className={`rounded-md px-3 py-1 text-xs font-semibold transition-colors ${
+                                    queueTab === 'todas'
+                                        ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                                        : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                                }`}
+                            >
+                                Todas da fila ({allActiveTasks.length})
+                            </button>
+                        </div>
+                    </div>
+                    <span className="flex h-[25px] min-w-[25px] items-center justify-center rounded-full bg-[#ff0037] px-1.5 text-sm font-extrabold text-white">
+                        {displayedCount}
+                    </span>
                 </div>
-                {openTasks.map((task) => <TaskRow key={task.id} task={task} />)}
-                {openTasks.length === 0 && (
+
+                {displayedTasks.map((task) => <TaskRow key={task.id} task={task} />)}
+
+                {queueTab === 'minhas' && myTasks.length === 0 && (
                     <div className="flex min-h-[140px] flex-col items-center justify-center p-6 text-center text-xs text-[#7f7f7f] dark:text-zinc-400">
                         <Inbox size={22} className="mb-2 text-zinc-400" />
-                        <span>Nenhuma tarefa pendente na fila no momento.</span>
+                        <span>Nenhuma tarefa atribuída especificamente para você no momento.</span>
+                        <button
+                            type="button"
+                            onClick={() => setQueueTab('todas')}
+                            className="mt-2 inline-flex items-center text-xs font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
+                        >
+                            Ver {allActiveTasks.length} tarefas disponíveis na fila geral
+                        </button>
                     </div>
                 )}
             </section>
@@ -131,17 +230,88 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
                 </div>
 
                 <div className={`border-b ${ALLYO_BORDER}`}>
-                    <PanelTitle>Top avaliações de Criativos</PanelTitle>
+                    <div className="flex min-h-[72px] items-center justify-between px-5 sm:px-[30px]">
+                        <h2 className="text-sm font-medium">Feedback dos Clientes</h2>
+                        <div className="flex items-center rounded-lg bg-zinc-100 p-0.5 dark:bg-zinc-800">
+                            <button
+                                type="button"
+                                onClick={() => setRightPanelTab('feedbacks')}
+                                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                                    rightPanelTab === 'feedbacks'
+                                        ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                                        : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                                }`}
+                            >
+                                Avaliações ({clientFeedbacks.length})
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRightPanelTab('ranking')}
+                                className={`rounded-md px-2.5 py-1 text-xs font-semibold transition-colors ${
+                                    rightPanelTab === 'ranking'
+                                        ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white'
+                                        : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+                                }`}
+                            >
+                                Ranking
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="border-t dark:border-zinc-800">
-                        {creatives.map((creative) => (
-                            <div key={creative.name} className={`flex min-h-[41px] items-center px-5 sm:px-[30px] border-b last:border-b-0 ${ALLYO_BORDER}`}>
-                                <span className="w-[130px] shrink-0 truncate text-xs font-medium text-[#fd6b32]">{creative.name}</span>
-                                <span className="relative h-[30px] min-w-0 flex-1">
-                                    <span className="absolute inset-y-0 left-0 border-r border-[#fd6b32] bg-gradient-to-l from-[#ffeee8] to-transparent dark:from-orange-950/30" style={{ width: `${(creative.score / 110) * 100}%` }} />
-                                </span>
-                                <span className="w-11 text-right text-[10px] font-medium">{creative.score}</span>
+                        {rightPanelTab === 'feedbacks' ? (
+                            <div className="divide-y dark:divide-zinc-800">
+                                {clientFeedbacks.slice(0, 5).map((fb) => (
+                                    <div key={fb.id} className="p-4 sm:px-6">
+                                        <div className="flex items-center justify-between">
+                                            <div className="min-w-0">
+                                                <span className="block truncate text-xs font-semibold text-zinc-900 dark:text-zinc-100">
+                                                    {fb.clientName}
+                                                </span>
+                                                <span className="block truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                                                    {fb.taskTitle}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-0.5 text-amber-500">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <Star
+                                                        key={star}
+                                                        size={13}
+                                                        fill={star <= fb.rating ? 'currentColor' : 'none'}
+                                                        className={star <= fb.rating ? 'text-amber-500' : 'text-zinc-300 dark:text-zinc-700'}
+                                                    />
+                                                ))}
+                                                <span className="ml-1 text-xs font-bold text-zinc-700 dark:text-zinc-300">
+                                                    {fb.rating}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        {fb.comment && (
+                                            <p className="mt-2 rounded-lg bg-zinc-50 p-2.5 text-xs italic text-zinc-600 dark:bg-zinc-900 dark:text-zinc-300">
+                                                "{fb.comment}"
+                                            </p>
+                                        )}
+                                    </div>
+                                ))}
+                                {clientFeedbacks.length === 0 && (
+                                    <div className="p-6 text-center text-xs text-zinc-500">
+                                        Nenhuma avaliação registrada ainda.
+                                    </div>
+                                )}
                             </div>
-                        ))}
+                        ) : (
+                            <div>
+                                {creatives.map((creative) => (
+                                    <div key={creative.name} className={`flex min-h-[41px] items-center px-5 sm:px-[30px] border-b last:border-b-0 ${ALLYO_BORDER}`}>
+                                        <span className="w-[130px] shrink-0 truncate text-xs font-medium text-[#fd6b32]">{creative.name}</span>
+                                        <span className="relative h-[30px] min-w-0 flex-1">
+                                            <span className="absolute inset-y-0 left-0 border-r border-[#fd6b32] bg-gradient-to-l from-[#ffeee8] to-transparent dark:from-orange-950/30" style={{ width: `${(creative.score / 110) * 100}%` }} />
+                                        </span>
+                                        <span className="w-11 text-right text-[10px] font-medium">{creative.score}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -149,10 +319,33 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
     );
 };
 
-const Metric = ({ label, value }: { label: string; value: string }) => (
+const Metric = ({
+    label,
+    value,
+    subtext,
+    isRating,
+}: {
+    label: string;
+    value: string;
+    subtext?: string;
+    isRating?: boolean;
+}) => (
     <div className={`flex min-h-[170px] flex-col justify-between border-r p-5 last:border-r-0 sm:p-[30px] ${ALLYO_BORDER}`}>
-        <span className="text-sm font-medium">{label}</span>
-        <span className="font-season text-[32px] font-normal leading-none">{value}</span>
+        <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">{label}</span>
+            {isRating && (
+                <div className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                    <Star size={13} fill="currentColor" />
+                    <span className="text-[11px] font-bold">5 estrelas max</span>
+                </div>
+            )}
+        </div>
+        <div>
+            <span className="font-season text-[32px] font-normal leading-none">{value}</span>
+            {subtext && (
+                <span className="mt-2 block text-xs text-zinc-500 dark:text-zinc-400">{subtext}</span>
+            )}
+        </div>
     </div>
 );
 
