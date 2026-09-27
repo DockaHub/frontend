@@ -10,9 +10,8 @@ import { AsteryskoBrandIdentificationTab } from './AsteryskoBrandIdentificationT
 import { AsteryskoTrademarkScreeningTab } from './AsteryskoTrademarkScreeningTab';
 import { AsteryskoBusinessContactEnrichmentTab } from './AsteryskoBusinessContactEnrichmentTab';
 import { AsteryskoDecisionMakerEnrichmentTab } from './AsteryskoDecisionMakerEnrichmentTab';
-import { AsteryskoScoutAiTab } from './AsteryskoScoutAiTab';
-import { AsteryskoScoutAutomationSettings } from '../AsteryskoScoutAutomationSettings';
-import { Bot, Mail, UserRoundSearch } from 'lucide-react';
+import { AsteryskoReceitaFederalSettings } from '../AsteryskoReceitaFederalSettings';
+import { Bot, Building2, Mail, UserRoundSearch } from 'lucide-react';
 import {
     getApiErrorMessage,
     IngestionFailure,
@@ -166,7 +165,7 @@ export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOp
 
     const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
         { id: 'overview', label: 'Visão Geral', icon: <Activity size={14} /> },
-        { id: 'scout', label: 'Scout AI', icon: <Bot size={14} /> },
+        { id: 'scout', label: 'Receita Federal & CNPJs', icon: <Building2 size={14} /> },
         { id: 'sources', label: 'Fontes', icon: <Database size={14} /> },
         { id: 'runs', label: 'Execuções', icon: <Play size={14} /> },
         { id: 'brands', label: 'Identificação de marcas', icon: <Sparkles size={14} /> },
@@ -300,7 +299,7 @@ export const AsteryskoEngineModal: React.FC<AsteryskoEngineModalProps> = ({ isOp
                     )}
 
                     {activeTab === 'scout' && (
-                        <AsteryskoScoutAutomationSettings organizationId={organizationId} />
+                        <AsteryskoReceitaFederalSettings organizationId={organizationId} />
                     )}
 
                     {/* ─── FONTES ─── */}

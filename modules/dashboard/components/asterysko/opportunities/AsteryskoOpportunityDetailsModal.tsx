@@ -537,7 +537,7 @@ export const AsteryskoOpportunityDetailsModal: React.FC<Props> = ({
                                     {/* Pré-enriquecimento técnico — candidatos permanecem sem aceite automático */}
                                     <div className="space-y-3">
                                         <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-                                            Scout AI & Pré-enriquecimento
+                                            Receita Federal & Pré-enriquecimento
                                             {technicalLoading && <Loader2 size={13} className="animate-spin text-[#0412dd]" />}
                                         </h3>
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
