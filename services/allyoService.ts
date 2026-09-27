@@ -14,6 +14,32 @@ export interface AllyoDemandBriefing {
     durationHours?: number;
 }
 
+export interface AllyoReviewComment {
+    id: number;
+    author: string;
+    text: string;
+    time: string;
+    resolved: boolean;
+    version: number;
+    point?: { x: number; y: number };
+    annotationId?: number;
+    createdAt?: string;
+}
+
+export interface AllyoReviewAnnotation {
+    id: number;
+    type: 'draw' | 'arrow' | 'rectangle' | 'text' | string;
+    version: number;
+    color: string;
+    width: number;
+    points?: Array<{ x: number; y: number }>;
+    start?: { x: number; y: number };
+    end?: { x: number; y: number };
+    point?: { x: number; y: number };
+    text?: string;
+    [key: string]: any;
+}
+
 export interface AllyoDesignAsset {
     id: number;
     projectId: string;
@@ -24,7 +50,11 @@ export interface AllyoDesignAsset {
     approved: boolean;
     fileUrl?: string;
     thumbnailUrl?: string;
+    contentType?: string;
+    textContent?: string | null;
     createdAt: string;
+    comments?: AllyoReviewComment[];
+    annotations?: AllyoReviewAnnotation[];
 }
 
 export interface AllyoClient {
@@ -474,6 +504,38 @@ export const allyoService = {
      */
     async updateBrandBrainAccess(workspaceId: string, access: 'available' | 'unavailable') {
         const response = await api.post(`/allyo/workspaces/${workspaceId}/brand-brain`, { access });
+        return response.data;
+    },
+
+    /**
+     * Busca os detalhes completos da entrega com anotações e comentários pontuais
+     */
+    async getDesignReview(designId: number): Promise<AllyoDesignAsset> {
+        const response = await api.get(`/allyo/designs/${designId}/review`);
+        return response.data;
+    },
+
+    /**
+     * Alterna o status de resolvido de um comentário na revisão
+     */
+    async toggleCommentResolved(designId: number, commentId: number, resolved: boolean): Promise<{ id: number; resolved: boolean }> {
+        const response = await api.patch(`/allyo/designs/${designId}/comments/${commentId}`, { resolved });
+        return response.data;
+    },
+
+    /**
+     * Adiciona um comentário da equipe na revisão da entrega
+     */
+    async addDesignComment(designId: number, data: { text: string; version?: number; point?: { x: number; y: number }; annotationId?: number }): Promise<any> {
+        const response = await api.post(`/allyo/designs/${designId}/comments`, data);
+        return response.data;
+    },
+
+    /**
+     * Busca o histórico de mensagens do projeto
+     */
+    async getProjectMessages(projectId: string): Promise<{ count: number; messages: any[] }> {
+        const response = await api.get(`/allyo/projects/${encodeURIComponent(projectId)}/messages`);
         return response.data;
     },
 };

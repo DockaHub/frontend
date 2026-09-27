@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { FilePenLine, MessageCircle, Send, CheckCircle2 } from 'lucide-react';
+import { FilePenLine, MessageCircle, Send, CheckCircle2, Eye } from 'lucide-react';
+import AllyoReviewModal from './AllyoReviewModal';
+import type { AllyoDesignAsset } from '../../../../services/allyoService';
 import type { AllyoTask } from './AllyoUI';
 import { addTaskActivity, readTaskActivity, subscribeToTaskActivity, type AllyoActivity } from './allyoTaskActivity';
 import { allyoService } from '../../../../services/allyoService';
@@ -12,6 +14,8 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
     const [history, setHistory] = useState<AllyoActivity[]>(() => readTaskActivity(task.id));
     const [draft, setDraft] = useState('');
     const [isSending, setIsSending] = useState(false);
+    const [selectedReviewDesign, setSelectedReviewDesign] = useState<AllyoDesignAsset | null>(null);
+    const [taskDesigns, setTaskDesigns] = useState<AllyoDesignAsset[]>([]);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -23,6 +27,38 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, [history.length]);
+
+    // Sincroniza anotações e entregas do servidor
+    useEffect(() => {
+        const currentProjectId = task.projectId || task.id;
+        allyoService.getDemands().then((res) => {
+            if (!res || !Array.isArray(res.demands)) return;
+            const project = res.demands.find((d) => d.id === currentProjectId || d.tasksList?.some((t) => t.id === task.id));
+            if (project && project.designs) {
+                const designsForTask = project.designs.filter((d) => !d.taskId || d.taskId === task.id);
+                setTaskDesigns(designsForTask);
+                for (const d of designsForTask) {
+                    if (d.comments && d.comments.length > 0) {
+                        for (const c of d.comments) {
+                            const currentList = readTaskActivity(task.id);
+                            const exists = currentList.some((item) => item.text.includes(c.text));
+                            if (!exists) {
+                                addTaskActivity(task.id, {
+                                    type: 'client_file_change',
+                                    author: c.author || 'Cliente Allyo',
+                                    role: 'client',
+                                    text: `Anotação no arquivo: "${c.text}"`,
+                                    fileName: d.name,
+                                    version: d.version,
+                                    designId: d.id,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }).catch(() => {});
+    }, [task.id, task.projectId]);
 
     // Escuta eventos em tempo real do WebSocket ManySpace (disparados pelo Webhook da Allyo)
     useEffect(() => {
@@ -52,6 +88,30 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                     version: 'Aprovado',
                     text: '✨ Design aprovado com sucesso pelo cliente no portal!',
                 });
+            } else if (event.type === 'REVIEW_COMMENT_ADDED') {
+                const comment = event.data?.comment;
+                const designName = event.data?.designName || 'Arquivo da entrega';
+                const deliveryId = event.data?.deliveryId;
+                addTaskActivity(task.id, {
+                    type: 'client_file_change',
+                    author: comment?.author || 'Cliente Allyo',
+                    role: 'client',
+                    text: comment?.text ? `Anotação com marcador: "${comment.text}"` : 'Fez uma anotação diretamente no arquivo.',
+                    fileName: designName,
+                    version: comment?.version ? `v${comment.version}` : undefined,
+                    designId: deliveryId,
+                });
+            } else if (event.type === 'ANNOTATION_ADDED') {
+                const designName = event.data?.designName || 'Arquivo da entrega';
+                const deliveryId = event.data?.deliveryId;
+                addTaskActivity(task.id, {
+                    type: 'client_file_change',
+                    author: 'Cliente Allyo',
+                    role: 'client',
+                    text: 'Adicionou marcações visuais diretamente sobre o arquivo.',
+                    fileName: designName,
+                    designId: deliveryId,
+                });
             }
         };
 
@@ -60,6 +120,37 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
             socketService.off('allyo:event', handleRealtimeEvent);
         };
     }, [task.id, task.projectId, task.creative, userName]);
+
+    const openDesignReview = async (designId?: number, fileName?: string) => {
+        if (designId) {
+            const found = taskDesigns.find((d) => d.id === designId);
+            if (found) {
+                setSelectedReviewDesign(found);
+                return;
+            }
+            try {
+                const fetched = await allyoService.getDesignReview(designId);
+                if (fetched) {
+                    setSelectedReviewDesign(fetched);
+                    return;
+                }
+            } catch {}
+        }
+        if (taskDesigns.length > 0) {
+            setSelectedReviewDesign(taskDesigns[0]);
+        } else {
+            setSelectedReviewDesign({
+                id: designId || 1,
+                projectId: task.projectId || task.id,
+                taskId: task.id,
+                name: fileName || task.name,
+                version: 'v1',
+                color: '#d7ff70',
+                approved: false,
+                createdAt: new Date().toISOString(),
+            });
+        }
+    };
 
     const sendMessage = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -138,6 +229,15 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                                             <p className="mt-1 break-words text-sm font-semibold text-[#183725] dark:text-emerald-100">{item.fileName || 'Arquivo da tarefa'}</p>
                                             <p className="mt-1 text-sm text-[#435d4a] dark:text-emerald-200">{item.text}</p>
                                             <p className="mt-2 text-xs text-[#6f8974]">{item.author}{item.version ? ` · ${item.version}` : ''} · {timeFormatter.format(date)}</p>
+                                            <div className="mt-3">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDesignReview(item.designId, item.fileName)}
+                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-[#20442c] px-3 py-1.5 text-xs font-semibold text-[#d0f08e] transition hover:bg-[#2b5a3b] shadow-sm"
+                                                >
+                                                    <Eye size={13} /> Ver anotações no arquivo
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -187,6 +287,12 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                     </button>
                 </div>
             </form>
+            <AllyoReviewModal
+                isOpen={Boolean(selectedReviewDesign)}
+                onClose={() => setSelectedReviewDesign(null)}
+                design={selectedReviewDesign}
+                taskName={task.name}
+            />
         </section>
     );
 };

@@ -7,6 +7,8 @@ export type AllyoActivity = {
     text: string;
     fileName?: string;
     version?: string;
+    designId?: number;
+    pointsCount?: number;
 };
 
 const storageKey = (taskId: string) => `allyo:task-activity:v1:${taskId}`;
@@ -34,7 +36,7 @@ export const addTaskActivity = (taskId: string, activity: Omit<AllyoActivity, 'i
 };
 
 // The client file editor can call this when a customer submits an annotated file.
-export const recordClientFileChange = (taskId: string, clientName: string, fileName: string, comment = '', version?: string) =>
+export const recordClientFileChange = (taskId: string, clientName: string, fileName: string, comment = '', version?: string, designId?: number, pointsCount?: number) =>
     addTaskActivity(taskId, {
         type: 'client_file_change',
         author: clientName,
@@ -42,6 +44,8 @@ export const recordClientFileChange = (taskId: string, clientName: string, fileN
         text: comment.trim() || 'O cliente enviou alterações diretamente no arquivo.',
         fileName,
         version,
+        designId,
+        pointsCount,
     });
 
 export const subscribeToTaskActivity = (taskId: string, callback: () => void) => {

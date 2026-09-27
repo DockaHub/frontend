@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine } from 'lucide-react';
+import AllyoReviewModal from './AllyoReviewModal';
 import { useSearchParams } from 'react-router-dom';
 import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTasks, AllyoTask } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
@@ -43,6 +44,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [liveDemand, setLiveDemand] = useState<AllyoDemand | null>(null);
     const [taskChanges, setTaskChanges] = useState<Partial<AllyoTask>>({});
     const [canManageTask, setCanManageTask] = useState(false);
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
     useEffect(() => {
         if (!taskId) return;
@@ -74,6 +76,9 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const isTaskBlocked = projectTask?.status === 'blocked';
     const blockingTasks = (projectTask?.dependsOn || []).map((id) => projectTasks.find((item) => item.id === id)?.title).filter(Boolean);
     const taskResources = getTaskResources(task.id);
+    const activeReviewDesign = (liveDemand?.designs || []).find((d) => !d.taskId || d.taskId === task.id) || liveDemand?.designs?.[0] || null;
+    const totalComments = activeReviewDesign?.comments?.length || 0;
+    const hasClientAnnotations = totalComments > 0 || (activeReviewDesign?.annotations && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
     const deliverableKind = getDeliverableKind(task);
     const requestCopy = deliverableCopy[deliverableKind];
     const briefing = task.briefing
@@ -254,6 +259,32 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
 
             {activeTab === 'messages' && <AllyoTaskChat key={task.id} task={task} userName={userName} />}
             <div hidden={activeTab !== 'details'}>
+                {activeReviewDesign && hasClientAnnotations && (
+                    <div className="mx-5 my-3 sm:mx-[30px] flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-200 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                                <FilePenLine size={18} />
+                            </span>
+                            <div className="min-w-0">
+                                <h3 className="text-sm font-semibold text-emerald-950 dark:text-emerald-200 truncate">
+                                    Anotações do cliente disponíveis ({activeReviewDesign.name})
+                                </h3>
+                                <p className="text-xs text-emerald-800 dark:text-emerald-300">
+                                    {totalComments > 0
+                                        ? `O cliente deixou ${totalComments} ${totalComments === 1 ? 'comentário/marcador' : 'comentários/marcadores'} diretamente sobre o arquivo.`
+                                        : 'O cliente realizou marcações sobre esta entrega no portal.'}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setReviewModalOpen(true)}
+                            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#003f35] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#12584b] shadow-sm"
+                        >
+                            <Eye size={14} /> Abrir anotações e marcadores
+                        </button>
+                    </div>
+                )}
                 {task.feedback && (
                     <div className="mx-5 my-4 sm:mx-[30px] rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
                         <div className="flex items-start justify-between gap-3">
@@ -308,7 +339,21 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                         </div>
                     </CollapsibleSection>
 
-                    <button type="button" onClick={() => setOrderOpen((value) => !value)} className={`flex w-full items-center justify-between border-b px-5 py-5 text-left sm:px-[30px] ${ALLYO_BORDER}`}><h2 className="font-season text-lg font-normal">Visualização do pedido {isMultiDeliverable && <span className="text-[#888]">({task.deliverables?.length})</span>}</h2>{orderOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
+                    <div className={`flex w-full items-center justify-between border-b px-5 py-4 sm:px-[30px] ${ALLYO_BORDER}`}>
+                        <button type="button" onClick={() => setOrderOpen((value) => !value)} className="flex items-center gap-3 text-left">
+                            <h2 className="font-season text-lg font-normal">Visualização do pedido {isMultiDeliverable && <span className="text-[#888]">({task.deliverables?.length})</span>}</h2>
+                            {orderOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                        </button>
+                        {activeReviewDesign && (
+                            <button
+                                type="button"
+                                onClick={() => setReviewModalOpen(true)}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                            >
+                                <Eye size={13} /> Ver anotações no arquivo {totalComments > 0 ? `(${totalComments})` : ''}
+                            </button>
+                        )}
+                    </div>
                     {orderOpen && (isMultiDeliverable && task.deliverables
                         ? <AllyoMultiDeliverableWorkspace key={task.id} deliverables={task.deliverables} onProgressChange={setReadyDeliverables} />
                         : <DeliveryWorkspace kind={deliverableKind} />)}
@@ -321,6 +366,15 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                             <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">{isInactive ? 'Tarefa inativa' : isCurrentlyBlocked ? 'Dependência do projeto' : 'Próxima ação'}</span>
                             <h2 className="mt-2 font-season text-xl font-normal">{isInactive ? 'Execução pausada' : isCurrentlyBlocked ? 'Aguardando liberação' : isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
                             <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isInactive ? 'A equipe administrativa pode reativar esta tarefa pelo menu de ações.' : isCurrentlyBlocked ? `Esta tarefa será liberada quando ${blockingTasks.join(' e ') || 'o bloqueio administrativo'} for removido.` : isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
+                            {activeReviewDesign && (
+                                <button
+                                    type="button"
+                                    onClick={() => setReviewModalOpen(true)}
+                                    className="mb-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-[#003f35] bg-emerald-50/60 px-4 py-2 text-xs font-semibold text-[#003f35] transition hover:bg-emerald-100 dark:border-[#d0f08e] dark:bg-emerald-950/30 dark:text-[#d0f08e]"
+                                >
+                                    <Eye size={14} /> Ver anotações do cliente
+                                </button>
+                            )}
                             <button type="button" disabled={!canSendForReview} onClick={sendForReview} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {isMultiDeliverable ? readyDeliverables > 0 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão` : 'Nenhum pedido pronto' : 'Enviar para revisão'}</button>
                             {!canSendForReview && <p className="mt-2 text-center text-xs text-[#8f8f8f]">{isInactive ? 'Reative a tarefa para continuar.' : isCurrentlyBlocked ? 'O envio será liberado quando o bloqueio for removido.' : 'Anexe o material para liberar o envio.'}</p>}
                         </div>
@@ -330,6 +384,12 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                     </div>
                 </aside>
             </div></div>
+            <AllyoReviewModal
+                isOpen={reviewModalOpen}
+                onClose={() => setReviewModalOpen(false)}
+                design={activeReviewDesign}
+                taskName={task.name}
+            />
         </div>
     );
 };
