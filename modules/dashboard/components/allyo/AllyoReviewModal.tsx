@@ -435,6 +435,10 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
     };
 
     const handleSelectPin = (commentId: number) => {
+        const comm = comments.find((c) => c.id === commentId);
+        if (isPdf && comm?.page && comm.page !== pdfPage) {
+            setPdfPage(comm.page);
+        }
         setSelectedCommentId(commentId);
         setHoveredCommentId(commentId);
         // Scroll comment into view
@@ -628,7 +632,9 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                 </marker>
                                             </defs>
 
-                                            {annotations.map((ann, idx) => {
+                                            {annotations
+                                                .filter((ann) => !isPdf || !ann.page || ann.page === pdfPage)
+                                                .map((ann, idx) => {
                                                 const isHovered = ann.id && ann.id === String(hoveredCommentId);
                                                 const color = isHovered ? '#fbbf24' : (ann.color || '#5d55c7');
                                                 const strokeW = (ann.width || 3) * (isHovered ? 0.25 : 0.15);
@@ -693,7 +699,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
 
                                         {/* Pinos / Marcadores dos Comentários pontuais */}
                                         {comments
-                                            .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number')
+                                            .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number' && (!isPdf || !c.page || c.page === pdfPage))
                                             .map((c) => {
                                                 const pinIndex = comments.findIndex((item) => item.id === c.id);
                                                 const isSelected = selectedCommentId === c.id;
@@ -921,7 +927,12 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                         <article
                                             key={c.id}
                                             id={`comment-card-${c.id}`}
-                                            onClick={() => setSelectedCommentId(c.id)}
+                                            onClick={() => {
+                                                if (isPdf && c.page && c.page !== pdfPage) {
+                                                    setPdfPage(c.page);
+                                                }
+                                                setSelectedCommentId(c.id);
+                                            }}
                                             onMouseEnter={() => setHoveredCommentId(c.id)}
                                             onMouseLeave={() => setHoveredCommentId(null)}
                                             className={`rounded-xl border p-3.5 transition-all text-xs cursor-pointer ${
@@ -946,6 +957,11 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                     <span className="font-semibold text-white">
                                                         {c.author}
                                                     </span>
+                                                    {isPdf && c.page && (
+                                                        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
+                                                            Pág. {c.page}
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 <span className="text-[10px] text-zinc-400 shrink-0">
                                                     {c.time}

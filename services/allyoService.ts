@@ -21,6 +21,7 @@ export interface AllyoReviewComment {
     time: string;
     resolved: boolean;
     version: number;
+    page?: number;
     point?: { x: number; y: number };
     annotationId?: number;
     createdAt?: string;
@@ -30,6 +31,7 @@ export interface AllyoReviewAnnotation {
     id: number;
     type: 'draw' | 'arrow' | 'rectangle' | 'text' | string;
     version: number;
+    page?: number;
     color: string;
     width: number;
     points?: Array<{ x: number; y: number }>;
