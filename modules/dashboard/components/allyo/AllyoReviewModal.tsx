@@ -13,9 +13,160 @@ import {
     CornerDownRight,
     AlertCircle,
     Layers,
-    FileText
+    FileText,
+    ChevronLeft,
+    ChevronRight,
+    Loader2
 } from 'lucide-react';
+import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import allyoService, { AllyoDesignAsset, AllyoReviewComment, AllyoReviewAnnotation } from '../../../../services/allyoService';
+
+GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+interface AllyoPdfCanvasProps {
+    url: string;
+    altName: string;
+    currentPage: number;
+    onNumPagesChange?: (numPages: number) => void;
+}
+
+const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
+    url,
+    altName,
+    currentPage,
+    onNumPagesChange,
+}) => {
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
+    const [isLoadingPdf, setIsLoadingPdf] = useState(true);
+    const [pdfError, setPdfError] = useState<string | null>(null);
+
+    // Carrega o documento PDF via pdfjs-dist
+    useEffect(() => {
+        let isCancelled = false;
+        setIsLoadingPdf(true);
+        setPdfError(null);
+        setPdfDoc(null);
+
+        const loadingTask = getDocument({ url });
+        loadingTask.promise
+            .then((doc) => {
+                if (isCancelled) return;
+                setPdfDoc(doc);
+                setIsLoadingPdf(false);
+                if (onNumPagesChange) onNumPagesChange(doc.numPages);
+            })
+            .catch((err) => {
+                if (isCancelled) return;
+                console.error('[AllyoPdfCanvas] Erro ao carregar PDF:', err);
+                setIsLoadingPdf(false);
+                setPdfError('Não foi possível carregar a prévia do arquivo PDF.');
+            });
+
+        return () => {
+            isCancelled = true;
+            loadingTask.destroy().catch(() => {});
+        };
+    }, [url]);
+
+    // Renderiza a página no canvas mantendo alta resolução e proporção
+    useEffect(() => {
+        if (!pdfDoc || !canvasRef.current) return;
+        let isCancelled = false;
+        let renderTask: ReturnType<Awaited<ReturnType<PDFDocumentProxy['getPage']>>['render']> | null = null;
+
+        const renderPage = async () => {
+            try {
+                const page = await pdfDoc.getPage(currentPage);
+                if (isCancelled || !canvasRef.current) return;
+
+                const baseViewport = page.getViewport({ scale: 1 });
+                const baseWidth = baseViewport.width;
+                const baseHeight = baseViewport.height;
+
+                // Limita a área de exibição proporcional à tela
+                const maxDisplayWidth = Math.min(window.innerWidth * 0.72, 1200);
+                const maxDisplayHeight = Math.min(window.innerHeight * 0.72, 850);
+                const displayScale = Math.min(
+                    maxDisplayWidth / baseWidth,
+                    maxDisplayHeight / baseHeight,
+                    2.0
+                );
+
+                const displayWidth = Math.round(baseWidth * displayScale);
+                const displayHeight = Math.round(baseHeight * displayScale);
+
+                // Pixel ratio para nitidez retina
+                const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+                const renderScale = displayScale * pixelRatio;
+                const renderViewport = page.getViewport({ scale: renderScale });
+
+                const canvas = canvasRef.current;
+                const context = canvas.getContext('2d');
+                if (!context) return;
+
+                canvas.width = Math.floor(renderViewport.width);
+                canvas.height = Math.floor(renderViewport.height);
+                canvas.style.width = `${displayWidth}px`;
+                canvas.style.height = `${displayHeight}px`;
+
+                renderTask = page.render({
+                    canvasContext: context,
+                    viewport: renderViewport,
+                });
+                await renderTask.promise;
+            } catch (err: any) {
+                if (!isCancelled && err?.name !== 'RenderingCancelledException') {
+                    console.error('[AllyoPdfCanvas] Erro ao renderizar página:', err);
+                }
+            }
+        };
+
+        renderPage();
+
+        return () => {
+            isCancelled = true;
+            renderTask?.cancel();
+        };
+    }, [pdfDoc, currentPage]);
+
+    if (isLoadingPdf) {
+        return (
+            <div className="flex h-[420px] w-[320px] sm:w-[460px] flex-col items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950 p-6 text-zinc-400">
+                <Loader2 className="h-8 w-8 animate-spin text-[#9db669] mb-3" />
+                <p className="text-xs font-medium text-zinc-300">Renderizando prévia do PDF...</p>
+                <p className="mt-1 text-[11px] text-zinc-500 truncate max-w-xs">{altName}</p>
+            </div>
+        );
+    }
+
+    if (pdfError) {
+        return (
+            <div className="flex flex-col items-center justify-center rounded-lg border border-red-900/50 bg-red-950/20 p-8 text-center text-zinc-300 max-w-md">
+                <AlertCircle className="h-10 w-10 text-red-400 mb-2" />
+                <p className="text-sm font-semibold text-white">Falha ao abrir visualização do PDF</p>
+                <p className="mt-1 text-xs text-zinc-400">{pdfError}</p>
+                <a
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
+                >
+                    <Download size={13} /> Abrir anexo original
+                </a>
+            </div>
+        );
+    }
+
+    return (
+        <canvas
+            ref={canvasRef}
+            aria-label={`Documento PDF: ${altName}`}
+            className="rounded-lg object-contain block bg-zinc-950 border border-zinc-800 shadow-2xl"
+        />
+    );
+};
 
 interface AllyoReviewModalProps {
     isOpen: boolean;
@@ -32,6 +183,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
     taskName,
     onCommentResolved,
 }) => {
+    const [reviewDesign, setReviewDesign] = useState<AllyoDesignAsset | null>(design);
     const [zoom, setZoom] = useState(100);
     const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('all');
     const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
@@ -40,7 +192,17 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
     const [isLoading, setIsLoading] = useState(false);
     const [replyText, setReplyText] = useState('');
     const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+    const [pdfPage, setPdfPage] = useState(1);
+    const [pdfNumPages, setPdfNumPages] = useState(1);
     const commentsListRef = useRef<HTMLDivElement>(null);
+
+    // Sincroniza design recebido nas props
+    useEffect(() => {
+        setReviewDesign(design);
+        setPdfPage(1);
+        setPdfNumPages(1);
+        setZoom(100);
+    }, [design, isOpen]);
 
     // Carrega dados frescos de revisão via API ao abrir o modal
     useEffect(() => {
@@ -53,6 +215,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
         allyoService.getDesignReview(design.id)
             .then((fresh) => {
                 if (fresh) {
+                    setReviewDesign((prev) => ({ ...(prev || design), ...fresh }));
                     if (fresh.comments) setComments(fresh.comments);
                     if (fresh.annotations) setAnnotations(fresh.annotations);
                 }
@@ -64,6 +227,22 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
     }, [isOpen, design?.id]);
 
     if (!isOpen || !design) return null;
+
+    const activeDesign = reviewDesign || design;
+    const fileUrl = activeDesign.fileUrl || activeDesign.thumbnailUrl;
+
+    const isPdf = Boolean(
+        activeDesign.contentType === 'application/pdf' ||
+        /\.pdf$/i.test(activeDesign.name || '') ||
+        (fileUrl && /\.pdf(\?.*)?$/i.test(fileUrl))
+    );
+
+    const isImage = !isPdf && (
+        !activeDesign.contentType ||
+        activeDesign.contentType.startsWith('image/') ||
+        /\.(png|jpe?g|webp|gif|svg)$/i.test(activeDesign.name || '') ||
+        (fileUrl ? /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(fileUrl) : false)
+    );
 
     const openComments = comments.filter((c) => !c.resolved);
     const resolvedComments = comments.filter((c) => c.resolved);
@@ -98,7 +277,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
         try {
             const res = await allyoService.addDesignComment(design.id, {
                 text,
-                version: Number(design.version?.replace(/\D/g, '')) || 1,
+                version: Number(activeDesign.version?.replace(/\D/g, '')) || 1,
             });
 
             const newComment: AllyoReviewComment = {
@@ -107,7 +286,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                 text,
                 time: 'Agora',
                 resolved: false,
-                version: Number(design.version?.replace(/\D/g, '')) || 1,
+                version: Number(activeDesign.version?.replace(/\D/g, '')) || 1,
             };
 
             setComments((prev) => [...prev, newComment]);
@@ -129,9 +308,6 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
         }
     };
 
-    const fileUrl = design.fileUrl || design.thumbnailUrl;
-    const isImage = !design.contentType || design.contentType.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(design.name);
-
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
             <div className="relative flex h-[92vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl bg-[#0f1712] border border-zinc-800 text-white shadow-2xl">
@@ -144,18 +320,18 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                         </div>
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <h2 className="truncate text-base font-semibold text-white" title={design.name}>
-                                    {design.name}
+                                <h2 className="truncate text-base font-semibold text-white" title={activeDesign.name}>
+                                    {activeDesign.name}
                                 </h2>
                                 <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-                                    {design.version || 'v1'}
+                                    {activeDesign.version || 'v1'}
                                 </span>
                                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                                    design.approved
+                                    activeDesign.approved
                                         ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                                         : 'bg-amber-950/80 text-amber-300 border border-amber-800/80'
                                 }`}>
-                                    {design.approved ? 'Aprovado pelo cliente' : 'Em revisão com anotações'}
+                                    {activeDesign.approved ? 'Aprovado pelo cliente' : 'Em revisão com anotações'}
                                 </span>
                             </div>
                             <p className="truncate text-xs text-zinc-400">
@@ -171,7 +347,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                 target="_blank"
                                 rel="noreferrer"
                                 className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-700"
-                                title="Abrir imagem original"
+                                title="Abrir arquivo original"
                             >
                                 <Download size={13} />
                                 Original
@@ -194,8 +370,34 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                     {/* Área do Canvas com o arquivo e as marcações */}
                     <div className="relative flex flex-1 flex-col overflow-hidden bg-[#0c120e]">
                         
-                        {/* Barra de ferramentas de Zoom */}
+                        {/* Barra de ferramentas de Zoom e Paginação */}
                         <div className="absolute top-4 left-4 z-20 flex items-center gap-1 rounded-xl border border-zinc-800 bg-[#162019]/90 p-1.5 shadow-lg backdrop-blur-md">
+                            {isPdf && pdfNumPages > 1 && (
+                                <div className="flex items-center gap-1 border-r border-zinc-700 pr-2 mr-1">
+                                    <button
+                                        type="button"
+                                        disabled={pdfPage <= 1}
+                                        onClick={() => setPdfPage((p) => Math.max(1, p - 1))}
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition"
+                                        title="Página anterior"
+                                    >
+                                        <ChevronLeft size={16} />
+                                    </button>
+                                    <span className="text-xs font-mono text-zinc-300 px-1">
+                                        {pdfPage} / {pdfNumPages}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        disabled={pdfPage >= pdfNumPages}
+                                        onClick={() => setPdfPage((p) => Math.min(pdfNumPages, p + 1))}
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition"
+                                        title="Próxima página"
+                                    >
+                                        <ChevronRight size={16} />
+                                    </button>
+                                </div>
+                            )}
+
                             <button
                                 type="button"
                                 onClick={() => setZoom((z) => Math.max(30, z - 15))}
@@ -232,14 +434,23 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                 className="relative transition-transform duration-100 ease-out origin-center shadow-2xl rounded-lg"
                                 style={{ transform: `scale(${zoom / 100})` }}
                             >
-                                {isImage && fileUrl ? (
+                                {(isImage || isPdf) && fileUrl ? (
                                     <div className="relative select-none">
-                                        <img
-                                            src={fileUrl}
-                                            alt={design.name}
-                                            className="max-h-[75vh] max-w-[80vw] rounded-lg object-contain block bg-zinc-950 border border-zinc-800"
-                                            draggable={false}
-                                        />
+                                        {isPdf ? (
+                                            <AllyoPdfCanvas
+                                                url={fileUrl}
+                                                altName={activeDesign.name}
+                                                currentPage={pdfPage}
+                                                onNumPagesChange={setPdfNumPages}
+                                            />
+                                        ) : (
+                                            <img
+                                                src={fileUrl}
+                                                alt={activeDesign.name}
+                                                className="max-h-[75vh] max-w-[80vw] rounded-lg object-contain block bg-zinc-950 border border-zinc-800"
+                                                draggable={false}
+                                            />
+                                        )}
 
                                         {/* Camada SVG de anotações (desenhos livres, retângulos, setas) */}
                                         <svg
@@ -271,13 +482,13 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                     );
                                                     return (
                                                         <path
-                                                            key={ann.id || idx}
-                                                            d={pathD}
-                                                            stroke={color}
-                                                            strokeWidth={strokeW}
-                                                            fill="none"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
+                                                             key={ann.id || idx}
+                                                             d={pathD}
+                                                             stroke={color}
+                                                             strokeWidth={strokeW}
+                                                             fill="none"
+                                                             strokeLinecap="round"
+                                                             strokeLinejoin="round"
                                                         />
                                                     );
                                                 }
@@ -350,9 +561,9 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                 ) : (
                                     <div className="flex flex-col items-center justify-center p-12 text-center text-zinc-400 max-w-md bg-zinc-900 rounded-xl border border-zinc-800">
                                         <FileText size={48} className="text-zinc-500 mb-3" />
-                                        <h3 className="text-lg font-medium text-white">{design.name}</h3>
+                                        <h3 className="text-lg font-medium text-white">{activeDesign.name}</h3>
                                         <p className="mt-1 text-xs text-zinc-400">
-                                            {design.textContent || 'Arquivo textual ou sem prévia interativa de imagem direta.'}
+                                            {activeDesign.textContent || 'Arquivo textual ou sem prévia interativa de imagem direta.'}
                                         </p>
                                         {fileUrl && (
                                             <a
