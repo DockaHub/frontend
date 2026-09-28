@@ -341,6 +341,16 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
     const resolvedComments = comments.filter((c) => c.resolved);
     const visibleComments = filter === 'open' ? openComments : filter === 'resolved' ? resolvedComments : comments;
 
+    const pointedComments = useMemo(
+        () => comments.filter((c) => Boolean(c.point)),
+        [comments]
+    );
+
+    const markerNumber = (commentId: number) => {
+        const idx = pointedComments.findIndex((c) => c.id === commentId);
+        return idx >= 0 ? idx + 1 : 0;
+    };
+
     // Toggle resolução do comentário
     const handleToggleResolved = async (commentId: number, currentResolved: boolean) => {
         const nextResolved = !currentResolved;
@@ -412,6 +422,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
             const res = await allyoService.addDesignComment(design.id, {
                 text: fullText,
                 version: Number(activeDesign.version?.replace(/\D/g, '')) || 1,
+                page: isPdf ? pdfPage : 1,
             });
 
             const newComment: AllyoReviewComment = {
@@ -421,6 +432,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                 time: 'Agora',
                 resolved: false,
                 version: Number(activeDesign.version?.replace(/\D/g, '')) || 1,
+                page: isPdf ? pdfPage : 1,
             };
 
             setComments((prev) => [...prev, newComment]);
@@ -701,7 +713,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                         {comments
                                             .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number' && (!isPdf || !c.page || c.page === pdfPage))
                                             .map((c) => {
-                                                const pinIndex = comments.findIndex((item) => item.id === c.id);
+                                                const number = markerNumber(c.id);
                                                 const isSelected = selectedCommentId === c.id;
                                                 const isHovered = hoveredCommentId === c.id;
                                                 const parsed = parseQuotedSnippet(c.text);
@@ -730,7 +742,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                             }`}
                                                             title={`${c.author}: "${parsed.cleanText}"`}
                                                         >
-                                                            {pinIndex + 1}
+                                                            {number}
                                                         </button>
                                                         {isHovered && parsed.snippet && (
                                                             <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-zinc-900 border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-200 shadow-xl backdrop-blur-sm pointer-events-none">
@@ -783,7 +795,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                         {comments
                                             .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number')
                                             .map((c) => {
-                                                const pinIndex = comments.findIndex((item) => item.id === c.id);
+                                                const number = markerNumber(c.id);
                                                 const isSelected = selectedCommentId === c.id;
                                                 const isHovered = hoveredCommentId === c.id;
                                                 const parsed = parseQuotedSnippet(c.text);
@@ -812,7 +824,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                             }`}
                                                             title={`${c.author}: "${parsed.cleanText}"`}
                                                         >
-                                                            {pinIndex + 1}
+                                                            {number}
                                                         </button>
                                                         {isHovered && parsed.snippet && (
                                                             <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-zinc-900 border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-200 shadow-xl backdrop-blur-sm pointer-events-none">
@@ -917,7 +929,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
 
                             {!isLoading &&
                                 visibleComments.map((c) => {
-                                    const pinIndex = comments.findIndex((item) => item.id === c.id);
+                                    const number = markerNumber(c.id);
                                     const hasPin = Boolean(c.point);
                                     const isSelected = selectedCommentId === c.id;
                                     const isHovered = hoveredCommentId === c.id;
@@ -951,15 +963,17 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                         <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white transition-all ${
                                                             isHovered ? 'bg-amber-400 text-black ring-2 ring-amber-300 scale-110' : 'bg-[#5d55c7]'
                                                         }`}>
-                                                            {pinIndex + 1}
+                                                            {number}
                                                         </span>
                                                     )}
                                                     <span className="font-semibold text-white">
                                                         {c.author}
                                                     </span>
-                                                    {isPdf && c.page && (
+                                                    {(hasPin || (isPdf && c.page)) && (
                                                         <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
-                                                            Pág. {c.page}
+                                                            {hasPin
+                                                                ? `Marcação ${number}${isPdf && c.page ? ` · Pág. ${c.page}` : ''}`
+                                                                : `Pág. ${c.page}`}
                                                         </span>
                                                     )}
                                                 </div>

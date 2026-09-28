@@ -551,7 +551,7 @@ export const allyoService = {
     /**
      * Adiciona um comentário da equipe na revisão da entrega
      */
-    async addDesignComment(designId: number, data: { text: string; version?: number; point?: { x: number; y: number }; annotationId?: number }): Promise<any> {
+    async addDesignComment(designId: number, data: { text: string; version?: number; page?: number; point?: { x: number; y: number }; annotationId?: number }): Promise<any> {
         const response = await api.post(`/allyo/designs/${designId}/comments`, data);
         return response.data;
     },
