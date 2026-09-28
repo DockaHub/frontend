@@ -44,6 +44,27 @@ export function parseQuotedSnippet(rawText: unknown): { snippet: string | null; 
     return { snippet: null, cleanText: String(rawText || '') };
 }
 
+export function getCommentPage(comment: AllyoReviewComment | null | undefined): number {
+    if (!comment) return 1;
+    if (typeof comment.page === 'number' && comment.page > 0) return comment.page;
+    const match = String(comment.text || '').match(/p[aá]gina\s*(\d+)/i);
+    if (match) {
+        const parsed = parseInt(match[1], 10);
+        if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+    return 1;
+}
+
+export function getAnnotationPage(ann: any): number {
+    if (!ann) return 1;
+    if (typeof ann.page === 'number' && ann.page > 0) return ann.page;
+    try {
+        const payload = typeof ann.payload === 'string' ? JSON.parse(ann.payload) : ann.payload;
+        if (payload && typeof payload.page === 'number' && payload.page > 0) return payload.page;
+    } catch {}
+    return 1;
+}
+
 interface AllyoPdfCanvasProps {
     url: string;
     altName: string;
@@ -124,13 +145,22 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
                 const baseWidth = baseViewport.width;
                 const baseHeight = baseViewport.height;
 
-                // Limita a área de exibição proporcional à tela
-                const maxDisplayWidth = Math.min(window.innerWidth * 0.72, 1200);
-                const maxDisplayHeight = Math.min(window.innerHeight * 0.72, 850);
+                // Calcula o espaço real disponível no palco para preencher a tela sem corte
+                let availableW = 800;
+                let availableH = 650;
+                const stage = canvasRef.current?.closest<HTMLDivElement>('.allyo-review-stage');
+                if (stage && stage.clientWidth > 0 && stage.clientHeight > 0) {
+                    availableW = Math.max(240, stage.clientWidth - 32);
+                    availableH = Math.max(240, stage.clientHeight - 32);
+                } else {
+                    availableW = Math.max(240, window.innerWidth - 440);
+                    availableH = Math.max(240, window.innerHeight - 150);
+                }
+
+                // Preenche o espaço disponível mantendo 100% de proporção sem overflow
                 const displayScale = Math.min(
-                    maxDisplayWidth / baseWidth,
-                    maxDisplayHeight / baseHeight,
-                    2.0
+                    availableW / baseWidth,
+                    availableH / baseHeight
                 );
 
                 const displayWidth = Math.round(baseWidth * displayScale);
@@ -522,8 +552,11 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
 
     const handleSelectPin = (commentId: number) => {
         const comm = comments.find((c) => c.id === commentId);
-        if (isPdf && comm?.page && comm.page !== pdfPage) {
-            setPdfPage(comm.page);
+        if (isPdf && comm) {
+            const targetPage = getCommentPage(comm);
+            if (targetPage !== pdfPage) {
+                setPdfPage(targetPage);
+            }
         }
         setSelectedCommentId(commentId);
         setHoveredCommentId(commentId);
@@ -655,7 +688,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                         </div>
 
                         {/* Palco do arquivo */}
-                        <div className="flex-1 overflow-auto p-6 sm:p-12 flex items-center justify-center">
+                        <div className="allyo-review-stage flex-1 overflow-auto p-4 sm:p-6 flex items-center justify-center">
                             <div
                                 className="relative transition-transform duration-100 ease-out origin-center shadow-2xl rounded-lg"
                                 style={{ transform: `scale(${zoom / 100})` }}
@@ -674,7 +707,11 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             <img
                                                 src={fileUrl}
                                                 alt={activeDesign.name}
-                                                className="max-h-[75vh] max-w-[80vw] rounded-lg object-contain block bg-zinc-950 border border-zinc-800"
+                                                style={{
+                                                    maxHeight: 'calc(100vh - 160px)',
+                                                    maxWidth: 'calc(100vw - 440px)',
+                                                }}
+                                                className="rounded-lg object-contain block bg-zinc-950 border border-zinc-800 shadow-2xl"
                                                 draggable={false}
                                             />
                                         )}
@@ -719,7 +756,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             </defs>
 
                                             {safeAnnotations
-                                                .filter((ann) => Boolean(ann) && (!isPdf || !ann.page || ann.page === pdfPage))
+                                                .filter((ann) => Boolean(ann) && (!isPdf || getAnnotationPage(ann) === pdfPage))
                                                 .map((ann, idx) => {
                                                     try {
                                                         const isHovered = Boolean(ann.id && hoveredCommentId && String(ann.id) === String(hoveredCommentId));
@@ -800,7 +837,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
 
                                         {/* Pinos / Marcadores dos Comentários pontuais */}
                                         {safeComments
-                                            .filter((c) => Boolean(c) && c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number' && (!isPdf || !c.page || c.page === pdfPage))
+                                            .filter((c) => Boolean(c) && c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number' && (!isPdf || getCommentPage(c) === pdfPage))
                                             .map((c) => {
                                                 const number = markerNumber(c.id);
                                                 const isSelected = selectedCommentId === c.id;
@@ -1029,8 +1066,11 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             key={c.id}
                                             id={`comment-card-${c.id}`}
                                             onClick={() => {
-                                                if (isPdf && c.page && c.page !== pdfPage) {
-                                                    setPdfPage(c.page);
+                                                if (isPdf) {
+                                                    const targetPage = getCommentPage(c);
+                                                    if (targetPage !== pdfPage) {
+                                                        setPdfPage(targetPage);
+                                                    }
                                                 }
                                                 setSelectedCommentId(c.id);
                                             }}
@@ -1058,13 +1098,17 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                     <span className="font-semibold text-white">
                                                         {c.author}
                                                     </span>
-                                                    {(hasPin || (isPdf && c.page)) && (
-                                                        <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
-                                                            {hasPin
-                                                                ? `Marcação ${number}${isPdf && c.page ? ` · Pág. ${c.page}` : ''}`
-                                                                : `Pág. ${c.page}`}
-                                                        </span>
-                                                    )}
+                                                    {(() => {
+                                                        const cPage = getCommentPage(c);
+                                                        if (!hasPin && !isPdf) return null;
+                                                        return (
+                                                            <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
+                                                                {hasPin
+                                                                    ? `Marcação ${number}${isPdf ? ` · Pág. ${cPage}` : ''}`
+                                                                    : `Pág. ${cPage}`}
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </div>
                                                 <span className="text-[10px] text-zinc-400 shrink-0">
                                                     {c.time}
