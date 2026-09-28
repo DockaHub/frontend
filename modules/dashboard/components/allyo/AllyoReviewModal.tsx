@@ -16,19 +16,40 @@ import {
     FileText,
     ChevronLeft,
     ChevronRight,
-    Loader2
+    Loader2,
+    Type
 } from 'lucide-react';
-import { GlobalWorkerOptions, getDocument, type PDFDocumentProxy } from 'pdfjs-dist';
+import { GlobalWorkerOptions, getDocument, TextLayer, type PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import 'pdfjs-dist/web/pdf_viewer.css';
 import allyoService, { AllyoDesignAsset, AllyoReviewComment, AllyoReviewAnnotation } from '../../../../services/allyoService';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+
+export interface TextSelectionData {
+    text: string;
+    point: { x: number; y: number };
+    rect: { x: number; y: number; width: number; height: number };
+}
+
+export function parseQuotedSnippet(rawText: string): { snippet: string | null; cleanText: string } {
+    if (!rawText) return { snippet: null, cleanText: '' };
+    const match = rawText.match(/\[Trecho(?: selecionado)?: "(.*?)"\]\s*/s);
+    if (match) {
+        return {
+            snippet: match[1],
+            cleanText: rawText.replace(match[0], '').trim(),
+        };
+    }
+    return { snippet: null, cleanText: rawText };
+}
 
 interface AllyoPdfCanvasProps {
     url: string;
     altName: string;
     currentPage: number;
     onNumPagesChange?: (numPages: number) => void;
+    onTextSelect?: (selection: TextSelectionData | null) => void;
 }
 
 const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
@@ -36,8 +57,11 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
     altName,
     currentPage,
     onNumPagesChange,
+    onTextSelect,
 }) => {
+    const containerRef = useRef<HTMLDivElement | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const textLayerRef = useRef<HTMLDivElement | null>(null);
     const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
     const [isLoadingPdf, setIsLoadingPdf] = useState(true);
     const [pdfError, setPdfError] = useState<string | null>(null);
@@ -101,6 +125,7 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
                 const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
                 const renderScale = displayScale * pixelRatio;
                 const renderViewport = page.getViewport({ scale: renderScale });
+                const textViewport = page.getViewport({ scale: displayScale });
 
                 const canvas = canvasRef.current;
                 const context = canvas.getContext('2d');
@@ -112,10 +137,25 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
                 canvas.style.height = `${displayHeight}px`;
 
                 renderTask = page.render({
+                    canvas,
                     canvasContext: context,
                     viewport: renderViewport,
                 });
                 await renderTask.promise;
+
+                // Renderiza a camada de texto interativa para permitir seleção de trechos
+                if (textLayerRef.current && !isCancelled) {
+                    textLayerRef.current.innerHTML = '';
+                    textLayerRef.current.style.width = `${displayWidth}px`;
+                    textLayerRef.current.style.height = `${displayHeight}px`;
+                    const textContent = await page.getTextContent();
+                    const textLayer = new TextLayer({
+                        textContentSource: textContent,
+                        container: textLayerRef.current,
+                        viewport: textViewport,
+                    });
+                    await textLayer.render();
+                }
             } catch (err: any) {
                 if (!isCancelled && err?.name !== 'RenderingCancelledException') {
                     console.error('[AllyoPdfCanvas] Erro ao renderizar página:', err);
@@ -130,6 +170,36 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
             renderTask?.cancel();
         };
     }, [pdfDoc, currentPage]);
+
+    const handleMouseUp = () => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+        const text = sel.toString().trim();
+        if (text.length < 2) return;
+
+        try {
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const container = containerRef.current;
+            if (!container) return;
+            const containerRect = container.getBoundingClientRect();
+
+            const point = {
+                x: Math.max(0, Math.min(100, ((rect.left + rect.width / 2 - containerRect.left) / containerRect.width) * 100)),
+                y: Math.max(0, Math.min(100, ((rect.top - containerRect.top) / containerRect.height) * 100)),
+            };
+            const highlightRect = {
+                x: Math.max(0, Math.min(100, ((rect.left - containerRect.left) / containerRect.width) * 100)),
+                y: Math.max(0, Math.min(100, ((rect.top - containerRect.top) / containerRect.height) * 100)),
+                width: Math.max(1, Math.min(100, (rect.width / containerRect.width) * 100)),
+                height: Math.max(1, Math.min(100, (rect.height / containerRect.height) * 100)),
+            };
+
+            if (onTextSelect) {
+                onTextSelect({ text, point, rect: highlightRect });
+            }
+        } catch {}
+    };
 
     if (isLoadingPdf) {
         return (
@@ -160,11 +230,22 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
     }
 
     return (
-        <canvas
-            ref={canvasRef}
-            aria-label={`Documento PDF: ${altName}`}
-            className="rounded-lg object-contain block bg-zinc-950 border border-zinc-800 shadow-2xl"
-        />
+        <div
+            ref={containerRef}
+            onMouseUp={handleMouseUp}
+            className="relative select-text rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 shadow-2xl"
+        >
+            <canvas
+                ref={canvasRef}
+                aria-label={`Documento PDF: ${altName}`}
+                className="rounded-lg object-contain block pointer-events-none"
+            />
+            <div
+                ref={textLayerRef}
+                className="textLayer absolute inset-0 pointer-events-auto select-text"
+                style={{ lineHeight: 1 }}
+            />
+        </div>
     );
 };
 
@@ -187,6 +268,9 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
     const [zoom, setZoom] = useState(100);
     const [filter, setFilter] = useState<'all' | 'open' | 'resolved'>('all');
     const [selectedCommentId, setSelectedCommentId] = useState<number | null>(null);
+    const [hoveredCommentId, setHoveredCommentId] = useState<number | null>(null);
+    const [activeTextSelection, setActiveTextSelection] = useState<TextSelectionData | null>(null);
+    const [selectedSnippet, setSelectedSnippet] = useState<string | null>(null);
     const [comments, setComments] = useState<AllyoReviewComment[]>([]);
     const [annotations, setAnnotations] = useState<AllyoReviewAnnotation[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -195,6 +279,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
     const [pdfPage, setPdfPage] = useState(1);
     const [pdfNumPages, setPdfNumPages] = useState(1);
     const commentsListRef = useRef<HTMLDivElement>(null);
+    const copyContainerRef = useRef<HTMLDivElement>(null);
 
     // Sincroniza design recebido nas props
     useEffect(() => {
@@ -202,6 +287,9 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
         setPdfPage(1);
         setPdfNumPages(1);
         setZoom(100);
+        setActiveTextSelection(null);
+        setSelectedSnippet(null);
+        setHoveredCommentId(null);
     }, [design, isOpen]);
 
     // Carrega dados frescos de revisão via API ao abrir o modal
@@ -244,6 +332,12 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
         (fileUrl ? /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(fileUrl) : false)
     );
 
+    const isCopy = Boolean(
+        activeDesign.textContent ||
+        activeDesign.contentType?.startsWith('text/') ||
+        /\.(txt|md|copy)$/i.test(activeDesign.name || '')
+    );
+
     const openComments = comments.filter((c) => !c.resolved);
     const resolvedComments = comments.filter((c) => c.resolved);
     const visibleComments = filter === 'open' ? openComments : filter === 'resolved' ? resolvedComments : comments;
@@ -267,23 +361,64 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
         }
     };
 
-    // Enviar resposta / novo comentário
+    // Captura seleção em materiais de texto / Copy
+    const handleCopyMouseUp = () => {
+        const sel = window.getSelection();
+        if (!sel || sel.isCollapsed) return;
+        const text = sel.toString().trim();
+        if (text.length < 2) return;
+
+        try {
+            const range = sel.getRangeAt(0);
+            const rect = range.getBoundingClientRect();
+            const container = copyContainerRef.current;
+            if (!container) return;
+            const cRect = container.getBoundingClientRect();
+
+            const point = {
+                x: Math.max(0, Math.min(100, ((rect.left + rect.width / 2 - cRect.left) / cRect.width) * 100)),
+                y: Math.max(0, Math.min(100, ((rect.top - cRect.top) / cRect.height) * 100)),
+            };
+            const highlightRect = {
+                x: Math.max(0, Math.min(100, ((rect.left - cRect.left) / cRect.width) * 100)),
+                y: Math.max(0, Math.min(100, ((rect.top - cRect.top) / cRect.height) * 100)),
+                width: Math.max(1, Math.min(100, (rect.width / cRect.width) * 100)),
+                height: Math.max(1, Math.min(100, (rect.height / cRect.height) * 100)),
+            };
+
+            setActiveTextSelection({ text, point, rect: highlightRect });
+        } catch {}
+    };
+
+    const handleStartCommentOnSelection = () => {
+        if (!activeTextSelection) return;
+        setSelectedSnippet(activeTextSelection.text);
+        setActiveTextSelection(null);
+        const input = document.getElementById('creative-reply-input');
+        input?.focus();
+    };
+
+    // Enviar resposta / novo comentário (vinculando trecho caso selecionado)
     const handleSendReply = async (e: React.FormEvent) => {
         e.preventDefault();
-        const text = replyText.trim();
-        if (!text || isSubmittingReply) return;
+        const cleanDraft = replyText.trim();
+        if (!cleanDraft || isSubmittingReply) return;
+
+        const fullText = selectedSnippet
+            ? `[Trecho selecionado: "${selectedSnippet}"]\n${cleanDraft}`
+            : cleanDraft;
 
         setIsSubmittingReply(true);
         try {
             const res = await allyoService.addDesignComment(design.id, {
-                text,
+                text: fullText,
                 version: Number(activeDesign.version?.replace(/\D/g, '')) || 1,
             });
 
             const newComment: AllyoReviewComment = {
                 id: res?.id || Date.now(),
                 author: 'Você (Criativo)',
-                text,
+                text: fullText,
                 time: 'Agora',
                 resolved: false,
                 version: Number(activeDesign.version?.replace(/\D/g, '')) || 1,
@@ -291,6 +426,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
 
             setComments((prev) => [...prev, newComment]);
             setReplyText('');
+            setSelectedSnippet(null);
             setSelectedCommentId(newComment.id);
         } catch (err) {
             console.warn('[AllyoReviewModal] Erro ao enviar comentário:', err);
@@ -301,6 +437,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
 
     const handleSelectPin = (commentId: number) => {
         setSelectedCommentId(commentId);
+        setHoveredCommentId(commentId);
         // Scroll comment into view
         const element = document.getElementById(`comment-card-${commentId}`);
         if (element) {
@@ -435,13 +572,14 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                 style={{ transform: `scale(${zoom / 100})` }}
                             >
                                 {(isImage || isPdf) && fileUrl ? (
-                                    <div className="relative select-none">
+                                    <div className="relative select-text">
                                         {isPdf ? (
                                             <AllyoPdfCanvas
                                                 url={fileUrl}
                                                 altName={activeDesign.name}
                                                 currentPage={pdfPage}
                                                 onNumPagesChange={setPdfNumPages}
+                                                onTextSelect={setActiveTextSelection}
                                             />
                                         ) : (
                                             <img
@@ -450,6 +588,26 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                 className="max-h-[75vh] max-w-[80vw] rounded-lg object-contain block bg-zinc-950 border border-zinc-800"
                                                 draggable={false}
                                             />
+                                        )}
+
+                                        {/* Balão flutuante para comentar no trecho selecionado */}
+                                        {activeTextSelection && (
+                                            <div
+                                                className="absolute z-40 -translate-x-1/2 -translate-y-full pb-2 animate-in fade-in zoom-in-95 duration-150"
+                                                style={{
+                                                    left: `${activeTextSelection.point.x}%`,
+                                                    top: `${activeTextSelection.point.y}%`,
+                                                }}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={handleStartCommentOnSelection}
+                                                    className="flex items-center gap-1.5 rounded-full bg-[#5d55c7] hover:bg-[#6e66db] text-white px-3 py-1.5 text-xs font-semibold shadow-xl ring-2 ring-white/20 transition-all hover:scale-105"
+                                                >
+                                                    <MessageSquare size={13} />
+                                                    Comentar este trecho
+                                                </button>
+                                            </div>
                                         )}
 
                                         {/* Camada SVG de anotações (desenhos livres, retângulos, setas) */}
@@ -472,8 +630,9 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                             </defs>
 
                                             {annotations.map((ann, idx) => {
-                                                const color = ann.color || '#5d55c7';
-                                                const strokeW = (ann.width || 3) * 0.15;
+                                                const isHovered = ann.id && ann.id === String(hoveredCommentId);
+                                                const color = isHovered ? '#fbbf24' : (ann.color || '#5d55c7');
+                                                const strokeW = (ann.width || 3) * (isHovered ? 0.25 : 0.15);
 
                                                 if (ann.type === 'draw' && ann.points && ann.points.length > 1) {
                                                     const pathD = ann.points.reduce(
@@ -482,13 +641,13 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                     );
                                                     return (
                                                         <path
-                                                             key={ann.id || idx}
-                                                             d={pathD}
-                                                             stroke={color}
-                                                             strokeWidth={strokeW}
-                                                             fill="none"
-                                                             strokeLinecap="round"
-                                                             strokeLinejoin="round"
+                                                            key={ann.id || idx}
+                                                            d={pathD}
+                                                            stroke={color}
+                                                            strokeWidth={strokeW}
+                                                            fill="none"
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
                                                         />
                                                     );
                                                 }
@@ -508,7 +667,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                             stroke={color}
                                                             strokeWidth={strokeW}
                                                             fill={color}
-                                                            fillOpacity="0.18"
+                                                            fillOpacity={isHovered ? '0.4' : '0.18'}
                                                             rx="1"
                                                         />
                                                     );
@@ -536,25 +695,126 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                         {/* Pinos / Marcadores dos Comentários pontuais */}
                                         {comments
                                             .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number')
-                                            .map((c, index) => {
+                                            .map((c) => {
+                                                const pinIndex = comments.findIndex((item) => item.id === c.id);
                                                 const isSelected = selectedCommentId === c.id;
+                                                const isHovered = hoveredCommentId === c.id;
+                                                const parsed = parseQuotedSnippet(c.text);
+
                                                 return (
-                                                    <button
+                                                    <div
                                                         key={c.id}
-                                                        type="button"
-                                                        onClick={() => handleSelectPin(c.id)}
                                                         style={{ left: `${c.point!.x}%`, top: `${c.point!.y}%` }}
-                                                        className={`absolute -translate-x-1/2 -translate-y-1/2 z-30 flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all shadow-lg ${
-                                                            c.resolved
-                                                                ? 'bg-emerald-600 text-white ring-2 ring-emerald-400/50 opacity-80 hover:opacity-100'
-                                                                : isSelected
-                                                                ? 'bg-amber-400 text-black ring-4 ring-amber-300 scale-125'
-                                                                : 'bg-[#5d55c7] text-white ring-2 ring-white hover:scale-110 hover:bg-[#6e66db]'
-                                                        }`}
-                                                        title={`${c.author}: "${c.text}"`}
+                                                        className="absolute -translate-x-1/2 -translate-y-1/2 z-30"
                                                     >
-                                                        {index + 1}
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSelectPin(c.id)}
+                                                            onMouseEnter={() => {
+                                                                setHoveredCommentId(c.id);
+                                                                const el = document.getElementById(`comment-card-${c.id}`);
+                                                                el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                                            }}
+                                                            onMouseLeave={() => setHoveredCommentId(null)}
+                                                            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all shadow-lg ${
+                                                                c.resolved
+                                                                    ? 'bg-emerald-600 text-white ring-2 ring-emerald-400/50 opacity-80 hover:opacity-100'
+                                                                    : isHovered || isSelected
+                                                                    ? 'bg-amber-400 text-black ring-4 ring-amber-300 scale-125 shadow-amber-400/50 animate-pulse'
+                                                                    : 'bg-[#5d55c7] text-white ring-2 ring-white hover:scale-110 hover:bg-[#6e66db]'
+                                                            }`}
+                                                            title={`${c.author}: "${parsed.cleanText}"`}
+                                                        >
+                                                            {pinIndex + 1}
+                                                        </button>
+                                                        {isHovered && parsed.snippet && (
+                                                            <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-zinc-900 border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-200 shadow-xl backdrop-blur-sm pointer-events-none">
+                                                                <span className="font-semibold text-amber-400">"{parsed.snippet.slice(0, 40)}{parsed.snippet.length > 40 ? '...' : ''}"</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                ) : isCopy ? (
+                                    <div
+                                        ref={copyContainerRef}
+                                        onMouseUp={handleCopyMouseUp}
+                                        className="relative w-[680px] max-w-[90vw] min-h-[500px] max-h-[78vh] overflow-y-auto rounded-xl bg-zinc-900 text-zinc-100 p-8 sm:p-10 shadow-2xl border border-zinc-800 select-text leading-relaxed"
+                                    >
+                                        <div className="border-b border-zinc-800 pb-4 mb-6">
+                                            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
+                                                <FileText size={14} className="text-[#9db669]" />
+                                                Material Copy / Texto
+                                            </span>
+                                            <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">{activeDesign.name}</h2>
+                                        </div>
+
+                                        <div className="text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white">
+                                            {activeDesign.textContent || 'Sem conteúdo de texto disponível diretamente.'}
+                                        </div>
+
+                                        {/* Balão flutuante para comentar no trecho da copy */}
+                                        {activeTextSelection && (
+                                            <div
+                                                className="absolute z-40 -translate-x-1/2 -translate-y-full pb-2 animate-in fade-in zoom-in-95 duration-150"
+                                                style={{
+                                                    left: `${activeTextSelection.point.x}%`,
+                                                    top: `${activeTextSelection.point.y}%`,
+                                                }}
+                                            >
+                                                <button
+                                                    type="button"
+                                                    onClick={handleStartCommentOnSelection}
+                                                    className="flex items-center gap-1.5 rounded-full bg-[#5d55c7] hover:bg-[#6e66db] text-white px-3 py-1.5 text-xs font-semibold shadow-xl ring-2 ring-white/20 transition-all hover:scale-105"
+                                                >
+                                                    <MessageSquare size={13} />
+                                                    Comentar este trecho
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* Pinos no documento de copy */}
+                                        {comments
+                                            .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number')
+                                            .map((c) => {
+                                                const pinIndex = comments.findIndex((item) => item.id === c.id);
+                                                const isSelected = selectedCommentId === c.id;
+                                                const isHovered = hoveredCommentId === c.id;
+                                                const parsed = parseQuotedSnippet(c.text);
+
+                                                return (
+                                                    <div
+                                                        key={c.id}
+                                                        style={{ left: `${c.point!.x}%`, top: `${c.point!.y}%` }}
+                                                        className="absolute -translate-x-1/2 -translate-y-1/2 z-30"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSelectPin(c.id)}
+                                                            onMouseEnter={() => {
+                                                                setHoveredCommentId(c.id);
+                                                                const el = document.getElementById(`comment-card-${c.id}`);
+                                                                el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                                                            }}
+                                                            onMouseLeave={() => setHoveredCommentId(null)}
+                                                            className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all shadow-lg ${
+                                                                c.resolved
+                                                                    ? 'bg-emerald-600 text-white ring-2 ring-emerald-400/50 opacity-80 hover:opacity-100'
+                                                                    : isHovered || isSelected
+                                                                    ? 'bg-amber-400 text-black ring-4 ring-amber-300 scale-125 shadow-amber-400/50 animate-pulse'
+                                                                    : 'bg-[#5d55c7] text-white ring-2 ring-white hover:scale-110 hover:bg-[#6e66db]'
+                                                            }`}
+                                                            title={`${c.author}: "${parsed.cleanText}"`}
+                                                        >
+                                                            {pinIndex + 1}
+                                                        </button>
+                                                        {isHovered && parsed.snippet && (
+                                                            <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-zinc-900 border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-200 shadow-xl backdrop-blur-sm pointer-events-none">
+                                                                <span className="font-semibold text-amber-400">"{parsed.snippet.slice(0, 40)}{parsed.snippet.length > 40 ? '...' : ''}"</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 );
                                             })}
                                     </div>
@@ -592,7 +852,7 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                     Verde = ajustes resolvidos
                                 </span>
                             </div>
-                            <span>Clique em qualquer número no arquivo para localizar o comentário</span>
+                            <span>Passe o mouse ou clique no marcador para localizar o comentário</span>
                         </div>
                     </div>
 
@@ -655,24 +915,32 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                     const pinIndex = comments.findIndex((item) => item.id === c.id);
                                     const hasPin = Boolean(c.point);
                                     const isSelected = selectedCommentId === c.id;
+                                    const isHovered = hoveredCommentId === c.id;
+                                    const parsed = parseQuotedSnippet(c.text);
 
                                     return (
                                         <article
                                             key={c.id}
                                             id={`comment-card-${c.id}`}
                                             onClick={() => setSelectedCommentId(c.id)}
-                                            className={`rounded-xl border p-3.5 transition-all text-xs ${
+                                            onMouseEnter={() => setHoveredCommentId(c.id)}
+                                            onMouseLeave={() => setHoveredCommentId(null)}
+                                            className={`rounded-xl border p-3.5 transition-all text-xs cursor-pointer ${
                                                 c.resolved
-                                                    ? 'border-emerald-900/40 bg-emerald-950/20 text-zinc-300'
-                                                    : isSelected
-                                                    ? 'border-amber-400/80 bg-zinc-800/80 shadow-md ring-1 ring-amber-400/40'
+                                                    ? isHovered
+                                                        ? 'border-emerald-500 bg-emerald-950/40 ring-1 ring-emerald-400'
+                                                        : 'border-emerald-900/40 bg-emerald-950/20 text-zinc-300'
+                                                    : isHovered || isSelected
+                                                    ? 'border-amber-400 bg-zinc-800/90 shadow-lg ring-2 ring-amber-400/50 scale-[1.01]'
                                                     : 'border-zinc-800 bg-[#18231c] text-zinc-200 hover:border-zinc-700'
                                             }`}
                                         >
                                             <header className="flex items-start justify-between gap-2 mb-2">
                                                 <div className="flex items-center gap-2">
                                                     {hasPin && (
-                                                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#5d55c7] text-[10px] font-bold text-white">
+                                                        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white transition-all ${
+                                                            isHovered ? 'bg-amber-400 text-black ring-2 ring-amber-300 scale-110' : 'bg-[#5d55c7]'
+                                                        }`}>
                                                             {pinIndex + 1}
                                                         </span>
                                                     )}
@@ -685,8 +953,19 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                 </span>
                                             </header>
 
+                                            {/* Trecho selecionado destacado */}
+                                            {parsed.snippet && (
+                                                <div className="mb-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] text-amber-200 flex items-start gap-1.5">
+                                                    <Type size={13} className="shrink-0 text-amber-400 mt-0.5" />
+                                                    <div className="italic leading-snug">
+                                                        <span className="font-semibold text-amber-400 not-italic">Trecho: </span>
+                                                        "{parsed.snippet}"
+                                                    </div>
+                                                </div>
+                                            )}
+
                                             <p className="text-[13px] leading-relaxed break-words text-zinc-100 mb-3">
-                                                {c.text}
+                                                {parsed.cleanText}
                                             </p>
 
                                             <footer className="flex items-center justify-between border-t border-zinc-800/80 pt-2 text-[11px]">
@@ -716,16 +995,37 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
 
                         {/* Input para resposta do criativo */}
                         <form onSubmit={handleSendReply} className="border-t border-zinc-800 p-4 bg-[#101712]">
+                            {/* Prévia do trecho selecionado ao responder */}
+                            {selectedSnippet && (
+                                <div className="mb-2.5 flex items-center justify-between gap-2 rounded-lg bg-amber-500/15 border border-amber-500/40 px-2.5 py-1.5 text-xs text-amber-200">
+                                    <div className="flex items-center gap-1.5 truncate">
+                                        <Type size={13} className="shrink-0 text-amber-400" />
+                                        <span className="truncate">
+                                            <strong className="text-amber-400">Trecho:</strong> "{selectedSnippet}"
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedSnippet(null)}
+                                        className="text-amber-400 hover:text-white shrink-0 p-0.5 rounded transition"
+                                        title="Remover trecho"
+                                    >
+                                        <X size={13} />
+                                    </button>
+                                </div>
+                            )}
+
                             <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 flex items-center gap-1">
                                 <CornerDownRight size={12} />
                                 Responder ao cliente sobre este arquivo
                             </label>
                             <div className="flex gap-2">
                                 <input
+                                    id="creative-reply-input"
                                     type="text"
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
-                                    placeholder="Digite uma observação ou alinhamento..."
+                                    placeholder={selectedSnippet ? "Comente sobre o trecho selecionado..." : "Digite uma observação ou alinhamento..."}
                                     className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-[#9db669] focus:outline-none"
                                 />
                                 <button
