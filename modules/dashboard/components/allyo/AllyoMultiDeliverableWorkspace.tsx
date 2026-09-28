@@ -11,9 +11,11 @@ type ApprovalFilesByItem = Record<string, Record<string, ManagedFile[]>>;
 interface AllyoMultiDeliverableWorkspaceProps {
     deliverables: AllyoDeliverable[];
     onProgressChange?: (ready: number, total: number) => void;
+    disabled?: boolean;
+    disabledReason?: string;
 }
 
-const AllyoMultiDeliverableWorkspace = ({ deliverables, onProgressChange }: AllyoMultiDeliverableWorkspaceProps) => {
+const AllyoMultiDeliverableWorkspace = ({ deliverables, onProgressChange, disabled = false, disabledReason }: AllyoMultiDeliverableWorkspaceProps) => {
     const [openItems, setOpenItems] = useState<string[]>(deliverables[0] ? [deliverables[0].id] : []);
     const [activeScenes, setActiveScenes] = useState<Record<string, number>>({});
     const [versions, setVersions] = useState<Record<string, string>>(() => Object.fromEntries(deliverables.map((item) => [item.id, 'Versão 1'])));
@@ -135,6 +137,8 @@ const AllyoMultiDeliverableWorkspace = ({ deliverables, onProgressChange }: Ally
                                             files={files}
                                             onFilesChange={(nextFiles) => updateApprovalFiles(item.id, nextFiles)}
                                             accept=".png,.jpg,.jpeg,.pdf"
+                                            disabled={disabled}
+                                            disabledReason={disabledReason}
                                         />
                                     </div>
                                 </div>
@@ -150,7 +154,16 @@ const AllyoMultiDeliverableWorkspace = ({ deliverables, onProgressChange }: Ally
                     <div><span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">Pacote final da tarefa</span><h2 className="mt-1 font-season text-lg">Arquivos editáveis</h2><p className="mt-1.5 text-xs leading-5 text-[#888]">Envie uma única pasta, ZIP, link exportado ou vários arquivos e indique a quais pedidos pertencem.</p></div>
                 </div>
                 <div className="p-5 sm:p-[30px]">
-                    <FileSlot icon={<Layers3 size={17} />} title="Arquivos abertos e editáveis" description="PSD, AI, FIG ou ZIP · obrigatórios para concluir a tarefa" files={sourceFiles} onFilesChange={updateSourceFiles} accept=".psd,.ai,.fig,.zip,.indd,.sketch" />
+                    <FileSlot
+                        icon={<Layers3 size={17} />}
+                        title="Arquivos abertos e editáveis"
+                        description="PSD, AI, FIG ou ZIP · obrigatórios para concluir a tarefa"
+                        files={sourceFiles}
+                        onFilesChange={updateSourceFiles}
+                        accept=".psd,.ai,.fig,.zip,.indd,.sketch"
+                        disabled={disabled}
+                        disabledReason={disabledReason}
+                    />
 
                     {sourceFiles.length > 0 && (
                         <div className={`mt-4 rounded-[12px] border ${ALLYO_BORDER}`}>

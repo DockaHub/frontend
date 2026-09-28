@@ -10,6 +10,7 @@ import {
     Image as ImageIcon,
     LayoutTemplate,
     Loader2,
+    Lock,
     MessageSquare,
     Monitor,
     Plus,
@@ -258,6 +259,8 @@ export const VersionBundle = ({
     onSourceFilesChange,
     onUploadApprovalFile,
     onUploadSourceFile,
+    disabled = false,
+    disabledReason,
 }: {
     kind: DeliverableKind;
     version: string;
@@ -268,12 +271,28 @@ export const VersionBundle = ({
     onSourceFilesChange: (files: ManagedFile[]) => void;
     onUploadApprovalFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
     onUploadSourceFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
+    disabled?: boolean;
+    disabledReason?: string;
 }) => {
     const approvalAccept = kind === 'social' || kind === 'landing' ? '.png,.jpg,.jpeg,.pdf' : '.pdf';
     const sourceAccept = kind === 'landing' ? '.fig,.zip' : kind === 'presentation' ? '.ppt,.pptx,.ai,.indd,.zip' : kind === 'storyboard' ? '.ppt,.pptx,.psd,.ai,.zip' : '.psd,.ai,.fig,.zip';
     return (
         <section className={`border-b ${ALLYO_BORDER}`}>
-            <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}><div><span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#9db669]">Pacote de entrega</span><h2 className="mt-1 font-season text-lg">Arquivos da versão</h2></div><div className="flex items-center gap-2"><span className="rounded-full bg-[#f2f4ee] px-3 py-1.5 text-[11px] font-semibold text-[#76805f] dark:bg-zinc-900">Rascunho</span><FilterSelect label="Versão" value={version} options={['Versão 1', 'Versão 2', 'Versão 3']} onChange={onVersionChange} includeAll={false} /></div></div>
+            <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}>
+                <div>
+                    <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#9db669]">Pacote de entrega</span>
+                    <h2 className="mt-1 font-season text-lg">Arquivos da versão</h2>
+                </div>
+                <div className="flex items-center gap-2">
+                    <FilterSelect label="Versão" value={version} options={['Versão 1', 'Versão 2', 'Versão 3']} onChange={onVersionChange} includeAll={false} />
+                </div>
+            </div>
+            {disabled && (
+                <div className="border-b border-amber-200/60 bg-amber-50/70 px-5 py-2.5 text-xs text-amber-800 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-300 flex items-center gap-2 sm:px-[30px]">
+                    <Lock size={13} className="shrink-0" />
+                    <span>{disabledReason || 'O envio de arquivos fica liberado apenas quando a tarefa estiver com o status "Em andamento".'}</span>
+                </div>
+            )}
             <div className="grid gap-4 p-5 sm:p-[30px] lg:grid-cols-2">
                 <FileSlot
                     icon={<CheckCircle2 size={17} />}
@@ -283,6 +302,8 @@ export const VersionBundle = ({
                     onFilesChange={onApprovalFilesChange}
                     accept={approvalAccept}
                     onUploadFile={onUploadApprovalFile}
+                    disabled={disabled}
+                    disabledReason={disabledReason}
                 />
                 <FileSlot
                     icon={<FileText size={17} />}
@@ -293,6 +314,8 @@ export const VersionBundle = ({
                     accept={sourceAccept}
                     optional={kind === 'storyboard'}
                     onUploadFile={onUploadSourceFile}
+                    disabled={disabled}
+                    disabledReason={disabledReason}
                 />
             </div>
         </section>
@@ -318,6 +341,8 @@ export const FileSlot = ({
     accept,
     optional = false,
     onUploadFile,
+    disabled = false,
+    disabledReason,
 }: {
     icon: React.ReactNode;
     title: string;
@@ -327,11 +352,14 @@ export const FileSlot = ({
     accept: string;
     optional?: boolean;
     onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
+    disabled?: boolean;
+    disabledReason?: string;
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const isUploadingAny = files.some((f) => f.uploading);
 
     const addFiles = async (incoming: FileList | null) => {
+        if (disabled) return;
         if (!incoming || incoming.length === 0) return;
         const incomingArray = Array.from(incoming);
         const decodeSafe = (str: string): string => {
@@ -393,13 +421,27 @@ export const FileSlot = ({
             </div>
             <button
                 type="button"
-                disabled={isUploadingAny}
-                onClick={() => inputRef.current?.click()}
+                disabled={disabled || isUploadingAny}
+                onClick={() => {
+                    if (!disabled) inputRef.current?.click();
+                }}
                 onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => { event.preventDefault(); if (!isUploadingAny) void addFiles(event.dataTransfer.files); }}
-                className="mt-4 flex min-h-[84px] w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#cdd4c0] px-3 text-xs font-semibold text-[#72844d] transition hover:bg-[#fafcf6] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-900"
+                onDrop={(event) => {
+                    event.preventDefault();
+                    if (!disabled && !isUploadingAny) void addFiles(event.dataTransfer.files);
+                }}
+                className={`mt-4 flex min-h-[84px] w-full items-center justify-center gap-2 rounded-[10px] border border-dashed px-3 text-xs font-semibold transition ${
+                    disabled
+                        ? 'border-zinc-200 bg-zinc-50/80 text-zinc-400 cursor-not-allowed dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-500'
+                        : 'border-[#cdd4c0] text-[#72844d] hover:bg-[#fafcf6] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-900'
+                }`}
             >
-                {isUploadingAny ? (
+                {disabled ? (
+                    <>
+                        <Lock size={15} className="text-zinc-400 dark:text-zinc-500" />
+                        <span>{disabledReason || 'Envio liberado apenas quando a tarefa estiver "Em andamento"'}</span>
+                    </>
+                ) : isUploadingAny ? (
                     <>
                         <Loader2 size={17} className="animate-spin text-[#9db669]" />
                         <span>Enviando anexo para a plataforma...</span>
@@ -417,7 +459,12 @@ export const FileSlot = ({
                 multiple
                 accept={accept}
                 className="hidden"
-                onChange={(event) => { void addFiles(event.target.files); event.target.value = ""; }}
+                onChange={(event) => {
+                    if (!disabled) {
+                        void addFiles(event.target.files);
+                    }
+                    event.target.value = "";
+                }}
             />
             {files.length > 0 && (
                 <div className="mt-3 space-y-2">
@@ -458,7 +505,7 @@ export const FileSlot = ({
                                 </span>
                                 <button
                                     type="button"
-                                    disabled={file.uploading}
+                                    disabled={disabled || file.uploading}
                                     onClick={() => onFilesChange(files.filter((item) => item.id !== file.id))}
                                     aria-label={`Remover ${file.name}`}
                                     className="text-[#999] hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
