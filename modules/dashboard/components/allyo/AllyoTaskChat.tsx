@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { FilePenLine, MessageCircle, Send, CheckCircle2, Eye } from 'lucide-react';
 import AllyoReviewModal from './AllyoReviewModal';
 import type { AllyoDesignAsset } from '../../../../services/allyoService';
@@ -60,6 +60,44 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
         }).catch(() => {});
     }, [task.id, task.projectId]);
 
+    const processRemoteMessage = useCallback((msg: any) => {
+        if (!msg || !msg.text) return;
+        // Ignora notificações automáticas de upload de arquivo com deliveryId
+        if (msg.deliveryId != null && msg.role === 'Time criativo') return;
+
+        const isCreativeLead = msg.role === 'Creative Lead';
+        addTaskActivity(task.id, {
+            id: msg.id ? `remote-msg-${msg.id}` : undefined,
+            type: 'message',
+            author: msg.person || (isCreativeLead ? 'Criativo' : 'Cliente Allyo'),
+            role: isCreativeLead ? 'creative' : 'client',
+            text: msg.text,
+            createdAt: msg.createdAt || new Date().toISOString(),
+        });
+    }, [task.id]);
+
+    const syncProjectMessages = useCallback(async () => {
+        const currentProjectId = task.projectId || task.id;
+        if (!currentProjectId) return;
+        try {
+            const res = await allyoService.getProjectMessages(currentProjectId);
+            if (res && Array.isArray(res.messages)) {
+                for (const msg of res.messages) {
+                    processRemoteMessage(msg);
+                }
+            }
+        } catch (err) {
+            console.warn('[AllyoTaskChat] Erro ao sincronizar mensagens do projeto:', err);
+        }
+    }, [task.id, task.projectId, processRemoteMessage]);
+
+    // Polling periódico e carga inicial das mensagens do projeto
+    useEffect(() => {
+        syncProjectMessages();
+        const interval = setInterval(syncProjectMessages, 4000);
+        return () => clearInterval(interval);
+    }, [syncProjectMessages]);
+
     // Escuta eventos em tempo real do WebSocket ManySpace (disparados pelo Webhook da Allyo)
     useEffect(() => {
         socketService.connect();
@@ -72,14 +110,7 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
 
             if (event.type === 'MESSAGE_SENT') {
                 const msg = event.data?.message;
-                if (msg && msg.person !== (userName?.trim() || task.creative)) {
-                    addTaskActivity(task.id, {
-                        type: 'message',
-                        author: msg.person || 'Cliente Allyo',
-                        role: msg.role === 'Creative Lead' ? 'creative' : 'client',
-                        text: msg.text,
-                    });
-                }
+                processRemoteMessage(msg);
             } else if (event.type === 'DESIGN_APPROVED') {
                 addTaskActivity(task.id, {
                     type: 'approval_sent',
@@ -119,7 +150,7 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
         return () => {
             socketService.off('allyo:event', handleRealtimeEvent);
         };
-    }, [task.id, task.projectId, task.creative, userName]);
+    }, [task.id, task.projectId, processRemoteMessage]);
 
     const openDesignReview = async (designId?: number, fileName?: string) => {
         if (designId) {
@@ -172,12 +203,22 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
         setIsSending(true);
         try {
             const projectId = task.projectId || task.id;
-            await allyoService.sendProjectMessage(projectId, {
+            const res = await allyoService.sendProjectMessage(projectId, {
                 person: author,
                 role: 'Creative Lead',
                 initials: author.slice(0, 2).toUpperCase(),
                 text,
             });
+            if (res && res.id) {
+                addTaskActivity(task.id, {
+                    id: `remote-msg-${res.id}`,
+                    type: 'message',
+                    author,
+                    role: 'creative',
+                    text,
+                    createdAt: res.createdAt,
+                });
+            }
         } catch (err) {
             console.warn('[AllyoTaskChat] Mensagem salva localmente, mas API Railway retornou:', err);
         } finally {

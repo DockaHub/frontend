@@ -103,7 +103,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
     const [readyDeliverables, setReadyDeliverables] = useState(0);
     const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
-    const [clientChanges, setClientChanges] = useState(() => readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
+    const [clientChanges, setClientChanges] = useState(() => readTaskActivity(task.id).filter((item) => item.type === 'client_file_change' || (item.type === 'message' && item.role === 'client')).length);
     const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
     const [isSendingReview, setIsSendingReview] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -115,7 +115,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && (isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0);
 
     useEffect(() => {
-        const refresh = () => setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
+        const refresh = () => setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change' || (item.type === 'message' && item.role === 'client')).length);
         refresh();
         return subscribeToTaskActivity(task.id, refresh);
     }, [task.id]);
@@ -337,7 +337,9 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                 <button type="button" onClick={() => setActiveTab('messages')} aria-current={activeTab === 'messages' ? 'page' : undefined} className={`inline-flex min-h-12 items-center gap-2 border-b-2 text-sm font-semibold transition ${activeTab === 'messages' ? 'border-[#003f35] text-[#003f35] dark:border-[#d0f08e] dark:text-[#d0f08e]' : 'border-transparent text-[#717b73] hover:text-[#003f35]'}`}><MessageCircle size={15} /> Mensagens {clientChanges > 0 && <span className="rounded-full bg-[#e6f2e8] px-2 py-0.5 text-[10px] text-[#34704a] dark:bg-emerald-900/40 dark:text-emerald-200" aria-label={`${clientChanges} alterações do cliente`}>{clientChanges}</span>}</button>
             </nav>
 
-            {activeTab === 'messages' && <AllyoTaskChat key={task.id} task={task} userName={userName} />}
+            <div hidden={activeTab !== 'messages'}>
+                <AllyoTaskChat task={task} userName={userName} />
+            </div>
             <div hidden={activeTab !== 'details'}>
                 {activeReviewDesign && hasClientAnnotations && (
                     <div className="mx-5 my-3 sm:mx-[30px] flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">

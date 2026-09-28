@@ -23,13 +23,44 @@ export const readTaskActivity = (taskId: string): AllyoActivity[] => {
     }
 };
 
-export const addTaskActivity = (taskId: string, activity: Omit<AllyoActivity, 'id' | 'createdAt'>) => {
+export const addTaskActivity = (taskId: string, activity: Omit<AllyoActivity, 'id' | 'createdAt'> & { id?: string; createdAt?: string }) => {
+    const current = readTaskActivity(taskId);
+    const entryId = activity.id || window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+    const entryCreatedAt = activity.createdAt || new Date().toISOString();
+
     const entry: AllyoActivity = {
         ...activity,
-        id: window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`,
-        createdAt: new Date().toISOString(),
+        id: entryId,
+        createdAt: entryCreatedAt,
     };
-    const history = [...readTaskActivity(taskId), entry];
+
+    const existingIndex = current.findIndex((item) => {
+        if (item.id === entry.id) return true;
+        if (
+            item.type === entry.type &&
+            item.text.trim() === entry.text.trim() &&
+            (item.role === entry.role || entry.role === 'creative')
+        ) {
+            const timeDiff = Math.abs(new Date(item.createdAt).getTime() - new Date(entry.createdAt).getTime());
+            if (timeDiff < 120000) return true;
+        }
+        return false;
+    });
+
+    let history: AllyoActivity[];
+    if (existingIndex >= 0) {
+        if (entry.id.startsWith('remote-msg-') && !current[existingIndex].id.startsWith('remote-msg-')) {
+            current[existingIndex].id = entry.id;
+            current[existingIndex].createdAt = entry.createdAt;
+            history = [...current];
+        } else {
+            return current[existingIndex];
+        }
+    } else {
+        history = [...current, entry];
+    }
+
+    history.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     window.localStorage.setItem(storageKey(taskId), JSON.stringify(history));
     window.dispatchEvent(new CustomEvent(activityEvent, { detail: taskId }));
     return entry;
