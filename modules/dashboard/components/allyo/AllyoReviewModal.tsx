@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
     X,
     ZoomIn,
     ZoomOut,
     RotateCcw,
     CheckCircle2,
-    Clock,
     MessageSquare,
     Send,
     Eye,
@@ -84,19 +83,19 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
         try {
             loadingTask = getDocument({ url });
             loadingTask.promise
-                .then((doc) => {
+                .then((doc: any) => {
                     if (isCancelled) return;
                     setPdfDoc(doc);
                     setIsLoadingPdf(false);
                     if (onNumPagesChange) onNumPagesChange(doc.numPages);
                 })
-                .catch((err) => {
+                .catch((err: any) => {
                     if (isCancelled) return;
                     console.error('[AllyoPdfCanvas] Erro ao carregar PDF:', err);
                     setIsLoadingPdf(false);
                     setPdfError('Não foi possível carregar a prévia do arquivo PDF.');
                 });
-        } catch (err) {
+        } catch (err: any) {
             console.error('[AllyoPdfCanvas] Falha síncrona ao inicializar PDF:', err);
             setIsLoadingPdf(false);
             setPdfError('Não foi possível inicializar a prévia do PDF.');
@@ -422,7 +421,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
     );
 
     const markerNumber = (commentId: number) => {
-        const idx = pointedComments.findIndex((c) => c.id === commentId);
+        const idx = pointedComments.findIndex((c: any) => c.id === commentId);
         return idx >= 0 ? idx + 1 : 0;
     };
 
