@@ -31,6 +31,7 @@ export interface ManagedFile {
     file?: File;
     fileUrl?: string;
     uploading?: boolean;
+    progress?: number;
     error?: string;
 }
 
@@ -247,15 +248,52 @@ const SocialWorkspace = () => (
     </WorkspaceShell>
 );
 
-export const VersionBundle = ({ kind, version, onVersionChange, approvalFiles, sourceFiles, onApprovalFilesChange, onSourceFilesChange }: { kind: DeliverableKind; version: string; onVersionChange: (value: string) => void; approvalFiles: ManagedFile[]; sourceFiles: ManagedFile[]; onApprovalFilesChange: (files: ManagedFile[]) => void; onSourceFilesChange: (files: ManagedFile[]) => void }) => {
+export const VersionBundle = ({
+    kind,
+    version,
+    onVersionChange,
+    approvalFiles,
+    sourceFiles,
+    onApprovalFilesChange,
+    onSourceFilesChange,
+    onUploadApprovalFile,
+    onUploadSourceFile,
+}: {
+    kind: DeliverableKind;
+    version: string;
+    onVersionChange: (value: string) => void;
+    approvalFiles: ManagedFile[];
+    sourceFiles: ManagedFile[];
+    onApprovalFilesChange: (files: ManagedFile[]) => void;
+    onSourceFilesChange: (files: ManagedFile[]) => void;
+    onUploadApprovalFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
+    onUploadSourceFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
+}) => {
     const approvalAccept = kind === 'social' || kind === 'landing' ? '.png,.jpg,.jpeg,.pdf' : '.pdf';
     const sourceAccept = kind === 'landing' ? '.fig,.zip' : kind === 'presentation' ? '.ppt,.pptx,.ai,.indd,.zip' : kind === 'storyboard' ? '.ppt,.pptx,.psd,.ai,.zip' : '.psd,.ai,.fig,.zip';
     return (
         <section className={`border-b ${ALLYO_BORDER}`}>
             <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}><div><span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#9db669]">Pacote de entrega</span><h2 className="mt-1 font-season text-lg">Arquivos da versão</h2></div><div className="flex items-center gap-2"><span className="rounded-full bg-[#f2f4ee] px-3 py-1.5 text-[11px] font-semibold text-[#76805f] dark:bg-zinc-900">Rascunho</span><FilterSelect label="Versão" value={version} options={['Versão 1', 'Versão 2', 'Versão 3']} onChange={onVersionChange} includeAll={false} /></div></div>
             <div className="grid gap-4 p-5 sm:p-[30px] lg:grid-cols-2">
-                <FileSlot icon={<CheckCircle2 size={17} />} title="Arquivo para aprovação" description={kind === 'storyboard' ? 'PDF gerado pela Allyo ou enviado manualmente.' : `Material que o cliente irá visualizar · ${deliverableCopy[kind].approval}`} files={approvalFiles} onFilesChange={onApprovalFilesChange} accept={approvalAccept} />
-                <FileSlot icon={<FileText size={17} />} title={kind === 'storyboard' ? 'Arquivos complementares' : 'Arquivo editável'} description={kind === 'storyboard' ? 'Opcional: referências ou fonte usada nos frames.' : `Fonte de trabalho · ${deliverableCopy[kind].software}`} files={sourceFiles} onFilesChange={onSourceFilesChange} accept={sourceAccept} optional={kind === 'storyboard'} />
+                <FileSlot
+                    icon={<CheckCircle2 size={17} />}
+                    title="Arquivo para aprovação"
+                    description={kind === 'storyboard' ? 'PDF gerado pela Allyo ou enviado manualmente.' : `Material que o cliente irá visualizar · ${deliverableCopy[kind].approval}`}
+                    files={approvalFiles}
+                    onFilesChange={onApprovalFilesChange}
+                    accept={approvalAccept}
+                    onUploadFile={onUploadApprovalFile}
+                />
+                <FileSlot
+                    icon={<FileText size={17} />}
+                    title={kind === 'storyboard' ? 'Arquivos complementares' : 'Arquivo editável'}
+                    description={kind === 'storyboard' ? 'Opcional: referências ou fonte usada nos frames.' : `Fonte de trabalho · ${deliverableCopy[kind].software}`}
+                    files={sourceFiles}
+                    onFilesChange={onSourceFilesChange}
+                    accept={sourceAccept}
+                    optional={kind === 'storyboard'}
+                    onUploadFile={onUploadSourceFile}
+                />
             </div>
         </section>
     );
@@ -288,9 +326,10 @@ export const FileSlot = ({
     onFilesChange: (files: ManagedFile[]) => void;
     accept: string;
     optional?: boolean;
-    onUploadFile?: (file: File) => Promise<{ fileUrl: string; name: string; size: number }>;
+    onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
+    const isUploadingAny = files.some((f) => f.uploading);
 
     const addFiles = async (incoming: FileList | null) => {
         if (!incoming || incoming.length === 0) return;
@@ -304,6 +343,7 @@ export const FileSlot = ({
             size: file.size,
             file,
             uploading: Boolean(onUploadFile),
+            progress: 0,
         }));
 
         let currentList = [...files.filter((file) => !newEntries.some((item) => item.id === file.id)), ...newEntries];
@@ -313,10 +353,15 @@ export const FileSlot = ({
             for (const file of incomingArray) {
                 const targetId = `${file.name}-${file.lastModified}-${file.size}`;
                 try {
-                    const uploaded = await onUploadFile(file);
+                    const uploaded = await onUploadFile(file, (percent) => {
+                        currentList = currentList.map((item) =>
+                            item.id === targetId ? { ...item, progress: percent } : item
+                        );
+                        onFilesChange(currentList);
+                    });
                     currentList = currentList.map((item) =>
                         item.id === targetId
-                            ? { ...item, fileUrl: uploaded.fileUrl, uploading: false, error: undefined }
+                            ? { ...item, fileUrl: uploaded.fileUrl, uploading: false, progress: 100, error: undefined }
                             : item
                     );
                     onFilesChange(currentList);
@@ -348,12 +393,23 @@ export const FileSlot = ({
             </div>
             <button
                 type="button"
+                disabled={isUploadingAny}
                 onClick={() => inputRef.current?.click()}
                 onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => { event.preventDefault(); void addFiles(event.dataTransfer.files); }}
-                className="mt-4 flex min-h-[84px] w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#cdd4c0] px-3 text-xs font-semibold text-[#72844d] transition hover:bg-[#fafcf6] dark:border-zinc-700 dark:hover:bg-zinc-900"
+                onDrop={(event) => { event.preventDefault(); if (!isUploadingAny) void addFiles(event.dataTransfer.files); }}
+                className="mt-4 flex min-h-[84px] w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#cdd4c0] px-3 text-xs font-semibold text-[#72844d] transition hover:bg-[#fafcf6] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-900"
             >
-                <Upload size={17} /> Arraste ou selecione seus arquivos
+                {isUploadingAny ? (
+                    <>
+                        <Loader2 size={17} className="animate-spin text-[#9db669]" />
+                        <span>Enviando anexo para a plataforma...</span>
+                    </>
+                ) : (
+                    <>
+                        <Upload size={17} />
+                        <span>Arraste ou selecione seus arquivos</span>
+                    </>
+                )}
             </button>
             <input
                 ref={inputRef}
@@ -364,38 +420,62 @@ export const FileSlot = ({
                 onChange={(event) => { void addFiles(event.target.files); event.target.value = ""; }}
             />
             {files.length > 0 && (
-                <div className="mt-2 space-y-1.5">
+                <div className="mt-3 space-y-2">
                     {files.map((file) => (
-                        <div key={file.id} className="flex items-center gap-2 rounded-[8px] bg-[#f7f8f5] px-3 py-2.5 text-xs dark:bg-zinc-900">
-                            {file.uploading ? (
-                                <Loader2 size={14} className="animate-spin text-[#9db669]" />
-                            ) : (
-                                <FileText size={14} className={file.error ? "text-red-500" : "text-[#9db669]"} />
-                            )}
-                            <span className="min-w-0 flex-1 truncate" title={file.name}>
-                                {file.name}
-                                {file.uploading && <span className="ml-2 text-[10px] text-amber-600 dark:text-amber-400 font-medium">Enviando...</span>}
-                                {file.error && <span className="ml-2 text-[10px] text-red-500 font-medium">({file.error})</span>}
-                            </span>
-                            {file.fileUrl && !file.uploading && (
-                                <a
-                                    href={file.fileUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[11px] font-medium text-[#72844d] hover:underline"
-                                    onClick={(e) => e.stopPropagation()}
+                        <div key={file.id} className="relative overflow-hidden rounded-[9px] border border-zinc-200/80 bg-[#f7f8f5] px-3 py-2.5 text-xs transition dark:border-zinc-800 dark:bg-zinc-900">
+                            <div className="flex items-center gap-2">
+                                {file.uploading ? (
+                                    <Loader2 size={15} className="shrink-0 animate-spin text-[#9db669]" />
+                                ) : (
+                                    <FileText size={15} className={`shrink-0 ${file.error ? "text-red-500" : "text-[#9db669]"}`} />
+                                )}
+                                <div className="min-w-0 flex-1 truncate">
+                                    <span className="font-medium text-zinc-800 dark:text-zinc-200" title={file.name}>
+                                        {file.name}
+                                    </span>
+                                    {file.uploading && (
+                                        <span className="ml-2 font-mono text-[10px] font-semibold text-[#718746] dark:text-[#a0bf64]">
+                                            Enviando... {typeof file.progress === 'number' && file.progress > 0 ? `${file.progress}%` : ''}
+                                        </span>
+                                    )}
+                                    {file.error && (
+                                        <span className="ml-2 text-[10px] font-medium text-red-500">({file.error})</span>
+                                    )}
+                                </div>
+                                {file.fileUrl && !file.uploading && (
+                                    <a
+                                        href={file.fileUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-[11px] font-semibold text-[#72844d] hover:underline dark:text-[#a0bf64]"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        Abrir
+                                    </a>
+                                )}
+                                <span className="text-[11px] text-[#888]">
+                                    {file.size > 0 ? formatFileSize(file.size) : "Enviado"}
+                                </span>
+                                <button
+                                    type="button"
+                                    disabled={file.uploading}
+                                    onClick={() => onFilesChange(files.filter((item) => item.id !== file.id))}
+                                    aria-label={`Remover ${file.name}`}
+                                    className="text-[#999] hover:text-red-500 disabled:opacity-30 disabled:cursor-not-allowed transition"
                                 >
-                                    Abrir
-                                </a>
+                                    <X size={14} />
+                                </button>
+                            </div>
+
+                            {/* Barra de progresso animada */}
+                            {file.uploading && (
+                                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                                    <div
+                                        className="h-full rounded-full bg-[#9db669] transition-all duration-200 ease-out"
+                                        style={{ width: `${Math.max(6, file.progress || 0)}%` }}
+                                    />
+                                </div>
                             )}
-                            <span className="text-[11px] text-[#888]">{file.size > 0 ? formatFileSize(file.size) : "Enviado"}</span>
-                            <button
-                                type="button"
-                                onClick={() => onFilesChange(files.filter((item) => item.id !== file.id))}
-                                aria-label={`Remover ${file.name}`}
-                            >
-                                <X size={14} />
-                            </button>
                         </div>
                     ))}
                 </div>

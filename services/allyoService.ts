@@ -478,12 +478,22 @@ export const allyoService = {
     /**
      * Faz upload de arquivo para a entrega (PDF, imagem, etc)
      */
-    async uploadDeliveryFile(projectId: string, file: File): Promise<{ name: string; size: number; fileUrl: string; contentType: string }> {
+    async uploadDeliveryFile(
+        projectId: string,
+        file: File,
+        onProgress?: (percent: number) => void
+    ): Promise<{ name: string; size: number; fileUrl: string; contentType: string }> {
         const formData = new FormData();
         formData.append("file", file);
         const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/designs/upload`, formData, {
             headers: { "Content-Type": "multipart/form-data" },
             timeout: 90_000,
+            onUploadProgress: (progressEvent) => {
+                if (progressEvent.total && onProgress) {
+                    const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                    onProgress(percent);
+                }
+            },
         });
         return response.data;
     },

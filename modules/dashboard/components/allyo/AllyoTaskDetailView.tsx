@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine, Loader2 } from 'lucide-react';
 import AllyoReviewModal from './AllyoReviewModal';
 import { useSearchParams } from 'react-router-dom';
 import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTasks, AllyoTask } from './AllyoUI';
@@ -104,10 +104,12 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
     const [clientChanges, setClientChanges] = useState(() => readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
     const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
+    const [isSendingReview, setIsSendingReview] = useState(false);
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
     const isCurrentlyBlocked = administrativeBlock ?? (isTaskBlocked || status === 'Bloqueada');
     const isInactive = status === 'Inativa';
-    const canSendForReview = !isCurrentlyBlocked && !isInactive && (isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0);
+    const isAnyFileUploading = currentFiles.approval.some((f) => f.uploading) || currentFiles.source.some((f) => f.uploading);
+    const canSendForReview = !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && (isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0);
 
     useEffect(() => {
         const refresh = () => setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
@@ -224,37 +226,41 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     };
 
     const sendForReview = async () => {
-        const decodeSafe = (str: string): string => {
-            try { return decodeURIComponent(str); } catch { return str; }
-        };
-        const approvalFile = currentFiles.approval[0];
-        const rawNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => decodeSafe(file.name)).join(', ');
-        const fileNames = decodeSafe(rawNames);
-        const projectId = task.projectId || liveDemand?.id || task.id;
+        if (isSendingReview) return;
+        setIsSendingReview(true);
+        try {
+            const decodeSafe = (str: string): string => {
+                try { return decodeURIComponent(str); } catch { return str; }
+            };
+            const approvalFile = currentFiles.approval[0];
+            const rawNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => decodeSafe(file.name)).join(', ');
+            const fileNames = decodeSafe(rawNames);
+            const projectId = task.projectId || liveDemand?.id || task.id;
 
-        let targetUrl = approvalFile?.fileUrl;
+            let targetUrl = approvalFile?.fileUrl;
 
-        // Se o arquivo ainda não foi enviado mas o objeto File está presente, faz upload agora
-        if (!targetUrl && approvalFile?.file) {
-            try {
-                setSavedLabel('Enviando arquivo da entrega...');
-                const uploaded = await allyoService.uploadDeliveryFile(projectId, approvalFile.file);
-                targetUrl = uploaded.fileUrl;
-                updateVersionFiles('approval', [{ ...approvalFile, fileUrl: targetUrl, uploading: false }]);
-            } catch (uploadErr: any) {
-                console.error('[AllyoTaskDetailView] Erro ao fazer upload do arquivo:', uploadErr);
-                const msg = uploadErr?.response?.data?.message || uploadErr?.message || 'Falha no upload do arquivo';
-                alert(`Erro no upload: ${msg}`);
+            // Se o arquivo ainda não foi enviado mas o objeto File está presente, faz upload agora com progresso
+            if (!targetUrl && approvalFile?.file) {
+                try {
+                    setSavedLabel('Enviando arquivo da entrega...');
+                    const uploaded = await allyoService.uploadDeliveryFile(projectId, approvalFile.file, (percent) => {
+                        updateVersionFiles('approval', [{ ...approvalFile, uploading: true, progress: percent }]);
+                    });
+                    targetUrl = uploaded.fileUrl;
+                    updateVersionFiles('approval', [{ ...approvalFile, fileUrl: targetUrl, uploading: false, progress: 100 }]);
+                } catch (uploadErr: any) {
+                    console.error('[AllyoTaskDetailView] Erro ao fazer upload do arquivo:', uploadErr);
+                    const msg = uploadErr?.response?.data?.message || uploadErr?.message || 'Falha no upload do arquivo';
+                    alert(`Erro no upload: ${msg}`);
+                    return;
+                }
+            }
+
+            if (!targetUrl && !isMultiDeliverable) {
+                alert('Por favor, anexe e aguarde o upload do arquivo para aprovação antes de enviar.');
                 return;
             }
-        }
 
-        if (!targetUrl && !isMultiDeliverable) {
-            alert('Por favor, anexe e aguarde o upload do arquivo para aprovação antes de enviar.');
-            return;
-        }
-
-        try {
             setSavedLabel('Enviando entrega para aprovação...');
             await allyoService.submitDesignRevision(projectId, {
                 name: fileNames || task.name,
@@ -279,6 +285,8 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             console.error('[AllyoTaskDetailView] Erro ao enviar revisão para Railway:', err);
             const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Erro ao registrar entrega na Allyo Space';
             alert(`Falha no envio para aprovação: ${msg}`);
+        } finally {
+            setIsSendingReview(false);
         }
     };
 
@@ -426,13 +434,13 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                             sourceFiles={currentFiles.source}
                             onApprovalFilesChange={(files) => updateVersionFiles('approval', files)}
                             onSourceFilesChange={(files) => updateVersionFiles('source', files)}
-                            onUploadApprovalFile={async (file) => {
+                            onUploadApprovalFile={async (file, onProgress) => {
                                 const projectId = task.projectId || liveDemand?.id || task.id;
-                                return allyoService.uploadDeliveryFile(projectId, file);
+                                return allyoService.uploadDeliveryFile(projectId, file, onProgress);
                             }}
-                            onUploadSourceFile={async (file) => {
+                            onUploadSourceFile={async (file, onProgress) => {
                                 const projectId = task.projectId || liveDemand?.id || task.id;
-                                return allyoService.uploadDeliveryFile(projectId, file);
+                                return allyoService.uploadDeliveryFile(projectId, file, onProgress);
                             }}
                         />
                     )}
@@ -453,8 +461,46 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                                     <Eye size={14} /> Ver anotações do cliente
                                 </button>
                             )}
-                            <button type="button" disabled={!canSendForReview} onClick={sendForReview} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"><Send size={15} /> {isMultiDeliverable ? readyDeliverables > 0 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão` : 'Nenhum pedido pronto' : 'Enviar para revisão'}</button>
-                            {!canSendForReview && <p className="mt-2 text-center text-xs text-[#8f8f8f]">{isInactive ? 'Reative a tarefa para continuar.' : isCurrentlyBlocked ? 'O envio será liberado quando o bloqueio for removido.' : 'Anexe o material para liberar o envio.'}</p>}
+                            <button
+                                type="button"
+                                disabled={!canSendForReview}
+                                onClick={sendForReview}
+                                className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b] disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                {isSendingReview ? (
+                                    <>
+                                        <Loader2 size={15} className="animate-spin text-[#d0f08e]" />
+                                        Enviando para revisão...
+                                    </>
+                                ) : isAnyFileUploading ? (
+                                    <>
+                                        <Loader2 size={15} className="animate-spin text-[#d0f08e]" />
+                                        Fazendo upload dos anexos...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Send size={15} />
+                                        {isMultiDeliverable
+                                            ? readyDeliverables > 0
+                                                ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão`
+                                                : 'Nenhum pedido pronto'
+                                            : 'Enviar para revisão'}
+                                    </>
+                                )}
+                            </button>
+                            {!canSendForReview && (
+                                <p className="mt-2 text-center text-xs text-[#8f8f8f]">
+                                    {isInactive
+                                        ? 'Reative a tarefa para continuar.'
+                                        : isCurrentlyBlocked
+                                        ? 'O envio será liberado quando o bloqueio for removido.'
+                                        : isAnyFileUploading
+                                        ? 'Aguarde o upload dos arquivos terminar para enviar.'
+                                        : isSendingReview
+                                        ? 'Processando entrega na nuvem...'
+                                        : 'Anexe o material para liberar o envio.'}
+                                </p>
+                            )}
                         </div>
                         <AllyoTaskResources resources={taskResources} onOpenTask={openReferencedTask} />
                         <button type="button" onClick={() => setBrandKitOpen((value) => !value)} className={`flex w-full items-center justify-between border-b p-5 text-left ${ALLYO_BORDER}`}><span className="font-season text-base">Brand Kit</span>{brandKitOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}</button>
