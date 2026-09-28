@@ -137,7 +137,10 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                     [ver]: {
                         approval: [{
                             id: `design-${design.id}`,
-                            name: (design as any).name || 'Arquivo em revisão',
+                            name: (() => {
+                                const n = (design as any).name || 'Arquivo em revisão';
+                                try { return decodeURIComponent(n); } catch { return n; }
+                            })(),
                             size: 0,
                             fileUrl: (design as any).fileUrl,
                         }],
@@ -221,8 +224,12 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     };
 
     const sendForReview = async () => {
+        const decodeSafe = (str: string): string => {
+            try { return decodeURIComponent(str); } catch { return str; }
+        };
         const approvalFile = currentFiles.approval[0];
-        const fileNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => file.name).join(', ');
+        const rawNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => decodeSafe(file.name)).join(', ');
+        const fileNames = decodeSafe(rawNames);
         const projectId = task.projectId || liveDemand?.id || task.id;
 
         let targetUrl = approvalFile?.fileUrl;

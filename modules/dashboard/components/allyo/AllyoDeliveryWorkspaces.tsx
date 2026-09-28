@@ -295,9 +295,12 @@ export const FileSlot = ({
     const addFiles = async (incoming: FileList | null) => {
         if (!incoming || incoming.length === 0) return;
         const incomingArray = Array.from(incoming);
+        const decodeSafe = (str: string): string => {
+            try { return decodeURIComponent(str); } catch { return str; }
+        };
         const newEntries: ManagedFile[] = incomingArray.map((file) => ({
             id: `${file.name}-${file.lastModified}-${file.size}`,
-            name: file.name,
+            name: decodeSafe(file.name),
             size: file.size,
             file,
             uploading: Boolean(onUploadFile),
