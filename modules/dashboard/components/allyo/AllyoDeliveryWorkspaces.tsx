@@ -9,6 +9,7 @@ import {
     FileText,
     Image as ImageIcon,
     LayoutTemplate,
+    Loader2,
     MessageSquare,
     Monitor,
     Plus,
@@ -27,6 +28,10 @@ export interface ManagedFile {
     id: string;
     name: string;
     size: number;
+    file?: File;
+    fileUrl?: string;
+    uploading?: boolean;
+    error?: string;
 }
 
 export const getDeliverableKind = (task: AllyoTask): DeliverableKind => {
@@ -266,14 +271,134 @@ const Specification = ({ label, value, last = false }: { label: string; value: s
 const EditableField = ({ label, value, onChange, compact = false }: { label: string; value: string; onChange: (value: string) => void; compact?: boolean }) => <label className="block"><span className="mb-2 block text-[11px] font-bold uppercase tracking-[.06em] text-[#888]">{label}</span>{compact ? <input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-[9px] border border-[#e2e2e2] bg-white px-3.5 py-3 text-sm outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/10 dark:border-zinc-700 dark:bg-zinc-900" /> : <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} className="w-full resize-none rounded-[9px] border border-[#e2e2e2] bg-white px-3.5 py-3 text-sm leading-6 outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/10 dark:border-zinc-700 dark:bg-zinc-900" />}</label>;
 const IconAction = ({ label, onClick, disabled = false, children }: { label: string; onClick: () => void; disabled?: boolean; children: React.ReactNode }) => <button type="button" onClick={onClick} disabled={disabled} title={label} aria-label={label} className="flex h-7 w-7 items-center justify-center rounded-full border border-[#dedede] bg-white text-[#777] transition hover:border-[#9db669] hover:text-[#739044] disabled:cursor-not-allowed disabled:opacity-30 dark:border-zinc-700 dark:bg-zinc-900">{children}</button>;
 
-export const FileSlot = ({ icon, title, description, files, onFilesChange, accept, optional = false }: { icon: React.ReactNode; title: string; description: string; files: ManagedFile[]; onFilesChange: (files: ManagedFile[]) => void; accept: string; optional?: boolean }) => {
+export const FileSlot = ({
+    icon,
+    title,
+    description,
+    files,
+    onFilesChange,
+    accept,
+    optional = false,
+    onUploadFile,
+}: {
+    icon: React.ReactNode;
+    title: string;
+    description: string;
+    files: ManagedFile[];
+    onFilesChange: (files: ManagedFile[]) => void;
+    accept: string;
+    optional?: boolean;
+    onUploadFile?: (file: File) => Promise<{ fileUrl: string; name: string; size: number }>;
+}) => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const addFiles = (incoming: FileList | null) => {
-        if (!incoming) return;
-        const next = Array.from(incoming).map((file) => ({ id: `${file.name}-${file.lastModified}-${file.size}`, name: file.name, size: file.size }));
-        onFilesChange([...files.filter((file) => !next.some((item) => item.id === file.id)), ...next]);
+
+    const addFiles = async (incoming: FileList | null) => {
+        if (!incoming || incoming.length === 0) return;
+        const incomingArray = Array.from(incoming);
+        const newEntries: ManagedFile[] = incomingArray.map((file) => ({
+            id: `${file.name}-${file.lastModified}-${file.size}`,
+            name: file.name,
+            size: file.size,
+            file,
+            uploading: Boolean(onUploadFile),
+        }));
+
+        let currentList = [...files.filter((file) => !newEntries.some((item) => item.id === file.id)), ...newEntries];
+        onFilesChange(currentList);
+
+        if (onUploadFile) {
+            for (const file of incomingArray) {
+                const targetId = `${file.name}-${file.lastModified}-${file.size}`;
+                try {
+                    const uploaded = await onUploadFile(file);
+                    currentList = currentList.map((item) =>
+                        item.id === targetId
+                            ? { ...item, fileUrl: uploaded.fileUrl, uploading: false, error: undefined }
+                            : item
+                    );
+                    onFilesChange(currentList);
+                } catch (err: any) {
+                    currentList = currentList.map((item) =>
+                        item.id === targetId
+                            ? { ...item, uploading: false, error: err?.response?.data?.message || err?.message || "Falha no upload" }
+                            : item
+                    );
+                    onFilesChange(currentList);
+                }
+            }
+        }
     };
-    return <div className={`rounded-[14px] border p-5 ${ALLYO_BORDER}`}><div className="flex items-start gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f1f4eb] text-[#81915f] dark:bg-[#d0f08e]/10">{icon}</span><div><div className="flex items-center gap-2"><h3 className="text-sm font-semibold">{title}</h3>{optional && <span className="text-[11px] font-semibold uppercase text-[#999]">Opcional</span>}</div><p className="mt-1.5 text-xs leading-5 text-[#888]">{description}</p></div></div><button type="button" onClick={() => inputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} className="mt-4 flex min-h-[84px] w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#cdd4c0] px-3 text-xs font-semibold text-[#72844d] transition hover:bg-[#fafcf6] dark:border-zinc-700 dark:hover:bg-zinc-900"><Upload size={17} /> Arraste ou selecione seus arquivos</button><input ref={inputRef} type="file" multiple accept={accept} className="hidden" onChange={(event) => { addFiles(event.target.files); event.target.value = ''; }} />{files.length > 0 && <div className="mt-2 space-y-1.5">{files.map((file) => <div key={file.id} className="flex items-center gap-2 rounded-[8px] bg-[#f7f8f5] px-3 py-2.5 text-xs dark:bg-zinc-900"><FileText size={14} className="text-[#9db669]" /><span className="min-w-0 flex-1 truncate">{file.name}</span><span className="text-[11px] text-[#888]">{formatFileSize(file.size)}</span><button type="button" onClick={() => onFilesChange(files.filter((item) => item.id !== file.id))} aria-label={`Remover ${file.name}`}><X size={14} /></button></div>)}</div>}</div>;
+
+    return (
+        <div className={`rounded-[14px] border p-5 ${ALLYO_BORDER}`}>
+            <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f1f4eb] text-[#81915f] dark:bg-[#d0f08e]/10">
+                    {icon}
+                </span>
+                <div>
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-sm font-semibold">{title}</h3>
+                        {optional && <span className="text-[11px] font-semibold uppercase text-[#999]">Opcional</span>}
+                    </div>
+                    <p className="mt-1.5 text-xs leading-5 text-[#888]">{description}</p>
+                </div>
+            </div>
+            <button
+                type="button"
+                onClick={() => inputRef.current?.click()}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => { event.preventDefault(); void addFiles(event.dataTransfer.files); }}
+                className="mt-4 flex min-h-[84px] w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-[#cdd4c0] px-3 text-xs font-semibold text-[#72844d] transition hover:bg-[#fafcf6] dark:border-zinc-700 dark:hover:bg-zinc-900"
+            >
+                <Upload size={17} /> Arraste ou selecione seus arquivos
+            </button>
+            <input
+                ref={inputRef}
+                type="file"
+                multiple
+                accept={accept}
+                className="hidden"
+                onChange={(event) => { void addFiles(event.target.files); event.target.value = ""; }}
+            />
+            {files.length > 0 && (
+                <div className="mt-2 space-y-1.5">
+                    {files.map((file) => (
+                        <div key={file.id} className="flex items-center gap-2 rounded-[8px] bg-[#f7f8f5] px-3 py-2.5 text-xs dark:bg-zinc-900">
+                            {file.uploading ? (
+                                <Loader2 size={14} className="animate-spin text-[#9db669]" />
+                            ) : (
+                                <FileText size={14} className={file.error ? "text-red-500" : "text-[#9db669]"} />
+                            )}
+                            <span className="min-w-0 flex-1 truncate" title={file.name}>
+                                {file.name}
+                                {file.uploading && <span className="ml-2 text-[10px] text-amber-600 dark:text-amber-400 font-medium">Enviando...</span>}
+                                {file.error && <span className="ml-2 text-[10px] text-red-500 font-medium">({file.error})</span>}
+                            </span>
+                            {file.fileUrl && !file.uploading && (
+                                <a
+                                    href={file.fileUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-[11px] font-medium text-[#72844d] hover:underline"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    Abrir
+                                </a>
+                            )}
+                            <span className="text-[11px] text-[#888]">{file.size > 0 ? formatFileSize(file.size) : "Enviado"}</span>
+                            <button
+                                type="button"
+                                onClick={() => onFilesChange(files.filter((item) => item.id !== file.id))}
+                                aria-label={`Remover ${file.name}`}
+                            >
+                                <X size={14} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 };
 
 const formatFileSize = (bytes: number) => bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;

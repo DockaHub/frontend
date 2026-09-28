@@ -119,10 +119,34 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         setStatus(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
         setTaskChanges({});
         setAdministrativeBlock(null);
-        setDeliveryVersion('Versão 1');
-        setFilesByVersion({ 'Versão 1': { approval: [], source: [] } });
         setActiveTab('details');
-    }, [isTaskBlocked, sourceTask.id, sourceTask.status]);
+    }, [isTaskBlocked, sourceTask.id]);
+
+    useEffect(() => {
+        if (!liveDemand) return;
+        const taskDesigns = (liveDemand.designs || []).filter((d) => d.taskId === task.id);
+        const design = taskDesigns[0] || (liveDemand.designs || []).find((d) => !d.taskId);
+        if (design && (design.fileUrl || design.name)) {
+            const ver = (design as any).version || 'Versão 1';
+            setDeliveryVersion(ver);
+            setFilesByVersion((current) => {
+                const existing = current[ver]?.approval || [];
+                if (existing.some((item) => item.fileUrl || item.file)) return current;
+                return {
+                    ...current,
+                    [ver]: {
+                        approval: [{
+                            id: `design-${design.id}`,
+                            name: (design as any).name || 'Arquivo em revisão',
+                            size: 0,
+                            fileUrl: (design as any).fileUrl,
+                        }],
+                        source: current[ver]?.source || [],
+                    },
+                };
+            });
+        }
+    }, [liveDemand, task.id]);
 
     const goBack = () => {
         setSearchParams((current) => {
@@ -197,28 +221,57 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     };
 
     const sendForReview = async () => {
+        const approvalFile = currentFiles.approval[0];
         const fileNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => file.name).join(', ');
-        addTaskActivity(task.id, {
-            type: 'approval_sent',
-            author: userName?.trim() || task.creative,
-            role: 'system',
-            version: isMultiDeliverable ? `${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'}` : deliveryVersion,
-            text: fileNames ? `Arquivo para aprovação: ${fileNames}` : 'Material enviado para aprovação do cliente.',
-        });
-        updateStatus('Em revisão');
-        if (isMultiDeliverable) setSavedLabel(`${readyDeliverables} ${readyDeliverables === 1 ? 'pedido enviado' : 'pedidos enviados'} para revisão agora`);
-        setActiveTab('messages');
+        const projectId = task.projectId || liveDemand?.id || task.id;
+
+        let targetUrl = approvalFile?.fileUrl;
+
+        // Se o arquivo ainda não foi enviado mas o objeto File está presente, faz upload agora
+        if (!targetUrl && approvalFile?.file) {
+            try {
+                setSavedLabel('Enviando arquivo da entrega...');
+                const uploaded = await allyoService.uploadDeliveryFile(projectId, approvalFile.file);
+                targetUrl = uploaded.fileUrl;
+                updateVersionFiles('approval', [{ ...approvalFile, fileUrl: targetUrl, uploading: false }]);
+            } catch (uploadErr: any) {
+                console.error('[AllyoTaskDetailView] Erro ao fazer upload do arquivo:', uploadErr);
+                const msg = uploadErr?.response?.data?.message || uploadErr?.message || 'Falha no upload do arquivo';
+                alert(`Erro no upload: ${msg}`);
+                return;
+            }
+        }
+
+        if (!targetUrl && !isMultiDeliverable) {
+            alert('Por favor, anexe e aguarde o upload do arquivo para aprovação antes de enviar.');
+            return;
+        }
 
         try {
-            const projectId = task.projectId || task.id;
+            setSavedLabel('Enviando entrega para aprovação...');
             await allyoService.submitDesignRevision(projectId, {
                 name: fileNames || task.name,
                 taskId: task.id,
                 version: deliveryVersion,
                 color: '#d7ff70',
+                fileUrl: targetUrl,
             });
-        } catch (err) {
-            console.warn('[AllyoTaskDetailView] Erro ao enviar revisão para Railway:', err);
+
+            addTaskActivity(task.id, {
+                type: 'approval_sent',
+                author: userName?.trim() || task.creative,
+                role: 'system',
+                version: isMultiDeliverable ? `${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'}` : deliveryVersion,
+                text: fileNames ? `Arquivo para aprovação: ${fileNames}` : 'Material enviado para aprovação do cliente.',
+            });
+
+            await updateStatus('Em revisão');
+            setSavedLabel(`${deliveryVersion} enviada para aprovação do cliente com sucesso!`);
+            setActiveTab('messages');
+        } catch (err: any) {
+            console.error('[AllyoTaskDetailView] Erro ao enviar revisão para Railway:', err);
+            const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Erro ao registrar entrega na Allyo Space';
+            alert(`Falha no envio para aprovação: ${msg}`);
         }
     };
 
@@ -357,7 +410,25 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                     {orderOpen && (isMultiDeliverable && task.deliverables
                         ? <AllyoMultiDeliverableWorkspace key={task.id} deliverables={task.deliverables} onProgressChange={setReadyDeliverables} />
                         : <DeliveryWorkspace kind={deliverableKind} />)}
-                    {!isMultiDeliverable && <VersionBundle kind={deliverableKind} version={deliveryVersion} onVersionChange={setDeliveryVersion} approvalFiles={currentFiles.approval} sourceFiles={currentFiles.source} onApprovalFilesChange={(files) => updateVersionFiles('approval', files)} onSourceFilesChange={(files) => updateVersionFiles('source', files)} />}
+                    {!isMultiDeliverable && (
+                        <VersionBundle
+                            kind={deliverableKind}
+                            version={deliveryVersion}
+                            onVersionChange={setDeliveryVersion}
+                            approvalFiles={currentFiles.approval}
+                            sourceFiles={currentFiles.source}
+                            onApprovalFilesChange={(files) => updateVersionFiles('approval', files)}
+                            onSourceFilesChange={(files) => updateVersionFiles('source', files)}
+                            onUploadApprovalFile={async (file) => {
+                                const projectId = task.projectId || liveDemand?.id || task.id;
+                                return allyoService.uploadDeliveryFile(projectId, file);
+                            }}
+                            onUploadSourceFile={async (file) => {
+                                const projectId = task.projectId || liveDemand?.id || task.id;
+                                return allyoService.uploadDeliveryFile(projectId, file);
+                            }}
+                        />
+                    )}
                 </main>
 
                 <aside className="min-w-0 bg-[#fdfdfc] dark:bg-zinc-950">
