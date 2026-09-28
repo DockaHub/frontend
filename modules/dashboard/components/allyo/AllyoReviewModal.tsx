@@ -31,16 +31,18 @@ export interface TextSelectionData {
     rect: { x: number; y: number; width: number; height: number };
 }
 
-export function parseQuotedSnippet(rawText: string): { snippet: string | null; cleanText: string } {
-    if (!rawText) return { snippet: null, cleanText: '' };
-    const match = rawText.match(/\[Trecho(?: selecionado)?: "(.*?)"\]\s*/s);
-    if (match) {
-        return {
-            snippet: match[1],
-            cleanText: rawText.replace(match[0], '').trim(),
-        };
-    }
-    return { snippet: null, cleanText: rawText };
+export function parseQuotedSnippet(rawText: unknown): { snippet: string | null; cleanText: string } {
+    if (!rawText || typeof rawText !== 'string') return { snippet: null, cleanText: '' };
+    try {
+        const match = rawText.match(/\[Trecho(?: selecionado)?: "(.*?)"\]\s*/s);
+        if (match) {
+            return {
+                snippet: match[1],
+                cleanText: rawText.replace(match[0], '').trim(),
+            };
+        }
+    } catch {}
+    return { snippet: null, cleanText: String(rawText || '') };
 }
 
 interface AllyoPdfCanvasProps {
@@ -72,24 +74,39 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
         setPdfError(null);
         setPdfDoc(null);
 
-        const loadingTask = getDocument({ url });
-        loadingTask.promise
-            .then((doc) => {
-                if (isCancelled) return;
-                setPdfDoc(doc);
-                setIsLoadingPdf(false);
-                if (onNumPagesChange) onNumPagesChange(doc.numPages);
-            })
-            .catch((err) => {
-                if (isCancelled) return;
-                console.error('[AllyoPdfCanvas] Erro ao carregar PDF:', err);
-                setIsLoadingPdf(false);
-                setPdfError('Não foi possível carregar a prévia do arquivo PDF.');
-            });
+        if (!url) {
+            setIsLoadingPdf(false);
+            setPdfError('URL do arquivo não encontrada.');
+            return;
+        }
+
+        let loadingTask: any = null;
+        try {
+            loadingTask = getDocument({ url });
+            loadingTask.promise
+                .then((doc) => {
+                    if (isCancelled) return;
+                    setPdfDoc(doc);
+                    setIsLoadingPdf(false);
+                    if (onNumPagesChange) onNumPagesChange(doc.numPages);
+                })
+                .catch((err) => {
+                    if (isCancelled) return;
+                    console.error('[AllyoPdfCanvas] Erro ao carregar PDF:', err);
+                    setIsLoadingPdf(false);
+                    setPdfError('Não foi possível carregar a prévia do arquivo PDF.');
+                });
+        } catch (err) {
+            console.error('[AllyoPdfCanvas] Falha síncrona ao inicializar PDF:', err);
+            setIsLoadingPdf(false);
+            setPdfError('Não foi possível inicializar a prévia do PDF.');
+        }
 
         return () => {
             isCancelled = true;
-            loadingTask.destroy().catch(() => {});
+            try {
+                loadingTask?.destroy()?.catch?.(() => {});
+            } catch {}
         };
     }, [url]);
 
@@ -144,16 +161,20 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
 
                 // Renderiza a camada de texto interativa para permitir seleção de trechos
                 if (textLayerRef.current && !isCancelled) {
-                    textLayerRef.current.innerHTML = '';
-                    textLayerRef.current.style.width = `${displayWidth}px`;
-                    textLayerRef.current.style.height = `${displayHeight}px`;
-                    const textContent = await page.getTextContent();
-                    const textLayer = new TextLayer({
-                        textContentSource: textContent,
-                        container: textLayerRef.current,
-                        viewport: textViewport,
-                    });
-                    await textLayer.render();
+                    try {
+                        textLayerRef.current.innerHTML = '';
+                        textLayerRef.current.style.width = `${displayWidth}px`;
+                        textLayerRef.current.style.height = `${displayHeight}px`;
+                        const textContent = await page.getTextContent();
+                        const textLayer = new TextLayer({
+                            textContentSource: textContent,
+                            container: textLayerRef.current,
+                            viewport: textViewport,
+                        });
+                        await textLayer.render();
+                    } catch (tlErr) {
+                        console.warn('[AllyoPdfCanvas] Camada de texto interativa indisponível:', tlErr);
+                    }
                 }
             } catch (err: any) {
                 if (!isCancelled && err?.name !== 'RenderingCancelledException') {
@@ -256,7 +277,58 @@ interface AllyoReviewModalProps {
     onCommentResolved?: (commentId: number, resolved: boolean) => void;
 }
 
-export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
+class ReviewModalErrorBoundary extends React.Component<
+    { children: React.ReactNode; onClose: () => void },
+    { hasError: boolean; error: Error | null }
+> {
+    constructor(props: any) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error) {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, info: any) {
+        console.error('[AllyoReviewModal] Erro capturado pelo ErrorBoundary:', error, info);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+                    <div className="flex max-w-md flex-col items-center rounded-2xl border border-zinc-800 bg-[#121a14] p-8 text-center text-white shadow-2xl">
+                        <AlertCircle className="h-12 w-12 text-amber-400 mb-3" />
+                        <h3 className="text-base font-semibold">Não foi possível carregar a revisão</h3>
+                        <p className="mt-2 text-xs text-zinc-400">
+                            Ocorreu um imprevisto ao renderizar os dados desta entrega.
+                        </p>
+                        <div className="mt-5 flex gap-2">
+                            <button
+                                type="button"
+                                onClick={() => this.setState({ hasError: false, error: null })}
+                                className="rounded-lg bg-[#9db669] px-4 py-2 text-xs font-semibold text-black hover:bg-[#b0cc77]"
+                            >
+                                Tentar novamente
+                            </button>
+                            <button
+                                type="button"
+                                onClick={this.props.onClose}
+                                className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
     isOpen,
     onClose,
     design,
@@ -337,13 +409,16 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
         /\.(txt|md|copy)$/i.test(activeDesign.name || '')
     );
 
-    const openComments = comments.filter((c) => !c.resolved);
-    const resolvedComments = comments.filter((c) => c.resolved);
-    const visibleComments = filter === 'open' ? openComments : filter === 'resolved' ? resolvedComments : comments;
+    const safeComments = Array.isArray(comments) ? comments : [];
+    const safeAnnotations = Array.isArray(annotations) ? annotations : [];
+
+    const openComments = safeComments.filter((c) => Boolean(c) && !c.resolved);
+    const resolvedComments = safeComments.filter((c) => Boolean(c) && c.resolved);
+    const visibleComments = filter === 'open' ? openComments : filter === 'resolved' ? resolvedComments : safeComments;
 
     const pointedComments = useMemo(
-        () => comments.filter((c) => Boolean(c.point)),
-        [comments]
+        () => safeComments.filter((c) => Boolean(c && c.point)),
+        [safeComments]
     );
 
     const markerNumber = (commentId: number) => {
@@ -644,74 +719,89 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                                                 </marker>
                                             </defs>
 
-                                            {annotations
-                                                .filter((ann) => !isPdf || !ann.page || ann.page === pdfPage)
+                                            {safeAnnotations
+                                                .filter((ann) => Boolean(ann) && (!isPdf || !ann.page || ann.page === pdfPage))
                                                 .map((ann, idx) => {
-                                                const isHovered = ann.id && ann.id === String(hoveredCommentId);
-                                                const color = isHovered ? '#fbbf24' : (ann.color || '#5d55c7');
-                                                const strokeW = (ann.width || 3) * (isHovered ? 0.25 : 0.15);
+                                                    try {
+                                                        const isHovered = Boolean(ann.id && hoveredCommentId && String(ann.id) === String(hoveredCommentId));
+                                                        const color = isHovered ? '#fbbf24' : (ann.color || '#5d55c7');
+                                                        const strokeW = (Number(ann.width) || 3) * (isHovered ? 0.25 : 0.15);
 
-                                                if (ann.type === 'draw' && ann.points && ann.points.length > 1) {
-                                                    const pathD = ann.points.reduce(
-                                                        (acc, pt, i) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`,
-                                                        ''
-                                                    );
-                                                    return (
-                                                        <path
-                                                            key={ann.id || idx}
-                                                            d={pathD}
-                                                            stroke={color}
-                                                            strokeWidth={strokeW}
-                                                            fill="none"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        />
-                                                    );
-                                                }
+                                                        let rawPoints = (ann as any).points;
+                                                        if (typeof rawPoints === 'string') {
+                                                            try { rawPoints = JSON.parse(rawPoints); } catch { rawPoints = []; }
+                                                        }
+                                                        const points = Array.isArray(rawPoints) ? rawPoints : [];
 
-                                                if (ann.type === 'rectangle' && ann.start && ann.end) {
-                                                    const minX = Math.min(ann.start.x, ann.end.x);
-                                                    const minY = Math.min(ann.start.y, ann.end.y);
-                                                    const width = Math.abs(ann.end.x - ann.start.x);
-                                                    const height = Math.abs(ann.end.y - ann.start.y);
-                                                    return (
-                                                        <rect
-                                                            key={ann.id || idx}
-                                                            x={minX}
-                                                            y={minY}
-                                                            width={width}
-                                                            height={height}
-                                                            stroke={color}
-                                                            strokeWidth={strokeW}
-                                                            fill={color}
-                                                            fillOpacity={isHovered ? '0.4' : '0.18'}
-                                                            rx="1"
-                                                        />
-                                                    );
-                                                }
+                                                        if (ann.type === 'draw' && points.length > 1) {
+                                                            const validPoints = points.filter((pt: any) => pt && typeof pt.x === 'number' && typeof pt.y === 'number');
+                                                            if (validPoints.length > 1) {
+                                                                const pathD = validPoints.reduce(
+                                                                    (acc: string, pt: any, i: number) => `${acc} ${i === 0 ? 'M' : 'L'} ${pt.x} ${pt.y}`,
+                                                                    ''
+                                                                );
+                                                                return (
+                                                                    <path
+                                                                        key={ann.id || idx}
+                                                                        d={pathD}
+                                                                        stroke={color}
+                                                                        strokeWidth={strokeW}
+                                                                        fill="none"
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                    />
+                                                                );
+                                                            }
+                                                        }
 
-                                                if (ann.type === 'arrow' && ann.start && ann.end) {
-                                                    return (
-                                                        <line
-                                                            key={ann.id || idx}
-                                                            x1={ann.start.x}
-                                                            y1={ann.start.y}
-                                                            x2={ann.end.x}
-                                                            y2={ann.end.y}
-                                                            stroke={color}
-                                                            strokeWidth={strokeW}
-                                                            markerEnd="url(#arrowhead)"
-                                                        />
-                                                    );
-                                                }
+                                                        const start = (ann as any).start;
+                                                        const end = (ann as any).end;
+                                                        if (ann.type === 'rectangle' && start && end && typeof start.x === 'number' && typeof end.x === 'number') {
+                                                            const minX = Math.min(start.x, end.x);
+                                                            const minY = Math.min(start.y, end.y);
+                                                            const width = Math.abs(end.x - start.x);
+                                                            const height = Math.abs(end.y - start.y);
+                                                            return (
+                                                                <rect
+                                                                    key={ann.id || idx}
+                                                                    x={minX}
+                                                                    y={minY}
+                                                                    width={width}
+                                                                    height={height}
+                                                                    stroke={color}
+                                                                    strokeWidth={strokeW}
+                                                                    fill={color}
+                                                                    fillOpacity={isHovered ? '0.4' : '0.18'}
+                                                                    rx="1"
+                                                                />
+                                                            );
+                                                        }
 
-                                                return null;
-                                            })}
+                                                        if (ann.type === 'arrow' && start && end && typeof start.x === 'number' && typeof end.x === 'number') {
+                                                            return (
+                                                                <line
+                                                                    key={ann.id || idx}
+                                                                    x1={start.x}
+                                                                    y1={start.y}
+                                                                    x2={end.x}
+                                                                    y2={end.y}
+                                                                    stroke={color}
+                                                                    strokeWidth={strokeW}
+                                                                    markerEnd="url(#arrowhead)"
+                                                                />
+                                                            );
+                                                        }
+
+                                                        return null;
+                                                    } catch {
+                                                        return null;
+                                                    }
+                                                })}
                                         </svg>
 
                                         {/* Pinos / Marcadores dos Comentários pontuais */}
-                                        {comments
-                                            .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number' && (!isPdf || !c.page || c.page === pdfPage))
+                                        {safeComments
+                                            .filter((c) => Boolean(c) && c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number' && (!isPdf || !c.page || c.page === pdfPage))
                                             .map((c) => {
                                                 const number = markerNumber(c.id);
                                                 const isSelected = selectedCommentId === c.id;
@@ -1071,6 +1161,15 @@ export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = ({
                 </div>
             </div>
         </div>
+    );
+};
+
+export const AllyoReviewModal: React.FC<AllyoReviewModalProps> = (props) => {
+    if (!props.isOpen || !props.design) return null;
+    return (
+        <ReviewModalErrorBoundary onClose={props.onClose}>
+            <AllyoReviewModalInner {...props} />
+        </ReviewModalErrorBoundary>
     );
 };
 

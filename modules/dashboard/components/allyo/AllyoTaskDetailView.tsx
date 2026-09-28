@@ -77,7 +77,10 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const isTaskBlocked = projectTask?.status === 'blocked';
     const blockingTasks = (projectTask?.dependsOn || []).map((id) => projectTasks.find((item) => item.id === id)?.title).filter(Boolean);
     const taskResources = getTaskResources(task.id);
-    const activeReviewDesign = (liveDemand?.designs || []).find((d) => !d.taskId || d.taskId === task.id) || liveDemand?.designs?.[0] || null;
+    const taskDesigns = (liveDemand?.designs || [])
+        .filter((d) => !d.taskId || d.taskId === task.id)
+        .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || b.id) - (Number(String(a.version || '').replace(/\D/g, '')) || a.id));
+    const activeReviewDesign = taskDesigns[0] || liveDemand?.designs?.[0] || null;
     const totalComments = activeReviewDesign?.comments?.length || 0;
     const hasClientAnnotations = totalComments > 0 || (activeReviewDesign?.annotations && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
     const deliverableKind = getDeliverableKind(task);
