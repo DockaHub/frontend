@@ -36,7 +36,7 @@ export interface AllyoTask {
     client: string;
     deadline: string;
     time: string;
-    status: 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Concluída' | 'Bloqueada' | 'Inativa';
+    status: 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Alteração' | 'Concluída' | 'Bloqueada' | 'Inativa';
     cam: string;
     creative: string;
     workflowStage?: string;
@@ -75,6 +75,8 @@ const mapTaskStatus = (status: string): AllyoTask['status'] => {
         'Rascunho': 'Iniciar',
         'Em andamento': 'Em andamento',
         'Em revisão': 'Em revisão',
+        'Alteração': 'Alteração',
+        'Em alteração': 'Alteração',
         'Concluído': 'Concluída',
         'Concluída': 'Concluída',
         'Bloqueada': 'Bloqueada',
@@ -223,6 +225,7 @@ const statusColor: Record<AllyoTask['status'], string> = {
     'Iniciar': 'text-[#9db669]',
     'Em andamento': 'text-[#2a2ad7] dark:text-indigo-300',
     'Em revisão': 'text-[#fd6b32]',
+    'Alteração': 'text-[#ff7a45]',
     'Concluída': 'text-emerald-600 dark:text-emerald-400',
     'Bloqueada': 'text-[#737a72] dark:text-zinc-400',
     'Inativa': 'text-red-500 dark:text-red-400',

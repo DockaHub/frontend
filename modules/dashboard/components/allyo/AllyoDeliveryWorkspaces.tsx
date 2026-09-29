@@ -253,6 +253,7 @@ export const VersionBundle = ({
     kind,
     version,
     onVersionChange,
+    versionOptions,
     approvalFiles,
     sourceFiles,
     onApprovalFilesChange,
@@ -265,6 +266,7 @@ export const VersionBundle = ({
     kind: DeliverableKind;
     version: string;
     onVersionChange: (value: string) => void;
+    versionOptions?: string[];
     approvalFiles: ManagedFile[];
     sourceFiles: ManagedFile[];
     onApprovalFilesChange: (files: ManagedFile[]) => void;
@@ -276,6 +278,7 @@ export const VersionBundle = ({
 }) => {
     const approvalAccept = kind === 'social' || kind === 'landing' ? '.png,.jpg,.jpeg,.pdf' : '.pdf';
     const sourceAccept = kind === 'landing' ? '.fig,.zip' : kind === 'presentation' ? '.ppt,.pptx,.ai,.indd,.zip' : kind === 'storyboard' ? '.ppt,.pptx,.psd,.ai,.zip' : '.psd,.ai,.fig,.zip';
+    const displayedOptions = versionOptions && versionOptions.length > 0 ? versionOptions : ['Versão 1', 'Versão 2', 'Versão 3'];
     return (
         <section className={`border-b ${ALLYO_BORDER}`}>
             <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}>
@@ -284,7 +287,7 @@ export const VersionBundle = ({
                     <h2 className="mt-1 font-season text-lg">Arquivos da versão</h2>
                 </div>
                 <div className="flex items-center gap-2">
-                    <FilterSelect label="Versão" value={version} options={['Versão 1', 'Versão 2', 'Versão 3']} onChange={onVersionChange} includeAll={false} />
+                    <FilterSelect label="Versão" value={version} options={displayedOptions} onChange={onVersionChange} includeAll={false} />
                 </div>
             </div>
             {disabled && (

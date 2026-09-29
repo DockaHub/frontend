@@ -14,6 +14,7 @@ const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean)))
 const projectStatusClass = (status: string) => {
     if (status === 'Concluído') return 'text-emerald-600 dark:text-emerald-400';
     if (status === 'Em revisão') return 'text-[#fd6b32]';
+    if (status === 'Alteração') return 'text-[#ff7a45]';
     if (status === 'Inativo') return 'text-red-500 dark:text-red-400';
     if (status === 'Rascunho') return 'text-[#8b8b8b]';
     return 'text-[#2a2ad7] dark:text-indigo-300';

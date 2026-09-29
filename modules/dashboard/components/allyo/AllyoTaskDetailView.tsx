@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine, Loader2 } from 'lucide-react';
 import AllyoReviewModal from './AllyoReviewModal';
 import AllyoSubmitConfirmModal from './AllyoSubmitConfirmModal';
@@ -15,7 +15,7 @@ import { mapDemandToAllyoProject } from './allyoProjects';
 import { getTaskResources } from './allyoTaskResourceData';
 import { allyoService, type AllyoDemand } from '../../../../services/allyoService';
 
-const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Pronta para entrega', 'Entregue'];
+const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Alteração', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
     social: [
         { title: '1. Objetivo do criativo', items: ['Conversão: levar o público para uma demonstração', 'Comunicar proteção e resposta rápida com clareza'] },
@@ -81,6 +81,30 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         .filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))))
         .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || b.id) - (Number(String(a.version || '').replace(/\D/g, '')) || a.id));
     const activeReviewDesign = taskDesigns[0] || null;
+
+    const existingVersionNums = useMemo(() => {
+        const nums = taskDesigns
+            .map((d) => Number(String(d.version || '').replace(/\D/g, '')))
+            .filter((v) => !isNaN(v) && v > 0);
+        return Array.from(new Set(nums)).sort((a, b) => a - b);
+    }, [taskDesigns]);
+
+    const maxExistingVersion = existingVersionNums.length > 0 ? Math.max(...existingVersionNums) : 1;
+    const nextTargetVersionNum = (task.status === 'Alteração' || (task as any).status === 'Em alteração') ? maxExistingVersion + 1 : maxExistingVersion;
+
+    const versionOptions = useMemo(() => {
+        const allNums = new Set([
+            1,
+            ...existingVersionNums,
+            nextTargetVersionNum,
+            Number(String(deliveryVersion).replace(/\D/g, '')) || 1,
+        ]);
+        const sorted = Array.from(allNums).sort((a, b) => a - b);
+        const highest = Math.max(...sorted);
+        // Versionamento ilimitado: sempre disponibiliza até highest + 1 na lista
+        sorted.push(highest + 1);
+        return Array.from(new Set(sorted)).map((n) => `Versão ${n}`);
+    }, [existingVersionNums, nextTargetVersionNum, deliveryVersion]);
     const totalComments = activeReviewDesign?.comments?.length || 0;
     const hasClientAnnotations = totalComments > 0 || (activeReviewDesign?.annotations && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
     const deliverableKind = getDeliverableKind(task);
@@ -113,7 +137,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
     const isCurrentlyBlocked = administrativeBlock ?? (isTaskBlocked || status === 'Bloqueada');
     const isInactive = status === 'Inativa';
-    const isTaskInProgress = status?.trim()?.toLowerCase() === 'em andamento';
+    const isTaskInProgress = status?.trim()?.toLowerCase() === 'em andamento' || status === 'Alteração';
     const isAnyFileUploading = currentFiles.approval.some((f) => f.uploading) || currentFiles.source.some((f) => f.uploading);
     const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && (isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0);
 
@@ -132,32 +156,54 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
 
     useEffect(() => {
         if (!liveDemand) return;
-        const taskDesigns = (liveDemand.designs || []).filter((d) => d.taskId === task.id);
-        const design = taskDesigns[0] || (liveDemand.designs || []).find((d) => !d.taskId);
-        if (design && (design.fileUrl || design.name)) {
-            const ver = (design as any).version || 'Versão 1';
-            setDeliveryVersion(ver);
+        const matchedDesigns = (liveDemand.designs || []).filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))));
+        
+        // Populate all existing versions in filesByVersion
+        matchedDesigns.forEach((d) => {
+            const vLabel = (d as any).version || 'Versão 1';
             setFilesByVersion((current) => {
-                const existing = current[ver]?.approval || [];
+                const existing = current[vLabel]?.approval || [];
                 if (existing.some((item) => item.fileUrl || item.file)) return current;
                 return {
                     ...current,
-                    [ver]: {
+                    [vLabel]: {
                         approval: [{
-                            id: `design-${design.id}`,
+                            id: `design-${d.id}`,
                             name: (() => {
-                                const n = (design as any).name || 'Arquivo em revisão';
+                                const n = (d as any).name || 'Arquivo em revisão';
                                 try { return decodeURIComponent(n); } catch { return n; }
                             })(),
                             size: 0,
-                            fileUrl: (design as any).fileUrl,
+                            fileUrl: (d as any).fileUrl,
                         }],
-                        source: current[ver]?.source || [],
+                        source: current[vLabel]?.source || [],
                     },
                 };
             });
+        });
+
+        // Quando o status é "Alteração", automaticamente avança para a próxima versão
+        const isCurrentAlteracao = task.status === 'Alteração' || status === 'Alteração';
+        if (isCurrentAlteracao) {
+            const nums = matchedDesigns
+                .map((d) => Number(String(d.version || '').replace(/\D/g, '')))
+                .filter((v) => !isNaN(v) && v > 0);
+            const highest = nums.length > 0 ? Math.max(...nums) : 1;
+            const nextVer = `Versão ${highest + 1}`;
+            setDeliveryVersion(nextVer);
+            setFilesByVersion((current) => {
+                if (current[nextVer]) return current;
+                return { ...current, [nextVer]: { approval: [], source: [] } };
+            });
+            return;
         }
-    }, [liveDemand, task.id]);
+
+        const design = matchedDesigns[0] || (liveDemand.designs || []).find((d) => !d.taskId);
+        if (design && (design.fileUrl || design.name)) {
+            const ver = (design as any).version || 'Versão 1';
+            setDeliveryVersion(ver);
+        }
+    }, [liveDemand, task.id, task.status, status]);
 
     const goBack = () => {
         setSearchParams((current) => {
@@ -182,10 +228,11 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         setSavedLabel('Status atualizado agora');
 
         try {
-            const apiStatusMap: Record<string, 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Concluído'> = {
+            const apiStatusMap: Record<string, 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Alteração' | 'Concluído'> = {
                 'Nova': 'A iniciar',
                 'Em andamento': 'Em andamento',
                 'Em revisão': 'Em revisão',
+                'Alteração': 'Alteração',
                 'Pronta para entrega': 'Em revisão',
                 'Entregue': 'Concluído',
             };
@@ -445,14 +492,43 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                             deliverables={task.deliverables}
                             onProgressChange={setReadyDeliverables}
                             disabled={!isTaskInProgress}
-                            disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento'."
+                            disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."
                           />
                         : <DeliveryWorkspace kind={deliverableKind} />)}
+                    {status === 'Alteração' && (
+                        <div className="mx-5 my-4 sm:mx-[30px] flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200 shadow-sm animate-in fade-in">
+                            <div className="flex items-center gap-3">
+                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500 font-bold text-white text-sm shadow">
+                                    !
+                                </span>
+                                <div>
+                                    <strong className="block text-sm font-bold text-amber-950 dark:text-amber-100">O cliente solicitou alterações</strong>
+                                    <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
+                                        Consulte as anotações do cliente na versão anterior e faça o upload do material revisado na <b>{deliveryVersion}</b>.
+                                    </p>
+                                </div>
+                            </div>
+                            {activeReviewDesign && (
+                                <button
+                                    type="button"
+                                    onClick={() => setReviewModalOpen(true)}
+                                    className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700 transition"
+                                >
+                                    <Eye size={14} />
+                                    Ver anotações do cliente
+                                </button>
+                            )}
+                        </div>
+                    )}
                     {!isMultiDeliverable && (
                         <VersionBundle
                             kind={deliverableKind}
                             version={deliveryVersion}
-                            onVersionChange={setDeliveryVersion}
+                            versionOptions={versionOptions}
+                            onVersionChange={(v) => {
+                                setDeliveryVersion(v);
+                                setFilesByVersion((current) => current[v] ? current : { ...current, [v]: { approval: [], source: [] } });
+                            }}
                             approvalFiles={currentFiles.approval}
                             sourceFiles={currentFiles.source}
                             onApprovalFilesChange={(files) => updateVersionFiles('approval', files)}
@@ -466,7 +542,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                                 return allyoService.uploadDeliveryFile(projectId, file, onProgress);
                             }}
                             disabled={!isTaskInProgress}
-                            disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento'."
+                            disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."
                         />
                     )}
                 </main>
@@ -520,7 +596,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                                         : isCurrentlyBlocked
                                         ? 'O envio será liberado quando o bloqueio for removido.'
                                         : !isTaskInProgress
-                                        ? 'A tarefa precisa estar "Em andamento" para anexar arquivos e enviar para aprovação.'
+                                        ? 'A tarefa precisa estar "Em andamento" ou "Alteração" para anexar arquivos e enviar para aprovação.'
                                         : isAnyFileUploading
                                         ? 'Aguarde o upload dos arquivos terminar para enviar.'
                                         : isSendingReview
