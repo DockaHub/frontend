@@ -302,6 +302,7 @@ interface AllyoReviewModalProps {
     isOpen: boolean;
     onClose: () => void;
     design: AllyoDesignAsset | null;
+    availableVersions?: AllyoDesignAsset[];
     taskName?: string;
     onCommentResolved?: (commentId: number, resolved: boolean) => void;
 }
@@ -361,6 +362,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
     isOpen,
     onClose,
     design,
+    availableVersions,
     taskName,
     onCommentResolved,
 }) => {
@@ -582,9 +584,31 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                 <h2 className="truncate text-base font-semibold text-white" title={activeDesign.name}>
                                     {activeDesign.name}
                                 </h2>
-                                <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-                                    {activeDesign.version || 'v1'}
-                                </span>
+                                {availableVersions && availableVersions.length > 1 ? (
+                                    <select
+                                        value={activeDesign.id}
+                                        onChange={(e) => {
+                                            const selectedId = Number(e.target.value);
+                                            const next = availableVersions.find((d) => d.id === selectedId);
+                                            if (next) {
+                                                setReviewDesign(next);
+                                                setSelectedCommentId(null);
+                                                setHoveredCommentId(null);
+                                            }
+                                        }}
+                                        className="rounded-lg bg-zinc-800 border border-zinc-700 px-2.5 py-0.5 text-[11px] font-semibold text-white focus:outline-none focus:ring-1 focus:ring-[#9db669] cursor-pointer"
+                                    >
+                                        {availableVersions.map((d) => (
+                                            <option key={d.id} value={d.id}>
+                                                {d.version || `Versão ${d.id}`}
+                                            </option>
+                                        ))}
+                                    </select>
+                                ) : (
+                                    <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
+                                        {activeDesign.version || 'v1'}
+                                    </span>
+                                )}
                                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                                     activeDesign.approved
                                         ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'

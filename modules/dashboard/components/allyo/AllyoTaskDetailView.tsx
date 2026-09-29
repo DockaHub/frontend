@@ -78,9 +78,9 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const blockingTasks = (projectTask?.dependsOn || []).map((id) => projectTasks.find((item) => item.id === id)?.title).filter(Boolean);
     const taskResources = getTaskResources(task.id);
     const taskDesigns = (liveDemand?.designs || [])
-        .filter((d) => !d.taskId || d.taskId === task.id)
+        .filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))))
         .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || b.id) - (Number(String(a.version || '').replace(/\D/g, '')) || a.id));
-    const activeReviewDesign = taskDesigns[0] || liveDemand?.designs?.[0] || null;
+    const activeReviewDesign = taskDesigns[0] || null;
     const totalComments = activeReviewDesign?.comments?.length || 0;
     const hasClientAnnotations = totalComments > 0 || (activeReviewDesign?.annotations && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
     const deliverableKind = getDeliverableKind(task);
@@ -545,6 +545,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                 isOpen={reviewModalOpen}
                 onClose={() => setReviewModalOpen(false)}
                 design={activeReviewDesign}
+                availableVersions={taskDesigns}
                 taskName={task.name}
             />
         </div>

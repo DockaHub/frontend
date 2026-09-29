@@ -35,7 +35,7 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
             if (!res || !Array.isArray(res.demands)) return;
             const project = res.demands.find((d) => d.id === currentProjectId || d.tasksList?.some((t) => t.id === task.id));
             if (project && project.designs) {
-                const designsForTask = project.designs.filter((d) => !d.taskId || d.taskId === task.id);
+                const designsForTask = project.designs.filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))));
                 setTaskDesigns(designsForTask);
                 for (const d of designsForTask) {
                     if (d.comments && d.comments.length > 0) {
@@ -120,6 +120,10 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                     text: '✨ Design aprovado com sucesso pelo cliente no portal!',
                 });
             } else if (event.type === 'REVIEW_COMMENT_ADDED') {
+                const eventTaskId = event.data?.taskId;
+                if (eventTaskId && eventTaskId !== task.id && eventTaskId !== task.publicId) {
+                    return;
+                }
                 const comment = event.data?.comment;
                 const designName = event.data?.designName || 'Arquivo da entrega';
                 const deliveryId = event.data?.deliveryId;
@@ -133,6 +137,10 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                     designId: deliveryId,
                 });
             } else if (event.type === 'ANNOTATION_ADDED') {
+                const eventTaskId = event.data?.taskId;
+                if (eventTaskId && eventTaskId !== task.id && eventTaskId !== task.publicId) {
+                    return;
+                }
                 const designName = event.data?.designName || 'Arquivo da entrega';
                 const deliveryId = event.data?.deliveryId;
                 addTaskActivity(task.id, {
@@ -237,7 +245,13 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                         <p className="mt-2 text-sm leading-6">As mensagens e os eventos de aprovação desta tarefa aparecem aqui, em ordem cronológica.</p>
                     </div>
                 )}
-                {history.map((item) => {
+                {history.filter((item) => {
+                    // Se for anotação em arquivo, só exibe no chat se o design pertencer a esta tarefa
+                    if (item.type === 'client_file_change' && item.designId && taskDesigns.length > 0) {
+                        return taskDesigns.some((d) => d.id === item.designId);
+                    }
+                    return true;
+                }).map((item) => {
                     const date = new Date(item.createdAt);
                     const dateKey = date.toDateString();
                     const showDate = dateKey !== previousDate;
@@ -332,6 +346,7 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                 isOpen={Boolean(selectedReviewDesign)}
                 onClose={() => setSelectedReviewDesign(null)}
                 design={selectedReviewDesign}
+                availableVersions={taskDesigns}
                 taskName={task.name}
             />
         </section>
