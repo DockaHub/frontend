@@ -4,8 +4,6 @@ import type { AllyoDeliverable } from './AllyoUI';
 import { ALLYO_BORDER, FilterSelect } from './AllyoUI';
 import { FileSlot, type ManagedFile } from './AllyoDeliveryWorkspaces';
 
-const VERSION_OPTIONS = ['Versão 1', 'Versão 2', 'Versão 3', 'Versão 4'];
-
 type ApprovalFilesByItem = Record<string, Record<string, ManagedFile[]>>;
 
 interface AllyoMultiDeliverableWorkspaceProps {
@@ -13,20 +11,51 @@ interface AllyoMultiDeliverableWorkspaceProps {
     onProgressChange?: (ready: number, total: number) => void;
     disabled?: boolean;
     disabledReason?: string;
+    versionOptions?: string[];
+    currentVersion?: string;
 }
 
-const AllyoMultiDeliverableWorkspace = ({ deliverables, onProgressChange, disabled = false, disabledReason }: AllyoMultiDeliverableWorkspaceProps) => {
+const AllyoMultiDeliverableWorkspace = ({
+    deliverables,
+    onProgressChange,
+    disabled = false,
+    disabledReason,
+    versionOptions,
+    currentVersion,
+}: AllyoMultiDeliverableWorkspaceProps) => {
+    const availableVersionOptions = useMemo(() => {
+        return versionOptions && versionOptions.length > 0 ? versionOptions : [currentVersion || 'Versão 1'];
+    }, [versionOptions, currentVersion]);
+
+    const defaultVersion = currentVersion && availableVersionOptions.includes(currentVersion)
+        ? currentVersion
+        : availableVersionOptions[availableVersionOptions.length - 1] || 'Versão 1';
+
     const [openItems, setOpenItems] = useState<string[]>(deliverables[0] ? [deliverables[0].id] : []);
     const [activeScenes, setActiveScenes] = useState<Record<string, number>>({});
-    const [versions, setVersions] = useState<Record<string, string>>(() => Object.fromEntries(deliverables.map((item) => [item.id, 'Versão 1'])));
+    const [versions, setVersions] = useState<Record<string, string>>(() => Object.fromEntries(deliverables.map((item) => [item.id, defaultVersion])));
     const [approvalFiles, setApprovalFiles] = useState<ApprovalFilesByItem>({});
     const [sourceFiles, setSourceFiles] = useState<ManagedFile[]>([]);
     const [sourceAssociations, setSourceAssociations] = useState<Record<string, string>>({});
 
+    useEffect(() => {
+        setVersions((current) => {
+            const next = { ...current };
+            let changed = false;
+            deliverables.forEach((item) => {
+                if (!next[item.id] || !availableVersionOptions.includes(next[item.id])) {
+                    next[item.id] = defaultVersion;
+                    changed = true;
+                }
+            });
+            return changed ? next : current;
+        });
+    }, [deliverables, availableVersionOptions, defaultVersion]);
+
     const readyCount = useMemo(() => deliverables.filter((item) => {
-        const version = versions[item.id] || 'Versão 1';
+        const version = versions[item.id] || defaultVersion;
         return (approvalFiles[item.id]?.[version] || []).length > 0;
-    }).length, [approvalFiles, deliverables, versions]);
+    }).length, [approvalFiles, defaultVersion, deliverables, versions]);
 
     useEffect(() => {
         onProgressChange?.(readyCount, deliverables.length);
@@ -128,7 +157,7 @@ const AllyoMultiDeliverableWorkspace = ({ deliverables, onProgressChange, disabl
                                     <div className={`border-t p-4 sm:p-5 ${ALLYO_BORDER}`}>
                                         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                                             <div><span className="text-[10px] font-bold uppercase tracking-[.08em] text-[#999]">Entrega deste pedido</span><p className="mt-1 text-xs text-[#777]">A versão e a aprovação são independentes das demais peças.</p></div>
-                                            <FilterSelect label="Versão" value={version} options={VERSION_OPTIONS} onChange={(value) => setVersions((current) => ({ ...current, [item.id]: value }))} includeAll={false} />
+                                            <FilterSelect label="Versão" value={version} options={availableVersionOptions} onChange={(value) => setVersions((current) => ({ ...current, [item.id]: value }))} includeAll={false} />
                                         </div>
                                         <FileSlot
                                             icon={<CheckCircle2 size={17} />}

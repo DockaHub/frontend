@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine, Loader2 } from 'lucide-react';
 import AllyoReviewModal from './AllyoReviewModal';
 import AllyoSubmitConfirmModal from './AllyoSubmitConfirmModal';
@@ -77,9 +77,14 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const isTaskBlocked = projectTask?.status === 'blocked';
     const blockingTasks = (projectTask?.dependsOn || []).map((id) => projectTasks.find((item) => item.id === id)?.title).filter(Boolean);
     const taskResources = getTaskResources(task.id);
-    const taskDesigns = (liveDemand?.designs || [])
-        .filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))))
-        .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || b.id) - (Number(String(a.version || '').replace(/\D/g, '')) || a.id));
+    const [status, setStatus] = useState(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
+
+    const taskDesigns = useMemo(() => {
+        return (liveDemand?.designs || [])
+            .filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))))
+            .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || b.id) - (Number(String(a.version || '').replace(/\D/g, '')) || a.id));
+    }, [liveDemand?.designs, task.id, task.publicId]);
+
     const activeReviewDesign = taskDesigns[0] || null;
 
     const existingVersionNums = useMemo(() => {
@@ -89,22 +94,45 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         return Array.from(new Set(nums)).sort((a, b) => a - b);
     }, [taskDesigns]);
 
-    const maxExistingVersion = existingVersionNums.length > 0 ? Math.max(...existingVersionNums) : 1;
-    const nextTargetVersionNum = (task.status === 'Alteração' || (task as any).status === 'Em alteração') ? maxExistingVersion + 1 : maxExistingVersion;
+    const highestSubmittedVersion = existingVersionNums.length > 0 ? Math.max(...existingVersionNums) : 0;
+    const isCurrentAlteracao = 
+        task.status === 'Alteração' || 
+        (task as any).status === 'Em alteração' || 
+        status === 'Alteração' || 
+        task.delivery === 'Em alteração';
 
+    // A versão atual da tarefa:
+    // Se o cliente solicitou alterações, a tarefa avança para a próxima versão (highestSubmittedVersion + 1)
+    // Se não está em alteração, a versão atual é a última enviada (ou 1 se nenhuma foi enviada ainda)
+    const currentVersionNum = isCurrentAlteracao
+        ? (highestSubmittedVersion > 0 ? highestSubmittedVersion + 1 : 2)
+        : Math.max(1, highestSubmittedVersion);
+
+    const latestVersionLabel = `Versão ${currentVersionNum}`;
+
+    // O dropdown de versões exibe estritamente as versões existentes até a versão atual (1..currentVersionNum)
+    // Novas versões são adicionadas somente conforme o cliente solicita alterações
     const versionOptions = useMemo(() => {
-        const allNums = new Set([
-            1,
-            ...existingVersionNums,
-            nextTargetVersionNum,
-            Number(String(deliveryVersion).replace(/\D/g, '')) || 1,
-        ]);
-        const sorted = Array.from(allNums).sort((a, b) => a - b);
-        const highest = Math.max(...sorted);
-        // Versionamento ilimitado: sempre disponibiliza até highest + 1 na lista
-        sorted.push(highest + 1);
-        return Array.from(new Set(sorted)).map((n) => `Versão ${n}`);
-    }, [existingVersionNums, nextTargetVersionNum, deliveryVersion]);
+        const maxV = Math.max(1, currentVersionNum);
+        return Array.from({ length: maxV }, (_, i) => `Versão ${i + 1}`);
+    }, [currentVersionNum]);
+
+    // Permite que o criativo alterne entre versões pelo dropdown se desejar, mas por padrão
+    // carrega exatamente na versão atual (última) da tarefa para não confundir o dia a dia
+    const [selectedVersionByUser, setSelectedVersionByUser] = useState<string | null>(null);
+    const lastTaskIdRef = useRef<string>(task.id);
+
+    useEffect(() => {
+        if (lastTaskIdRef.current !== task.id) {
+            lastTaskIdRef.current = task.id;
+            setSelectedVersionByUser(null);
+        }
+    }, [task.id]);
+
+    const deliveryVersion = (selectedVersionByUser && versionOptions.includes(selectedVersionByUser))
+        ? selectedVersionByUser
+        : latestVersionLabel;
+
     const totalComments = activeReviewDesign?.comments?.length || 0;
     const hasClientAnnotations = totalComments > 0 || (activeReviewDesign?.annotations && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
     const deliverableKind = getDeliverableKind(task);
@@ -119,11 +147,9 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         ].filter((block) => block.items.length > 0)
         : briefingByKind[deliverableKind];
     const isMultiDeliverable = Boolean(task.deliverables && task.deliverables.length > 1);
-    const [status, setStatus] = useState(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
     const [descriptionOpen, setDescriptionOpen] = useState(true);
     const [orderOpen, setOrderOpen] = useState(true);
     const [brandKitOpen, setBrandKitOpen] = useState(false);
-    const [deliveryVersion, setDeliveryVersion] = useState('Versão 1');
     const [filesByVersion, setFilesByVersion] = useState<Record<string, { approval: ManagedFile[]; source: ManagedFile[] }>>({
         'Versão 1': { approval: [], source: [] },
     });
@@ -158,9 +184,10 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         if (!liveDemand) return;
         const matchedDesigns = (liveDemand.designs || []).filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))));
         
-        // Populate all existing versions in filesByVersion
+        // Popula todas as versões existentes em filesByVersion
         matchedDesigns.forEach((d) => {
-            const vLabel = (d as any).version || 'Versão 1';
+            const vNum = Number(String(d.version || '').replace(/\D/g, '')) || 1;
+            const vLabel = `Versão ${vNum}`;
             setFilesByVersion((current) => {
                 const existing = current[vLabel]?.approval || [];
                 if (existing.some((item) => item.fileUrl || item.file)) return current;
@@ -182,28 +209,12 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             });
         });
 
-        // Quando o status é "Alteração", automaticamente avança para a próxima versão
-        const isCurrentAlteracao = task.status === 'Alteração' || status === 'Alteração';
-        if (isCurrentAlteracao) {
-            const nums = matchedDesigns
-                .map((d) => Number(String(d.version || '').replace(/\D/g, '')))
-                .filter((v) => !isNaN(v) && v > 0);
-            const highest = nums.length > 0 ? Math.max(...nums) : 1;
-            const nextVer = `Versão ${highest + 1}`;
-            setDeliveryVersion(nextVer);
-            setFilesByVersion((current) => {
-                if (current[nextVer]) return current;
-                return { ...current, [nextVer]: { approval: [], source: [] } };
-            });
-            return;
-        }
-
-        const design = matchedDesigns[0] || (liveDemand.designs || []).find((d) => !d.taskId);
-        if (design && (design.fileUrl || design.name)) {
-            const ver = (design as any).version || 'Versão 1';
-            setDeliveryVersion(ver);
-        }
-    }, [liveDemand, task.id, task.status, status]);
+        // Garante que a versão atual exista em filesByVersion pronta para upload
+        setFilesByVersion((current) => {
+            if (current[latestVersionLabel]) return current;
+            return { ...current, [latestVersionLabel]: { approval: [], source: [] } };
+        });
+    }, [liveDemand, task.id, task.publicId, latestVersionLabel]);
 
     const goBack = () => {
         setSearchParams((current) => {
@@ -323,6 +334,24 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                 fileUrl: targetUrl,
             });
 
+            // Atualiza estado local de designs para incluir a nova entrega enviada
+            setLiveDemand((current) => {
+                if (!current) return current;
+                const newDesign = {
+                    id: Date.now(),
+                    taskId: task.id,
+                    name: fileNames || task.name,
+                    version: deliveryVersion,
+                    fileUrl: targetUrl,
+                    createdAt: new Date().toISOString(),
+                };
+                const existingDesigns = current.designs || [];
+                return {
+                    ...current,
+                    designs: [newDesign, ...existingDesigns],
+                };
+            });
+
             addTaskActivity(task.id, {
                 type: 'approval_sent',
                 author: userName?.trim() || task.creative,
@@ -332,6 +361,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             });
 
             await updateStatus('Em revisão');
+            setSelectedVersionByUser(null);
             setSavedLabel(`${deliveryVersion} enviada para aprovação do cliente com sucesso!`);
             setActiveTab('messages');
             return true;
@@ -493,6 +523,8 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                             onProgressChange={setReadyDeliverables}
                             disabled={!isTaskInProgress}
                             disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."
+                            versionOptions={versionOptions}
+                            currentVersion={deliveryVersion}
                           />
                         : <DeliveryWorkspace kind={deliverableKind} />)}
                     {status === 'Alteração' && (
@@ -504,7 +536,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                                 <div>
                                     <strong className="block text-sm font-bold text-amber-950 dark:text-amber-100">O cliente solicitou alterações</strong>
                                     <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
-                                        Consulte as anotações do cliente na versão anterior e faça o upload do material revisado na <b>{deliveryVersion}</b>.
+                                        Consulte as anotações do cliente na versão anterior e faça o upload do material revisado na <b>{latestVersionLabel}</b>.
                                     </p>
                                 </div>
                             </div>
@@ -526,7 +558,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                             version={deliveryVersion}
                             versionOptions={versionOptions}
                             onVersionChange={(v) => {
-                                setDeliveryVersion(v);
+                                setSelectedVersionByUser(v);
                                 setFilesByVersion((current) => current[v] ? current : { ...current, [v]: { approval: [], source: [] } });
                             }}
                             approvalFiles={currentFiles.approval}

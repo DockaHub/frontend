@@ -278,7 +278,7 @@ export const VersionBundle = ({
 }) => {
     const approvalAccept = kind === 'social' || kind === 'landing' ? '.png,.jpg,.jpeg,.pdf' : '.pdf';
     const sourceAccept = kind === 'landing' ? '.fig,.zip' : kind === 'presentation' ? '.ppt,.pptx,.ai,.indd,.zip' : kind === 'storyboard' ? '.ppt,.pptx,.psd,.ai,.zip' : '.psd,.ai,.fig,.zip';
-    const displayedOptions = versionOptions && versionOptions.length > 0 ? versionOptions : ['Versão 1', 'Versão 2', 'Versão 3'];
+    const displayedOptions = versionOptions && versionOptions.length > 0 ? versionOptions : [version || 'Versão 1'];
     return (
         <section className={`border-b ${ALLYO_BORDER}`}>
             <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}>
