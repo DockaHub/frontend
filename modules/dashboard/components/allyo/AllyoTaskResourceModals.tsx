@@ -1,11 +1,11 @@
-import { Download, ExternalLink, FileArchive, FileText, Grid2X2, ImageIcon, Info, Play, Sparkles } from 'lucide-react';
+import { Download, ExternalLink, FileArchive, Grid2X2, Info, Play, Sparkles } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { ALLYO_BORDER, ALLYO_TASKS } from './AllyoUI';
 import type { AllyoTaskAttachment, AllyoTaskReference } from './allyoTaskResourceData';
 
 export const ReferenceTaskModal = ({ reference, onClose, onOpenTask }: { reference: AllyoTaskReference | null; onClose: () => void; onOpenTask: (taskId: string) => void }) => {
     const linkedTask = reference?.linkedTaskId ? ALLYO_TASKS.find((task) => task.id === reference.linkedTaskId) : undefined;
-    return <Modal isOpen={Boolean(reference)} onClose={onClose} title="Tarefa de referência" size="lg" footer={<><button type="button" onClick={onClose} className="rounded-full border border-[#d9ddd7] px-4 py-2 text-xs font-semibold dark:border-zinc-700">Fechar</button>{reference?.linkedTaskId && <button type="button" onClick={() => { onClose(); onOpenTask(reference.linkedTaskId!); }} className="inline-flex items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white"><ExternalLink size={13} /> Abrir tarefa completa</button>}</>}>
+    return <Modal isOpen={Boolean(reference)} onClose={onClose} title="Tarefa de referência" size="lg" footer={reference?.linkedTaskId ? <button type="button" onClick={() => { onClose(); onOpenTask(reference.linkedTaskId!); }} className="inline-flex items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white"><ExternalLink size={13} /> Abrir tarefa completa</button> : undefined}>
         {reference && <div>
             <div className={`rounded-[14px] border bg-[#fbfcf9] p-5 dark:bg-zinc-950 ${ALLYO_BORDER}`}>
                 <div className="flex items-start gap-3"><span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-[#eaf2dd] text-[#71854e] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]"><Grid2X2 size={17} /></span><div className="min-w-0"><span className="inline-flex rounded-full bg-[#eaf4dd] px-2 py-1 text-[9px] font-bold text-[#617740]">Concluída</span><h2 className="mt-2 font-season text-xl">{reference.title}</h2><p className="mt-1 text-xs text-[#838983]">#{reference.id} · {reference.category}</p></div></div>
@@ -19,7 +19,7 @@ export const ReferenceTaskModal = ({ reference, onClose, onOpenTask }: { referen
 export const TaskFilePreviewModal = ({ file, onClose }: { file: AllyoTaskAttachment | null; onClose: () => void }) => {
     const previewType = file ? getPreviewType(file.extension) : 'document';
     const generatedPreview = file ? ['AI', 'INDD', 'PSD', 'DOCX', 'XLSX', 'PPTX'].includes(file.extension) : false;
-    return <Modal isOpen={Boolean(file)} onClose={onClose} title={file?.name || 'Visualizar arquivo'} size="2xl" footer={<><button type="button" onClick={onClose} className="rounded-full border border-[#d9ddd7] px-4 py-2 text-xs font-semibold dark:border-zinc-700">Fechar</button>{file?.downloadUrl ? <a href={file.downloadUrl} download={file.name} className="inline-flex items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white"><Download size={13} /> Baixar arquivo</a> : <button type="button" disabled title="Disponível quando o arquivo estiver conectado ao armazenamento" className="inline-flex cursor-not-allowed items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white opacity-40"><Download size={13} /> Baixar arquivo</button>}</>}>
+    return <Modal isOpen={Boolean(file)} onClose={onClose} title={file?.name || 'Visualizar arquivo'} size="2xl" footer={file?.downloadUrl ? <a href={file.downloadUrl} download={file.name} className="inline-flex items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white"><Download size={13} /> Baixar arquivo</a> : undefined}>
         {file && <div className="grid min-h-[520px] overflow-hidden rounded-[14px] border border-[#e1e4df] lg:grid-cols-[minmax(0,1fr)_250px] dark:border-zinc-800">
             <div className="relative flex min-h-[420px] items-center justify-center overflow-hidden bg-[#f1f3ef] p-6 dark:bg-zinc-950">
                 <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(#bfc6ba 0.75px, transparent 0.75px)', backgroundSize: '18px 18px' }} />

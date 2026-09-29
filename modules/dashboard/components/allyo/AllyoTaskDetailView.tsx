@@ -10,10 +10,11 @@ import AllyoTaskChat from './AllyoTaskChat';
 import AllyoProjectFlow from './AllyoProjectFlow';
 import AllyoTaskResources from './AllyoTaskResources';
 import AllyoTaskActions from './AllyoTaskActions';
-import { addTaskActivity, readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
+import { addTaskActivity } from './allyoTaskActivity';
 import { mapDemandToAllyoProject } from './allyoProjects';
 import { getTaskResources } from './allyoTaskResourceData';
 import { allyoService, type AllyoDemand } from '../../../../services/allyoService';
+import { useToast } from '../../../../context/ToastContext';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Alteração', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -107,6 +108,7 @@ class TaskDetailErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorB
 }
 
 const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
+    const { addToast } = useToast();
     const [searchParams, setSearchParams] = useSearchParams();
     const taskId = searchParams.get('task');
     const [liveTask, setLiveTask] = useState<AllyoTask | null>(null);
@@ -217,7 +219,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
         : latestVersionLabel;
 
     const totalComments = Array.isArray(activeReviewDesign?.comments) ? activeReviewDesign.comments.length : 0;
-    const hasClientAnnotations = totalComments > 0 || (Array.isArray(activeReviewDesign?.annotations) && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
+    const totalAnnotations = Array.isArray(activeReviewDesign?.annotations) ? activeReviewDesign.annotations.length : 0;
+    const hasClientAnnotations = totalComments > 0 || totalAnnotations > 0;
     const deliverableKind = getDeliverableKind(task);
     const requestCopy = deliverableCopy[deliverableKind] || deliverableCopy.social;
     const briefing = task.briefing
@@ -240,7 +243,6 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
     const [readyDeliverables, setReadyDeliverables] = useState(0);
     const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
-    const [clientChanges, setClientChanges] = useState(() => readTaskActivity(task.id).filter((item) => item.type === 'client_file_change' || (item.type === 'message' && item.role === 'client')).length);
     const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
     const [isSendingReview, setIsSendingReview] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
@@ -252,12 +254,6 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const isTaskInProgress = status?.trim()?.toLowerCase() === 'em andamento' || status === 'Alteração';
     const isAnyFileUploading = approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
     const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && (isMultiDeliverable ? readyDeliverables > 0 : approvalFiles.length > 0);
-
-    useEffect(() => {
-        const refresh = () => setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change' || (item.type === 'message' && item.role === 'client')).length);
-        refresh();
-        return subscribeToTaskActivity(task.id, refresh);
-    }, [task.id]);
 
     useEffect(() => {
         setStatus(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
@@ -401,13 +397,13 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 } catch (uploadErr: any) {
                     console.error('[AllyoTaskDetailView] Erro ao fazer upload do arquivo:', uploadErr);
                     const msg = uploadErr?.response?.data?.message || uploadErr?.message || 'Falha no upload do arquivo';
-                    alert(`Erro no upload: ${msg}`);
+                    addToast({ type: 'error', title: 'Não foi possível enviar o arquivo', message: msg });
                     return false;
                 }
             }
 
             if (!targetUrl && !isMultiDeliverable) {
-                alert('Por favor, anexe e aguarde o upload do arquivo para aprovação antes de enviar.');
+                addToast({ type: 'warning', title: 'Arquivo ainda não está pronto', message: 'Anexe o material e aguarde o fim do upload antes de enviar para revisão.' });
                 return false;
             }
 
@@ -450,11 +446,12 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             setSelectedVersionByUser(null);
             setSavedLabel(`${deliveryVersion} enviada para aprovação do cliente com sucesso!`);
             setActiveTab('messages');
+            addToast({ type: 'success', title: 'Material enviado para revisão', message: `${deliveryVersion} está disponível para o cliente.` });
             return true;
         } catch (err: any) {
             console.error('[AllyoTaskDetailView] Erro ao enviar revisão para Railway:', err);
             const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Erro ao registrar entrega na Allyo Space';
-            alert(`Falha no envio para aprovação: ${msg}`);
+            addToast({ type: 'error', title: 'Não foi possível enviar para revisão', message: msg });
             return false;
         } finally {
             setIsSendingReview(false);
@@ -484,12 +481,6 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             <section className={`sticky top-[75px] z-30 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isCurrentlyBlocked || isInactive ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f2ef] px-3 py-2 text-xs font-semibold text-[#737a72] dark:bg-zinc-800 dark:text-zinc-300"><span className={`h-1.5 w-1.5 rounded-full ${isInactive ? 'bg-red-400' : 'bg-[#8e958d]'}`} />{isInactive ? 'Inativa' : 'Bloqueada'}</span> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} />}</div>
                 <MetaItem label="Créditos da tarefa" value={formatTaskCredits(task.credits)} />
-                {task.feedback && (
-                    <div className="flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-medium text-amber-800 dark:bg-amber-950/30 dark:border-amber-800/50 dark:text-amber-200">
-                        <Star size={13} className="fill-amber-400 text-amber-400" />
-                        <span>Avaliação: {task.feedback.rating.toFixed(1)}</span>
-                    </div>
-                )}
                 <MetaItem label="Deadline" value={`${task.deadline}, ${task.time}`} icon={<Clock3 size={14} />} />
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
                 <div className="ml-auto flex items-center gap-3">
@@ -500,39 +491,13 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
 
             <nav className={`flex items-center gap-7 border-b bg-white px-5 sm:px-[30px] dark:bg-zinc-950 ${ALLYO_BORDER}`} aria-label="Seções da tarefa">
                 <button type="button" onClick={() => setActiveTab('details')} aria-current={activeTab === 'details' ? 'page' : undefined} className={`min-h-12 border-b-2 text-sm font-semibold transition ${activeTab === 'details' ? 'border-[#003f35] text-[#003f35] dark:border-[#d0f08e] dark:text-[#d0f08e]' : 'border-transparent text-[#717b73] hover:text-[#003f35]'}`}>Detalhes</button>
-                <button type="button" onClick={() => setActiveTab('messages')} aria-current={activeTab === 'messages' ? 'page' : undefined} className={`inline-flex min-h-12 items-center gap-2 border-b-2 text-sm font-semibold transition ${activeTab === 'messages' ? 'border-[#003f35] text-[#003f35] dark:border-[#d0f08e] dark:text-[#d0f08e]' : 'border-transparent text-[#717b73] hover:text-[#003f35]'}`}><MessageCircle size={15} /> Mensagens {clientChanges > 0 && <span className="rounded-full bg-[#e6f2e8] px-2 py-0.5 text-[10px] text-[#34704a] dark:bg-emerald-900/40 dark:text-emerald-200" aria-label={`${clientChanges} alterações do cliente`}>{clientChanges}</span>}</button>
+                <button type="button" onClick={() => setActiveTab('messages')} aria-current={activeTab === 'messages' ? 'page' : undefined} className={`inline-flex min-h-12 items-center gap-2 border-b-2 text-sm font-semibold transition ${activeTab === 'messages' ? 'border-[#003f35] text-[#003f35] dark:border-[#d0f08e] dark:text-[#d0f08e]' : 'border-transparent text-[#717b73] hover:text-[#003f35]'}`}><MessageCircle size={15} /> Mensagens</button>
             </nav>
 
             <div hidden={activeTab !== 'messages'}>
                 <AllyoTaskChat task={task} userName={userName} />
             </div>
             <div hidden={activeTab !== 'details'}>
-                {activeReviewDesign && hasClientAnnotations && (
-                    <div className="mx-5 my-3 sm:mx-[30px] flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 dark:border-emerald-800 dark:bg-emerald-950/30">
-                        <div className="flex items-center gap-3 min-w-0">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-200 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
-                                <FilePenLine size={18} />
-                            </span>
-                            <div className="min-w-0">
-                                <h3 className="text-sm font-semibold text-emerald-950 dark:text-emerald-200 truncate">
-                                    Anotações do cliente disponíveis ({activeReviewDesign.name})
-                                </h3>
-                                <p className="text-xs text-emerald-800 dark:text-emerald-300">
-                                    {totalComments > 0
-                                        ? `O cliente deixou ${totalComments} ${totalComments === 1 ? 'comentário/marcador' : 'comentários/marcadores'} diretamente sobre o arquivo.`
-                                        : 'O cliente realizou marcações sobre esta entrega no portal.'}
-                                </p>
-                            </div>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={() => setReviewModalOpen(true)}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-[#003f35] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#12584b] shadow-sm"
-                        >
-                            <Eye size={14} /> Abrir anotações e marcadores
-                        </button>
-                    </div>
-                )}
                 {task.feedback && typeof task.feedback.rating === 'number' && !isNaN(task.feedback.rating) && (
                     <div className="mx-5 my-4 sm:mx-[30px] rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
                         <div className="flex items-start justify-between gap-3">
@@ -592,16 +557,33 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             <h2 className="font-season text-lg font-normal">Visualização do pedido {isMultiDeliverable && <span className="text-[#888]">({task.deliverables?.length})</span>}</h2>
                             {orderOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
                         </button>
-                        {activeReviewDesign && (
+                    </div>
+                    {activeReviewDesign && (status === 'Alteração' || hasClientAnnotations) && (
+                        <div className={`mx-5 my-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border p-4 text-xs sm:mx-[30px] ${status === 'Alteração' ? 'border-amber-300 bg-amber-50/90 text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200' : 'border-emerald-200 bg-emerald-50/70 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200'}`}>
+                            <div className="flex items-center gap-3">
+                                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${status === 'Alteração' ? 'bg-amber-500 text-white' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300'}`}>
+                                    <FilePenLine size={17} />
+                                </span>
+                                <div>
+                                    <strong className="block text-sm font-semibold">
+                                        {status === 'Alteração' ? 'Revisão solicitada pelo cliente' : `Feedback em ${activeReviewDesign.name}`}
+                                    </strong>
+                                    <p className="mt-0.5 text-xs opacity-80">
+                                        {status === 'Alteração'
+                                            ? `Revise o feedback da versão anterior e envie o material atualizado na ${latestVersionLabel}.`
+                                            : `${totalComments} ${totalComments === 1 ? 'comentário' : 'comentários'} e ${totalAnnotations} ${totalAnnotations === 1 ? 'marcação' : 'marcações'} no arquivo.`}
+                                    </p>
+                                </div>
+                            </div>
                             <button
                                 type="button"
                                 onClick={() => setReviewModalOpen(true)}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3.5 py-1 text-xs font-semibold text-emerald-900 transition hover:bg-emerald-100 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200"
+                                className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition ${status === 'Alteração' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-[#003f35] hover:bg-[#12584b]'}`}
                             >
-                                <Eye size={13} /> Ver anotações no arquivo {totalComments > 0 ? `(${totalComments})` : ''}
+                                <Eye size={14} /> Revisar feedback
                             </button>
-                        )}
-                    </div>
+                        </div>
+                    )}
                     {orderOpen && (isMultiDeliverable && task.deliverables
                         ? <AllyoMultiDeliverableWorkspace
                             key={task.id}
@@ -613,31 +595,6 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             currentVersion={deliveryVersion}
                           />
                         : <DeliveryWorkspace kind={deliverableKind} />)}
-                    {status === 'Alteração' && (
-                        <div className="mx-5 my-4 sm:mx-[30px] flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-200 shadow-sm animate-in fade-in">
-                            <div className="flex items-center gap-3">
-                                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500 font-bold text-white text-sm shadow">
-                                    !
-                                </span>
-                                <div>
-                                    <strong className="block text-sm font-bold text-amber-950 dark:text-amber-100">O cliente solicitou alterações</strong>
-                                    <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-300">
-                                        Consulte as anotações do cliente na versão anterior e faça o upload do material revisado na <b>{latestVersionLabel}</b>.
-                                    </p>
-                                </div>
-                            </div>
-                            {activeReviewDesign && (
-                                <button
-                                    type="button"
-                                    onClick={() => setReviewModalOpen(true)}
-                                    className="flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-amber-700 transition"
-                                >
-                                    <Eye size={14} />
-                                    Ver anotações do cliente
-                                </button>
-                            )}
-                        </div>
-                    )}
                     {!isMultiDeliverable && (
                         <VersionBundle
                             kind={deliverableKind}
@@ -669,18 +626,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                     <div className="sticky top-[139px]">
                         <div className={`border-b p-5 ${ALLYO_BORDER}`}>
                             <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">{isInactive ? 'Tarefa inativa' : isCurrentlyBlocked ? 'Dependência do projeto' : 'Próxima ação'}</span>
-                            <h2 className="mt-2 font-season text-xl font-normal">{isInactive ? 'Execução pausada' : isCurrentlyBlocked ? 'Aguardando liberação' : isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
-                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isInactive ? 'A equipe administrativa pode reativar esta tarefa pelo menu de ações.' : isCurrentlyBlocked ? `Esta tarefa será liberada quando ${blockingTasks.join(' e ') || 'o bloqueio administrativo'} for removido.` : isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
-                            {activeReviewDesign && (
-                                <button
-                                    type="button"
-                                    onClick={() => setReviewModalOpen(true)}
-                                    className="mb-3 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full border border-[#003f35] bg-emerald-50/60 px-4 py-2 text-xs font-semibold text-[#003f35] transition hover:bg-emerald-100 dark:border-[#d0f08e] dark:bg-emerald-950/30 dark:text-[#d0f08e]"
-                                >
-                                    <Eye size={14} /> Ver anotações do cliente
-                                </button>
-                            )}
-                            <button
+                            <h2 className="mt-2 font-season text-xl font-normal">{isInactive ? 'Execução pausada' : isCurrentlyBlocked ? 'Aguardando liberação' : status === 'Nova' ? 'Iniciar a tarefa' : status === 'Em revisão' ? 'Aguardar retorno do cliente' : status === 'Entregue' ? 'Tarefa concluída' : status === 'Alteração' ? 'Preparar versão revisada' : isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
+                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isInactive ? 'A equipe administrativa pode reativar esta tarefa pelo menu de ações.' : isCurrentlyBlocked ? `Esta tarefa será liberada quando ${blockingTasks.join(' e ') || 'o bloqueio administrativo'} for removido.` : status === 'Nova' ? 'Mude o status para “Em andamento” quando começar a produção.' : status === 'Em revisão' ? 'A entrega já foi enviada. Você será avisado quando o cliente responder.' : status === 'Entregue' ? 'Nenhuma ação é necessária neste momento.' : status === 'Alteração' ? `Aplique o feedback na ${latestVersionLabel}, anexe o material e envie novamente.` : isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
+                            {isTaskInProgress && !isCurrentlyBlocked && !isInactive && <button
                                 type="button"
                                 disabled={!canSendForReview}
                                 onClick={() => setConfirmModalOpen(true)}
@@ -706,16 +654,10 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                             : 'Enviar para revisão'}
                                     </>
                                 )}
-                            </button>
-                            {!canSendForReview && (
+                            </button>}
+                            {isTaskInProgress && !isCurrentlyBlocked && !isInactive && !canSendForReview && (
                                 <p className="mt-2 text-center text-xs text-[#8f8f8f]">
-                                    {isInactive
-                                        ? 'Reative a tarefa para continuar.'
-                                        : isCurrentlyBlocked
-                                        ? 'O envio será liberado quando o bloqueio for removido.'
-                                        : !isTaskInProgress
-                                        ? 'A tarefa precisa estar "Em andamento" ou "Alteração" para anexar arquivos e enviar para aprovação.'
-                                        : isAnyFileUploading
+                                    {isAnyFileUploading
                                         ? 'Aguarde o upload dos arquivos terminar para enviar.'
                                         : isSendingReview
                                         ? 'Processando entrega na nuvem...'

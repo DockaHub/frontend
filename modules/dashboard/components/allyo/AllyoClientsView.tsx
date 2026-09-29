@@ -88,8 +88,7 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
                 {!isLoading && clients.length === 0 && (
                     <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
                         <strong className="text-sm font-semibold">{canManage ? 'Nenhuma empresa cadastrada' : 'Nenhum cliente atribuído'}</strong>
-                        <span className="mt-2 text-xs text-[#7f7f7f]">{canManage ? 'Cadastre a empresa responsável pelos projetos e usuários do cliente.' : 'Os clientes aparecerão quando você fizer parte da equipe de um projeto.'}</span>
-                        {canManage && <AllyoPrimaryButton className="mt-5" onClick={() => setIsCreateOpen(true)}><Plus size={15} /> Cadastrar empresa</AllyoPrimaryButton>}
+                        <span className="mt-2 text-xs text-[#7f7f7f]">{canManage ? 'Use “Novo cliente” no cabeçalho para cadastrar a primeira empresa.' : 'Os clientes aparecerão quando você fizer parte da equipe de um projeto.'}</span>
                     </div>
                 )}
             </section>

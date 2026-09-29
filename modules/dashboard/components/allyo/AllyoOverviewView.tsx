@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ALLYO_BORDER, ALLYO_TASKS, AllyoPageHeader, mapDemandToTasks, TaskRow, AllyoTask } from './AllyoUI';
 import { allyoService, type DemandsResponse } from '../../../../services/allyoService';
 import { socketService } from '../../../../services/socketService';
-import { Inbox, MessageSquare, Star, ThumbsUp } from 'lucide-react';
+import { Inbox, Star } from 'lucide-react';
 
 const credits = [
     { month: 'Jan', delivered: 0, approved: 0 },
@@ -78,7 +78,6 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
 
     // Tarefas a exibir
     const displayedTasks = queueTab === 'minhas' && myTasks.length > 0 ? myTasks.slice(0, 5) : allActiveTasks.slice(0, 5);
-    const displayedCount = queueTab === 'minhas' ? myTasks.length : allActiveTasks.length;
 
     // Avaliação média real calculada dinamicamente
     const averageRating = useMemo(() => {
@@ -149,7 +148,7 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
                                         : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
                                 }`}
                             >
-                                Minhas tarefas ({myTasks.length})
+                                Minhas tarefas
                             </button>
                             <button
                                 type="button"
@@ -160,13 +159,10 @@ const AllyoOverviewView = ({ userName }: { userName?: string }) => {
                                         : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
                                 }`}
                             >
-                                Todas da fila ({allActiveTasks.length})
+                                Todas da fila
                             </button>
                         </div>
                     </div>
-                    <span className="flex h-[25px] min-w-[25px] items-center justify-center rounded-full bg-[#ff0037] px-1.5 text-sm font-extrabold text-white">
-                        {displayedCount}
-                    </span>
                 </div>
 
                 {displayedTasks.map((task) => <TaskRow key={task.id} task={task} />)}

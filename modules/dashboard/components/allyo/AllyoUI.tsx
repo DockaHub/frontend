@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { readTaskActivity, subscribeToTaskActivity } from './allyoTaskActivity';
 
 export const ALLYO_BORDER = 'border-[#e5e5e5] dark:border-zinc-800';
 export const ALLYO_ACCENT = '#9db669';
@@ -233,11 +232,6 @@ const statusColor: Record<AllyoTask['status'], string> = {
 
 export const TaskRow = ({ task }: { task: AllyoTask }) => {
     const [, setSearchParams] = useSearchParams();
-    const [clientChanges, setClientChanges] = useState(() => readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
-
-    useEffect(() => subscribeToTaskActivity(task.id, () => {
-        setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change').length);
-    }), [task.id]);
 
     const openTask = () => {
         setSearchParams((current) => {
@@ -262,7 +256,6 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
                     <span className="min-w-0 text-sm font-medium leading-5 text-black dark:text-white">
                         <strong className="block truncate font-medium">{task.name}</strong>
                         <span className="block truncate text-[11px] text-[#777] dark:text-zinc-400">{task.projectName} · {task.category}</span>
-                        {clientChanges > 0 && <span className="mt-1 inline-block rounded-full bg-[#e6f2e8] px-2 py-1 text-[10px] font-semibold text-[#34704a] dark:bg-emerald-900/40 dark:text-emerald-200">{clientChanges} {clientChanges === 1 ? 'alteração do cliente' : 'alterações do cliente'}</span>}
                     </span>
                 </span>
                 <span className="min-w-0" aria-label={formatTaskCredits(task.credits)}>

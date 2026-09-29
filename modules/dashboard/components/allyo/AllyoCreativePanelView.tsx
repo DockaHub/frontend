@@ -138,18 +138,9 @@ const CreativeDetailsModal = ({ creative, onClose }: { creative: CreativeAsset |
 
                     <div className={`mt-6 grid grid-cols-2 border-y ${ALLYO_BORDER}`}>
                         <Detail icon={<UserRound size={16} />} label="DESIGNER RESPONSÁVEL" value={creative.designer} detail={creative.specialty} />
-                        <Detail icon={<Layers3 size={16} />} label="VERSÕES FEITAS" value={`${creative.versions} ${creative.versions === 1 ? 'versão' : 'versões'}`} detail={creative.approvedVersion > 0 ? `Aprovada na ${creative.approvedVersion}ª versão` : 'Aguardando aprovação'} borderLeft />
-                        <Detail icon={<Clock3 size={16} />} label="DATA DE ENVIO" value={creative.approvedAt} detail={creative.approvedVersion > 0 ? 'Aprovado pelo cliente' : 'Em análise'} />
+                        <Detail icon={<Layers3 size={16} />} label="VERSÕES FEITAS" value={`${creative.versions} ${creative.versions === 1 ? 'versão' : 'versões'}`} detail="Total de envios registrados" borderLeft />
+                        <Detail icon={<Clock3 size={16} />} label="DATA DE ENVIO" value={creative.approvedAt} detail="Última atualização" />
                         <Detail icon={<Palette size={16} />} label="FORMATO" value={creative.format.split(' • ')[0]} detail={creative.format.split(' • ')[1]} borderLeft />
-                    </div>
-
-                    <div className="mt-6 rounded-[14px] border border-[#dce7c4] bg-[#f7faef] p-4 dark:border-[#d0f08e]/20 dark:bg-[#d0f08e]/5">
-                        <h3 className="text-xs font-semibold text-[#647440] dark:text-[#d0f08e]">Histórico da peça</h3>
-                        <p className="mt-2 text-xs leading-5 text-[#72805a] dark:text-zinc-400">
-                            {creative.approvedVersion > 0
-                                ? `Esta peça foi aprovada na ${creative.approvedVersion}ª versão. O histórico ajuda o time criativo a entender as escolhas visuais e o padrão de aprovação deste cliente.`
-                                : 'Esta peça foi enviada para o cliente e está em processo de revisão.'}
-                        </p>
                     </div>
                 </div>
             </div>

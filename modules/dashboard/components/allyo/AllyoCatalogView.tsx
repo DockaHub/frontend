@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-    Archive, BookOpen, Check, ChevronRight, CircleDollarSign, Edit3,
+    Archive, BookOpen, Check, ChevronRight, CircleDollarSign,
     FileStack, Image as ImageIcon, Loader2, PackageOpen, Plus,
     RefreshCw, Search, Send, Trash2, Undo2, UploadCloud, X,
 } from 'lucide-react';
@@ -16,6 +16,7 @@ import {
     AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton,
     AllyoTextarea, AllyoToggle,
 } from './AllyoForm';
+import { useToast } from '../../../../context/ToastContext';
 
 type EditorSection = 'product' | 'pricing' | 'delivery';
 
@@ -123,10 +124,10 @@ const apiErrorMessage = (error: any, fallback: string) => {
 };
 
 const AllyoCatalogView = () => {
+    const { addToast } = useToast();
     const [products, setProducts] = useState<AllyoCatalogProduct[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
-    const [notice, setNotice] = useState('');
     const [query, setQuery] = useState('');
     const [category, setCategory] = useState('Todos');
     const [status, setStatus] = useState<'all' | AllyoCatalogProductStatus>('all');
@@ -171,7 +172,10 @@ const AllyoCatalogView = () => {
                 publishedInPublicCatalog: false,
                 visibleToClient: false,
             });
-            setNotice(`Produto ${action === 'publish' ? 'publicado' : action === 'archive' ? 'arquivado' : 'restaurado como rascunho'}.`);
+            addToast({
+                type: 'success',
+                title: action === 'publish' ? 'Produto publicado' : action === 'archive' ? 'Produto arquivado' : 'Produto restaurado',
+            });
             await loadCatalog();
         } catch (mutationError) {
             setError(apiErrorMessage(mutationError, `Não foi possível ${actionLabel} o produto.`));
@@ -192,14 +196,13 @@ const AllyoCatalogView = () => {
                 <span className="ml-auto text-[11px] font-medium text-[#8f8f8f]">{filtered.length} {filtered.length === 1 ? 'produto' : 'produtos'}</span>
             </div>
 
-            {notice && <div className={`flex items-center justify-between border-b bg-[#f3f7e9] px-5 py-3 text-xs text-[#566a2f] sm:px-[30px] dark:bg-[#9db669]/10 dark:text-[#d0f08e] ${ALLYO_BORDER}`}><span className="flex items-center gap-2"><Check size={15} /> {notice}</span><button onClick={() => setNotice('')} className="font-semibold">Fechar</button></div>}
             {error && <div className={`flex items-center justify-between gap-4 border-b bg-red-50 px-5 py-3 text-xs text-red-700 sm:px-[30px] dark:bg-red-950/30 dark:text-red-300 ${ALLYO_BORDER}`}><span>{error}</span><button onClick={() => void loadCatalog()} className="flex shrink-0 items-center gap-1 font-semibold"><RefreshCw size={13} /> Tentar novamente</button></div>}
 
             <section aria-live="polite" aria-label="Produtos do catálogo">
-                {isLoading ? <CatalogLoading /> : filtered.length === 0 ? <CatalogEmpty hasProducts={products.length > 0} onCreate={() => setEditing(null)} /> : <ProductList products={filtered} busyCode={busyCode} onEdit={(product) => setEditing(product)} onAction={mutateProduct} />}
+                {isLoading ? <CatalogLoading /> : filtered.length === 0 ? <CatalogEmpty hasProducts={products.length > 0} /> : <ProductList products={filtered} busyCode={busyCode} onEdit={(product) => setEditing(product)} onAction={mutateProduct} />}
             </section>
 
-            {editing !== undefined && <CatalogEditor product={editing} categories={categories} onClose={() => setEditing(undefined)} onSaved={async (message) => { setEditing(undefined); setNotice(message); await loadCatalog(); }} />}
+            {editing !== undefined && <CatalogEditor product={editing} categories={categories} onClose={() => setEditing(undefined)} onSaved={async (message) => { setEditing(undefined); addToast({ type: 'success', title: message }); await loadCatalog(); }} />}
         </div>
     );
 };
@@ -222,7 +225,6 @@ const ProductList = ({ products, busyCode, onEdit, onAction }: { products: Allyo
                 <DataCell label="VISIBILIDADE" value={product.visibleToClient ? 'Cliente' : 'Interno'} className="max-lg:hidden" />
                 <DataCell label="STATUS" value={meta.label} valueClassName={meta.textClasses} className="max-sm:hidden" />
                 <div className="flex justify-end gap-1">
-                    <button disabled={busy} onClick={() => onEdit(product)} title="Editar" aria-label={`Editar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-[#eef2e6] hover:text-[#63783b] disabled:opacity-40 dark:hover:bg-zinc-700"><Edit3 size={16} /></button>
                     {product.status === 'draft' && <button disabled={busy} onClick={() => onAction(product, 'publish')} title="Publicar" aria-label={`Publicar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40 dark:hover:bg-emerald-950/40">{busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}</button>}
                     {product.status === 'archived' ? <button disabled={busy} onClick={() => onAction(product, 'restore')} title="Restaurar" aria-label={`Restaurar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-amber-50 hover:text-amber-600 disabled:opacity-40 dark:hover:bg-amber-950/40">{busy ? <Loader2 size={16} className="animate-spin" /> : <Undo2 size={16} />}</button> : <button disabled={busy} onClick={() => onAction(product, 'archive')} title="Arquivar" aria-label={`Arquivar ${product.name}`} className="rounded-full p-2.5 text-[#999] hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/30"><Archive size={16} /></button>}
                 </div>
@@ -238,7 +240,7 @@ const ProductImage = ({ product }: { product: Pick<AllyoCatalogProduct, 'name' |
 );
 
 const CatalogLoading = () => <div className="flex min-h-[400px] items-center justify-center text-sm text-[#777]"><Loader2 size={20} className="mr-2 animate-spin text-[#9db669]" /> Carregando catálogo da Allyo…</div>;
-const CatalogEmpty = ({ hasProducts, onCreate }: { hasProducts: boolean; onCreate: () => void }) => <div className="flex min-h-[400px] flex-col items-center justify-center px-6 text-center"><PackageOpen size={34} className="text-[#aab39a]" /><strong className="mt-4 text-base">{hasProducts ? 'Nenhum produto neste filtro' : 'O catálogo ainda está vazio'}</strong><p className="mt-2 max-w-sm text-sm leading-6 text-[#777]">{hasProducts ? 'Ajuste a busca, categoria ou situação para encontrar outros produtos.' : 'Cadastre o primeiro serviço que poderá ser solicitado pelos clientes.'}</p>{!hasProducts && <AllyoPrimaryButton className="mt-5" onClick={onCreate}><Plus size={14} /> Novo produto</AllyoPrimaryButton>}</div>;
+const CatalogEmpty = ({ hasProducts }: { hasProducts: boolean }) => <div className="flex min-h-[400px] flex-col items-center justify-center px-6 text-center"><PackageOpen size={34} className="text-[#aab39a]" /><strong className="mt-4 text-base">{hasProducts ? 'Nenhum produto neste filtro' : 'O catálogo ainda está vazio'}</strong><p className="mt-2 max-w-sm text-sm leading-6 text-[#777]">{hasProducts ? 'Ajuste a busca, categoria ou situação para encontrar outros produtos.' : 'Use “Novo produto” no cabeçalho para cadastrar o primeiro serviço.'}</p></div>;
 
 const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: AllyoCatalogProduct | null; categories: string[]; onClose: () => void; onSaved: (message: string) => Promise<void> }) => {
     const isNew = !product;
