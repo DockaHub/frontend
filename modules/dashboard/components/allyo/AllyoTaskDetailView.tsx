@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine, Loader2 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine, Loader2, AlertCircle } from 'lucide-react';
 import AllyoReviewModal from './AllyoReviewModal';
 import AllyoSubmitConfirmModal from './AllyoSubmitConfirmModal';
 import { useSearchParams } from 'react-router-dom';
@@ -38,7 +38,75 @@ const briefingByKind = {
         { title: '3. Entrega', items: ['PDF gerado automaticamente pela Allyo', 'Arquivos de apoio são opcionais'] },
     ],
 };
-const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
+
+interface ErrorBoundaryProps {
+    children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+class TaskDetailErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+    constructor(props: ErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error('[AllyoTaskDetailView] Erro capturado pelo ErrorBoundary:', error, info);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="flex h-full min-h-[480px] w-full flex-col items-center justify-center p-8 text-center bg-white dark:bg-zinc-950">
+                    <div className="max-w-md rounded-2xl border border-red-200 bg-red-50/70 p-6 shadow-sm dark:border-red-900/40 dark:bg-red-950/20">
+                        <AlertCircle className="mx-auto h-12 w-12 text-red-500 mb-3" />
+                        <h2 className="font-season text-xl font-bold text-red-900 dark:text-red-200">
+                            Erro ao carregar a tarefa
+                        </h2>
+                        <p className="mt-2 text-xs text-red-700 dark:text-red-300">
+                            {this.state.error?.message || 'Ocorreu uma falha inesperada na renderização da tarefa.'}
+                        </p>
+                        <div className="mt-5 flex items-center justify-center gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    this.setState({ hasError: false, error: null });
+                                    window.location.reload();
+                                }}
+                                className="rounded-full bg-red-600 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-red-700 transition"
+                            >
+                                Recarregar página
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const params = new URLSearchParams(window.location.search);
+                                    params.delete('task');
+                                    params.set('view', 'overview');
+                                    window.location.search = params.toString();
+                                }}
+                                className="rounded-full border border-red-300 bg-white px-5 py-2 text-xs font-semibold text-red-800 hover:bg-red-50 transition dark:border-red-800 dark:bg-zinc-900 dark:text-red-300"
+                            >
+                                Voltar para Visão Geral
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const [searchParams, setSearchParams] = useSearchParams();
     const taskId = searchParams.get('task');
     const [liveTask, setLiveTask] = useState<AllyoTask | null>(null);
@@ -69,7 +137,21 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         return () => { active = false; };
     }, []);
 
-    const sourceTask = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || ALLYO_TASKS[0];
+    const defaultTask: AllyoTask = ALLYO_TASKS[0] || {
+        id: '123456',
+        name: 'Tarefa',
+        projectId: 'project-fauves-launch',
+        projectName: 'Campanha de lançamento',
+        credits: 1,
+        category: 'Design',
+        client: 'Fauves',
+        deadline: 'A definir',
+        time: 'A definir',
+        status: 'Em andamento',
+        cam: 'Marina',
+        creative: 'Levy',
+    };
+    const sourceTask = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || defaultTask;
     const task = { ...sourceTask, ...taskChanges };
     const project = liveDemand ? mapDemandToAllyoProject(liveDemand) : null;
     const projectTasks = project?.stages.flatMap((stage) => stage.tasks) || [];
@@ -77,12 +159,13 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const isTaskBlocked = projectTask?.status === 'blocked';
     const blockingTasks = (projectTask?.dependsOn || []).map((id) => projectTasks.find((item) => item.id === id)?.title).filter(Boolean);
     const taskResources = getTaskResources(task.id);
-    const [status, setStatus] = useState(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
+    const initialStatus = isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : (task.status || 'Em andamento');
+    const [status, setStatus] = useState<string>(initialStatus);
 
     const taskDesigns = useMemo(() => {
         return (liveDemand?.designs || [])
             .filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))))
-            .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || b.id) - (Number(String(a.version || '').replace(/\D/g, '')) || a.id));
+            .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || 0) - (Number(String(a.version || '').replace(/\D/g, '')) || 0));
     }, [liveDemand?.designs, task.id, task.publicId]);
 
     const activeReviewDesign = taskDesigns[0] || null;
@@ -133,25 +216,26 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
         ? selectedVersionByUser
         : latestVersionLabel;
 
-    const totalComments = activeReviewDesign?.comments?.length || 0;
-    const hasClientAnnotations = totalComments > 0 || (activeReviewDesign?.annotations && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
+    const totalComments = Array.isArray(activeReviewDesign?.comments) ? activeReviewDesign.comments.length : 0;
+    const hasClientAnnotations = totalComments > 0 || (Array.isArray(activeReviewDesign?.annotations) && activeReviewDesign.annotations.length > 0) || task.status === 'Em revisão' || task.status === 'Em andamento';
     const deliverableKind = getDeliverableKind(task);
-    const requestCopy = deliverableCopy[deliverableKind];
+    const requestCopy = deliverableCopy[deliverableKind] || deliverableCopy.social;
     const briefing = task.briefing
         ? [
             { title: '1. Objetivo desta tarefa', items: [task.briefing.objective].filter((item): item is string => Boolean(item)) },
             { title: '2. Contexto herdado do projeto', items: [task.briefing.overview, task.briefing.audience ? `Público: ${task.briefing.audience}` : null, task.briefing.tone ? `Tom: ${task.briefing.tone}` : null].filter((item): item is string => Boolean(item)) },
-            { title: '3. Entregáveis', items: task.briefing.deliverables || [] },
-            { title: '4. Formatos', items: task.briefing.formats || [] },
-            { title: '5. Direção criativa', items: task.briefing.creativeDirection || [] },
+            { title: '3. Entregáveis', items: Array.isArray(task.briefing.deliverables) ? task.briefing.deliverables : [] },
+            { title: '4. Formatos', items: Array.isArray(task.briefing.formats) ? task.briefing.formats : [] },
+            { title: '5. Direção criativa', items: Array.isArray(task.briefing.creativeDirection) ? task.briefing.creativeDirection : [] },
         ].filter((block) => block.items.length > 0)
-        : briefingByKind[deliverableKind];
+        : briefingByKind[deliverableKind] || briefingByKind.social;
     const isMultiDeliverable = Boolean(task.deliverables && task.deliverables.length > 1);
     const [descriptionOpen, setDescriptionOpen] = useState(true);
     const [orderOpen, setOrderOpen] = useState(true);
     const [brandKitOpen, setBrandKitOpen] = useState(false);
     const [filesByVersion, setFilesByVersion] = useState<Record<string, { approval: ManagedFile[]; source: ManagedFile[] }>>({
         'Versão 1': { approval: [], source: [] },
+        'Versão 2': { approval: [], source: [] },
     });
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
     const [readyDeliverables, setReadyDeliverables] = useState(0);
@@ -161,11 +245,13 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
     const [isSendingReview, setIsSendingReview] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
+    const approvalFiles = Array.isArray(currentFiles.approval) ? currentFiles.approval.filter(Boolean) : [];
+    const sourceFiles = Array.isArray(currentFiles.source) ? currentFiles.source.filter(Boolean) : [];
     const isCurrentlyBlocked = administrativeBlock ?? (isTaskBlocked || status === 'Bloqueada');
     const isInactive = status === 'Inativa';
     const isTaskInProgress = status?.trim()?.toLowerCase() === 'em andamento' || status === 'Alteração';
-    const isAnyFileUploading = currentFiles.approval.some((f) => f.uploading) || currentFiles.source.some((f) => f.uploading);
-    const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && (isMultiDeliverable ? readyDeliverables > 0 : currentFiles.approval.length > 0);
+    const isAnyFileUploading = approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
+    const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && (isMultiDeliverable ? readyDeliverables > 0 : approvalFiles.length > 0);
 
     useEffect(() => {
         const refresh = () => setClientChanges(readTaskActivity(task.id).filter((item) => item.type === 'client_file_change' || (item.type === 'message' && item.role === 'client')).length);
@@ -335,7 +421,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
             });
 
             // Atualiza estado local de designs para incluir a nova entrega enviada
-            setLiveDemand((current) => {
+            setLiveDemand((current: any) => {
                 if (!current) return current;
                 const newDesign = {
                     id: Date.now(),
@@ -447,7 +533,7 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                         </button>
                     </div>
                 )}
-                {task.feedback && (
+                {task.feedback && typeof task.feedback.rating === 'number' && !isNaN(task.feedback.rating) && (
                     <div className="mx-5 my-4 sm:mx-[30px] rounded-xl border border-amber-200/90 bg-amber-50/70 p-4 dark:border-amber-900/50 dark:bg-amber-950/20">
                         <div className="flex items-start justify-between gap-3">
                             <div className="space-y-1">
@@ -461,11 +547,11 @@ const AllyoTaskDetailView = ({ userName }: { userName?: string }) => {
                                             <Star
                                                 key={i}
                                                 size={15}
-                                                className={i < task.feedback!.rating ? 'fill-amber-400 text-amber-400' : 'text-zinc-300 dark:text-zinc-700'}
+                                                className={i < (task.feedback?.rating ?? 0) ? 'fill-amber-400 text-amber-400' : 'text-zinc-300 dark:text-zinc-700'}
                                             />
                                         ))}
                                         <span className="ml-1 text-xs font-bold text-amber-900 dark:text-amber-200">
-                                            {task.feedback.rating.toFixed(1)} / 5.0
+                                            {Number(task.feedback.rating || 0).toFixed(1)} / 5.0
                                         </span>
                                     </div>
                                 </div>
@@ -672,5 +758,11 @@ const CollapsibleSection = ({ title, icon, open, onToggle, children }: { title: 
 );
 
 const BriefingBlock = ({ title, items }: { title: string; items: string[] }) => <div><h3 className="font-semibold text-black dark:text-zinc-200">{title}</h3><ul className="mt-1 list-disc pl-5">{items.map((item) => <li key={item}>{item}</li>)}</ul></div>;
+
+const AllyoTaskDetailView = (props: { userName?: string }) => (
+    <TaskDetailErrorBoundary>
+        <AllyoTaskDetailViewInner {...props} />
+    </TaskDetailErrorBoundary>
+);
 
 export default AllyoTaskDetailView;

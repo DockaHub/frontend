@@ -42,7 +42,7 @@ const mapStatus = (task: AllyoDemandTask): AllyoFlowTaskStatus => {
     if (task.dependencyBlocked || task.status === 'Bloqueada') return 'blocked';
     if (task.status === 'Concluído' || task.status === 'Concluída') return 'done';
     if (task.status === 'Em revisão') return 'review';
-    if (task.status === 'Em andamento') return 'in_progress';
+    if (task.status === 'Em andamento' || task.status === 'Alteração' || (task as any).status === 'Em alteração') return 'in_progress';
     return 'available';
 };
 

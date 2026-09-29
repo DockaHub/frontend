@@ -73,8 +73,8 @@ const CompactFlow = ({ project, currentTaskId, inProgress, blocked }: { project:
                     <span className="mr-2 text-[9px] font-bold uppercase tracking-[.06em] text-[#858d85]">{stage.title}</span>
                     <span className="flex items-center gap-1">
                         {stage.tasks.map((task) => {
-                            const status = statusCopy[task.status];
-                            const StatusIcon = status.icon;
+                            const status = statusCopy[task.status] || statusCopy.available;
+                            const StatusIcon = status?.icon || statusCopy.available.icon;
                             return <span key={task.id} title={`${task.title} · ${status.label}`} aria-label={`${task.title}: ${status.label}`} className={`inline-flex h-6 w-6 items-center justify-center rounded-[6px] ${status.className} ${task.id === currentTaskId ? 'ring-2 ring-[#9db669] ring-offset-1 dark:ring-offset-zinc-900' : ''}`}><StatusIcon size={11} /></span>;
                         })}
                     </span>
@@ -87,8 +87,8 @@ const CompactFlow = ({ project, currentTaskId, inProgress, blocked }: { project:
 );
 
 const FlowTaskCard = ({ task, current, tasksById, parallel }: { task: AllyoFlowTask; current: boolean; tasksById: Map<string, AllyoFlowTask>; parallel: boolean }) => {
-    const status = statusCopy[task.status];
-    const StatusIcon = status.icon;
+    const status = statusCopy[task.status] || statusCopy.available;
+    const StatusIcon = status?.icon || statusCopy.available.icon;
     const blockers = (task.dependsOn || []).map((id) => {
         const dependency = tasksById.get(id);
         if (!dependency) return null;

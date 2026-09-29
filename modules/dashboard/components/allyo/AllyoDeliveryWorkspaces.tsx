@@ -278,7 +278,8 @@ export const VersionBundle = ({
 }) => {
     const approvalAccept = kind === 'social' || kind === 'landing' ? '.png,.jpg,.jpeg,.pdf' : '.pdf';
     const sourceAccept = kind === 'landing' ? '.fig,.zip' : kind === 'presentation' ? '.ppt,.pptx,.ai,.indd,.zip' : kind === 'storyboard' ? '.ppt,.pptx,.psd,.ai,.zip' : '.psd,.ai,.fig,.zip';
-    const displayedOptions = versionOptions && versionOptions.length > 0 ? versionOptions : [version || 'Versão 1'];
+    const displayedOptions = Array.isArray(versionOptions) && versionOptions.length > 0 ? versionOptions : [version || 'Versão 1'];
+    const safeCopy = deliverableCopy[kind] || deliverableCopy.social;
     return (
         <section className={`border-b ${ALLYO_BORDER}`}>
             <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}>
@@ -300,7 +301,7 @@ export const VersionBundle = ({
                 <FileSlot
                     icon={<CheckCircle2 size={17} />}
                     title="Arquivo para aprovação"
-                    description={kind === 'storyboard' ? 'PDF gerado pela Allyo ou enviado manualmente.' : `Material que o cliente irá visualizar · ${deliverableCopy[kind].approval}`}
+                    description={kind === 'storyboard' ? 'PDF gerado pela Allyo ou enviado manualmente.' : `Material que o cliente irá visualizar · ${safeCopy?.approval || 'PNG'}`}
                     files={approvalFiles}
                     onFilesChange={onApprovalFilesChange}
                     accept={approvalAccept}
@@ -311,7 +312,7 @@ export const VersionBundle = ({
                 <FileSlot
                     icon={<FileText size={17} />}
                     title={kind === 'storyboard' ? 'Arquivos complementares' : 'Arquivo editável'}
-                    description={kind === 'storyboard' ? 'Opcional: referências ou fonte usada nos frames.' : `Fonte de trabalho · ${deliverableCopy[kind].software}`}
+                    description={kind === 'storyboard' ? 'Opcional: referências ou fonte usada nos frames.' : `Fonte de trabalho · ${safeCopy?.software || 'Photoshop'}`}
                     files={sourceFiles}
                     onFilesChange={onSourceFilesChange}
                     accept={sourceAccept}
@@ -359,7 +360,8 @@ export const FileSlot = ({
     disabledReason?: string;
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const isUploadingAny = files.some((f) => f.uploading);
+    const safeFiles = Array.isArray(files) ? files.filter(Boolean) : [];
+    const isUploadingAny = safeFiles.some((f) => Boolean(f?.uploading));
 
     const addFiles = async (incoming: FileList | null) => {
         if (disabled) return;
@@ -469,9 +471,9 @@ export const FileSlot = ({
                     event.target.value = "";
                 }}
             />
-            {files.length > 0 && (
+            {safeFiles.length > 0 && (
                 <div className="mt-3 space-y-2">
-                    {files.map((file) => (
+                    {safeFiles.map((file) => (
                         <div key={file.id} className="relative overflow-hidden rounded-[9px] border border-zinc-200/80 bg-[#f7f8f5] px-3 py-2.5 text-xs transition dark:border-zinc-800 dark:bg-zinc-900">
                             <div className="flex items-center gap-2">
                                 {file.uploading ? (
