@@ -276,6 +276,8 @@ export interface AllyoDemandTask {
     status: 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Concluído' | string;
     delivery?: string | null;
     version?: string | null;
+    taskType?: string | null;
+    deliverySchema?: { taskType?: string | null; [key: string]: unknown } | null;
     workflowStage?: string;
     dependsOn?: string[];
     requiresClientApproval?: boolean;
@@ -288,6 +290,7 @@ export interface AllyoDemandTask {
     orderIndex?: number;
     briefing?: {
         inheritedFromProject: boolean;
+        taskType?: string | null;
         catalogCode?: string | null;
         overview?: string | null;
         objective?: string | null;
@@ -465,12 +468,12 @@ export const allyoService = {
         return response.data;
     },
 
-    async createProjectTask(projectId: string, data: { title: string; team?: string; assignee?: string | null; assigneeId?: string | null; status?: string; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
+    async createProjectTask(projectId: string, data: { title: string; team?: string; assignee?: string | null; assigneeId?: string | null; status?: string; delivery?: string | null; taskType?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/tasks`, data);
         return response.data;
     },
 
-    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; assigneeId?: string | null; delivery?: string | null; version?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
+    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; assigneeId?: string | null; delivery?: string | null; version?: string | null; taskType?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.patch(`/allyo/tasks/${encodeURIComponent(taskId)}`, data);
         return response.data;
     },

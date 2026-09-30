@@ -23,8 +23,9 @@ import {
 import type { AllyoTask } from './AllyoUI';
 import { ALLYO_BORDER, FilterSelect } from './AllyoUI';
 import AllyoFileViewerModal, { type AllyoPreviewFile } from './AllyoFileViewerModal';
+import { ALLYO_TASK_PRESENTATIONS, getAllyoTaskItemCount, getAllyoTaskPresentation, resolveAllyoTaskType, type AllyoTaskType } from './allyoTaskPresentation';
 
-export type DeliverableKind = 'social' | 'landing' | 'presentation' | 'storyboard';
+export type DeliverableKind = AllyoTaskType;
 
 export interface ManagedFile {
     id: string;
@@ -37,26 +38,25 @@ export interface ManagedFile {
     error?: string;
 }
 
-export const getDeliverableKind = (task: AllyoTask): DeliverableKind => {
-    const searchable = `${task.name} ${task.category}`.toLowerCase();
-    if (searchable.includes('landing')) return 'landing';
-    if (searchable.includes('apresenta')) return 'presentation';
-    if (searchable.includes('storyboard') || searchable.includes('roteiro')) return 'storyboard';
-    return 'social';
-};
+export const getDeliverableKind = (task: AllyoTask): DeliverableKind => resolveAllyoTaskType(task);
 
-export const deliverableCopy: Record<DeliverableKind, { type: string; count: string; approval: string; editable: string; software: string; next: string; helper: string }> = {
-    social: { type: 'Post para Instagram', count: '1 entrega', approval: 'PNG', editable: '1 arquivo editável', software: 'Photoshop', next: 'Produzir a primeira versão', helper: 'Revise o briefing, faça o upload da peça e envie para a revisão interna.' },
-    landing: { type: 'Landing page', count: '4 seções', approval: 'PNG ou PDF', editable: '1 arquivo editável', software: 'Figma', next: 'Concluir as seções da página', helper: 'Revise copy e responsividade antes de anexar o preview completo da página.' },
-    presentation: { type: 'Apresentação', count: '8 slides', approval: 'PDF', editable: '1 arquivo editável', software: 'PowerPoint', next: 'Revisar slides e arquivos', helper: 'Confira as pendências por slide e envie PDF e editável dentro da mesma versão.' },
-    storyboard: { type: 'Storyboard', count: '4 cenas', approval: 'PDF gerado', editable: '1 arquivo editável', software: 'Allyo', next: 'Montar e revisar as cenas', helper: 'Preencha os campos de cada cena e anexe o arquivo aberto junto do PDF para aprovação.' },
-};
+export const deliverableCopy = Object.fromEntries(Object.entries(ALLYO_TASK_PRESENTATIONS).map(([key, definition]) => [key, {
+    type: definition.label,
+    count: `${definition.defaultCount} ${definition.itemLabel}${definition.defaultCount === 1 ? '' : 's'}`,
+    approval: definition.approval,
+    editable: definition.editable,
+    software: definition.software,
+    next: definition.creativeNext,
+    helper: definition.creativeHelper,
+}])) as Record<DeliverableKind, { type: string; count: string; approval: string; editable: string; software: string; next: string; helper: string }>;
 
-export const DeliveryWorkspace = ({ kind }: { kind: DeliverableKind }) => {
+export const DeliveryWorkspace = ({ kind, task }: { kind: DeliverableKind; task: AllyoTask }) => {
     if (kind === 'landing') return <LandingWorkspace />;
     if (kind === 'presentation') return <PresentationWorkspace />;
     if (kind === 'storyboard') return <StoryboardWorkspace />;
-    return <SocialWorkspace />;
+    if (kind === 'carousel') return <CarouselWorkspace task={task} />;
+    if (kind === 'social') return <SocialWorkspace />;
+    return <StructuredWorkspace task={task} />;
 };
 
 const landingSections = [
@@ -241,6 +241,47 @@ const StoryboardWorkspace = () => {
     );
 };
 
+const taskItems = (task: AllyoTask) => {
+    const detailedItems = (task.deliverables || []).flatMap((deliverable) =>
+        deliverable.scenes?.length
+            ? deliverable.scenes.map((scene) => ({ id: `${deliverable.id}-${scene.id}`, title: scene.title || scene.label, description: scene.copy || deliverable.title }))
+            : [{ id: deliverable.id, title: deliverable.title, description: `${deliverable.format} · ${deliverable.approvalFormat}` }],
+    );
+    if (detailedItems.length > 0) return detailedItems;
+    return (task.briefing?.deliverables || []).map((title, index) => ({ id: `briefing-${index}`, title, description: task.briefing?.formats?.join(' · ') || 'Conforme briefing' }));
+};
+
+const CarouselWorkspace = ({ task }: { task: AllyoTask }) => {
+    const items = taskItems(task);
+    const cards = items.length > 0 ? items : [{ id: 'card-1', title: 'Card principal', description: 'Conteúdo definido no briefing' }];
+    return (
+        <WorkspaceShell icon={<LayoutTemplate size={17} />} title={`Carrossel · ${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`} subtitle="A sequência, a continuidade visual e o CTA são revisados como uma única entrega.">
+            <div className="flex gap-3 overflow-x-auto pb-2">
+                {cards.map((card, index) => <article key={card.id} className={`min-w-[210px] max-w-[240px] flex-1 overflow-hidden rounded-[12px] border bg-white dark:bg-zinc-950 ${ALLYO_BORDER}`}><div className="flex aspect-[4/5] flex-col justify-between bg-gradient-to-br from-[#eef3e4] via-white to-[#e6e9ff] p-5 dark:from-zinc-900 dark:via-zinc-950 dark:to-[#283024]"><span className="text-[10px] font-bold uppercase tracking-[.1em] text-[#7c8f56]">Card {String(index + 1).padStart(2, '0')}</span><div><strong className="block font-season text-xl leading-tight">{card.title}</strong><p className="mt-2 text-xs leading-5 text-[#747b72] dark:text-zinc-400">{card.description}</p></div><span className="h-1 w-10 rounded-full bg-[#9db669]" /></div></article>)}
+            </div>
+        </WorkspaceShell>
+    );
+};
+
+const StructuredWorkspace = ({ task }: { task: AllyoTask }) => {
+    const definition = getAllyoTaskPresentation(task);
+    const items = taskItems(task);
+    const count = getAllyoTaskItemCount(task, definition);
+    return (
+        <WorkspaceShell icon={<FileText size={17} />} title={`${definition.label} · ${count} ${definition.itemLabel}${count === 1 ? '' : 's'}`} subtitle={definition.creativeHelper}>
+            <div className={`grid overflow-hidden rounded-[14px] border lg:grid-cols-[minmax(0,1fr)_300px] ${ALLYO_BORDER}`}>
+                <div className="p-5 sm:p-6">
+                    <span className="text-[10px] font-bold uppercase tracking-[.08em] text-[#829454]">Estrutura da entrega</span>
+                    <div className="mt-4 space-y-2">
+                        {(items.length > 0 ? items : [{ id: 'single', title: task.name, description: task.briefing?.objective || 'Siga as orientações do briefing.' }]).map((item, index) => <div key={item.id} className={`flex items-start gap-3 rounded-[10px] border p-3 ${ALLYO_BORDER}`}><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[#eef3e4] text-[11px] font-bold text-[#71854e] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]">{index + 1}</span><span><strong className="block text-xs font-semibold">{item.title}</strong><small className="mt-1 block text-[11px] leading-4 text-[#858b84]">{item.description}</small></span></div>)}
+                    </div>
+                </div>
+                <aside className={`border-t bg-[#fafbf8] lg:border-l lg:border-t-0 dark:bg-zinc-900/50 ${ALLYO_BORDER}`}><Specification label="Aprovação" value={definition.approval} /><Specification label="Editável" value={definition.editable} /><Specification label="Software" value={definition.software} last /></aside>
+            </div>
+        </WorkspaceShell>
+    );
+};
+
 const SocialWorkspace = () => (
     <WorkspaceShell icon={<ImageIcon size={17} />} title="Post para Instagram · 1080 × 1350 px" subtitle="Conteúdo e especificações da peça selecionada.">
         <div className={`grid overflow-hidden rounded-[14px] border ${ALLYO_BORDER} lg:grid-cols-[1.25fr_.75fr]`}>
@@ -277,8 +318,9 @@ export const VersionBundle = ({
     disabled?: boolean;
     disabledReason?: string;
 }) => {
-    const approvalAccept = kind === 'social' || kind === 'landing' ? '.png,.jpg,.jpeg,.pdf' : '.pdf';
-    const sourceAccept = kind === 'landing' ? '.fig,.zip' : kind === 'presentation' ? '.ppt,.pptx,.ai,.indd,.zip' : kind === 'storyboard' ? '.ppt,.pptx,.psd,.ai,.zip' : '.psd,.ai,.fig,.zip';
+    const definition = ALLYO_TASK_PRESENTATIONS[kind] || ALLYO_TASK_PRESENTATIONS.generic;
+    const approvalAccept = definition.approvalAccept;
+    const sourceAccept = definition.sourceAccept;
     const displayedOptions = Array.isArray(versionOptions) && versionOptions.length > 0 ? versionOptions : [version || 'Versão 1'];
     const safeCopy = deliverableCopy[kind] || deliverableCopy.social;
     return (
@@ -302,7 +344,7 @@ export const VersionBundle = ({
                 <FileSlot
                     icon={<CheckCircle2 size={17} />}
                     title="Arquivo para aprovação"
-                    description={kind === 'storyboard' ? 'PDF gerado pela Allyo ou enviado manualmente.' : `Material que o cliente irá visualizar · ${safeCopy?.approval || 'PNG'}`}
+                    description={`Material que o cliente irá visualizar · ${safeCopy?.approval || definition.approval}`}
                     files={approvalFiles}
                     onFilesChange={onApprovalFilesChange}
                     accept={approvalAccept}

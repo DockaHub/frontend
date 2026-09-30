@@ -10,6 +10,7 @@ import { AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton, Allyo
 import type { AllyoTask } from './AllyoUI';
 import { addTaskActivity, readTaskActivity } from './allyoTaskActivity';
 import AllyoUserPicker from './AllyoUserPicker';
+import { ALLYO_TASK_PRESENTATIONS, resolveAllyoTaskType, type AllyoTaskType } from './allyoTaskPresentation';
 
 type Confirmation = 'deactivate-project' | 'deactivate-task' | 'delete-task' | null;
 
@@ -53,6 +54,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     const [title, setTitle] = useState(task.name);
     const [team, setTeam] = useState(task.category);
     const [credits, setCredits] = useState(task.credits);
+    const [taskType, setTaskType] = useState<AllyoTaskType>(() => resolveAllyoTaskType(task));
     const [responsibleId, setResponsibleId] = useState<string[]>([]);
     const [responsibleUsers, setResponsibleUsers] = useState<AllyoUser[]>([]);
     const [stackTasks, setStackTasks] = useState<AllyoDemandTask[]>([]);
@@ -72,7 +74,8 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         setTitle(task.name);
         setTeam(task.category);
         setCredits(task.credits);
-    }, [task.category, task.creative, task.credits, task.id, task.name]);
+        setTaskType(resolveAllyoTaskType(task));
+    }, [task.category, task.creative, task.credits, task.id, task.name, task.taskType]);
 
     useEffect(() => {
         if (modal !== 'responsible') return;
@@ -120,6 +123,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
             setTitle(task.name);
             setTeam(task.category);
             setCredits(task.credits);
+            setTaskType(resolveAllyoTaskType(task));
         }
         if (next === 'responsible') setResponsibleId([]);
         if (next === 'project') {
@@ -143,9 +147,9 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         if (normalizedTitle.length < 2 || !normalizedTeam || credits <= 0) return;
         setIsSaving(true);
         try {
-            await allyoService.updateTask(task.id, { title: normalizedTitle, team: normalizedTeam, credits });
-            onTaskEdited({ name: normalizedTitle, category: normalizedTeam, credits, estimatedHours: credits * 12 });
-            recordAction(`Editou a tarefa: título, equipe e custo de ${credits.toLocaleString('pt-BR')} crédito(s) foram atualizados.`);
+            await allyoService.updateTask(task.id, { title: normalizedTitle, team: normalizedTeam, credits, taskType });
+            onTaskEdited({ name: normalizedTitle, category: normalizedTeam, credits, estimatedHours: credits * 12, taskType });
+            recordAction(`Editou a tarefa: título, tipo de entrega, equipe e custo de ${credits.toLocaleString('pt-BR')} crédito(s) foram atualizados.`);
             setModal(null);
             addToast({ type: 'success', title: 'Tarefa atualizada', message: 'As alterações foram salvas no projeto.' });
         } catch (error: any) {
@@ -236,6 +240,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                 title: `${task.name} (cópia)`,
                 team: task.category,
                 credits: task.credits,
+                taskType: resolveAllyoTaskType(task),
                 status: 'A iniciar',
             });
             recordAction('Criou uma cópia desta tarefa no mesmo projeto.');
@@ -365,6 +370,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                 <form id="allyo-edit-task" onSubmit={saveTask} className="space-y-4">
                     <p className="text-sm leading-6 text-[#777] dark:text-zinc-400">Altere as informações operacionais sem sair do contexto do projeto.</p>
                     <AllyoField label="Nome da tarefa" required><AllyoInput required minLength={2} value={title} onChange={(event) => setTitle(event.target.value)} /></AllyoField>
+                    <AllyoField label="Tipo de entrega" required><AllyoSelect value={taskType} onChange={(event) => setTaskType(event.target.value as AllyoTaskType)}>{Object.values(ALLYO_TASK_PRESENTATIONS).map((definition) => <option key={definition.type} value={definition.type}>{definition.label}</option>)}</AllyoSelect></AllyoField>
                     <AllyoField label="Equipe ou especialidade" required><AllyoInput required value={team} onChange={(event) => setTeam(event.target.value)} placeholder="Ex.: Design, Motion ou Storyboard" /></AllyoField>
                     <AllyoField label="Créditos da tarefa" hint="1 crédito = 12 horas"><AllyoInput required type="number" min="0.01" step="0.01" value={credits} onChange={(event) => setCredits(Number(event.target.value))} /></AllyoField>
                     <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] px-4 py-3 text-xs text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">Prazo automático desta tarefa: <strong>{(credits * 12).toLocaleString('pt-BR')} horas</strong>.</div>

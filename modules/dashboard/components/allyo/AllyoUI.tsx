@@ -15,7 +15,7 @@ export interface AllyoDeliverableScene {
 export interface AllyoDeliverable {
     id: string;
     title: string;
-    type: 'Carrossel' | 'Estático';
+    type: string;
     format: string;
     approvalFormat: string;
     software: string;
@@ -44,9 +44,11 @@ export interface AllyoTask {
     dependencyBlocked?: boolean;
     delivery?: string | null;
     version?: string | null;
+    taskType?: string | null;
     deliverables?: AllyoDeliverable[];
     briefing?: {
         inheritedFromProject: boolean;
+        catalogCode?: string | null;
         overview?: string | null;
         objective?: string | null;
         audience?: string | null;
@@ -85,16 +87,20 @@ const mapTaskStatus = (status: string): AllyoTask['status'] => {
     return statusMap[status] || 'Em andamento';
 };
 
-const demandDeliverables = (demand: any): AllyoDeliverable[] | undefined => Array.isArray(demand.briefing?.deliverables)
-    ? demand.briefing.deliverables.map((d: any, idx: number) => ({
-        id: `deliv-${idx}`,
-        title: typeof d === 'string' ? d : d.title || `Entregável ${idx + 1}`,
-        type: (typeof d === 'string' && d.toLowerCase().includes('carrossel')) ? 'Carrossel' as const : 'Estático' as const,
-        format: '1080x1350',
-        approvalFormat: 'PNG',
-        software: 'Figma',
-        scenes: [],
-    }))
+const demandDeliverables = (source: any): AllyoDeliverable[] | undefined => Array.isArray(source?.deliverables)
+    ? source.deliverables.map((deliverable: any, idx: number) => {
+        const title = typeof deliverable === 'string' ? deliverable : deliverable.title || `Entregável ${idx + 1}`;
+        const inferredType = String(typeof deliverable === 'string' ? deliverable : deliverable.type || '').toLowerCase().includes('carrossel') ? 'Carrossel' : 'Estático';
+        return {
+            id: typeof deliverable === 'object' && deliverable.id ? String(deliverable.id) : `deliv-${idx}`,
+            title,
+            type: typeof deliverable === 'object' && deliverable.type ? String(deliverable.type) : inferredType,
+            format: typeof deliverable === 'object' && deliverable.format ? String(deliverable.format) : 'Conforme briefing',
+            approvalFormat: typeof deliverable === 'object' && deliverable.approvalFormat ? String(deliverable.approvalFormat) : 'Conforme briefing',
+            software: typeof deliverable === 'object' && deliverable.software ? String(deliverable.software) : 'Conforme especialidade',
+            scenes: typeof deliverable === 'object' && Array.isArray(deliverable.scenes) ? deliverable.scenes : [],
+        };
+    })
     : undefined;
 
 export function mapDemandToTasks(demand: any): AllyoTask[] {
@@ -104,7 +110,7 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         ? demand.tasksList
         : [{ id: demand.id, projectId: demand.id, title: demand.name, team: demand.service || 'Design', status: demand.status }];
 
-    return sourceTasks.map((task: any, index: number) => ({
+    return sourceTasks.map((task: any) => ({
         id: task.id,
         publicId: task.publicId || numericTaskId(task.id),
         name: task.title || demand.name,
@@ -132,7 +138,8 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         dependencyBlocked: Boolean(task.dependencyBlocked),
         delivery: task.delivery,
         version: task.version,
-        deliverables: index === 0 ? demandDeliverables(demand) : undefined,
+        taskType: task.taskType || task.deliverySchema?.taskType || task.briefing?.taskType || null,
+        deliverables: demandDeliverables(task.briefing) || (sourceTasks.length === 1 ? demandDeliverables(demand.briefing) : undefined),
         briefing: task.briefing,
         feedback: task.feedback || null,
     }));

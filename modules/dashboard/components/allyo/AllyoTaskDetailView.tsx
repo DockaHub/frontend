@@ -10,11 +10,13 @@ import AllyoTaskChat from './AllyoTaskChat';
 import AllyoProjectFlow from './AllyoProjectFlow';
 import AllyoTaskResources from './AllyoTaskResources';
 import AllyoTaskActions from './AllyoTaskActions';
+import AllyoClientDeliveryWorkspace from './AllyoClientDeliveryWorkspace';
 import { addTaskActivity } from './allyoTaskActivity';
 import { mapDemandToAllyoProject } from './allyoProjects';
 import { getTaskResources } from './allyoTaskResourceData';
-import { allyoService, type AllyoDemand } from '../../../../services/allyoService';
+import { allyoService, type AllyoDemand, type AllyoUserCategory } from '../../../../services/allyoService';
 import { useToast } from '../../../../context/ToastContext';
+import { getAllyoTaskItemCount, getAllyoTaskPresentation } from './allyoTaskPresentation';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Alteração', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -115,6 +117,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const [liveDemand, setLiveDemand] = useState<AllyoDemand | null>(null);
     const [taskChanges, setTaskChanges] = useState<Partial<AllyoTask>>({});
     const [canManageTask, setCanManageTask] = useState(false);
+    const [viewerCategory, setViewerCategory] = useState<AllyoUserCategory | null>(null);
+    const [permissionsLoaded, setPermissionsLoaded] = useState(false);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
 
     useEffect(() => {
@@ -134,8 +138,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     useEffect(() => {
         let active = true;
         allyoService.getPermissions()
-            .then((permissions) => { if (active) setCanManageTask(permissions.canManageProjects); })
-            .catch(() => { if (active) setCanManageTask(false); });
+            .then((permissions) => { if (active) { setCanManageTask(permissions.canManageProjects); setViewerCategory(permissions.category); setPermissionsLoaded(true); } })
+            .catch(() => { if (active) { setCanManageTask(false); setViewerCategory(null); setPermissionsLoaded(true); } });
         return () => { active = false; };
     }, []);
 
@@ -224,7 +228,10 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const totalAnnotations = Array.isArray(activeReviewDesign?.annotations) ? activeReviewDesign.annotations.length : 0;
     const hasClientAnnotations = totalComments > 0 || totalAnnotations > 0;
     const deliverableKind = getDeliverableKind(task);
+    const taskPresentation = getAllyoTaskPresentation(task);
     const requestCopy = deliverableCopy[deliverableKind] || deliverableCopy.social;
+    const taskItemCount = getAllyoTaskItemCount(task, taskPresentation);
+    const isClientView = permissionsLoaded && !canManageTask && (viewerCategory === 'CLIENTE' || viewerCategory === null);
     const briefing = task.briefing
         ? [
             { title: '1. Objetivo desta tarefa', items: [task.briefing.objective].filter((item): item is string => Boolean(item)) },
@@ -233,8 +240,14 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             { title: '4. Formatos', items: Array.isArray(task.briefing.formats) ? task.briefing.formats : [] },
             { title: '5. Direção criativa', items: Array.isArray(task.briefing.creativeDirection) ? task.briefing.creativeDirection : [] },
         ].filter((block) => block.items.length > 0)
-        : briefingByKind[deliverableKind] || briefingByKind.social;
-    const isMultiDeliverable = Boolean(task.deliverables && task.deliverables.length > 1);
+        : briefingByKind[deliverableKind as keyof typeof briefingByKind] || [
+            { title: `1. Objetivo de ${taskPresentation.label.toLocaleLowerCase('pt-BR')}`, items: [taskPresentation.creativeHelper] },
+            { title: '2. Estrutura', items: [`Organizar a entrega em ${taskPresentation.itemLabel}${taskItemCount === 1 ? '' : 's'} conforme o briefing`, `Formato de aprovação: ${taskPresentation.approval}`] },
+            { title: '3. Entrega', items: [`Anexar ${taskPresentation.editable}`, `Produção em ${taskPresentation.software}`] },
+        ];
+    const deliverableTypes = new Set((task.deliverables || []).map((item) => item.type.trim().toLocaleLowerCase('pt-BR')).filter(Boolean));
+    const hasSeveralDeliverables = Boolean(task.deliverables && task.deliverables.length > 1);
+    const isMultiDeliverable = hasSeveralDeliverables && (deliverableTypes.size > 1 || taskPresentation.type === 'social' || taskPresentation.type === 'generic');
     const [descriptionOpen, setDescriptionOpen] = useState(true);
     const [orderOpen, setOrderOpen] = useState(true);
     const [brandKitOpen, setBrandKitOpen] = useState(false);
@@ -261,7 +274,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const isAnyFileUploading = isMultiFileUploading || approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
     const hasApprovalReady = isMultiDeliverable ? readyDeliverables > 0 : approvalFiles.some((file) => Boolean(file.fileUrl) && !file.error);
     const hasSourceReady = isMultiDeliverable ? Boolean(multiSourceFileUrl) : sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error);
-    const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && isCurrentVersionSelected && hasApprovalReady && hasSourceReady;
+    const canSendForReview = permissionsLoaded && !isClientView && isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && isCurrentVersionSelected && hasApprovalReady && hasSourceReady;
 
     useEffect(() => {
         setStatus(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
@@ -376,6 +389,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 ...(changes.dependsOn !== undefined ? { dependsOn: changes.dependsOn } : {}),
                 ...(changes.requiresClientApproval !== undefined ? { requiresClientApproval: changes.requiresClientApproval } : {}),
                 ...(changes.version !== undefined ? { version: changes.version } : {}),
+                ...(changes.taskType !== undefined ? { taskType: changes.taskType } : {}),
                 ...(changes.dependencyBlocked !== undefined ? { dependencyBlocked: changes.dependencyBlocked } : {}),
             } : item),
         } : current);
@@ -507,7 +521,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             </header>
 
             <section className={`sticky top-[75px] z-30 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
-                <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isCurrentlyBlocked || isInactive ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f2ef] px-3 py-2 text-xs font-semibold text-[#737a72] dark:bg-zinc-800 dark:text-zinc-300"><span className={`h-1.5 w-1.5 rounded-full ${isInactive ? 'bg-red-400' : 'bg-[#8e958d]'}`} />{isInactive ? 'Inativa' : 'Bloqueada'}</span> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} />}</div>
+                <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isCurrentlyBlocked || isInactive || isClientView || !permissionsLoaded ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f2ef] px-3 py-2 text-xs font-semibold text-[#737a72] dark:bg-zinc-800 dark:text-zinc-300"><span className={`h-1.5 w-1.5 rounded-full ${isInactive ? 'bg-red-400' : status === 'Em revisão' ? 'bg-amber-400' : 'bg-[#8e958d]'}`} />{isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status}</span> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} />}</div>
                 <MetaItem label="Créditos da tarefa" value={formatTaskCredits(task.credits)} />
                 <MetaItem label="Deadline" value={`${task.deadline}, ${task.time}`} icon={<Clock3 size={14} />} />
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
@@ -566,7 +580,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                         </div>
                     </div>
                 )}<div className={`flex flex-wrap items-center gap-2 border-b px-5 py-4 text-sm text-[#a4a4a4] sm:px-[30px] ${ALLYO_BORDER}`}>
-                {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>PNG ou PDF</Tag><span>e um único pacote final de</span><Tag>arquivos editáveis</Tag></> : <><span>Isso é uma solicitação para</span><Tag>{requestCopy.type}</Tag><span>com</span><Tag>{requestCopy.count}</Tag><span>para aprovação em</span><Tag>{requestCopy.approval}</Tag><span>e</span><Tag>{requestCopy.editable}</Tag><span>no</span><Tag>{requestCopy.software}</Tag></>}
+                {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>{taskPresentation.approval}</Tag><span>e um único pacote final de</span><Tag>{taskPresentation.editable}</Tag></> : <><span>Isso é uma solicitação para</span><Tag>{taskPresentation.label}</Tag><span>com</span><Tag>{taskItemCount} {taskPresentation.itemLabel}{taskItemCount === 1 ? '' : 's'}</Tag><span>para aprovação em</span><Tag>{taskPresentation.approval}</Tag><span>e</span><Tag>{taskPresentation.editable}</Tag><span>no</span><Tag>{taskPresentation.software}</Tag></>}
             </div>
 
             {project && <AllyoProjectFlow project={project} currentTaskId={task.id} />}
@@ -612,7 +626,10 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             </button>
                         </div>
                     )}
-                    {orderOpen && (isMultiDeliverable && task.deliverables
+                    {!permissionsLoaded && orderOpen && <div className="px-5 py-10 text-center text-xs text-[#8b918b] sm:px-[30px]">Carregando a experiência desta tarefa...</div>}
+                    {permissionsLoaded && orderOpen && (isClientView
+                        ? <AllyoClientDeliveryWorkspace task={task} designs={taskDesigns} onReview={() => setReviewModalOpen(true)} />
+                        : isMultiDeliverable && task.deliverables
                         ? <AllyoMultiDeliverableWorkspace
                             key={task.id}
                             deliverables={task.deliverables}
@@ -630,8 +647,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             versionOptions={versionOptions}
                             currentVersion={deliveryVersion}
                           />
-                        : <DeliveryWorkspace kind={deliverableKind} />)}
-                    {!isMultiDeliverable && (
+                        : <DeliveryWorkspace kind={deliverableKind} task={task} />)}
+                    {permissionsLoaded && !isClientView && !isMultiDeliverable && (
                         <VersionBundle
                             kind={deliverableKind}
                             version={deliveryVersion}
@@ -656,21 +673,22 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             disabledReason={!isCurrentVersionSelected ? `A ${deliveryVersion} está disponível somente para consulta. Anexe os arquivos na ${latestVersionLabel}.` : "O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."}
                         />
                     )}
-                    <div className="mx-5 mb-12 mt-6 rounded-[14px] border border-[#dfe5d6] bg-[#fafcf7] p-5 sm:mx-[30px] sm:mb-16 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    {permissionsLoaded && !isClientView && <div className="mx-5 mb-12 mt-6 rounded-[14px] border border-[#dfe5d6] bg-[#fafcf7] p-5 sm:mx-[30px] sm:mb-16 dark:border-zinc-800 dark:bg-zinc-900/50">
                         <div className="flex items-start gap-3">
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eaf1dd] text-[#71864b] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]"><ShieldCheck size={17} /></span>
                             <div><strong className="text-sm font-semibold">Pacote seguro para aprovação</strong><p className="mt-1 text-xs leading-5 text-[#747b72] dark:text-zinc-400">Na {latestVersionLabel}, envie sempre os dois arquivos: a visualização do cliente e o arquivo aberto/editável correspondente. Versões anteriores ficam protegidas para preservar o histórico.</p></div>
                         </div>
-                    </div>
+                    </div>}
                 </main>
 
                 <aside className="min-w-0 bg-[#fdfdfc] dark:bg-zinc-950">
                     <div className="sticky top-[139px]">
                         <div className={`border-b p-5 ${ALLYO_BORDER}`}>
                             <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#829454]">{isInactive ? 'Tarefa inativa' : isCurrentlyBlocked ? 'Dependência do projeto' : 'Próxima ação'}</span>
-                            <h2 className="mt-2 font-season text-xl font-normal">{isInactive ? 'Execução pausada' : isCurrentlyBlocked ? 'Aguardando liberação' : status === 'Nova' ? 'Iniciar a tarefa' : status === 'Em revisão' ? 'Aguardar retorno do cliente' : status === 'Entregue' ? 'Tarefa concluída' : status === 'Alteração' ? 'Preparar versão revisada' : isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
-                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isInactive ? 'A equipe administrativa pode reativar esta tarefa pelo menu de ações.' : isCurrentlyBlocked ? `Esta tarefa será liberada quando ${blockingTasks.join(' e ') || 'o bloqueio administrativo'} for removido.` : status === 'Nova' ? 'Mude o status para “Em andamento” quando começar a produção.' : status === 'Em revisão' ? 'A entrega já foi enviada. Você será avisado quando o cliente responder.' : status === 'Entregue' ? 'Nenhuma ação é necessária neste momento.' : status === 'Alteração' ? `Aplique o feedback na ${latestVersionLabel}, anexe o material e envie novamente.` : isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
-                            {isTaskInProgress && !isCurrentlyBlocked && !isInactive && <button
+                            <h2 className="mt-2 font-season text-xl font-normal">{isClientView ? activeReviewDesign ? 'Revisar a versão enviada' : 'Aguardar a primeira versão' : isInactive ? 'Execução pausada' : isCurrentlyBlocked ? 'Aguardando liberação' : status === 'Nova' ? 'Iniciar a tarefa' : status === 'Em revisão' ? 'Aguardar retorno do cliente' : status === 'Entregue' ? 'Tarefa concluída' : status === 'Alteração' ? 'Preparar versão revisada' : isMultiDeliverable ? 'Preparar pedidos para revisão' : requestCopy.next}</h2>
+                            <p className="mt-2 text-[13px] leading-5 text-[#707070] dark:text-zinc-400">{isClientView ? activeReviewDesign ? taskPresentation.clientHelper : 'O time criativo está preparando o material. Você será avisado quando a versão estiver pronta para revisão.' : isInactive ? 'A equipe administrativa pode reativar esta tarefa pelo menu de ações.' : isCurrentlyBlocked ? `Esta tarefa será liberada quando ${blockingTasks.join(' e ') || 'o bloqueio administrativo'} for removido.` : status === 'Nova' ? 'Mude o status para “Em andamento” quando começar a produção.' : status === 'Em revisão' ? 'A entrega já foi enviada. Você será avisado quando o cliente responder.' : status === 'Entregue' ? 'Nenhuma ação é necessária neste momento.' : status === 'Alteração' ? `Aplique o feedback na ${latestVersionLabel}, anexe o material e envie novamente.` : isMultiDeliverable ? 'Anexe os arquivos finalizados em cada pedido. Somente os itens prontos serão enviados para revisão.' : requestCopy.helper}</p>
+                            {isClientView && activeReviewDesign && <button type="button" onClick={() => setReviewModalOpen(true)} className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#131f15] px-4 py-3 text-[13px] font-semibold text-white transition hover:bg-[#283d2b]"><Eye size={15} /> Abrir revisão</button>}
+                            {!isClientView && isTaskInProgress && !isCurrentlyBlocked && !isInactive && <button
                                 type="button"
                                 disabled={!canSendForReview}
                                 onClick={() => setConfirmModalOpen(true)}
@@ -697,7 +715,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                     </>
                                 )}
                             </button>}
-                            {isTaskInProgress && !isCurrentlyBlocked && !isInactive && !canSendForReview && (
+                            {!isClientView && isTaskInProgress && !isCurrentlyBlocked && !isInactive && !canSendForReview && (
                                 <p className="mt-2 text-center text-xs text-[#8f8f8f]">
                                     {isAnyFileUploading
                                         ? 'Aguarde o upload dos arquivos terminar para enviar.'
