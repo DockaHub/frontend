@@ -6,6 +6,7 @@ interface AllyoSubmitConfirmModalProps {
     onClose: () => void;
     onConfirm: () => void | Promise<void>;
     isLoading?: boolean;
+    description?: string;
 }
 
 export const AllyoSubmitConfirmModal: React.FC<AllyoSubmitConfirmModalProps> = ({
@@ -13,6 +14,7 @@ export const AllyoSubmitConfirmModal: React.FC<AllyoSubmitConfirmModalProps> = (
     onClose,
     onConfirm,
     isLoading = false,
+    description,
 }) => {
     useEffect(() => {
         if (!isOpen) return;
@@ -67,7 +69,7 @@ export const AllyoSubmitConfirmModal: React.FC<AllyoSubmitConfirmModalProps> = (
                         Tarefa indo para aprovação
                     </h3>
                     <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 px-2 sm:px-3">
-                        Confirme se a visualização e o arquivo aberto pertencem à versão atual da tarefa. Os dois serão enviados juntos para aprovação.
+                        {description || 'Confirme se a visualização e o arquivo aberto pertencem à versão atual da tarefa. Os dois serão enviados juntos para aprovação.'}
                     </p>
                 </div>
 

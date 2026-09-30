@@ -54,13 +54,26 @@ api.interceptors.response.use(
             const isManySpaceSessionError = responseError === 'No token provided'
                 || responseError === 'Invalid or expired token';
             const isAuthRoute = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
-            const isPublicOrLoginPage = 
+            const isPublicOrLoginPage =
                 window.location.pathname.startsWith('/portal') || 
                 window.location.pathname.startsWith('/sign') || 
                 window.location.pathname === '/login' ||
                 window.location.pathname.startsWith('/login');
 
             if (isManySpaceSessionError && !isAuthRoute && !isPublicOrLoginPage) {
+                const originalToken = sessionStorage.getItem('manyspace_impersonation_original_token');
+                const originalUser = sessionStorage.getItem('manyspace_impersonation_original_user');
+                const returnUrl = sessionStorage.getItem('manyspace_impersonation_return_url');
+                if (originalToken) {
+                    localStorage.setItem('token', originalToken);
+                    if (originalUser) localStorage.setItem('user', originalUser);
+                    else localStorage.removeItem('user');
+                    sessionStorage.removeItem('manyspace_impersonation_original_token');
+                    sessionStorage.removeItem('manyspace_impersonation_original_user');
+                    sessionStorage.removeItem('manyspace_impersonation_return_url');
+                    window.location.href = returnUrl || '/dashboard';
+                    return Promise.reject(error);
+                }
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 window.location.href = '/login';

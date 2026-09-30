@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Building2, ChevronRight, Crown, Search, ShieldCheck, UserPlus, UsersRound } from 'lucide-react';
+import { Building2, ChevronRight, Crown, LogIn, Search, ShieldCheck, UserPlus, UsersRound } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
+import { useAuth } from '../../../../context/AuthContext';
 import { useToast } from '../../../../context/ToastContext';
 import { AllyoClient, AllyoUser, AllyoUserCategory, allyoService } from '../../../../services/allyoService';
 import { AllyoPageHeader, ALLYO_BORDER, DataCell } from './AllyoUI';
@@ -33,6 +34,7 @@ const emptyForm = {
 
 const AllyoUsersView = () => {
     const { addToast } = useToast();
+    const { user: currentUser, beginImpersonation } = useAuth();
     const [users, setUsers] = useState<AllyoUser[]>([]);
     const [clients, setClients] = useState<AllyoClient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +42,7 @@ const AllyoUsersView = () => {
     const [editingUser, setEditingUser] = useState<AllyoUser | null>(null);
     const [search, setSearch] = useState('');
     const [group, setGroup] = useState<'Todos' | HierarchyGroup>('Todos');
+    const [impersonatingUserId, setImpersonatingUserId] = useState<string | null>(null);
 
     const loadData = async () => {
         setIsLoading(true);
@@ -65,6 +68,40 @@ const AllyoUsersView = () => {
     const handleCreated = (user: AllyoUser) => {
         setUsers((current) => [user, ...current.filter((item) => item.id !== user.id)]);
         setIsCreateOpen(false);
+    };
+
+    const handleImpersonate = async (target: AllyoUser) => {
+        if (target.email.toLocaleLowerCase('pt-BR') === currentUser?.email.toLocaleLowerCase('pt-BR')) {
+            addToast({ type: 'info', title: 'Você já está nesta conta' });
+            return;
+        }
+
+        const clientWindow = target.category === 'CLIENTE' ? window.open('about:blank', '_blank') : null;
+        if (clientWindow) clientWindow.opener = null;
+        setImpersonatingUserId(target.id);
+        try {
+            const result = await allyoService.impersonateUser(target.id);
+            if (result.mode === 'allyo-space') {
+                if (clientWindow) clientWindow.location.replace(result.redirectUrl);
+                else window.open(result.redirectUrl, '_blank', 'noopener,noreferrer');
+                addToast({ type: 'success', title: 'Allyo Space aberto', message: `Você entrou como ${target.name} em uma nova aba.` });
+                return;
+            }
+
+            beginImpersonation(result.token, result.user, window.location.href);
+            const params = new URLSearchParams(window.location.search);
+            params.set('view', 'overview');
+            window.location.assign(`/dashboard?${params.toString()}`);
+        } catch (error: any) {
+            clientWindow?.close();
+            addToast({
+                type: 'error',
+                title: 'Não foi possível personificar este usuário',
+                message: error.response?.data?.message || 'Tente novamente em alguns instantes.',
+            });
+        } finally {
+            setImpersonatingUserId(null);
+        }
     };
 
     return (
@@ -101,7 +138,7 @@ const AllyoUsersView = () => {
                 {visibleUsers.map((user) => {
                     const config = CATEGORY_CONFIG[user.category] || CATEGORY_CONFIG.CRIATIVO;
                     return (
-                        <button type="button" onClick={() => setEditingUser(user)} key={user.id} className={`grid min-h-[78px] w-full grid-cols-[minmax(210px,1.3fr)_190px_130px_minmax(160px,1fr)_110px_18px] items-center gap-7 border-b px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9db669] sm:px-[30px] max-xl:grid-cols-[minmax(210px,1.3fr)_180px_minmax(160px,1fr)_110px_18px] max-lg:grid-cols-[minmax(210px,1.2fr)_180px_110px_18px] max-sm:grid-cols-[minmax(0,1fr)_100px_18px] dark:hover:bg-zinc-900 ${ALLYO_BORDER}`}>
+                        <div role="button" tabIndex={0} onClick={() => setEditingUser(user)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); setEditingUser(user); } }} key={user.id} className={`grid min-h-[78px] w-full grid-cols-[minmax(210px,1.3fr)_190px_130px_minmax(160px,1fr)_110px_42px_18px] items-center gap-5 border-b px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9db669] sm:px-[30px] max-xl:grid-cols-[minmax(210px,1.3fr)_180px_minmax(160px,1fr)_110px_42px_18px] max-lg:grid-cols-[minmax(210px,1.2fr)_180px_110px_42px_18px] max-sm:grid-cols-[minmax(0,1fr)_100px_42px] dark:hover:bg-zinc-900 ${ALLYO_BORDER}`}>
                             <div className="flex min-w-0 items-center gap-3">
                                 <UserAvatar user={user} />
                                 <span className="min-w-0"><strong className="block truncate text-sm font-semibold">{user.name}</strong><span className="mt-1 block truncate text-[11px] text-[#777] dark:text-zinc-400">{user.email}</span></span>
@@ -110,8 +147,19 @@ const AllyoUsersView = () => {
                             <DataCell label="HIERARQUIA" value={`Nível ${config.level} · ${config.group}`} className="max-xl:hidden" />
                             <DataCell label={config.group === 'Cliente' ? 'EMPRESA' : 'EQUIPE / CARGO'} value={user.client?.name || user.team || user.jobTitle || 'Não informado'} className="max-lg:hidden" />
                             <span className="max-sm:hidden"><span className="inline-flex rounded-full bg-[#edf2e2] px-2.5 py-1.5 text-[10px] font-semibold text-[#607738] dark:bg-[#9db669]/15 dark:text-[#cce18e]">{user.status || 'Ativo'}</span></span>
-                            <ChevronRight size={18} className="text-[#aaa]" />
-                        </button>
+                            <button
+                                type="button"
+                                title={user.category === 'CLIENTE' ? 'Personificar no Allyo Space' : 'Personificar no ManySpace'}
+                                aria-label={`Personificar ${user.name}`}
+                                disabled={impersonatingUserId === user.id || String(user.status || '').toLocaleLowerCase('pt-BR') === 'inativo'}
+                                onClick={(event) => { event.stopPropagation(); void handleImpersonate(user); }}
+                                onKeyDown={(event) => event.stopPropagation()}
+                                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#dce5c9] text-[#718548] transition hover:bg-[#edf2e2] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#9db669]/30 dark:hover:bg-[#9db669]/15"
+                            >
+                                <LogIn size={15} className={impersonatingUserId === user.id ? 'animate-pulse' : ''} />
+                            </button>
+                            <ChevronRight size={18} className="text-[#aaa] max-sm:hidden" />
+                        </div>
                     );
                 })}
 

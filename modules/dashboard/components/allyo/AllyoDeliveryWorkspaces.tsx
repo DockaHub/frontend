@@ -23,7 +23,7 @@ import {
 import type { AllyoTask } from './AllyoUI';
 import { ALLYO_BORDER, FilterSelect } from './AllyoUI';
 import AllyoFileViewerModal, { type AllyoPreviewFile } from './AllyoFileViewerModal';
-import { ALLYO_TASK_PRESENTATIONS, getAllyoTaskItemCount, getAllyoTaskPresentation, resolveAllyoTaskType, type AllyoTaskType } from './allyoTaskPresentation';
+import { ALLYO_TASK_PRESENTATIONS, getAllyoTaskItemCount, getAllyoTaskPresentation, getAllyoTaskStructureItems, resolveAllyoTaskType, type AllyoTaskType } from './allyoTaskPresentation';
 
 export type DeliverableKind = AllyoTaskType;
 
@@ -50,13 +50,9 @@ export const deliverableCopy = Object.fromEntries(Object.entries(ALLYO_TASK_PRES
     helper: definition.creativeHelper,
 }])) as Record<DeliverableKind, { type: string; count: string; approval: string; editable: string; software: string; next: string; helper: string }>;
 
-export const DeliveryWorkspace = ({ kind, task }: { kind: DeliverableKind; task: AllyoTask }) => {
-    if (kind === 'landing') return <LandingWorkspace />;
-    if (kind === 'presentation') return <PresentationWorkspace />;
-    if (kind === 'storyboard') return <StoryboardWorkspace />;
-    if (kind === 'carousel') return <CarouselWorkspace task={task} />;
-    if (kind === 'social') return <SocialWorkspace />;
-    return <StructuredWorkspace task={task} />;
+export const DeliveryWorkspace = ({ kind, task, itemCountOverride, approvalLabel, sourceLabel }: { kind: DeliverableKind; task: AllyoTask; itemCountOverride?: number; approvalLabel?: string; sourceLabel?: string }) => {
+    if (kind === 'carousel') return <CarouselWorkspace task={task} itemCountOverride={itemCountOverride} />;
+    return <StructuredWorkspace task={task} itemCountOverride={itemCountOverride} approvalLabel={approvalLabel} sourceLabel={sourceLabel} />;
 };
 
 const landingSections = [
@@ -241,18 +237,17 @@ const StoryboardWorkspace = () => {
     );
 };
 
-const taskItems = (task: AllyoTask) => {
-    const detailedItems = (task.deliverables || []).flatMap((deliverable) =>
-        deliverable.scenes?.length
-            ? deliverable.scenes.map((scene) => ({ id: `${deliverable.id}-${scene.id}`, title: scene.title || scene.label, description: scene.copy || deliverable.title }))
-            : [{ id: deliverable.id, title: deliverable.title, description: `${deliverable.format} · ${deliverable.approvalFormat}` }],
-    );
-    if (detailedItems.length > 0) return detailedItems;
-    return (task.briefing?.deliverables || []).map((title, index) => ({ id: `briefing-${index}`, title, description: task.briefing?.formats?.join(' · ') || 'Conforme briefing' }));
+const taskItems = (task: AllyoTask, itemCountOverride?: number) => {
+    return getAllyoTaskStructureItems(task, getAllyoTaskPresentation(task), itemCountOverride).map((item) => ({
+        ...item,
+        description: item.description === 'Conforme briefing' && task.briefing?.formats?.length
+            ? task.briefing.formats.join(' · ')
+            : item.description,
+    }));
 };
 
-const CarouselWorkspace = ({ task }: { task: AllyoTask }) => {
-    const items = taskItems(task);
+const CarouselWorkspace = ({ task, itemCountOverride }: { task: AllyoTask; itemCountOverride?: number }) => {
+    const items = taskItems(task, itemCountOverride);
     const cards = items.length > 0 ? items : [{ id: 'card-1', title: 'Card principal', description: 'Conteúdo definido no briefing' }];
     return (
         <WorkspaceShell icon={<LayoutTemplate size={17} />} title={`Carrossel · ${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`} subtitle="A sequência, a continuidade visual e o CTA são revisados como uma única entrega.">
@@ -263,10 +258,10 @@ const CarouselWorkspace = ({ task }: { task: AllyoTask }) => {
     );
 };
 
-const StructuredWorkspace = ({ task }: { task: AllyoTask }) => {
+const StructuredWorkspace = ({ task, itemCountOverride, approvalLabel, sourceLabel }: { task: AllyoTask; itemCountOverride?: number; approvalLabel?: string; sourceLabel?: string }) => {
     const definition = getAllyoTaskPresentation(task);
-    const items = taskItems(task);
-    const count = getAllyoTaskItemCount(task, definition);
+    const items = taskItems(task, itemCountOverride);
+    const count = getAllyoTaskItemCount(task, definition, itemCountOverride);
     return (
         <WorkspaceShell icon={<FileText size={17} />} title={`${definition.label} · ${count} ${definition.itemLabel}${count === 1 ? '' : 's'}`} subtitle={definition.creativeHelper}>
             <div className={`grid overflow-hidden rounded-[14px] border lg:grid-cols-[minmax(0,1fr)_300px] ${ALLYO_BORDER}`}>
@@ -276,7 +271,7 @@ const StructuredWorkspace = ({ task }: { task: AllyoTask }) => {
                         {(items.length > 0 ? items : [{ id: 'single', title: task.name, description: task.briefing?.objective || 'Siga as orientações do briefing.' }]).map((item, index) => <div key={item.id} className={`flex items-start gap-3 rounded-[10px] border p-3 ${ALLYO_BORDER}`}><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[7px] bg-[#eef3e4] text-[11px] font-bold text-[#71854e] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]">{index + 1}</span><span><strong className="block text-xs font-semibold">{item.title}</strong><small className="mt-1 block text-[11px] leading-4 text-[#858b84]">{item.description}</small></span></div>)}
                     </div>
                 </div>
-                <aside className={`border-t bg-[#fafbf8] lg:border-l lg:border-t-0 dark:bg-zinc-900/50 ${ALLYO_BORDER}`}><Specification label="Aprovação" value={definition.approval} /><Specification label="Editável" value={definition.editable} /><Specification label="Software" value={definition.software} last /></aside>
+                <aside className={`border-t bg-[#fafbf8] lg:border-l lg:border-t-0 dark:bg-zinc-900/50 ${ALLYO_BORDER}`}><Specification label="Aprovação" value={approvalLabel || definition.approval} /><Specification label="Editável" value={sourceLabel || definition.editable} /><Specification label="Software" value={sourceLabel || definition.software} last /></aside>
             </div>
         </WorkspaceShell>
     );
@@ -304,6 +299,13 @@ export const VersionBundle = ({
     onUploadSourceFile,
     disabled = false,
     disabledReason,
+    expectedApprovalFiles = 1,
+    approvalAcceptOverride,
+    sourceAcceptOverride,
+    approvalDescriptionOverride,
+    sourceDescriptionOverride,
+    sourceRequired = true,
+    allowSourceLink = false,
 }: {
     kind: DeliverableKind;
     version: string;
@@ -317,12 +319,23 @@ export const VersionBundle = ({
     onUploadSourceFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
+    expectedApprovalFiles?: number;
+    approvalAcceptOverride?: string;
+    sourceAcceptOverride?: string;
+    approvalDescriptionOverride?: string;
+    sourceDescriptionOverride?: string;
+    sourceRequired?: boolean;
+    allowSourceLink?: boolean;
 }) => {
     const definition = ALLYO_TASK_PRESENTATIONS[kind] || ALLYO_TASK_PRESENTATIONS.generic;
-    const approvalAccept = definition.approvalAccept;
-    const sourceAccept = definition.sourceAccept;
+    const approvalAccept = approvalAcceptOverride || definition.approvalAccept;
+    const sourceAccept = sourceAcceptOverride || definition.sourceAccept;
     const displayedOptions = Array.isArray(versionOptions) && versionOptions.length > 0 ? versionOptions : [version || 'Versão 1'];
     const safeCopy = deliverableCopy[kind] || deliverableCopy.social;
+    const isOrderedSequence = kind === 'carousel' && expectedApprovalFiles > 1;
+    const approvalDescription = isOrderedSequence
+        ? `Envie ${expectedApprovalFiles} imagens na ordem dos cards ou um único PDF com ${expectedApprovalFiles} páginas`
+        : approvalDescriptionOverride || `Material que o cliente irá visualizar · ${safeCopy?.approval || definition.approval}`;
     return (
         <section className={`border-b ${ALLYO_BORDER}`}>
             <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}>
@@ -344,24 +357,28 @@ export const VersionBundle = ({
                 <FileSlot
                     icon={<CheckCircle2 size={17} />}
                     title="Arquivo para aprovação"
-                    description={`Material que o cliente irá visualizar · ${safeCopy?.approval || definition.approval}`}
+                    description={approvalDescription}
                     files={approvalFiles}
                     onFilesChange={onApprovalFilesChange}
                     accept={approvalAccept}
                     onUploadFile={onUploadApprovalFile}
                     disabled={disabled}
                     disabledReason={disabledReason}
+                    ordered={isOrderedSequence}
+                    expectedCount={isOrderedSequence ? expectedApprovalFiles : undefined}
                 />
                 <FileSlot
                     icon={<FileText size={17} />}
                     title="Arquivo aberto e editável"
-                    description={`Fonte de trabalho obrigatória · ${safeCopy?.software || 'Photoshop'}`}
+                    description={sourceDescriptionOverride || `${sourceRequired ? 'Fonte de trabalho obrigatória' : 'Fonte de trabalho opcional'} · ${safeCopy?.software || 'Photoshop'}`}
                     files={sourceFiles}
                     onFilesChange={onSourceFilesChange}
                     accept={sourceAccept}
                     onUploadFile={onUploadSourceFile}
                     disabled={disabled}
                     disabledReason={disabledReason}
+                    optional={!sourceRequired}
+                    allowExternalUrl={allowSourceLink}
                 />
             </div>
         </section>
@@ -389,6 +406,9 @@ export const FileSlot = ({
     onUploadFile,
     disabled = false,
     disabledReason,
+    ordered = false,
+    expectedCount,
+    allowExternalUrl = false,
 }: {
     icon: React.ReactNode;
     title: string;
@@ -400,11 +420,27 @@ export const FileSlot = ({
     onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
+    ordered?: boolean;
+    expectedCount?: number;
+    allowExternalUrl?: boolean;
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
     const [previewFile, setPreviewFile] = useState<AllyoPreviewFile | null>(null);
+    const [externalUrl, setExternalUrl] = useState('');
+    const [externalUrlError, setExternalUrlError] = useState('');
     const safeFiles = Array.isArray(files) ? files.filter(Boolean) : [];
     const isUploadingAny = safeFiles.some((f) => Boolean(f?.uploading));
+    const hasSinglePdf = ordered && safeFiles.length === 1 && /\.pdf(?:$|[?#])/i.test(safeFiles[0].fileUrl || safeFiles[0].name);
+    const hasExpectedImageSequence = ordered && Boolean(expectedCount) && safeFiles.length === expectedCount
+        && safeFiles.every((file) => /\.(?:png|jpe?g)(?:$|[?#])/i.test(file.fileUrl || file.name));
+
+    const moveFile = (index: number, direction: -1 | 1) => {
+        const target = index + direction;
+        if (target < 0 || target >= safeFiles.length) return;
+        const next = [...safeFiles];
+        [next[index], next[target]] = [next[target], next[index]];
+        onFilesChange(next);
+    };
 
     const addFiles = async (incoming: FileList | null) => {
         if (disabled) return;
@@ -450,6 +486,23 @@ export const FileSlot = ({
                     onFilesChange(currentList);
                 }
             }
+        }
+    };
+
+    const addExternalUrl = () => {
+        if (disabled) return;
+        const value = externalUrl.trim();
+        try {
+            const parsed = new URL(value);
+            if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid');
+            const id = `external-${value}`;
+            if (!safeFiles.some((file) => file.id === id)) {
+                onFilesChange([...safeFiles, { id, name: parsed.hostname, size: 0, fileUrl: value }]);
+            }
+            setExternalUrl('');
+            setExternalUrlError('');
+        } catch {
+            setExternalUrlError('Cole um link válido iniciado por http:// ou https://.');
         }
     };
 
@@ -515,11 +568,37 @@ export const FileSlot = ({
                     event.target.value = "";
                 }}
             />
+            {allowExternalUrl && !disabled && (
+                <div className="mt-3">
+                    <div className="flex gap-2">
+                        <input
+                            type="url"
+                            value={externalUrl}
+                            onChange={(event) => { setExternalUrl(event.target.value); setExternalUrlError(''); }}
+                            onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); addExternalUrl(); } }}
+                            placeholder="Ou cole o link editável do Canva, Figma ou Google Slides"
+                            className="min-h-10 min-w-0 flex-1 rounded-[9px] border border-[#dedede] bg-white px-3 text-xs outline-none transition focus:border-[#9db669] dark:border-zinc-700 dark:bg-zinc-950"
+                        />
+                        <button type="button" onClick={addExternalUrl} className="rounded-[9px] border border-[#cdd4c0] px-3 text-xs font-semibold text-[#72844d] transition hover:bg-[#fafcf6] dark:border-zinc-700">
+                            Adicionar link
+                        </button>
+                    </div>
+                    {externalUrlError && <p className="mt-1.5 text-[11px] text-red-500">{externalUrlError}</p>}
+                </div>
+            )}
             {safeFiles.length > 0 && (
                 <div className="mt-3 space-y-2">
-                    {safeFiles.map((file) => (
+                    {ordered && expectedCount && (
+                        <p className={`text-[11px] font-medium ${hasExpectedImageSequence || hasSinglePdf ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                            {hasSinglePdf
+                                ? `PDF único selecionado · confira se ele contém ${expectedCount} páginas.`
+                                : `${safeFiles.length} de ${expectedCount} imagens selecionadas. A ordem abaixo será a ordem do carrossel.`}
+                        </p>
+                    )}
+                    {safeFiles.map((file, index) => (
                         <div key={file.id} className="relative overflow-hidden rounded-[9px] border border-zinc-200/80 bg-[#f7f8f5] px-3 py-2.5 text-xs transition dark:border-zinc-800 dark:bg-zinc-900">
                             <div className="flex items-center gap-2">
+                                {ordered && <span className="flex h-6 min-w-6 items-center justify-center rounded-md bg-white text-[10px] font-bold text-[#718746] shadow-sm dark:bg-zinc-950">{index + 1}</span>}
                                 {file.uploading ? (
                                     <Loader2 size={15} className="shrink-0 animate-spin text-[#9db669]" />
                                 ) : (
@@ -553,6 +632,12 @@ export const FileSlot = ({
                                 <span className="text-[11px] text-[#888]">
                                     {file.size > 0 ? formatFileSize(file.size) : "Enviado"}
                                 </span>
+                                {ordered && (
+                                    <span className="flex items-center gap-1">
+                                        <button type="button" disabled={disabled || file.uploading || index === 0} onClick={() => moveFile(index, -1)} aria-label={`Mover ${file.name} para cima`} className="text-[#999] transition hover:text-[#718746] disabled:opacity-25"><ArrowUp size={13} /></button>
+                                        <button type="button" disabled={disabled || file.uploading || index === safeFiles.length - 1} onClick={() => moveFile(index, 1)} aria-label={`Mover ${file.name} para baixo`} className="text-[#999] transition hover:text-[#718746] disabled:opacity-25"><ArrowDown size={13} /></button>
+                                    </span>
+                                )}
                                 <button
                                     type="button"
                                     disabled={disabled || file.uploading}

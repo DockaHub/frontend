@@ -14,9 +14,10 @@ import AllyoClientDeliveryWorkspace from './AllyoClientDeliveryWorkspace';
 import { addTaskActivity } from './allyoTaskActivity';
 import { mapDemandToAllyoProject } from './allyoProjects';
 import { getTaskResources } from './allyoTaskResourceData';
-import { allyoService, type AllyoDemand, type AllyoUserCategory } from '../../../../services/allyoService';
+import { allyoService, type AllyoCatalogProduct, type AllyoDemand, type AllyoUserCategory } from '../../../../services/allyoService';
 import { useToast } from '../../../../context/ToastContext';
 import { getAllyoTaskItemCount, getAllyoTaskPresentation } from './allyoTaskPresentation';
+import { createProductDeliveryProfile, findCatalogProductForTask } from './allyoProductDelivery';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Alteração', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -115,6 +116,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const taskId = searchParams.get('task');
     const [liveTask, setLiveTask] = useState<AllyoTask | null>(null);
     const [liveDemand, setLiveDemand] = useState<AllyoDemand | null>(null);
+    const [catalogProducts, setCatalogProducts] = useState<AllyoCatalogProduct[]>([]);
     const [taskChanges, setTaskChanges] = useState<Partial<AllyoTask>>({});
     const [canManageTask, setCanManageTask] = useState(false);
     const [viewerCategory, setViewerCategory] = useState<AllyoUserCategory | null>(null);
@@ -134,6 +136,14 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             }
         }).catch((err) => console.warn('[AllyoTaskDetailView] Erro ao carregar demanda da API:', err));
     }, [taskId]);
+
+    useEffect(() => {
+        let active = true;
+        allyoService.getCatalog()
+            .then((catalog) => { if (active) setCatalogProducts(Array.isArray(catalog?.products) ? catalog.products : []); })
+            .catch((error) => console.warn('[AllyoTaskDetailView] Não foi possível carregar as regras do catálogo:', error));
+        return () => { active = false; };
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -159,6 +169,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     };
     const sourceTask = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || defaultTask;
     const task = { ...sourceTask, ...taskChanges };
+    const catalogProduct = useMemo(() => findCatalogProductForTask(task, catalogProducts), [catalogProducts, task]);
+    const deliveryProfile = useMemo(() => catalogProduct ? createProductDeliveryProfile(catalogProduct) : null, [catalogProduct]);
+    const presentationTask = deliveryProfile ? { ...task, taskType: deliveryProfile.taskType } : task;
     const project = liveDemand ? mapDemandToAllyoProject(liveDemand) : null;
     const projectTasks = project?.stages.flatMap((stage) => stage.tasks) || [];
     const projectTask = projectTasks.find((item) => item.id === task.id);
@@ -171,7 +184,14 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const taskDesigns = useMemo(() => {
         return (liveDemand?.designs || [])
             .filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))))
-            .sort((a, b) => (Number(String(b.version || '').replace(/\D/g, '')) || 0) - (Number(String(a.version || '').replace(/\D/g, '')) || 0));
+            .sort((a, b) => {
+                const versionDifference = (Number(String(b.version || '').match(/\d+/)?.[0]) || 0)
+                    - (Number(String(a.version || '').match(/\d+/)?.[0]) || 0);
+                if (versionDifference !== 0) return versionDifference;
+                const leftOrder = Number(String(a.name || '').match(/card\s*0*(\d+)/i)?.[1]) || Number.MAX_SAFE_INTEGER;
+                const rightOrder = Number(String(b.name || '').match(/card\s*0*(\d+)/i)?.[1]) || Number.MAX_SAFE_INTEGER;
+                return leftOrder - rightOrder;
+            });
     }, [liveDemand?.designs, task.id, task.publicId]);
 
     const activeReviewDesign = taskDesigns[0] || null;
@@ -227,10 +247,15 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const totalComments = Array.isArray(activeReviewDesign?.comments) ? activeReviewDesign.comments.length : 0;
     const totalAnnotations = Array.isArray(activeReviewDesign?.annotations) ? activeReviewDesign.annotations.length : 0;
     const hasClientAnnotations = totalComments > 0 || totalAnnotations > 0;
-    const deliverableKind = getDeliverableKind(task);
-    const taskPresentation = getAllyoTaskPresentation(task);
+    const deliverableKind = getDeliverableKind(presentationTask);
+    const taskPresentation = getAllyoTaskPresentation(presentationTask);
     const requestCopy = deliverableCopy[deliverableKind] || deliverableCopy.social;
-    const taskItemCount = getAllyoTaskItemCount(task, taskPresentation);
+    const catalogStructuredQuantity = ['cards', 'slides', 'scenes'].includes(taskPresentation.structure)
+        && Number(catalogProduct?.deliveryQuantity) > 1
+        && Number(catalogProduct?.deliveryQuantity) <= 100
+        ? Number(catalogProduct?.deliveryQuantity)
+        : undefined;
+    const taskItemCount = getAllyoTaskItemCount(presentationTask, taskPresentation, catalogStructuredQuantity);
     const isClientView = permissionsLoaded && !canManageTask && (viewerCategory === 'CLIENTE' || viewerCategory === null);
     const briefing = task.briefing
         ? [
@@ -258,6 +283,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
     const [readyDeliverables, setReadyDeliverables] = useState(0);
     const [multiSourceFileUrl, setMultiSourceFileUrl] = useState<string | undefined>();
+    const [multiReviewFiles, setMultiReviewFiles] = useState<Array<{ name: string; fileUrl: string; sourceFileUrl?: string; order: number }>>([]);
     const [isMultiFileUploading, setIsMultiFileUploading] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
     const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
@@ -266,14 +292,21 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
     const approvalFiles = Array.isArray(currentFiles.approval) ? currentFiles.approval.filter(Boolean) : [];
     const sourceFiles = Array.isArray(currentFiles.source) ? currentFiles.source.filter(Boolean) : [];
+    const readyApprovalFiles = approvalFiles.filter((file) => Boolean(file.fileUrl) && !file.error);
+    const isCarouselSequence = taskPresentation.type === 'carousel' && taskItemCount > 1;
+    const hasSingleApprovalPdf = readyApprovalFiles.length === 1 && /\.pdf(?:$|[?#])/i.test(readyApprovalFiles[0].fileUrl || readyApprovalFiles[0].name);
+    const hasCompleteCarouselImages = readyApprovalFiles.length === taskItemCount
+        && readyApprovalFiles.every((file) => /\.(?:png|jpe?g)(?:$|[?#])/i.test(file.fileUrl || file.name));
+    const hasCompleteCarouselSequence = !isCarouselSequence || hasSingleApprovalPdf || hasCompleteCarouselImages;
     const isCurrentlyBlocked = administrativeBlock ?? (isTaskBlocked || status === 'Bloqueada');
     const isInactive = status === 'Inativa';
     const isTaskInProgress = status?.trim()?.toLowerCase() === 'em andamento' || status === 'Alteração';
     const deliveryVersionNum = Number(deliveryVersion.replace(/\D/g, '')) || 1;
     const isCurrentVersionSelected = deliveryVersionNum === currentVersionNum;
     const isAnyFileUploading = isMultiFileUploading || approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
-    const hasApprovalReady = isMultiDeliverable ? readyDeliverables > 0 : approvalFiles.some((file) => Boolean(file.fileUrl) && !file.error);
-    const hasSourceReady = isMultiDeliverable ? Boolean(multiSourceFileUrl) : sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error);
+    const hasApprovalReady = isMultiDeliverable ? multiReviewFiles.length > 0 : readyApprovalFiles.length > 0 && hasCompleteCarouselSequence;
+    const sourceRequired = deliveryProfile?.sourceRequired ?? true;
+    const hasSourceReady = !sourceRequired || (isMultiDeliverable ? Boolean(multiSourceFileUrl) : sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error));
     const canSendForReview = permissionsLoaded && !isClientView && isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && isCurrentVersionSelected && hasApprovalReady && hasSourceReady;
 
     useEffect(() => {
@@ -285,7 +318,13 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
 
     useEffect(() => {
         if (!liveDemand) return;
-        const matchedDesigns = (liveDemand.designs || []).filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))));
+        const matchedDesigns = (liveDemand.designs || [])
+            .filter((d) => Boolean(d && (d.taskId === task.id || (task.publicId && d.taskId === task.publicId))))
+            .sort((a, b) => {
+                const leftOrder = Number(String(a.name || '').match(/card\s*0*(\d+)/i)?.[1]) || Number.MAX_SAFE_INTEGER;
+                const rightOrder = Number(String(b.name || '').match(/card\s*0*(\d+)/i)?.[1]) || Number.MAX_SAFE_INTEGER;
+                return leftOrder - rightOrder;
+            });
         
         // Popula todas as versões existentes em filesByVersion
         matchedDesigns.forEach((d) => {
@@ -293,28 +332,33 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             const vLabel = `Versão ${vNum}`;
             setFilesByVersion((current) => {
                 const currentVersionFiles = current[vLabel] || { approval: [], source: [] };
-                const hasApproval = currentVersionFiles.approval.some((item) => item.fileUrl || item.file);
                 const hasSource = currentVersionFiles.source.some((item) => item.fileUrl || item.file);
                 const sourceFileUrl = d.sourceFileUrl;
-                if (hasApproval && (hasSource || !sourceFileUrl)) return current;
+                const designId = `design-${d.id}`;
+                const approvalAlreadyPresent = currentVersionFiles.approval.some((item) => item.id === designId || (d.fileUrl && item.fileUrl === d.fileUrl));
+                const approval = d.fileUrl && !approvalAlreadyPresent
+                    ? [...currentVersionFiles.approval, {
+                        id: designId,
+                        name: (() => {
+                            const n = (d as any).name || 'Arquivo em revisão';
+                            try { return decodeURIComponent(n); } catch { return n; }
+                        })(),
+                        size: 0,
+                        fileUrl: d.fileUrl,
+                    }]
+                    : currentVersionFiles.approval;
+                const source = hasSource || !sourceFileUrl ? currentVersionFiles.source : [{
+                    id: `source-${d.id}`,
+                    name: `Arquivo aberto · ${d.name}`,
+                    size: 0,
+                    fileUrl: sourceFileUrl,
+                }];
+                if (approval === currentVersionFiles.approval && source === currentVersionFiles.source) return current;
                 return {
                     ...current,
                     [vLabel]: {
-                        approval: hasApproval ? currentVersionFiles.approval : [{
-                            id: `design-${d.id}`,
-                            name: (() => {
-                                const n = (d as any).name || 'Arquivo em revisão';
-                                try { return decodeURIComponent(n); } catch { return n; }
-                            })(),
-                            size: 0,
-                            fileUrl: d.fileUrl,
-                        }],
-                        source: hasSource || !sourceFileUrl ? currentVersionFiles.source : [{
-                            id: `source-${d.id}`,
-                            name: `Arquivo aberto · ${d.name}`,
-                            size: 0,
-                            fileUrl: sourceFileUrl,
-                        }],
+                        approval,
+                        source,
                     },
                 };
             });
@@ -410,7 +454,12 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             return false;
         }
         if (!hasApprovalReady || !hasSourceReady) {
-            addToast({ type: 'warning', title: 'Pacote de entrega incompleto', message: 'Anexe o arquivo para aprovação e o arquivo aberto/editável da versão atual.' });
+            const message = isCarouselSequence && !hasCompleteCarouselSequence
+                ? `Anexe exatamente ${taskItemCount} imagens na ordem dos cards ou um PDF único com ${taskItemCount} páginas${hasSourceReady ? '.' : ', além do arquivo aberto/editável.'}`
+                : sourceRequired
+                ? 'Anexe o arquivo para aprovação e o arquivo aberto/editável da versão atual.'
+                : 'Anexe o material final da versão atual.';
+            addToast({ type: 'warning', title: 'Pacote de entrega incompleto', message });
             return false;
         }
         setIsSendingReview(true);
@@ -418,61 +467,68 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             const decodeSafe = (str: string): string => {
                 try { return decodeURIComponent(str); } catch { return str; }
             };
-            const approvalFile = currentFiles.approval[0];
             const rawNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => decodeSafe(file.name)).join(', ');
             const fileNames = decodeSafe(rawNames);
             const projectId = task.projectId || liveDemand?.id || task.id;
+            const reviewFiles = isMultiDeliverable
+                ? []
+                : currentFiles.approval.filter((file) => Boolean(file.fileUrl) && !file.error);
 
-            let targetUrl = approvalFile?.fileUrl;
-
-            // Se o arquivo ainda não foi enviado mas o objeto File está presente, faz upload agora com progresso
-            if (!targetUrl && approvalFile?.file) {
-                try {
-                    setSavedLabel('Enviando arquivo da entrega...');
-                    const uploaded = await allyoService.uploadDeliveryFile(projectId, approvalFile.file, (percent) => {
-                        updateVersionFiles('approval', [{ ...approvalFile, uploading: true, progress: percent }]);
-                    });
-                    targetUrl = uploaded.fileUrl;
-                    updateVersionFiles('approval', [{ ...approvalFile, fileUrl: targetUrl, uploading: false, progress: 100 }]);
-                } catch (uploadErr: any) {
-                    console.error('[AllyoTaskDetailView] Erro ao fazer upload do arquivo:', uploadErr);
-                    const msg = uploadErr?.response?.data?.message || uploadErr?.message || 'Falha no upload do arquivo';
-                    addToast({ type: 'error', title: 'Não foi possível enviar o arquivo', message: msg });
-                    return false;
-                }
-            }
-
-            if (!targetUrl && !isMultiDeliverable) {
+            if ((reviewFiles.length === 0 && !isMultiDeliverable) || (isMultiDeliverable && multiReviewFiles.length === 0)) {
                 addToast({ type: 'warning', title: 'Arquivo ainda não está pronto', message: 'Anexe o material e aguarde o fim do upload antes de enviar para revisão.' });
                 return false;
             }
 
+            if (isCarouselSequence && !hasCompleteCarouselSequence) {
+                addToast({
+                    type: 'warning',
+                    title: 'Sequência do carrossel incompleta',
+                    message: `Envie exatamente ${taskItemCount} imagens, uma para cada card, ou um único PDF com ${taskItemCount} páginas.`,
+                });
+                return false;
+            }
+
+            const sourceFileUrl = isMultiDeliverable
+                ? multiSourceFileUrl!
+                : sourceFiles.find((file) => file.fileUrl)?.fileUrl;
+            const orderedReviewFiles = isMultiDeliverable
+                ? [...multiReviewFiles].sort((left, right) => left.order - right.order)
+                : reviewFiles.map((file, index) => ({
+                    name: isCarouselSequence && !hasSingleApprovalPdf
+                        ? `Card ${String(index + 1).padStart(2, '0')} · ${decodeSafe(file.name)}`
+                        : decodeSafe(file.name),
+                    fileUrl: file.fileUrl!,
+                    sourceFileUrl,
+                    order: index,
+                }));
+
             setSavedLabel('Enviando entrega para aprovação...');
             await allyoService.submitDesignRevision(projectId, {
-                name: fileNames || task.name,
+                name: hasSingleApprovalPdf ? decodeSafe(reviewFiles[0]?.name || task.name) : task.name,
                 taskId: task.id,
                 version: deliveryVersion,
                 color: '#d7ff70',
-                fileUrl: targetUrl,
-                sourceFileUrl: isMultiDeliverable ? multiSourceFileUrl! : sourceFiles.find((file) => file.fileUrl)!.fileUrl!,
+                fileUrl: orderedReviewFiles.length === 1 ? orderedReviewFiles[0].fileUrl : undefined,
+                files: orderedReviewFiles.length > 1 ? orderedReviewFiles : undefined,
+                sourceFileUrl: orderedReviewFiles[0]?.sourceFileUrl || sourceFileUrl,
             });
 
             // Atualiza estado local de designs para incluir a nova entrega enviada
             setLiveDemand((current: any) => {
                 if (!current) return current;
-                const newDesign = {
-                    id: Date.now(),
+                const newDesigns = (orderedReviewFiles.length > 0 ? orderedReviewFiles : [{ name: task.name, fileUrl: undefined, order: 0 }]).map((file, index) => ({
+                    id: Date.now() + index,
                     taskId: task.id,
-                    name: fileNames || task.name,
+                    name: file.name || fileNames || task.name,
                     version: deliveryVersion,
-                    fileUrl: targetUrl,
-                    sourceFileUrl: isMultiDeliverable ? multiSourceFileUrl : sourceFiles.find((file) => file.fileUrl)?.fileUrl,
+                    fileUrl: file.fileUrl,
+                    sourceFileUrl: file.sourceFileUrl || sourceFileUrl,
                     createdAt: new Date().toISOString(),
-                };
+                }));
                 const existingDesigns = current.designs || [];
                 return {
                     ...current,
-                    designs: [newDesign, ...existingDesigns],
+                    designs: [...newDesigns, ...existingDesigns],
                 };
             });
 
@@ -481,7 +537,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 author: userName?.trim() || task.creative,
                 role: 'system',
                 version: isMultiDeliverable ? `${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'}` : deliveryVersion,
-                text: fileNames ? `Arquivo para aprovação: ${fileNames}` : 'Material enviado para aprovação do cliente.',
+                text: isCarouselSequence && !hasSingleApprovalPdf
+                    ? `${orderedReviewFiles.length} cards enviados em sequência para aprovação.`
+                    : fileNames ? `Arquivo para aprovação: ${fileNames}` : 'Material enviado para aprovação do cliente.',
             });
 
             await updateStatus('Em revisão');
@@ -580,7 +638,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                         </div>
                     </div>
                 )}<div className={`flex flex-wrap items-center gap-2 border-b px-5 py-4 text-sm text-[#a4a4a4] sm:px-[30px] ${ALLYO_BORDER}`}>
-                {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>{taskPresentation.approval}</Tag><span>e um único pacote final de</span><Tag>{taskPresentation.editable}</Tag></> : <><span>Isso é uma solicitação para</span><Tag>{taskPresentation.label}</Tag><span>com</span><Tag>{taskItemCount} {taskPresentation.itemLabel}{taskItemCount === 1 ? '' : 's'}</Tag><span>para aprovação em</span><Tag>{taskPresentation.approval}</Tag><span>e</span><Tag>{taskPresentation.editable}</Tag><span>no</span><Tag>{taskPresentation.software}</Tag></>}
+                {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>{deliveryProfile?.approvalLabel || taskPresentation.approval}</Tag>{sourceRequired && <><span>e um pacote final de</span><Tag>{deliveryProfile?.sourceLabel || taskPresentation.editable}</Tag></>}</> : <><span>Isso é uma solicitação para</span><Tag>{taskPresentation.label}</Tag><span>com</span><Tag>{taskItemCount} {taskPresentation.itemLabel}{taskItemCount === 1 ? '' : 's'}</Tag><span>para aprovação em</span><Tag>{deliveryProfile?.approvalLabel || taskPresentation.approval}</Tag>{sourceRequired && <><span>e</span><Tag>{deliveryProfile?.sourceLabel || taskPresentation.editable}</Tag></>}</>}
             </div>
 
             {project && <AllyoProjectFlow project={project} currentTaskId={task.id} />}
@@ -628,15 +686,16 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                     )}
                     {!permissionsLoaded && orderOpen && <div className="px-5 py-10 text-center text-xs text-[#8b918b] sm:px-[30px]">Carregando a experiência desta tarefa...</div>}
                     {permissionsLoaded && orderOpen && (isClientView
-                        ? <AllyoClientDeliveryWorkspace task={task} designs={taskDesigns} onReview={() => setReviewModalOpen(true)} />
+                        ? <AllyoClientDeliveryWorkspace task={presentationTask} designs={taskDesigns} itemCountOverride={catalogStructuredQuantity} onReview={() => setReviewModalOpen(true)} />
                         : isMultiDeliverable && task.deliverables
                         ? <AllyoMultiDeliverableWorkspace
                             key={task.id}
                             deliverables={task.deliverables}
-                            onProgressChange={({ ready, sourceFileUrl, isUploading }) => {
+                            onProgressChange={({ ready, sourceFileUrl, isUploading, reviewFiles }) => {
                                 setReadyDeliverables(ready);
                                 setMultiSourceFileUrl(sourceFileUrl);
                                 setIsMultiFileUploading(isUploading);
+                                setMultiReviewFiles(reviewFiles);
                             }}
                             onUploadFile={async (file, onProgress) => {
                                 const projectId = task.projectId || liveDemand?.id || task.id;
@@ -646,8 +705,11 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."
                             versionOptions={versionOptions}
                             currentVersion={deliveryVersion}
+                            sourceRequired={sourceRequired}
+                            sourceAccept={deliveryProfile?.sourceAccept}
+                            allowSourceLink={deliveryProfile?.allowSourceLink ?? true}
                           />
-                        : <DeliveryWorkspace kind={deliverableKind} task={task} />)}
+                        : <DeliveryWorkspace kind={deliverableKind} task={presentationTask} itemCountOverride={catalogStructuredQuantity} approvalLabel={deliveryProfile?.approvalLabel} sourceLabel={deliveryProfile?.sourceLabel} />)}
                     {permissionsLoaded && !isClientView && !isMultiDeliverable && (
                         <VersionBundle
                             kind={deliverableKind}
@@ -669,6 +731,13 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                 const projectId = task.projectId || liveDemand?.id || task.id;
                                 return allyoService.uploadDeliveryFile(projectId, file, onProgress);
                             }}
+                            expectedApprovalFiles={isCarouselSequence ? taskItemCount : 1}
+                            approvalAcceptOverride={deliveryProfile?.approvalAccept}
+                            sourceAcceptOverride={deliveryProfile?.sourceAccept}
+                            approvalDescriptionOverride={deliveryProfile ? `Material final conforme o catálogo · ${deliveryProfile.approvalLabel}` : undefined}
+                            sourceDescriptionOverride={deliveryProfile ? `${sourceRequired ? 'Fonte de trabalho obrigatória' : 'Opcional para este produto'} · ${deliveryProfile.sourceLabel}` : undefined}
+                            sourceRequired={sourceRequired}
+                            allowSourceLink={deliveryProfile?.allowSourceLink}
                             disabled={!isTaskInProgress || !isCurrentVersionSelected}
                             disabledReason={!isCurrentVersionSelected ? `A ${deliveryVersion} está disponível somente para consulta. Anexe os arquivos na ${latestVersionLabel}.` : "O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."}
                         />
@@ -676,7 +745,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                     {permissionsLoaded && !isClientView && <div className="mx-5 mb-12 mt-6 rounded-[14px] border border-[#dfe5d6] bg-[#fafcf7] p-5 sm:mx-[30px] sm:mb-16 dark:border-zinc-800 dark:bg-zinc-900/50">
                         <div className="flex items-start gap-3">
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eaf1dd] text-[#71864b] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]"><ShieldCheck size={17} /></span>
-                            <div><strong className="text-sm font-semibold">Pacote seguro para aprovação</strong><p className="mt-1 text-xs leading-5 text-[#747b72] dark:text-zinc-400">Na {latestVersionLabel}, envie sempre os dois arquivos: a visualização do cliente e o arquivo aberto/editável correspondente. Versões anteriores ficam protegidas para preservar o histórico.</p></div>
+                            <div><strong className="text-sm font-semibold">Pacote seguro para aprovação</strong><p className="mt-1 text-xs leading-5 text-[#747b72] dark:text-zinc-400">Na {latestVersionLabel}, envie {sourceRequired ? 'o material final e o arquivo aberto/editável correspondente' : 'o material final nos formatos definidos pelo catálogo'}. Versões anteriores ficam protegidas para preservar o histórico.</p></div>
                         </div>
                     </div>}
                 </main>
@@ -711,6 +780,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                             ? readyDeliverables > 0
                                                 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão`
                                                 : 'Nenhum pedido pronto'
+                                            : isCarouselSequence
+                                            ? `Enviar ${taskItemCount} cards para revisão`
                                             : 'Enviar para revisão'}
                                     </>
                                 )}
@@ -726,8 +797,10 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                         : !hasApprovalReady && !hasSourceReady
                                         ? 'Anexe o arquivo para aprovação e o arquivo aberto/editável.'
                                         : !hasApprovalReady
-                                        ? 'Anexe o arquivo para aprovação.'
-                                        : 'Anexe o arquivo aberto/editável para liberar o envio.'}
+                                        ? isCarouselSequence
+                                            ? `Anexe exatamente ${taskItemCount} imagens na ordem dos cards ou um PDF único com ${taskItemCount} páginas.`
+                                            : 'Anexe o arquivo para aprovação.'
+                                        : sourceRequired ? 'Anexe o arquivo aberto/editável para liberar o envio.' : 'Anexe o material final para liberar o envio.'}
                                 </p>
                             )}
                         </div>
@@ -742,6 +815,11 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 onClose={() => setConfirmModalOpen(false)}
                 onConfirm={handleConfirmReviewSend}
                 isLoading={isSendingReview}
+                description={isCarouselSequence
+                    ? `Confirme a ordem dos ${taskItemCount} cards e o arquivo aberto da ${deliveryVersion}. A sequência completa será enviada para aprovação.`
+                    : sourceRequired
+                    ? undefined
+                    : `Confirme o material final da ${deliveryVersion}. Este produto não exige arquivo aberto/editável.`}
             />
             <AllyoReviewModal
                 isOpen={reviewModalOpen}

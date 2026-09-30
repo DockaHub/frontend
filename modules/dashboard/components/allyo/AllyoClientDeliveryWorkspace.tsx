@@ -3,19 +3,16 @@ import type { ReactNode } from 'react';
 import type { AllyoDesignAsset } from '../../../../services/allyoService';
 import type { AllyoTask } from './AllyoUI';
 import { ALLYO_BORDER } from './AllyoUI';
-import { getAllyoTaskItemCount, getAllyoTaskPresentation } from './allyoTaskPresentation';
+import { getAllyoTaskItemCount, getAllyoTaskPresentation, getAllyoTaskStructureItems } from './allyoTaskPresentation';
 
-const AllyoClientDeliveryWorkspace = ({ task, designs, onReview }: { task: AllyoTask; designs: AllyoDesignAsset[]; onReview: () => void }) => {
+const AllyoClientDeliveryWorkspace = ({ task, designs, onReview, itemCountOverride }: { task: AllyoTask; designs: AllyoDesignAsset[]; onReview: () => void; itemCountOverride?: number }) => {
     const definition = getAllyoTaskPresentation(task);
-    const count = getAllyoTaskItemCount(task, definition);
+    const count = getAllyoTaskItemCount(task, definition, itemCountOverride);
     const activeDesign = designs[0];
-    const structureItems = (task.deliverables || []).flatMap((deliverable) =>
-        deliverable.scenes?.length
-            ? deliverable.scenes.map((scene) => ({ id: `${deliverable.id}-${scene.id}`, title: scene.title || scene.label }))
-            : [{ id: deliverable.id, title: deliverable.title }],
-    );
-    const fallbackItems = (task.briefing?.deliverables || []).map((title, index) => ({ id: `brief-${index}`, title }));
-    const items = structureItems.length > 0 ? structureItems : fallbackItems;
+    const items = getAllyoTaskStructureItems(task, definition, itemCountOverride);
+    const activeVersionDesigns = activeDesign
+        ? designs.filter((design) => design.version === activeDesign.version)
+        : [];
 
     return (
         <section className={`border-b ${ALLYO_BORDER}`}>
@@ -35,7 +32,7 @@ const AllyoClientDeliveryWorkspace = ({ task, designs, onReview }: { task: Allyo
                 )}
 
                 <div className={`mt-5 overflow-hidden rounded-[14px] border ${activeDesign ? 'border-[#cdd9b9]' : ALLYO_BORDER}`}>
-                    {activeDesign ? <div className="flex flex-wrap items-center gap-4 bg-[#fbfcf9] p-4 dark:bg-zinc-900/60"><span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eef3e4] text-[#748653] dark:bg-zinc-950">{activeDesign.thumbnailUrl ? <img src={activeDesign.thumbnailUrl} alt="" className="h-full w-full object-cover" /> : activeDesign.contentType?.startsWith('image/') ? <ImageIcon size={19} /> : <FileText size={19} />}</span><span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#71854e]"><CheckCircle2 size={12} /> Versão disponível</span><strong className="mt-1 block truncate text-sm">{activeDesign.name}</strong><small className="mt-1 block text-[11px] text-[#858b84]">{activeDesign.version || 'Versão atual'} · pronta para comentários e aprovação</small></span><button type="button" onClick={onReview} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#28372b]"><Eye size={14} /> Abrir revisão</button></div> : <div className="flex items-center gap-3 bg-[#fafbf8] p-5 text-[#7c837b] dark:bg-zinc-900/50"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-zinc-950"><FileText size={16} /></span><span><strong className="block text-xs font-semibold text-[#555d55] dark:text-zinc-300">Produção em andamento</strong><small className="mt-1 block text-[11px]">A versão para aprovação aparecerá aqui quando o time criativo concluir o envio.</small></span></div>}
+                    {activeDesign ? <div className="flex flex-wrap items-center gap-4 bg-[#fbfcf9] p-4 dark:bg-zinc-900/60"><span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#eef3e4] text-[#748653] dark:bg-zinc-950">{activeDesign.thumbnailUrl ? <img src={activeDesign.thumbnailUrl} alt="" className="h-full w-full object-cover" /> : activeDesign.contentType?.startsWith('image/') ? <ImageIcon size={19} /> : <FileText size={19} />}</span><span className="min-w-0 flex-1"><span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#71854e]"><CheckCircle2 size={12} /> Versão disponível</span><strong className="mt-1 block truncate text-sm">{activeVersionDesigns.length > 1 ? `${activeVersionDesigns.length} arquivos do carrossel` : activeDesign.name}</strong><small className="mt-1 block text-[11px] text-[#858b84]">{activeDesign.version || 'Versão atual'} · pronta para comentários e aprovação</small></span><button type="button" onClick={onReview} className="inline-flex min-h-10 items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#28372b]"><Eye size={14} /> Abrir revisão</button></div> : <div className="flex items-center gap-3 bg-[#fafbf8] p-5 text-[#7c837b] dark:bg-zinc-900/50"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-zinc-950"><FileText size={16} /></span><span><strong className="block text-xs font-semibold text-[#555d55] dark:text-zinc-300">Produção em andamento</strong><small className="mt-1 block text-[11px]">A versão para aprovação aparecerá aqui quando o time criativo concluir o envio.</small></span></div>}
                 </div>
             </div>
         </section>

@@ -136,6 +136,19 @@ export interface UsersResponse {
     users: AllyoUser[];
 }
 
+export type AllyoImpersonationResponse =
+    | {
+        mode: 'manyspace';
+        token: string;
+        user: import('../types').User;
+        expiresAt: string;
+    }
+    | {
+        mode: 'allyo-space';
+        redirectUrl: string;
+        expiresAt?: string;
+    };
+
 export interface AllyoPermissions {
     canManageWorkspace: boolean;
     canManageProjects: boolean;
@@ -333,8 +346,15 @@ export interface DesignSubmission {
     version?: string;
     color?: string;
     fileUrl?: string;
-    sourceFileUrl: string;
+    sourceFileUrl?: string;
     thumbnailUrl?: string;
+    files?: Array<{
+        name: string;
+        fileUrl: string;
+        thumbnailUrl?: string;
+        sourceFileUrl?: string;
+        order: number;
+    }>;
 }
 
 export interface ProjectMessagePayload {
@@ -443,6 +463,11 @@ export const allyoService = {
 
     async updateUser(id: string, data: UpdateAllyoUserPayload): Promise<{ user: AllyoUser }> {
         const response = await api.patch(`/allyo/users/${id}`, data);
+        return response.data;
+    },
+
+    async impersonateUser(id: string): Promise<AllyoImpersonationResponse> {
+        const response = await api.post(`/allyo/users/${encodeURIComponent(id)}/impersonate`);
         return response.data;
     },
 

@@ -9,6 +9,13 @@ export interface User {
   location?: string;
   jobTitle?: string;
   bio?: string;
+  impersonation?: {
+    actor: {
+      id: string;
+      email: string;
+      name: string;
+    };
+  };
 }
 
 export interface Organization {

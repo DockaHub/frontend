@@ -3,17 +3,28 @@ import { CheckCircle2, ChevronDown, ChevronUp, FileText, Images, Layers3, Packag
 import type { AllyoDeliverable } from './AllyoUI';
 import { ALLYO_BORDER, FilterSelect } from './AllyoUI';
 import { FileSlot, type ManagedFile } from './AllyoDeliveryWorkspaces';
+import { extensionsFromFormatLabel } from './allyoProductDelivery';
 
 type ApprovalFilesByItem = Record<string, Record<string, ManagedFile[]>>;
 
 interface AllyoMultiDeliverableWorkspaceProps {
     deliverables: AllyoDeliverable[];
-    onProgressChange?: (state: { ready: number; total: number; hasSourceFile: boolean; isUploading: boolean; sourceFileUrl?: string }) => void;
+    onProgressChange?: (state: {
+        ready: number;
+        total: number;
+        hasSourceFile: boolean;
+        isUploading: boolean;
+        sourceFileUrl?: string;
+        reviewFiles: Array<{ name: string; fileUrl: string; sourceFileUrl?: string; order: number }>;
+    }) => void;
     onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
     versionOptions?: string[];
     currentVersion?: string;
+    sourceRequired?: boolean;
+    sourceAccept?: string;
+    allowSourceLink?: boolean;
 }
 
 const AllyoMultiDeliverableWorkspace = ({
@@ -24,6 +35,9 @@ const AllyoMultiDeliverableWorkspace = ({
     versionOptions,
     currentVersion,
     onUploadFile,
+    sourceRequired = true,
+    sourceAccept = '.zip,.psd,.ai,.fig,.indd,.sketch,.aep,.prproj,.ppt,.pptx,.doc,.docx',
+    allowSourceLink = true,
 }: AllyoMultiDeliverableWorkspaceProps) => {
     const availableVersionOptions = useMemo(() => {
         return versionOptions && versionOptions.length > 0 ? versionOptions : [currentVersion || 'Versão 1'];
@@ -66,6 +80,23 @@ const AllyoMultiDeliverableWorkspace = ({
         return approvalIsUploading || sourceFiles.some((file) => Boolean(file.uploading));
     }, [approvalFiles, sourceFiles]);
 
+    const reviewFiles = useMemo(() => deliverables.flatMap((item, itemIndex) => {
+        const version = versions[item.id] || defaultVersion;
+        const itemAssociation = `Pedido ${itemIndex + 1} · ${item.title}`;
+        const associatedSource = sourceFiles.find((file) => {
+            const association = sourceAssociations[file.id] || 'Todos os pedidos';
+            return association === itemAssociation || association === 'Todos os pedidos';
+        });
+        return (approvalFiles[item.id]?.[version] || [])
+            .filter((file) => Boolean(file.fileUrl) && !file.error)
+            .map((file, fileIndex) => ({
+                name: `Pedido ${String(itemIndex + 1).padStart(2, '0')} · ${item.title} · ${file.name}`,
+                fileUrl: file.fileUrl!,
+                sourceFileUrl: associatedSource?.fileUrl,
+                order: itemIndex * 100 + fileIndex,
+            }));
+    }), [approvalFiles, defaultVersion, deliverables, sourceAssociations, sourceFiles, versions]);
+
     useEffect(() => {
         onProgressChange?.({
             ready: readyCount,
@@ -73,8 +104,9 @@ const AllyoMultiDeliverableWorkspace = ({
             hasSourceFile: sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error),
             isUploading,
             sourceFileUrl: sourceFiles.find((file) => file.fileUrl)?.fileUrl,
+            reviewFiles,
         });
-    }, [deliverables.length, isUploading, onProgressChange, readyCount, sourceFiles]);
+    }, [deliverables.length, isUploading, onProgressChange, readyCount, reviewFiles, sourceFiles]);
 
     const toggleItem = (itemId: string) => {
         setOpenItems((current) => current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId]);
@@ -119,7 +151,8 @@ const AllyoMultiDeliverableWorkspace = ({
                     const activeScene = itemScenes[activeSceneIndex] || null;
                     const version = versions[item.id] || defaultVersion;
                     const files = approvalFiles[item.id]?.[version] || [];
-                    const isReady = files.length > 0;
+                    const isReady = files.some((file) => Boolean(file.fileUrl) && !file.error);
+                    const itemApprovalAccept = extensionsFromFormatLabel(item.approvalFormat).join(',') || '.pdf,.png,.jpg,.jpeg,.mp4,.mov,.mp3,.wav,.gif,.zip,.srt';
 
                     return (
                         <section key={item.id} className={`rounded-[14px] border ${isReady ? 'border-[#b9c99a]' : ALLYO_BORDER}`}>
@@ -191,7 +224,7 @@ const AllyoMultiDeliverableWorkspace = ({
                                             description={`Material que o cliente irá visualizar · ${item.approvalFormat}`}
                                             files={files}
                                             onFilesChange={(nextFiles) => updateApprovalFiles(item.id, nextFiles)}
-                                            accept=".png,.jpg,.jpeg,.pdf"
+                                            accept={itemApprovalAccept}
                                             onUploadFile={onUploadFile}
                                             disabled={disabled || version !== currentVersion}
                                             disabledReason={version !== currentVersion ? `A ${version} está disponível somente para consulta. Anexe arquivos na ${currentVersion}.` : disabledReason}
@@ -213,13 +246,15 @@ const AllyoMultiDeliverableWorkspace = ({
                     <FileSlot
                         icon={<Layers3 size={17} />}
                         title="Arquivos abertos e editáveis"
-                        description="PSD, AI, FIG ou ZIP · obrigatórios para concluir a tarefa"
+                        description={sourceRequired ? 'Arquivos ou links editáveis obrigatórios para concluir a tarefa' : 'Arquivos ou links editáveis opcionais para este produto'}
                         files={sourceFiles}
                         onFilesChange={updateSourceFiles}
-                        accept=".psd,.ai,.fig,.zip,.indd,.sketch"
+                        accept={sourceAccept}
                         onUploadFile={onUploadFile}
                         disabled={disabled}
                         disabledReason={disabledReason}
+                        optional={!sourceRequired}
+                        allowExternalUrl={allowSourceLink}
                     />
 
                     {sourceFiles.length > 0 && (

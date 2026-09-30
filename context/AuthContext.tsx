@@ -13,7 +13,13 @@ interface AuthContextType {
     refreshUser: () => Promise<void>;
     isFreshLogin: boolean;
     completeFreshLogin: () => void;
+    beginImpersonation: (token: string, targetUser: User, returnUrl?: string) => void;
+    stopImpersonation: () => void;
 }
+
+const ORIGINAL_TOKEN_KEY = 'manyspace_impersonation_original_token';
+const ORIGINAL_USER_KEY = 'manyspace_impersonation_original_user';
+const RETURN_URL_KEY = 'manyspace_impersonation_return_url';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -144,8 +150,50 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const logout = () => {
         authService.logout();
+        sessionStorage.removeItem(ORIGINAL_TOKEN_KEY);
+        sessionStorage.removeItem(ORIGINAL_USER_KEY);
+        sessionStorage.removeItem(RETURN_URL_KEY);
+        socketService.disconnect();
         setUser(null);
         setIsFreshLogin(false);
+    };
+
+    const beginImpersonation = (token: string, targetUser: User, returnUrl = window.location.href) => {
+        const currentToken = localStorage.getItem('token');
+        const currentUser = localStorage.getItem('user');
+        if (currentToken && !sessionStorage.getItem(ORIGINAL_TOKEN_KEY)) {
+            sessionStorage.setItem(ORIGINAL_TOKEN_KEY, currentToken);
+            if (currentUser) sessionStorage.setItem(ORIGINAL_USER_KEY, currentUser);
+            sessionStorage.setItem(RETURN_URL_KEY, returnUrl);
+        }
+
+        const normalizedUser = normalizeUser(targetUser);
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(normalizedUser));
+        socketService.disconnect();
+        setUser(normalizedUser);
+        setIsFreshLogin(false);
+    };
+
+    const stopImpersonation = () => {
+        const originalToken = sessionStorage.getItem(ORIGINAL_TOKEN_KEY);
+        const originalUser = sessionStorage.getItem(ORIGINAL_USER_KEY);
+        const returnUrl = sessionStorage.getItem(RETURN_URL_KEY);
+        sessionStorage.removeItem(ORIGINAL_TOKEN_KEY);
+        sessionStorage.removeItem(ORIGINAL_USER_KEY);
+        sessionStorage.removeItem(RETURN_URL_KEY);
+
+        if (!originalToken) {
+            logout();
+            window.location.assign('/login');
+            return;
+        }
+
+        localStorage.setItem('token', originalToken);
+        if (originalUser) localStorage.setItem('user', originalUser);
+        else localStorage.removeItem('user');
+        socketService.disconnect();
+        window.location.assign(returnUrl || '/dashboard');
     };
 
     const completeFreshLogin = () => setIsFreshLogin(false);
@@ -160,6 +208,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         refreshUser,
         isFreshLogin,
         completeFreshLogin,
+        beginImpersonation,
+        stopImpersonation,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

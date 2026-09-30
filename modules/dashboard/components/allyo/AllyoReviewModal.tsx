@@ -427,10 +427,21 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
     );
 
     const isImage = !isPdf && (
-        !activeDesign.contentType ||
-        activeDesign.contentType.startsWith('image/') ||
+        activeDesign.contentType?.startsWith('image/') ||
         /\.(png|jpe?g|webp|gif|svg)$/i.test(activeDesign.name || '') ||
-        (fileUrl ? /\.(png|jpe?g|webp|gif|svg)(\?.*)?$/i.test(fileUrl) : false)
+        (fileUrl ? /\.(png|jpe?g|webp|gif|svg)(?:[?#].*)?$/i.test(fileUrl) : false)
+    );
+
+    const isVideo = Boolean(
+        activeDesign.contentType?.startsWith('video/') ||
+        /\.(mp4|mov|webm|m4v)$/i.test(activeDesign.name || '') ||
+        (fileUrl ? /\.(mp4|mov|webm|m4v)(?:[?#].*)?$/i.test(fileUrl) : false)
+    );
+
+    const isAudio = Boolean(
+        activeDesign.contentType?.startsWith('audio/') ||
+        /\.(mp3|wav|m4a|aac|ogg)$/i.test(activeDesign.name || '') ||
+        (fileUrl ? /\.(mp3|wav|m4a|aac|ogg)(?:[?#].*)?$/i.test(fileUrl) : false)
     );
 
     const isCopy = Boolean(
@@ -599,7 +610,9 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                     >
                                         {availableVersions.map((d) => (
                                             <option key={d.id} value={d.id}>
-                                                {d.version || `Versão ${d.id}`}
+                                                {availableVersions.filter((item) => item.version === d.version).length > 1
+                                                    ? `${d.version || 'Versão'} · ${d.name}`
+                                                    : d.version || `Versão ${d.id}`}
                                             </option>
                                         ))}
                                     </select>
@@ -715,7 +728,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                 className="relative transition-transform duration-100 ease-out origin-center shadow-2xl rounded-lg"
                                 style={{ transform: `scale(${zoom / 100})` }}
                             >
-                                {(isImage || isPdf) && fileUrl ? (
+                                {(isImage || isPdf || isVideo || isAudio) && fileUrl ? (
                                     <div className="relative select-text">
                                         {isPdf ? (
                                             <AllyoPdfCanvas
@@ -725,6 +738,19 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                 onNumPagesChange={setPdfNumPages}
                                                 onTextSelect={setActiveTextSelection}
                                             />
+                                        ) : isVideo ? (
+                                            <video
+                                                src={fileUrl}
+                                                controls
+                                                playsInline
+                                                className="max-h-[calc(100vh-180px)] max-w-[calc(100vw-440px)] rounded-lg border border-zinc-800 bg-black shadow-2xl"
+                                            />
+                                        ) : isAudio ? (
+                                            <div className="flex min-h-[240px] w-[620px] max-w-[85vw] flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 p-10 shadow-2xl">
+                                                <FileText size={42} className="mb-5 text-[#9db669]" />
+                                                <strong className="mb-5 max-w-full truncate text-sm text-white">{activeDesign.name}</strong>
+                                                <audio src={fileUrl} controls className="w-full" />
+                                            </div>
                                         ) : (
                                             <img
                                                 src={fileUrl}

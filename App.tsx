@@ -44,7 +44,7 @@ import { useDynamicFaviconAndTitle } from './hooks/useDynamicFaviconAndTitle';
 
 // Main App Content component to use hooks inside Provider
 const AppContent: React.FC = () => {
-  const { user, logout, isAuthenticated, isFreshLogin, completeFreshLogin } = useAuth();
+  const { user, logout, isAuthenticated, isFreshLogin, completeFreshLogin, stopImpersonation } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -382,6 +382,14 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex h-screen h-[100dvh] w-full max-w-full overflow-hidden bg-white font-sans text-docka-900 antialiased selection:bg-indigo-100 selection:text-indigo-900 transition-colors duration-300 dark:bg-zinc-950 dark:text-zinc-100">
+      {user?.impersonation && (
+        <div className="fixed inset-x-0 top-0 z-[250] flex min-h-11 items-center justify-center gap-3 bg-amber-300 px-4 py-2 text-center text-xs font-semibold text-amber-950 shadow-lg">
+          <span>Você está personificando <strong>{user.name}</strong> ({user.email}).</span>
+          <button type="button" onClick={stopImpersonation} className="rounded-full bg-amber-950 px-3 py-1.5 text-[11px] font-bold text-white transition hover:bg-black">
+            Voltar para {user.impersonation.actor.name}
+          </button>
+        </div>
+      )}
       <CallOverlay />
       {!location.pathname.startsWith('/portal') && 
        !location.pathname.startsWith('/sign') && 
