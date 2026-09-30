@@ -2,6 +2,7 @@ import { Download, ExternalLink, FileArchive, Grid2X2, Info, Play, Sparkles } fr
 import Modal from '../../../../components/common/Modal';
 import { ALLYO_BORDER, ALLYO_TASKS } from './AllyoUI';
 import type { AllyoTaskAttachment, AllyoTaskReference } from './allyoTaskResourceData';
+import { downloadAllyoFile } from './allyoFileDownload';
 
 export const ReferenceTaskModal = ({ reference, onClose, onOpenTask }: { reference: AllyoTaskReference | null; onClose: () => void; onOpenTask: (taskId: string) => void }) => {
     const linkedTask = reference?.linkedTaskId ? ALLYO_TASKS.find((task) => task.id === reference.linkedTaskId) : undefined;
@@ -19,7 +20,7 @@ export const ReferenceTaskModal = ({ reference, onClose, onOpenTask }: { referen
 export const TaskFilePreviewModal = ({ file, onClose }: { file: AllyoTaskAttachment | null; onClose: () => void }) => {
     const previewType = file ? getPreviewType(file.extension) : 'document';
     const generatedPreview = file ? ['AI', 'INDD', 'PSD', 'DOCX', 'XLSX', 'PPTX'].includes(file.extension) : false;
-    return <Modal isOpen={Boolean(file)} onClose={onClose} title={file?.name || 'Visualizar arquivo'} size="2xl" footer={file?.downloadUrl ? <a href={file.downloadUrl} download={file.name} className="inline-flex items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white"><Download size={13} /> Baixar arquivo</a> : undefined}>
+    return <Modal isOpen={Boolean(file)} onClose={onClose} title={file?.name || 'Visualizar arquivo'} size="2xl" footer={file?.downloadUrl ? <button type="button" onClick={() => void downloadAllyoFile(file.downloadUrl!, file.name)} className="inline-flex items-center gap-2 rounded-full bg-[#172019] px-4 py-2 text-xs font-semibold text-white"><Download size={13} /> Baixar arquivo</button> : undefined}>
         {file && <div className="grid min-h-[520px] overflow-hidden rounded-[14px] border border-[#e1e4df] lg:grid-cols-[minmax(0,1fr)_250px] dark:border-zinc-800">
             <div className="relative flex min-h-[420px] items-center justify-center overflow-hidden bg-[#f1f3ef] p-6 dark:bg-zinc-950">
                 <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'radial-gradient(#bfc6ba 0.75px, transparent 0.75px)', backgroundSize: '18px 18px' }} />

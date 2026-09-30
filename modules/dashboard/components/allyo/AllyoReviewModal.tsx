@@ -7,7 +7,6 @@ import {
     CheckCircle2,
     MessageSquare,
     Send,
-    Eye,
     Download,
     CornerDownRight,
     AlertCircle,
@@ -21,6 +20,7 @@ import {
 import { GlobalWorkerOptions, getDocument, TextLayer, type PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import allyoService, { AllyoDesignAsset, AllyoReviewComment, AllyoReviewAnnotation } from '../../../../services/allyoService';
+import { downloadAllyoFile } from './allyoFileDownload';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -266,14 +266,13 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
                 <AlertCircle className="h-10 w-10 text-red-400 mb-2" />
                 <p className="text-sm font-semibold text-white">Falha ao abrir visualização do PDF</p>
                 <p className="mt-1 text-xs text-zinc-400">{pdfError}</p>
-                <a
-                    href={url}
-                    target="_blank"
-                    rel="noreferrer"
+                <button
+                    type="button"
+                    onClick={() => void downloadAllyoFile(url, altName)}
                     className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
                 >
-                    <Download size={13} /> Abrir anexo original
-                </a>
+                    <Download size={13} /> Baixar anexo original
+                </button>
             </div>
         );
     }
@@ -625,16 +624,15 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
 
                     <div className="flex items-center gap-2">
                         {fileUrl && (
-                            <a
-                                href={fileUrl}
-                                target="_blank"
-                                rel="noreferrer"
+                            <button
+                                type="button"
+                                onClick={() => void downloadAllyoFile(fileUrl, activeDesign.name || 'arquivo-original')}
                                 className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-700"
-                                title="Abrir arquivo original"
+                                title="Baixar arquivo original"
                             >
                                 <Download size={13} />
                                 Original
-                            </a>
+                            </button>
                         )}
                         <button
                             type="button"
@@ -993,14 +991,13 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             {activeDesign.textContent || 'Arquivo textual ou sem prévia interativa de imagem direta.'}
                                         </p>
                                         {fileUrl && (
-                                            <a
-                                                href={fileUrl}
-                                                target="_blank"
-                                                rel="noreferrer"
+                                            <button
+                                                type="button"
+                                                onClick={() => void downloadAllyoFile(fileUrl, activeDesign.name || 'anexo')}
                                                 className="mt-4 inline-flex items-center gap-2 rounded-lg bg-[#9db669] px-4 py-2 text-xs font-semibold text-black hover:bg-[#b0cc77]"
                                             >
-                                                <Eye size={14} /> Abrir anexo
-                                            </a>
+                                                <Download size={14} /> Baixar anexo
+                                            </button>
                                         )}
                                     </div>
                                 )}

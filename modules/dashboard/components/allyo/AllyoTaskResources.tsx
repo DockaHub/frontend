@@ -3,6 +3,7 @@ import { ChevronRight, Download, Eye, FileArchive, FileText, Grid2X2, ImageIcon,
 import { ALLYO_BORDER } from './AllyoUI';
 import type { AllyoTaskAttachment, AllyoTaskReference, AllyoTaskResources as TaskResources } from './allyoTaskResourceData';
 import { ReferenceTaskModal, TaskFilePreviewModal } from './AllyoTaskResourceModals';
+import { downloadAllyoFile } from './allyoFileDownload';
 
 const AllyoTaskResources = ({ resources, onOpenTask }: { resources: TaskResources; onOpenTask: (taskId: string) => void }) => {
     const [selectedReference, setSelectedReference] = useState<AllyoTaskReference | null>(null);
@@ -15,7 +16,7 @@ const AllyoTaskResources = ({ resources, onOpenTask }: { resources: TaskResource
             })}</div> : <EmptyResource>Nenhuma tarefa foi adicionada como referência.</EmptyResource>}
         </ResourceSection>
 
-        <ResourceSection icon={<Paperclip size={15} />} title="Arquivos para a tarefa" description="Uploads enviados pelo cliente" action={resources.archiveUrl ? <a href={resources.archiveUrl} download className="inline-flex items-center gap-1.5 rounded-full border border-[#d9ddd5] bg-white px-2.5 py-1.5 text-[9px] font-bold text-[#65705e] dark:border-zinc-700 dark:bg-zinc-900"><Download size={11} /> Baixar ZIP</a> : undefined}>
+        <ResourceSection icon={<Paperclip size={15} />} title="Arquivos para a tarefa" description="Uploads enviados pelo cliente" action={resources.archiveUrl ? <button type="button" onClick={() => void downloadAllyoFile(resources.archiveUrl!, 'arquivos-da-tarefa.zip')} className="inline-flex items-center gap-1.5 rounded-full border border-[#d9ddd5] bg-white px-2.5 py-1.5 text-[9px] font-bold text-[#65705e] dark:border-zinc-700 dark:bg-zinc-900"><Download size={11} /> Baixar ZIP</button> : undefined}>
             {resources.attachments.length > 0 ? <div className="space-y-2">{resources.attachments.map((file) => <button type="button" onClick={() => setSelectedFile(file)} key={file.id} className={`group flex w-full items-center gap-2.5 rounded-[10px] border bg-white p-2.5 text-left transition hover:border-[#b7c99a] dark:bg-zinc-900 ${ALLYO_BORDER}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#f2f3ef] text-[#737b72] dark:bg-zinc-800">{file.extension === 'ZIP' ? <FileArchive size={14} /> : file.extension === 'MP4' ? <ImageIcon size={14} /> : <FileText size={14} />}</span><span className="min-w-0 flex-1"><strong className="block truncate text-xs font-semibold">{file.name}</strong><small className="mt-1 block text-[10px] text-[#8d938e]">{file.purpose} · {file.size}</small></span><span className="hidden shrink-0 text-[#879087] group-hover:block"><Eye size={13} /></span><span className="shrink-0 rounded-[5px] border border-[#dfe2dc] px-1.5 py-1 text-[8px] font-bold text-[#737b72] dark:border-zinc-700">{file.extension}</span></button>)}</div> : <EmptyResource>Nenhum arquivo foi enviado pelo cliente.</EmptyResource>}
         </ResourceSection>
 

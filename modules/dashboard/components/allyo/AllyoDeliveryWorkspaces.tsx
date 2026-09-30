@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { AllyoTask } from './AllyoUI';
 import { ALLYO_BORDER, FilterSelect } from './AllyoUI';
+import AllyoFileViewerModal, { type AllyoPreviewFile } from './AllyoFileViewerModal';
 
 export type DeliverableKind = 'social' | 'landing' | 'presentation' | 'storyboard';
 
@@ -359,6 +360,7 @@ export const FileSlot = ({
     disabledReason?: string;
 }) => {
     const inputRef = useRef<HTMLInputElement>(null);
+    const [previewFile, setPreviewFile] = useState<AllyoPreviewFile | null>(null);
     const safeFiles = Array.isArray(files) ? files.filter(Boolean) : [];
     const isUploadingAny = safeFiles.some((f) => Boolean(f?.uploading));
 
@@ -410,6 +412,7 @@ export const FileSlot = ({
     };
 
     return (
+        <>
         <div className={`rounded-[14px] border p-5 ${ALLYO_BORDER}`}>
             <div className="flex items-start gap-3">
                 <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f1f4eb] text-[#81915f] dark:bg-[#d0f08e]/10">
@@ -494,15 +497,16 @@ export const FileSlot = ({
                                     )}
                                 </div>
                                 {file.fileUrl && !file.uploading && (
-                                    <a
-                                        href={file.fileUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
+                                    <button
+                                        type="button"
                                         className="text-[11px] font-semibold text-[#72844d] hover:underline dark:text-[#a0bf64]"
-                                        onClick={(e) => e.stopPropagation()}
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            setPreviewFile({ name: file.name, url: file.fileUrl!, sizeLabel: file.size > 0 ? formatFileSize(file.size) : undefined });
+                                        }}
                                     >
                                         Abrir
-                                    </a>
+                                    </button>
                                 )}
                                 <span className="text-[11px] text-[#888]">
                                     {file.size > 0 ? formatFileSize(file.size) : "Enviado"}
@@ -532,6 +536,8 @@ export const FileSlot = ({
                 </div>
             )}
         </div>
+        <AllyoFileViewerModal file={previewFile} onClose={() => setPreviewFile(null)} />
+        </>
     );
 };
 
