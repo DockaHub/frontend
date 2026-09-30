@@ -12,6 +12,21 @@ export interface AllyoDeliverableScene {
     copy: string;
 }
 
+interface AllyoDeliverySchema {
+    taskType?: string | null;
+    structure?: string | null;
+    itemLabel?: string | null;
+    items?: Array<{
+        id?: string;
+        position?: number;
+        label?: string;
+        title?: string;
+        copy?: string;
+        instructions?: string;
+        cta?: string;
+    }>;
+}
+
 export interface AllyoDeliverable {
     id: string;
     title: string;
@@ -56,6 +71,7 @@ export interface AllyoTask {
         deliverables: string[];
         formats: string[];
         creativeDirection: string[];
+        deliverySchema?: AllyoDeliverySchema;
     };
     feedback?: {
         id?: string;
@@ -103,6 +119,39 @@ const demandDeliverables = (source: any): AllyoDeliverable[] | undefined => Arra
     })
     : undefined;
 
+const structuredDemandDeliverables = (task: any): AllyoDeliverable[] | undefined => {
+    const schema = (task?.deliverySchema || task?.briefing?.deliverySchema) as AllyoDeliverySchema | undefined;
+    if (!schema || !Array.isArray(schema.items) || schema.items.length === 0) return undefined;
+    const formats = Array.isArray(task?.briefing?.formats) ? task.briefing.formats.map(String) : [];
+    const format = formats.find((value: string) => /^Dimens[aã]o:/i.test(value))?.replace(/^Dimens[aã]o:\s*/i, '') || 'Conforme briefing';
+    const approvalFormat = formats.find((value: string) => /^Arquivo final:/i.test(value))?.replace(/^Arquivo final:\s*/i, '') || 'Conforme briefing';
+    const software = formats.find((value: string) => /^Arquivo aberto:/i.test(value))?.replace(/^Arquivo aberto:\s*/i, '') || 'Conforme especialidade';
+    const typeLabels: Record<string, string> = {
+        carousel: 'Carrossel', presentation: 'Apresentação', storyboard: 'Storyboard', landing: 'Landing page', document: 'Documento', 'image-set': 'Imagens', generic: 'Entrega',
+    };
+    return [{
+        id: `structured-${task.id || 'task'}`,
+        title: task.title || typeLabels[String(schema.taskType)] || 'Entrega',
+        type: typeLabels[String(schema.taskType)] || 'Entrega',
+        format,
+        approvalFormat,
+        software: software.toLocaleLowerCase('pt-BR') === 'não solicitado' ? 'Não solicitado' : software,
+        scenes: schema.items
+            .slice()
+            .sort((left, right) => Number(left.position || 0) - Number(right.position || 0))
+            .map((item, index) => ({
+                id: String(item.id || index + 1),
+                label: String(item.label || `${schema.itemLabel || 'Item'} ${index + 1}`),
+                title: String(item.title || item.label || `${schema.itemLabel || 'Item'} ${index + 1}`),
+                copy: [
+                    item.copy ? String(item.copy) : 'Sem texto informado',
+                    item.instructions ? `Direção visual: ${item.instructions}` : '',
+                    item.cta ? `CTA: ${item.cta}` : '',
+                ].filter(Boolean).join('\n\n'),
+            })),
+    }];
+};
+
 export function mapDemandToTasks(demand: any): AllyoTask[] {
     const projectCreative = Array.isArray(demand.team) && demand.team[0] ? demand.team[0] : 'A definir';
     const client = demand.workspace?.name || 'Cliente Allyo';
@@ -138,8 +187,8 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         dependencyBlocked: Boolean(task.dependencyBlocked),
         delivery: task.delivery,
         version: task.version,
-        taskType: task.taskType || task.deliverySchema?.taskType || task.briefing?.taskType || null,
-        deliverables: demandDeliverables(task.briefing) || (sourceTasks.length === 1 ? demandDeliverables(demand.briefing) : undefined),
+        taskType: task.taskType || task.deliverySchema?.taskType || task.briefing?.deliverySchema?.taskType || task.briefing?.taskType || null,
+        deliverables: structuredDemandDeliverables(task) || demandDeliverables(task.briefing) || (sourceTasks.length === 1 ? demandDeliverables(demand.briefing) : undefined),
         briefing: task.briefing,
         feedback: task.feedback || null,
     }));

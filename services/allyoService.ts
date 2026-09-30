@@ -312,6 +312,21 @@ export interface AllyoDemandTask {
         deliverables: string[];
         formats: string[];
         creativeDirection: string[];
+        deliverySchema?: {
+            version?: number;
+            taskType?: string | null;
+            structure?: string | null;
+            itemLabel?: string | null;
+            items?: Array<{
+                id?: string;
+                position?: number;
+                label?: string;
+                title?: string;
+                copy?: string;
+                instructions?: string;
+                cta?: string;
+            }>;
+        };
     };
     feedback?: {
         id?: string;
