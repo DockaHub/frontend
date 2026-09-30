@@ -51,6 +51,7 @@ export interface AllyoDesignAsset {
     color: string;
     approved: boolean;
     fileUrl?: string;
+    sourceFileUrl?: string;
     thumbnailUrl?: string;
     contentType?: string;
     textContent?: string | null;
@@ -274,6 +275,7 @@ export interface AllyoDemandTask {
     assigneeId?: string | null;
     status: 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Concluído' | string;
     delivery?: string | null;
+    version?: string | null;
     workflowStage?: string;
     dependsOn?: string[];
     requiresClientApproval?: boolean;
@@ -328,6 +330,7 @@ export interface DesignSubmission {
     version?: string;
     color?: string;
     fileUrl?: string;
+    sourceFileUrl: string;
     thumbnailUrl?: string;
 }
 
@@ -467,7 +470,7 @@ export const allyoService = {
         return response.data;
     },
 
-    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; assigneeId?: string | null; delivery?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
+    async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; assigneeId?: string | null; delivery?: string | null; version?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.patch(`/allyo/tasks/${encodeURIComponent(taskId)}`, data);
         return response.data;
     },

@@ -67,7 +67,7 @@ export const AllyoSubmitConfirmModal: React.FC<AllyoSubmitConfirmModalProps> = (
                         Tarefa indo para aprovação
                     </h3>
                     <p className="mt-2 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400 px-2 sm:px-3">
-                        Antes de enviar, tenha certeza de que você se atentou as orientações da tarefa. Isso diminui as chances de voltar para a sua fila.
+                        Confirme se a visualização e o arquivo aberto pertencem à versão atual da tarefa. Os dois serão enviados juntos para aprovação.
                     </p>
                 </div>
 

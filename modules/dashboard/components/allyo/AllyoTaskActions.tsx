@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     Activity, Ban, BriefcaseBusiness, CheckCircle2, Copy, EllipsisVertical,
-    Layers3, Link2, LockKeyhole, Pencil, Power, Trash2, UserRoundCog,
+    History, Layers3, Link2, LockKeyhole, Pencil, Power, Trash2, UserRoundCog,
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
@@ -20,6 +20,8 @@ interface AllyoTaskActionsProps {
     onTaskEdited: (changes: Partial<AllyoTask>) => void;
     onStatusChanged: (status: string) => void;
     onDeleted: () => void;
+    currentVersion: string;
+    versionOptions: string[];
 }
 
 const confirmationCopy: Record<Exclude<Confirmation, null>, { title: string; description: string; action: string; danger?: boolean }> = {
@@ -41,11 +43,11 @@ const confirmationCopy: Record<Exclude<Confirmation, null>, { title: string; des
     },
 };
 
-const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatusChanged, onDeleted }: AllyoTaskActionsProps) => {
+const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatusChanged, onDeleted, currentVersion, versionOptions }: AllyoTaskActionsProps) => {
     const { addToast } = useToast();
     const rootRef = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
-    const [modal, setModal] = useState<'edit' | 'responsible' | 'stack' | 'project' | 'activity' | null>(null);
+    const [modal, setModal] = useState<'edit' | 'responsible' | 'stack' | 'project' | 'activity' | 'version' | null>(null);
     const [confirmation, setConfirmation] = useState<Confirmation>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [title, setTitle] = useState(task.name);
@@ -58,6 +60,9 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     const [workflowStage, setWorkflowStage] = useState(task.workflowStage || 'Produção');
     const [requiresClientApproval, setRequiresClientApproval] = useState(Boolean(task.requiresClientApproval));
     const [projectStatus, setProjectStatus] = useState('Em andamento');
+    const currentVersionNumber = Number(currentVersion.replace(/\D/g, '')) || 1;
+    const reducibleVersions = versionOptions.filter((version) => (Number(version.replace(/\D/g, '')) || 0) < currentVersionNumber);
+    const [targetVersion, setTargetVersion] = useState(reducibleVersions[reducibleVersions.length - 1] || '');
     const activities = modal === 'activity' ? readTaskActivity(task.id).slice().reverse() : [];
     const author = userName?.trim() || 'Equipe Allyo';
     const isBlocked = currentStatus === 'Bloqueada';
@@ -120,6 +125,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         if (next === 'project') {
             setProjectStatus(task.status === 'Concluída' ? 'Concluído' : task.status === 'Em revisão' ? 'Em revisão' : 'Em andamento');
         }
+        if (next === 'version') setTargetVersion(reducibleVersions[reducibleVersions.length - 1] || '');
         setModal(next);
     };
 
@@ -200,6 +206,23 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
             addToast({ type: 'success', title: 'Projeto atualizado', message: 'Status e prazo foram sincronizados.' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível atualizar o projeto', message: error.response?.data?.message || 'Tente novamente.' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const reduceTaskVersion = async (event: React.FormEvent) => {
+        event.preventDefault();
+        if (!targetVersion || !reducibleVersions.includes(targetVersion)) return;
+        setIsSaving(true);
+        try {
+            await allyoService.updateTask(task.id, { version: targetVersion });
+            onTaskEdited({ version: targetVersion });
+            recordAction(`Reduziu a versão atual da tarefa de ${currentVersion} para ${targetVersion}.`);
+            setModal(null);
+            addToast({ type: 'success', title: 'Versão da tarefa ajustada', message: `${targetVersion} agora é a única versão liberada para um novo envio.` });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível reduzir a versão', message: error.response?.data?.message || 'Tente novamente.' });
         } finally {
             setIsSaving(false);
         }
@@ -315,6 +338,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                         <MenuItem icon={<Pencil size={15} />} label="Editar tarefa" onClick={() => showModal('edit')} />
                         <MenuItem icon={<Copy size={15} />} label="Criar cópia" onClick={() => void duplicateTask()} />
                         <MenuItem icon={<Activity size={15} />} label="Atividades da tarefa" onClick={() => showModal('activity')} />
+                        {reducibleVersions.length > 0 && <MenuItem icon={<History size={15} />} label="Reduzir versão atual" onClick={() => showModal('version')} />}
                         <MenuItem icon={<Link2 size={15} />} label="Compartilhar tarefa" onClick={() => void copyLink()} />
 
                         <div className="my-1.5 h-px bg-[#eceee9] dark:bg-zinc-800" />
@@ -368,6 +392,17 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                     <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fafbf8] p-4 dark:border-zinc-800 dark:bg-zinc-950"><span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#829454]">Projeto</span><strong className="mt-1 block text-sm">{task.projectName}</strong></div>
                     <AllyoField label="Status"><AllyoSelect value={projectStatus} onChange={(event) => setProjectStatus(event.target.value)}><option>Em andamento</option><option>Em revisão</option><option>Concluído</option><option>Rascunho</option></AllyoSelect></AllyoField>
                     <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] p-4 text-xs leading-5 text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">O deadline é calculado automaticamente pela stack: cada crédito representa 12 horas, tarefas dependentes são somadas e tarefas paralelas compartilham a mesma janela.</div>
+                </form>
+            </Modal>
+
+            <Modal isOpen={modal === 'version'} onClose={() => setModal(null)} title="Reduzir versão atual" size="sm" footer={<><AllyoSecondaryButton type="button" onClick={() => setModal(null)}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-reduce-version" disabled={isSaving || !targetVersion}>{isSaving ? 'Ajustando...' : 'Confirmar redução'}</AllyoPrimaryButton></>}>
+                <form id="allyo-reduce-version" onSubmit={reduceTaskVersion} className="space-y-4">
+                    <div className="rounded-[12px] border border-amber-200 bg-amber-50 p-4 text-xs leading-5 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-200">A tarefa está na <strong>{currentVersion}</strong>. Reduza apenas para corrigir o versionamento operacional; depois da alteração, envios só serão aceitos na nova versão atual.</div>
+                    <AllyoField label="Nova versão atual" required>
+                        <AllyoSelect value={targetVersion} onChange={(event) => setTargetVersion(event.target.value)} required>
+                            {reducibleVersions.map((version) => <option key={version} value={version}>{version}</option>)}
+                        </AllyoSelect>
+                    </AllyoField>
                 </form>
             </Modal>
 

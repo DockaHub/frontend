@@ -43,6 +43,7 @@ export interface AllyoTask {
     requiresClientApproval?: boolean;
     dependencyBlocked?: boolean;
     delivery?: string | null;
+    version?: string | null;
     deliverables?: AllyoDeliverable[];
     briefing?: {
         inheritedFromProject: boolean;
@@ -130,6 +131,7 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         requiresClientApproval: Boolean(task.requiresClientApproval),
         dependencyBlocked: Boolean(task.dependencyBlocked),
         delivery: task.delivery,
+        version: task.version,
         deliverables: index === 0 ? demandDeliverables(demand) : undefined,
         briefing: task.briefing,
         feedback: task.feedback || null,

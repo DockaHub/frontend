@@ -48,7 +48,7 @@ export const deliverableCopy: Record<DeliverableKind, { type: string; count: str
     social: { type: 'Post para Instagram', count: '1 entrega', approval: 'PNG', editable: '1 arquivo editável', software: 'Photoshop', next: 'Produzir a primeira versão', helper: 'Revise o briefing, faça o upload da peça e envie para a revisão interna.' },
     landing: { type: 'Landing page', count: '4 seções', approval: 'PNG ou PDF', editable: '1 arquivo editável', software: 'Figma', next: 'Concluir as seções da página', helper: 'Revise copy e responsividade antes de anexar o preview completo da página.' },
     presentation: { type: 'Apresentação', count: '8 slides', approval: 'PDF', editable: '1 arquivo editável', software: 'PowerPoint', next: 'Revisar slides e arquivos', helper: 'Confira as pendências por slide e envie PDF e editável dentro da mesma versão.' },
-    storyboard: { type: 'Storyboard', count: '4 cenas', approval: 'PDF gerado', editable: 'arquivos opcionais', software: 'Allyo', next: 'Montar e revisar as cenas', helper: 'Preencha os campos de cada cena. A Allyo organiza o documento para aprovação.' },
+    storyboard: { type: 'Storyboard', count: '4 cenas', approval: 'PDF gerado', editable: '1 arquivo editável', software: 'Allyo', next: 'Montar e revisar as cenas', helper: 'Preencha os campos de cada cena e anexe o arquivo aberto junto do PDF para aprovação.' },
 };
 
 export const DeliveryWorkspace = ({ kind }: { kind: DeliverableKind }) => {
@@ -311,12 +311,11 @@ export const VersionBundle = ({
                 />
                 <FileSlot
                     icon={<FileText size={17} />}
-                    title={kind === 'storyboard' ? 'Arquivos complementares' : 'Arquivo editável'}
-                    description={kind === 'storyboard' ? 'Opcional: referências ou fonte usada nos frames.' : `Fonte de trabalho · ${safeCopy?.software || 'Photoshop'}`}
+                    title="Arquivo aberto e editável"
+                    description={`Fonte de trabalho obrigatória · ${safeCopy?.software || 'Photoshop'}`}
                     files={sourceFiles}
                     onFilesChange={onSourceFilesChange}
                     accept={sourceAccept}
-                    optional={kind === 'storyboard'}
                     onUploadFile={onUploadSourceFile}
                     disabled={disabled}
                     disabledReason={disabledReason}

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine, Loader2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle, Send, Star, CheckCircle2, Eye, FilePenLine, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
 import AllyoReviewModal from './AllyoReviewModal';
 import AllyoSubmitConfirmModal from './AllyoSubmitConfirmModal';
 import { useSearchParams } from 'react-router-dom';
@@ -189,9 +189,11 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     // A versão atual da tarefa:
     // Se o cliente solicitou alterações, a tarefa avança para a próxima versão (highestSubmittedVersion + 1)
     // Se não está em alteração, a versão atual é a última enviada (ou 1 se nenhuma foi enviada ainda)
-    const currentVersionNum = isCurrentAlteracao
+    const inferredCurrentVersionNum = isCurrentAlteracao
         ? (highestSubmittedVersion > 0 ? highestSubmittedVersion + 1 : 2)
         : Math.max(1, highestSubmittedVersion);
+    const configuredVersionNum = Number(String(task.version || '').replace(/\D/g, '')) || 0;
+    const currentVersionNum = configuredVersionNum > 0 ? configuredVersionNum : inferredCurrentVersionNum;
 
     const latestVersionLabel = `Versão ${currentVersionNum}`;
 
@@ -242,6 +244,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     });
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
     const [readyDeliverables, setReadyDeliverables] = useState(0);
+    const [multiSourceFileUrl, setMultiSourceFileUrl] = useState<string | undefined>();
+    const [isMultiFileUploading, setIsMultiFileUploading] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
     const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
     const [isSendingReview, setIsSendingReview] = useState(false);
@@ -252,8 +256,12 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const isCurrentlyBlocked = administrativeBlock ?? (isTaskBlocked || status === 'Bloqueada');
     const isInactive = status === 'Inativa';
     const isTaskInProgress = status?.trim()?.toLowerCase() === 'em andamento' || status === 'Alteração';
-    const isAnyFileUploading = approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
-    const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && (isMultiDeliverable ? readyDeliverables > 0 : approvalFiles.length > 0);
+    const deliveryVersionNum = Number(deliveryVersion.replace(/\D/g, '')) || 1;
+    const isCurrentVersionSelected = deliveryVersionNum === currentVersionNum;
+    const isAnyFileUploading = isMultiFileUploading || approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
+    const hasApprovalReady = isMultiDeliverable ? readyDeliverables > 0 : approvalFiles.some((file) => Boolean(file.fileUrl) && !file.error);
+    const hasSourceReady = isMultiDeliverable ? Boolean(multiSourceFileUrl) : sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error);
+    const canSendForReview = isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && isCurrentVersionSelected && hasApprovalReady && hasSourceReady;
 
     useEffect(() => {
         setStatus(isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : task.status);
@@ -271,21 +279,29 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             const vNum = Number(String(d.version || '').replace(/\D/g, '')) || 1;
             const vLabel = `Versão ${vNum}`;
             setFilesByVersion((current) => {
-                const existing = current[vLabel]?.approval || [];
-                if (existing.some((item) => item.fileUrl || item.file)) return current;
+                const currentVersionFiles = current[vLabel] || { approval: [], source: [] };
+                const hasApproval = currentVersionFiles.approval.some((item) => item.fileUrl || item.file);
+                const hasSource = currentVersionFiles.source.some((item) => item.fileUrl || item.file);
+                const sourceFileUrl = d.sourceFileUrl;
+                if (hasApproval && (hasSource || !sourceFileUrl)) return current;
                 return {
                     ...current,
                     [vLabel]: {
-                        approval: [{
+                        approval: hasApproval ? currentVersionFiles.approval : [{
                             id: `design-${d.id}`,
                             name: (() => {
                                 const n = (d as any).name || 'Arquivo em revisão';
                                 try { return decodeURIComponent(n); } catch { return n; }
                             })(),
                             size: 0,
-                            fileUrl: (d as any).fileUrl,
+                            fileUrl: d.fileUrl,
                         }],
-                        source: current[vLabel]?.source || [],
+                        source: hasSource || !sourceFileUrl ? currentVersionFiles.source : [{
+                            id: `source-${d.id}`,
+                            name: `Arquivo aberto · ${d.name}`,
+                            size: 0,
+                            fileUrl: sourceFileUrl,
+                        }],
                     },
                 };
             });
@@ -347,6 +363,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     };
 
     const applyTaskChanges = (changes: Partial<AllyoTask>) => {
+        if (changes.version !== undefined) setSelectedVersionByUser(null);
         setTaskChanges((current) => ({ ...current, ...changes }));
         setLiveDemand((current) => current ? {
             ...current,
@@ -358,6 +375,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 ...(changes.workflowStage !== undefined ? { workflowStage: changes.workflowStage } : {}),
                 ...(changes.dependsOn !== undefined ? { dependsOn: changes.dependsOn } : {}),
                 ...(changes.requiresClientApproval !== undefined ? { requiresClientApproval: changes.requiresClientApproval } : {}),
+                ...(changes.version !== undefined ? { version: changes.version } : {}),
                 ...(changes.dependencyBlocked !== undefined ? { dependencyBlocked: changes.dependencyBlocked } : {}),
             } : item),
         } : current);
@@ -373,6 +391,14 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
 
     const sendForReview = async (): Promise<boolean> => {
         if (isSendingReview) return false;
+        if (!isCurrentVersionSelected) {
+            addToast({ type: 'warning', title: 'Versão anterior protegida', message: `O envio está liberado somente na ${latestVersionLabel}. Para voltar uma versão, use “Reduzir versão atual” no menu de ações.` });
+            return false;
+        }
+        if (!hasApprovalReady || !hasSourceReady) {
+            addToast({ type: 'warning', title: 'Pacote de entrega incompleto', message: 'Anexe o arquivo para aprovação e o arquivo aberto/editável da versão atual.' });
+            return false;
+        }
         setIsSendingReview(true);
         try {
             const decodeSafe = (str: string): string => {
@@ -414,6 +440,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 version: deliveryVersion,
                 color: '#d7ff70',
                 fileUrl: targetUrl,
+                sourceFileUrl: isMultiDeliverable ? multiSourceFileUrl! : sourceFiles.find((file) => file.fileUrl)!.fileUrl!,
             });
 
             // Atualiza estado local de designs para incluir a nova entrega enviada
@@ -425,6 +452,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                     name: fileNames || task.name,
                     version: deliveryVersion,
                     fileUrl: targetUrl,
+                    sourceFileUrl: isMultiDeliverable ? multiSourceFileUrl : sourceFiles.find((file) => file.fileUrl)?.fileUrl,
                     createdAt: new Date().toISOString(),
                 };
                 const existingDesigns = current.designs || [];
@@ -485,7 +513,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
                 <div className="ml-auto flex items-center gap-3">
                     <span className="hidden text-[11px] font-medium text-[#8f8f8f] lg:inline" aria-live="polite">{savedLabel}</span>
-                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={applyTaskChanges} onStatusChanged={applyStatusChange} onDeleted={goBack} />}
+                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={applyTaskChanges} onStatusChanged={applyStatusChange} onDeleted={goBack} currentVersion={latestVersionLabel} versionOptions={versionOptions} />}
                 </div>
             </section>
 
@@ -588,7 +616,15 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                         ? <AllyoMultiDeliverableWorkspace
                             key={task.id}
                             deliverables={task.deliverables}
-                            onProgressChange={setReadyDeliverables}
+                            onProgressChange={({ ready, sourceFileUrl, isUploading }) => {
+                                setReadyDeliverables(ready);
+                                setMultiSourceFileUrl(sourceFileUrl);
+                                setIsMultiFileUploading(isUploading);
+                            }}
+                            onUploadFile={async (file, onProgress) => {
+                                const projectId = task.projectId || liveDemand?.id || task.id;
+                                return allyoService.uploadDeliveryFile(projectId, file, onProgress);
+                            }}
                             disabled={!isTaskInProgress}
                             disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."
                             versionOptions={versionOptions}
@@ -616,10 +652,16 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                 const projectId = task.projectId || liveDemand?.id || task.id;
                                 return allyoService.uploadDeliveryFile(projectId, file, onProgress);
                             }}
-                            disabled={!isTaskInProgress}
-                            disabledReason="O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."
+                            disabled={!isTaskInProgress || !isCurrentVersionSelected}
+                            disabledReason={!isCurrentVersionSelected ? `A ${deliveryVersion} está disponível somente para consulta. Anexe os arquivos na ${latestVersionLabel}.` : "O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."}
                         />
                     )}
+                    <div className="mx-5 mb-12 mt-6 rounded-[14px] border border-[#dfe5d6] bg-[#fafcf7] p-5 sm:mx-[30px] sm:mb-16 dark:border-zinc-800 dark:bg-zinc-900/50">
+                        <div className="flex items-start gap-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eaf1dd] text-[#71864b] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]"><ShieldCheck size={17} /></span>
+                            <div><strong className="text-sm font-semibold">Pacote seguro para aprovação</strong><p className="mt-1 text-xs leading-5 text-[#747b72] dark:text-zinc-400">Na {latestVersionLabel}, envie sempre os dois arquivos: a visualização do cliente e o arquivo aberto/editável correspondente. Versões anteriores ficam protegidas para preservar o histórico.</p></div>
+                        </div>
+                    </div>
                 </main>
 
                 <aside className="min-w-0 bg-[#fdfdfc] dark:bg-zinc-950">
@@ -661,7 +703,13 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                         ? 'Aguarde o upload dos arquivos terminar para enviar.'
                                         : isSendingReview
                                         ? 'Processando entrega na nuvem...'
-                                        : 'Anexe o material para liberar o envio.'}
+                                        : !isCurrentVersionSelected
+                                        ? `A ${deliveryVersion} é somente para consulta. Selecione a ${latestVersionLabel} para enviar.`
+                                        : !hasApprovalReady && !hasSourceReady
+                                        ? 'Anexe o arquivo para aprovação e o arquivo aberto/editável.'
+                                        : !hasApprovalReady
+                                        ? 'Anexe o arquivo para aprovação.'
+                                        : 'Anexe o arquivo aberto/editável para liberar o envio.'}
                                 </p>
                             )}
                         </div>

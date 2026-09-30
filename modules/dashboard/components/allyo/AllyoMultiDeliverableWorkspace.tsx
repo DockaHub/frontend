@@ -8,7 +8,8 @@ type ApprovalFilesByItem = Record<string, Record<string, ManagedFile[]>>;
 
 interface AllyoMultiDeliverableWorkspaceProps {
     deliverables: AllyoDeliverable[];
-    onProgressChange?: (ready: number, total: number) => void;
+    onProgressChange?: (state: { ready: number; total: number; hasSourceFile: boolean; isUploading: boolean; sourceFileUrl?: string }) => void;
+    onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
     versionOptions?: string[];
@@ -22,6 +23,7 @@ const AllyoMultiDeliverableWorkspace = ({
     disabledReason,
     versionOptions,
     currentVersion,
+    onUploadFile,
 }: AllyoMultiDeliverableWorkspaceProps) => {
     const availableVersionOptions = useMemo(() => {
         return versionOptions && versionOptions.length > 0 ? versionOptions : [currentVersion || 'Versão 1'];
@@ -54,12 +56,25 @@ const AllyoMultiDeliverableWorkspace = ({
 
     const readyCount = useMemo(() => deliverables.filter((item) => {
         const version = versions[item.id] || defaultVersion;
-        return (approvalFiles[item.id]?.[version] || []).length > 0;
+        return (approvalFiles[item.id]?.[version] || []).some((file) => Boolean(file.fileUrl) && !file.error);
     }).length, [approvalFiles, defaultVersion, deliverables, versions]);
 
+    const isUploading = useMemo(() => {
+        const approvalIsUploading = Object.values(approvalFiles).some((versionsByItem) =>
+            Object.values(versionsByItem).some((files) => files.some((file) => Boolean(file.uploading))),
+        );
+        return approvalIsUploading || sourceFiles.some((file) => Boolean(file.uploading));
+    }, [approvalFiles, sourceFiles]);
+
     useEffect(() => {
-        onProgressChange?.(readyCount, deliverables.length);
-    }, [deliverables.length, onProgressChange, readyCount]);
+        onProgressChange?.({
+            ready: readyCount,
+            total: deliverables.length,
+            hasSourceFile: sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error),
+            isUploading,
+            sourceFileUrl: sourceFiles.find((file) => file.fileUrl)?.fileUrl,
+        });
+    }, [deliverables.length, isUploading, onProgressChange, readyCount, sourceFiles]);
 
     const toggleItem = (itemId: string) => {
         setOpenItems((current) => current.includes(itemId) ? current.filter((id) => id !== itemId) : [...current, itemId]);
@@ -177,8 +192,9 @@ const AllyoMultiDeliverableWorkspace = ({
                                             files={files}
                                             onFilesChange={(nextFiles) => updateApprovalFiles(item.id, nextFiles)}
                                             accept=".png,.jpg,.jpeg,.pdf"
-                                            disabled={disabled}
-                                            disabledReason={disabledReason}
+                                            onUploadFile={onUploadFile}
+                                            disabled={disabled || version !== currentVersion}
+                                            disabledReason={version !== currentVersion ? `A ${version} está disponível somente para consulta. Anexe arquivos na ${currentVersion}.` : disabledReason}
                                         />
                                     </div>
                                 </div>
@@ -201,6 +217,7 @@ const AllyoMultiDeliverableWorkspace = ({
                         files={sourceFiles}
                         onFilesChange={updateSourceFiles}
                         accept=".psd,.ai,.fig,.zip,.indd,.sketch"
+                        onUploadFile={onUploadFile}
                         disabled={disabled}
                         disabledReason={disabledReason}
                     />
