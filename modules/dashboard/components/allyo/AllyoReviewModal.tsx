@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from 'react';
 import {
     X,
     ZoomIn,
@@ -66,6 +66,297 @@ export function getAnnotationPage(ann: any): number {
     } catch {}
     return 1;
 }
+
+interface CopyHighlightProps {
+    content: string;
+    safeHtml: string;
+    isRichText: boolean;
+    comments: AllyoReviewComment[];
+    selectedCommentId: number | null;
+    hoveredCommentId: number | null;
+    onSelect: (commentId: number) => void;
+    onHover: (commentId: number | null) => void;
+    onMatchedCommentsChange: (commentIds: number[]) => void;
+}
+
+interface CopyHighlightRange {
+    start: number;
+    end: number;
+}
+
+const normalizeTextWithOffsets = (value: string) => {
+    let text = '';
+    const offsets: number[] = [];
+    let previousWasWhitespace = false;
+
+    for (let index = 0; index < value.length; index += 1) {
+        const character = value[index];
+        const isWhitespace = /\s/.test(character);
+        if (isWhitespace) {
+            if (!previousWasWhitespace) {
+                text += ' ';
+                offsets.push(index);
+            }
+        } else {
+            text += character;
+            offsets.push(index);
+        }
+        previousWasWhitespace = isWhitespace;
+    }
+
+    return { text, offsets };
+};
+
+const findCopyHighlightRanges = (fullText: string, snippet: string): CopyHighlightRange[] => {
+    const exactRanges: CopyHighlightRange[] = [];
+    let exactIndex = fullText.indexOf(snippet);
+    while (exactIndex >= 0) {
+        exactRanges.push({ start: exactIndex, end: exactIndex + snippet.length });
+        exactIndex = fullText.indexOf(snippet, exactIndex + Math.max(1, snippet.length));
+    }
+    if (exactRanges.length) return exactRanges;
+
+    const normalizedFullText = normalizeTextWithOffsets(fullText);
+    const normalizedSnippet = normalizeTextWithOffsets(snippet.trim()).text;
+    if (!normalizedSnippet) return [];
+
+    const normalizedRanges: CopyHighlightRange[] = [];
+    let normalizedIndex = normalizedFullText.text.indexOf(normalizedSnippet);
+    while (normalizedIndex >= 0) {
+        const start = normalizedFullText.offsets[normalizedIndex];
+        const finalOffset = normalizedFullText.offsets[normalizedIndex + normalizedSnippet.length - 1];
+        if (typeof start === 'number' && typeof finalOffset === 'number') {
+            normalizedRanges.push({ start, end: finalOffset + 1 });
+        }
+        normalizedIndex = normalizedFullText.text.indexOf(
+            normalizedSnippet,
+            normalizedIndex + Math.max(1, normalizedSnippet.length)
+        );
+    }
+    return normalizedRanges;
+};
+
+/**
+ * Mantém as marcações de copy presas ao texto, em vez de coordenadas que se
+ * desalinhariam quando o conteúdo muda de largura ou quebra de linha.
+ */
+const CopyTextWithHighlights: React.FC<CopyHighlightProps> = ({
+    content,
+    safeHtml,
+    isRichText,
+    comments,
+    selectedCommentId,
+    hoveredCommentId,
+    onSelect,
+    onHover,
+    onMatchedCommentsChange,
+}) => {
+    const rootRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        const root = rootRef.current;
+        if (!root) return;
+
+        if (isRichText) root.innerHTML = safeHtml;
+        else root.textContent = content || 'Sem conteúdo de texto disponível diretamente.';
+
+        const ownerDocument = root.ownerDocument;
+        const showText = ownerDocument.defaultView?.NodeFilter.SHOW_TEXT ?? 4;
+        const walker = ownerDocument.createTreeWalker(root, showText);
+        const textNodes: Array<{ node: Text; start: number; end: number }> = [];
+        let fullText = '';
+        let currentNode = walker.nextNode();
+        while (currentNode) {
+            const node = currentNode as Text;
+            const start = fullText.length;
+            fullText += node.data;
+            textNodes.push({ node, start, end: fullText.length });
+            currentNode = walker.nextNode();
+        }
+
+        const highlightedComments = comments
+            .map((comment, index) => ({
+                comment,
+                number: comments.slice(0, index + 1).filter((item) => Boolean(item.point)).length,
+                snippet: parseQuotedSnippet(comment.text).snippet,
+            }))
+            .filter(({ comment, snippet }) => Boolean(comment.point && snippet));
+
+        const occupiedRanges: CopyHighlightRange[] = [];
+        const matchedCommentIds: number[] = [];
+        const operations = new Map<Text, Array<{
+            start: number;
+            end: number;
+            comment: AllyoReviewComment;
+            number: number;
+            snippet: string;
+            isLastPart: boolean;
+        }>>();
+
+        const resolvePosition = (offset: number) => {
+            const entry = textNodes.find(({ start, end }) => offset >= start && offset <= end);
+            if (!entry) return null;
+            return { node: entry.node, offset: Math.max(0, Math.min(entry.node.length, offset - entry.start)) };
+        };
+
+        highlightedComments.forEach(({ comment, number, snippet }) => {
+            const candidates = findCopyHighlightRanges(fullText, snippet as string)
+                .filter((candidate) => !occupiedRanges.some(
+                    (occupied) => candidate.start < occupied.end && candidate.end > occupied.start
+                ));
+            if (!candidates.length) return;
+
+            let selectedRange = candidates[0];
+            if (candidates.length > 1 && comment.point) {
+                const rootRect = (root.parentElement || root).getBoundingClientRect();
+                selectedRange = candidates.reduce((closest, candidate) => {
+                    const measureDistance = (range: CopyHighlightRange) => {
+                        const start = resolvePosition(range.start);
+                        const end = resolvePosition(range.end);
+                        if (!start || !end || !rootRect.height) return Number.POSITIVE_INFINITY;
+                        const domRange = ownerDocument.createRange();
+                        domRange.setStart(start.node, start.offset);
+                        domRange.setEnd(end.node, end.offset);
+                        const rect = domRange.getBoundingClientRect();
+                        const y = ((rect.top + rect.height / 2 - rootRect.top) / rootRect.height) * 100;
+                        return Math.abs(y - comment.point!.y);
+                    };
+                    return measureDistance(candidate) < measureDistance(closest) ? candidate : closest;
+                }, candidates[0]);
+            }
+
+            occupiedRanges.push(selectedRange);
+            matchedCommentIds.push(comment.id);
+            const affectedNodes = textNodes.filter(
+                ({ start, end }) => selectedRange.start < end && selectedRange.end > start
+            );
+            affectedNodes.forEach((entry, index) => {
+                const nodeOperations = operations.get(entry.node) || [];
+                nodeOperations.push({
+                    start: Math.max(0, selectedRange.start - entry.start),
+                    end: Math.min(entry.node.length, selectedRange.end - entry.start),
+                    comment,
+                    number,
+                    snippet: snippet as string,
+                    isLastPart: index === affectedNodes.length - 1,
+                });
+                operations.set(entry.node, nodeOperations);
+            });
+        });
+
+        onMatchedCommentsChange(matchedCommentIds);
+
+        operations.forEach((nodeOperations, node) => {
+            const fragment = ownerDocument.createDocumentFragment();
+            let cursor = 0;
+
+            nodeOperations.sort((a, b) => a.start - b.start).forEach((operation) => {
+                if (operation.start > cursor) fragment.append(node.data.slice(cursor, operation.start));
+
+                const color = operation.comment.resolved ? '#34d399' : '#fbbf24';
+                const mark = ownerDocument.createElement('mark');
+                mark.dataset.copyCommentId = String(operation.comment.id);
+                mark.dataset.copyResolved = String(operation.comment.resolved);
+                mark.className = 'cursor-pointer rounded-sm px-0.5 text-inherit transition-colors focus:outline-none focus:ring-2 focus:ring-amber-300/80';
+                mark.style.backgroundColor = operation.comment.resolved
+                    ? 'rgba(52, 211, 153, 0.16)'
+                    : 'rgba(251, 191, 36, 0.18)';
+                mark.style.textDecoration = `underline 2px ${color}`;
+                mark.style.textUnderlineOffset = '3px';
+                mark.title = `Marcação ${operation.number}: ${operation.snippet}`;
+                mark.append(node.data.slice(operation.start, operation.end));
+
+                if (operation.isLastPart) {
+                    mark.tabIndex = 0;
+                    const badge = ownerDocument.createElement('sup');
+                    badge.className = 'ml-1 inline-flex h-4 min-w-4 select-none items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none text-zinc-950 align-super';
+                    badge.style.backgroundColor = color;
+                    badge.textContent = String(operation.number);
+                    badge.setAttribute('aria-hidden', 'true');
+                    mark.append(badge);
+                }
+
+                fragment.append(mark);
+                cursor = operation.end;
+            });
+
+            if (cursor < node.data.length) fragment.append(node.data.slice(cursor));
+            node.replaceWith(fragment);
+        });
+    }, [comments, content, isRichText, onMatchedCommentsChange, safeHtml]);
+
+    useLayoutEffect(() => {
+        const root = rootRef.current;
+        if (!root) return;
+
+        root.querySelectorAll<HTMLElement>('[data-copy-comment-id]').forEach((mark) => {
+            const commentId = Number(mark.dataset.copyCommentId);
+            const isActive = commentId === selectedCommentId || commentId === hoveredCommentId;
+            const isResolved = mark.dataset.copyResolved === 'true';
+            mark.style.backgroundColor = isResolved
+                ? (isActive ? 'rgba(52, 211, 153, 0.3)' : 'rgba(52, 211, 153, 0.16)')
+                : (isActive ? 'rgba(251, 191, 36, 0.34)' : 'rgba(251, 191, 36, 0.18)');
+        });
+
+    }, [comments, hoveredCommentId, selectedCommentId]);
+
+    useEffect(() => {
+        if (!selectedCommentId) return;
+        rootRef.current
+            ?.querySelector<HTMLElement>(`[data-copy-comment-id="${selectedCommentId}"]`)
+            ?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }, [comments, content, isRichText, safeHtml, selectedCommentId]);
+
+    const commentIdFromTarget = (target: EventTarget | null) => {
+        if (!(target instanceof HTMLElement)) return null;
+        const mark = target.closest<HTMLElement>('[data-copy-comment-id]');
+        const commentId = Number(mark?.dataset.copyCommentId);
+        return Number.isFinite(commentId) && commentId > 0 ? commentId : null;
+    };
+
+    return (
+        <div
+            ref={rootRef}
+            onClick={(event) => {
+                const commentId = commentIdFromTarget(event.target);
+                if (commentId) onSelect(commentId);
+            }}
+            onKeyDown={(event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return;
+                const commentId = commentIdFromTarget(event.target);
+                if (commentId) {
+                    event.preventDefault();
+                    onSelect(commentId);
+                }
+            }}
+            onMouseOver={(event) => {
+                const commentId = commentIdFromTarget(event.target);
+                if (commentId) onHover(commentId);
+            }}
+            onMouseOut={(event) => {
+                const fromCommentId = commentIdFromTarget(event.target);
+                const toCommentId = commentIdFromTarget(event.relatedTarget);
+                if (fromCommentId && fromCommentId !== toCommentId) onHover(null);
+            }}
+            className={isRichText
+                ? `text-[15px] leading-relaxed text-zinc-200 select-text selection:bg-[#5d55c7]/40 selection:text-white
+                    [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-white
+                    [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-white
+                    [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-white
+                    [&_p]:my-2
+                    [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
+                    [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
+                    [&_li]:my-0.5
+                    [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-zinc-300
+                    [&_pre]:bg-zinc-800/80 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
+                    [&_hr]:my-4 [&_hr]:border-zinc-700
+                    [&_a]:text-[#d0f08e] [&_a]:underline [&_a]:font-medium
+                    [&_article>div]:whitespace-pre-wrap [&_article>div]:my-3
+                    [&_aside]:mt-7 [&_aside]:border-t [&_aside]:border-zinc-700 [&_aside]:pt-4 [&_aside]:text-[13px] [&_aside]:text-zinc-400`
+                : 'text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white'}
+        />
+    );
+};
 
 interface AllyoPdfCanvasProps {
     url: string;
@@ -374,6 +665,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
     const [hoveredCommentId, setHoveredCommentId] = useState<number | null>(null);
     const [activeTextSelection, setActiveTextSelection] = useState<TextSelectionData | null>(null);
     const [selectedSnippet, setSelectedSnippet] = useState<string | null>(null);
+    const [highlightedCopyCommentIds, setHighlightedCopyCommentIds] = useState<number[]>([]);
     const [comments, setComments] = useState<AllyoReviewComment[]>([]);
     const [annotations, setAnnotations] = useState<AllyoReviewAnnotation[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -393,6 +685,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
         setZoom(100);
         setActiveTextSelection(null);
         setSelectedSnippet(null);
+        setHighlightedCopyCommentIds([]);
         setHoveredCommentId(null);
     }, [design, isOpen]);
 
@@ -971,29 +1264,25 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             )}
                                         </div>
 
-                                        {/<\/?[a-z][\s\S]*>/i.test(activeDesign.textContent || '') ? (
-                                            <div
-                                                className="text-[15px] leading-relaxed text-zinc-200 select-text selection:bg-[#5d55c7]/40 selection:text-white
-                                                [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-white
-                                                [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-white
-                                                [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-white
-                                                [&_p]:my-2
-                                                [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
-                                                [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
-                                                [&_li]:my-0.5
-                                                [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-zinc-300
-                                                [&_pre]:bg-zinc-800/80 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
-                                                [&_hr]:my-4 [&_hr]:border-zinc-700
-                                                [&_a]:text-[#d0f08e] [&_a]:underline [&_a]:font-medium
-                                                [&_article>div]:whitespace-pre-wrap [&_article>div]:my-3
-                                                [&_aside]:mt-7 [&_aside]:border-t [&_aside]:border-zinc-700 [&_aside]:pt-4 [&_aside]:text-[13px] [&_aside]:text-zinc-400"
-                                                dangerouslySetInnerHTML={{ __html: safeCopyHtml }}
-                                            />
-                                        ) : (
-                                            <div className="text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white">
-                                                {activeDesign.textContent || 'Sem conteúdo de texto disponível diretamente.'}
-                                            </div>
-                                        )}
+                                        <CopyTextWithHighlights
+                                            content={activeDesign.textContent || ''}
+                                            safeHtml={safeCopyHtml}
+                                            isRichText={/<\/?[a-z][\s\S]*>/i.test(activeDesign.textContent || '')}
+                                            comments={safeComments}
+                                            selectedCommentId={selectedCommentId}
+                                            hoveredCommentId={hoveredCommentId}
+                                            onSelect={handleSelectPin}
+                                            onMatchedCommentsChange={setHighlightedCopyCommentIds}
+                                            onHover={(commentId) => {
+                                                setHoveredCommentId(commentId);
+                                                if (commentId) {
+                                                    document.getElementById(`comment-card-${commentId}`)?.scrollIntoView({
+                                                        behavior: 'smooth',
+                                                        block: 'nearest',
+                                                    });
+                                                }
+                                            }}
+                                        />
 
                                         {/* Balão flutuante para comentar no trecho da copy */}
                                         {activeTextSelection && (
@@ -1015,9 +1304,14 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             </div>
                                         )}
 
-                                        {/* Pinos no documento de copy */}
+                                        {/* Fallback para comentários pontuais sem um trecho textual associado */}
                                         {comments
-                                            .filter((c) => c.point && typeof c.point.x === 'number' && typeof c.point.y === 'number')
+                                            .filter((c) => (
+                                                c.point &&
+                                                typeof c.point.x === 'number' &&
+                                                typeof c.point.y === 'number' &&
+                                                !highlightedCopyCommentIds.includes(c.id)
+                                            ))
                                             .map((c) => {
                                                 const number = markerNumber(c.id);
                                                 const isSelected = selectedCommentId === c.id;
@@ -1085,15 +1379,22 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                         <div className="flex items-center justify-between border-t border-zinc-800/80 bg-[#121a14] px-6 py-2.5 text-xs text-zinc-400">
                             <div className="flex items-center gap-4">
                                 <span className="flex items-center gap-1.5">
-                                    <span className="h-2.5 w-2.5 rounded-full bg-[#5d55c7]" />
-                                    Pinos numéricos = comentários do cliente
+                                    <span className={isCopy
+                                        ? 'h-2.5 w-5 rounded-sm border-b-2 border-amber-400 bg-amber-400/20'
+                                        : 'h-2.5 w-2.5 rounded-full bg-[#5d55c7]'}
+                                    />
+                                    {isCopy ? 'Trechos destacados = ajustes na copy' : 'Pinos numéricos = comentários do cliente'}
                                 </span>
                                 <span className="flex items-center gap-1.5">
                                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
                                     Verde = ajustes resolvidos
                                 </span>
                             </div>
-                            <span>Passe o mouse ou clique no marcador para localizar o comentário</span>
+                            <span>
+                                {isCopy
+                                    ? 'Passe o mouse ou clique no trecho para localizar o comentário'
+                                    : 'Passe o mouse ou clique no marcador para localizar o comentário'}
+                            </span>
                         </div>
                     </div>
 
@@ -1230,7 +1531,9 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
 
                                             <footer className="flex items-center justify-between border-t border-zinc-800/80 pt-2 text-[11px]">
                                                 <span className="text-zinc-500">
-                                                    {hasPin ? 'Marcador no arquivo' : 'Comentário geral'}
+                                                    {isCopy && parsed.snippet
+                                                        ? 'Trecho marcado no texto'
+                                                        : hasPin ? 'Marcador no arquivo' : 'Comentário geral'}
                                                 </span>
                                                 <button
                                                     type="button"
