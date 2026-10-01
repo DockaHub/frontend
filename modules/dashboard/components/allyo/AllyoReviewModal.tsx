@@ -22,6 +22,7 @@ import { GlobalWorkerOptions, getDocument, TextLayer, type PDFDocumentProxy } fr
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import allyoService, { AllyoDesignAsset, AllyoReviewComment, AllyoReviewAnnotation } from '../../../../services/allyoService';
 import { downloadAllyoFile } from './allyoFileDownload';
+import { richTextToPlainText, sanitizeRichText } from './allyoCopyContent';
 
 GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -416,6 +417,11 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
             })
             .finally(() => setIsLoading(false));
     }, [isOpen, design?.id]);
+
+    const safeCopyHtml = useMemo(
+        () => sanitizeRichText(reviewDesign?.textContent || design?.textContent || ''),
+        [design?.textContent, reviewDesign?.textContent]
+    );
 
     if (!isOpen || !design) return null;
 
@@ -931,10 +937,13 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                     </div>
                                 ) : isCopy ? (
                                     <div
+                                        className="w-[680px] max-w-[90vw] max-h-[78vh] overflow-y-auto rounded-xl bg-zinc-900 text-zinc-100 shadow-2xl border border-zinc-800 select-text leading-relaxed"
+                                    >
+                                      <div
                                         ref={copyContainerRef}
                                         onMouseUp={handleCopyMouseUp}
-                                        className="relative w-[680px] max-w-[90vw] min-h-[500px] max-h-[78vh] overflow-y-auto rounded-xl bg-zinc-900 text-zinc-100 p-8 sm:p-10 shadow-2xl border border-zinc-800 select-text leading-relaxed"
-                                    >
+                                        className="relative min-h-[500px] p-8 sm:p-10"
+                                      >
                                         <div className="border-b border-zinc-800 pb-4 mb-6 flex items-start justify-between gap-4">
                                             <div>
                                                 <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
@@ -948,12 +957,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                     type="button"
                                                     onClick={async () => {
                                                         try {
-                                                            let textToCopy = activeDesign.textContent || '';
-                                                            if (/<\/?[a-z][\s\S]*>/i.test(textToCopy)) {
-                                                                const temp = document.createElement('div');
-                                                                temp.innerHTML = textToCopy;
-                                                                textToCopy = temp.innerText || temp.textContent || textToCopy;
-                                                            }
+                                                            const textToCopy = richTextToPlainText(activeDesign.textContent || '');
                                                             await navigator.clipboard.writeText(textToCopy);
                                                             setCopyCopied(true);
                                                             setTimeout(() => setCopyCopied(false), 2000);
@@ -980,8 +984,10 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                 [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-zinc-300
                                                 [&_pre]:bg-zinc-800/80 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
                                                 [&_hr]:my-4 [&_hr]:border-zinc-700
-                                                [&_a]:text-[#d0f08e] [&_a]:underline [&_a]:font-medium"
-                                                dangerouslySetInnerHTML={{ __html: activeDesign.textContent }}
+                                                [&_a]:text-[#d0f08e] [&_a]:underline [&_a]:font-medium
+                                                [&_article>div]:whitespace-pre-wrap [&_article>div]:my-3
+                                                [&_aside]:mt-7 [&_aside]:border-t [&_aside]:border-zinc-700 [&_aside]:pt-4 [&_aside]:text-[13px] [&_aside]:text-zinc-400"
+                                                dangerouslySetInnerHTML={{ __html: safeCopyHtml }}
                                             />
                                         ) : (
                                             <div className="text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white">
@@ -1052,6 +1058,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                     </div>
                                                 );
                                             })}
+                                      </div>
                                     </div>
                                 ) : (
                                     <div className="flex flex-col items-center justify-center p-12 text-center text-zinc-400 max-w-md bg-zinc-900 rounded-xl border border-zinc-800">

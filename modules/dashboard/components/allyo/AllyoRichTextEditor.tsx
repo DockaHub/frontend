@@ -11,7 +11,6 @@ import {
     List,
     ListOrdered,
     Quote,
-    Code,
     Link2,
     Unlink,
     Minus,
@@ -21,9 +20,8 @@ import {
     Highlighter,
     Maximize2,
     Minimize2,
-    Code2,
-    Eye,
 } from 'lucide-react';
+import { sanitizeRichText } from './allyoCopyContent';
 
 interface AllyoRichTextEditorProps {
     value: string;
@@ -42,7 +40,6 @@ export const AllyoRichTextEditor: React.FC<AllyoRichTextEditorProps> = ({
 }) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [showHtmlSource, setShowHtmlSource] = useState(false);
     const [currentFormat, setCurrentFormat] = useState({
         bold: false,
         italic: false,
@@ -163,6 +160,13 @@ export const AllyoRichTextEditor: React.FC<AllyoRichTextEditorProps> = ({
                 exec('underline');
             }
         }
+    };
+
+    const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+        const html = event.clipboardData.getData('text/html');
+        if (!html) return;
+        event.preventDefault();
+        exec('insertHTML', sanitizeRichText(html));
     };
 
     const handleBlockChange = (tag: string) => {
@@ -446,18 +450,6 @@ export const AllyoRichTextEditor: React.FC<AllyoRichTextEditorProps> = ({
                     </button>
                     <button
                         type="button"
-                        onClick={() => setShowHtmlSource(!showHtmlSource)}
-                        title={showHtmlSource ? 'Voltar para modo visual' : 'Ver código HTML'}
-                        className={`rounded p-1.5 transition ${
-                            showHtmlSource
-                                ? 'bg-[#131f15] text-white dark:bg-[#d0f08e] dark:text-[#131f15]'
-                                : 'text-[#777] hover:bg-[#eaeaea] hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white'
-                        }`}
-                    >
-                        {showHtmlSource ? <Eye size={15} /> : <Code2 size={15} />}
-                    </button>
-                    <button
-                        type="button"
                         onClick={() => setIsFullscreen(!isFullscreen)}
                         title={isFullscreen ? 'Sair da tela cheia' : 'Modo tela cheia (foco na escrita)'}
                         className="rounded p-1.5 text-[#777] hover:bg-[#eaeaea] hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white"
@@ -467,46 +459,35 @@ export const AllyoRichTextEditor: React.FC<AllyoRichTextEditorProps> = ({
                 </div>
             </div>
 
-            {/* Área de Edição */}
             <div className="relative flex-1 p-4 sm:p-6 overflow-y-auto">
-                {showHtmlSource ? (
-                    <textarea
-                        value={value}
-                        onChange={(e) => onChange(e.target.value)}
-                        disabled={disabled}
-                        rows={16}
-                        className="w-full resize-none font-mono text-xs leading-relaxed text-zinc-800 dark:text-zinc-200 bg-transparent outline-none"
-                    />
-                ) : (
-                    <>
-                        <div
-                            ref={editorRef}
-                            contentEditable={!disabled}
-                            onInput={handleInput}
-                            onKeyDown={handleKeyDown}
-                            onBlur={updateActiveFormat}
-                            onMouseUp={updateActiveFormat}
-                            onKeyUp={updateActiveFormat}
-                            style={{ minHeight }}
-                            className="rich-text-editor-content outline-none text-[15px] leading-relaxed text-zinc-900 dark:text-zinc-100 select-text selection:bg-[#9db669]/30
-                            [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-black dark:[&_h1]:text-white
-                            [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-black dark:[&_h2]:text-white
-                            [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-black dark:[&_h3]:text-white
-                            [&_p]:my-2
-                            [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
-                            [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
-                            [&_li]:my-0.5
-                            [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-[#555] dark:[&_blockquote]:text-zinc-400
-                            [&_pre]:bg-[#f4f5f1] dark:[&_pre]:bg-zinc-800 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
-                            [&_hr]:my-4 [&_hr]:border-[#e5e5e5] dark:[&_hr]:border-zinc-800
-                            [&_a]:text-[#739044] dark:[&_a]:text-[#a6c464] [&_a]:underline [&_a]:font-medium"
-                        />
-                        {isEmpty && (
-                            <div className="pointer-events-none absolute left-6 top-6 text-sm text-[#aaa] dark:text-zinc-500">
-                                {placeholder}
-                            </div>
-                        )}
-                    </>
+                <div
+                    ref={editorRef}
+                    contentEditable={!disabled}
+                    suppressContentEditableWarning
+                    onInput={handleInput}
+                    onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
+                    onBlur={updateActiveFormat}
+                    onMouseUp={updateActiveFormat}
+                    onKeyUp={updateActiveFormat}
+                    style={{ minHeight }}
+                    className="rich-text-editor-content outline-none text-[15px] leading-relaxed text-zinc-900 dark:text-zinc-100 select-text selection:bg-[#9db669]/30
+                    [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-black dark:[&_h1]:text-white
+                    [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-black dark:[&_h2]:text-white
+                    [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-black dark:[&_h3]:text-white
+                    [&_p]:my-2
+                    [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
+                    [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
+                    [&_li]:my-0.5
+                    [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-[#555] dark:[&_blockquote]:text-zinc-400
+                    [&_pre]:bg-[#f4f5f1] dark:[&_pre]:bg-zinc-800 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
+                    [&_hr]:my-4 [&_hr]:border-[#e5e5e5] dark:[&_hr]:border-zinc-800
+                    [&_a]:text-[#739044] dark:[&_a]:text-[#a6c464] [&_a]:underline [&_a]:font-medium"
+                />
+                {isEmpty && (
+                    <div className="pointer-events-none absolute left-6 top-6 text-sm text-[#aaa] dark:text-zinc-500">
+                        {placeholder}
+                    </div>
                 )}
             </div>
         </div>

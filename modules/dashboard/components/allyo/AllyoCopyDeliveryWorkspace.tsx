@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Check,
     ChevronDown,
@@ -7,12 +7,10 @@ import {
     Copy,
     ExternalLink,
     FileText,
-    HelpCircle,
-    Info,
     Link2,
     Lock,
+    MessageSquareText,
     Paperclip,
-    Sparkles,
     Trash2,
     Upload,
 } from 'lucide-react';
@@ -20,22 +18,16 @@ import type { AllyoTask } from './AllyoUI';
 import { ALLYO_BORDER, FilterSelect } from './AllyoUI';
 import type { ManagedFile } from './AllyoDeliveryWorkspaces';
 import AllyoRichTextEditor from './AllyoRichTextEditor';
-
-export type CopyMode = 'social_caption' | 'document_free';
-
-interface StructuredCaption {
-    headline: string;
-    body: string;
-    cta: string;
-    hashtags: string;
-    notes: string;
-}
-
-interface StructuredDocument {
-    title: string;
-    body: string;
-    notes: string;
-}
+import {
+    getDeliverableCaption,
+    getDeliverableDocText,
+    parseCopyContent,
+    serializeDocument,
+    serializeSocialCaption,
+    type CopyMode,
+    type StructuredCaption,
+    type StructuredDocument,
+} from './allyoCopyContent';
 
 interface AllyoCopyDeliveryWorkspaceProps {
     task: AllyoTask;
@@ -52,100 +44,6 @@ interface AllyoCopyDeliveryWorkspaceProps {
     disabled?: boolean;
     disabledReason?: string;
 }
-
-export const stripHtml = (html: string): string => {
-    if (!html) return '';
-    return html
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&nbsp;/g, ' ')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/\s+/g, ' ')
-        .trim();
-};
-
-// Legenda pura sem as observações da produção (para métricas e copiar direto)
-export const getDeliverableCaption = (data: StructuredCaption): string => {
-    const parts: string[] = [];
-    if (data.headline.trim()) parts.push(data.headline.trim());
-    if (data.body.trim()) parts.push(data.body.trim());
-    if (data.cta.trim()) parts.push(data.cta.trim());
-    if (data.hashtags.trim()) parts.push(data.hashtags.trim());
-    return parts.join('\n\n');
-};
-
-// Texto puro do documento sem as notas do redator (para métricas)
-export const getDeliverableDocText = (data: StructuredDocument): string => {
-    const cleanBody = stripHtml(data.body || '').trim();
-    const parts: string[] = [];
-    if (data.title.trim()) parts.push(data.title.trim());
-    if (cleanBody) parts.push(cleanBody);
-    return parts.join('\n\n');
-};
-
-export const compileSocialCaption = (data: StructuredCaption): string => {
-    const parts: string[] = [];
-    if (data.headline.trim()) parts.push(data.headline.trim());
-    if (data.body.trim()) parts.push(data.body.trim());
-    if (data.cta.trim()) parts.push(data.cta.trim());
-    if (data.hashtags.trim()) parts.push(data.hashtags.trim());
-    if (data.notes.trim()) parts.push(`\n---\n📌 Observações da produção:\n${data.notes.trim()}`);
-    return parts.join('\n\n');
-};
-
-export const compileDocument = (data: StructuredDocument): string => {
-    const isHtml = /<\/?[a-z][\s\S]*>/i.test(data.body || '');
-    if (isHtml) {
-        let result = '';
-        if (data.title.trim()) {
-            result += `<h1>${data.title.trim()}</h1>\n`;
-        }
-        result += data.body || '';
-        if (data.notes.trim()) {
-            result += `\n<div class="production-notes" style="margin-top:28px; padding-top:16px; border-top:1px dashed #bbb; font-size:13px; color:#666;"><strong>📌 Observações do redator:</strong><br/>${data.notes.trim()}</div>`;
-        }
-        return result;
-    }
-    const parts: string[] = [];
-    if (data.title.trim()) parts.push(`# ${data.title.trim()}`);
-    if (data.body.trim()) parts.push(data.body.trim());
-    if (data.notes.trim()) parts.push(`\n---\n📌 Observações do redator:\n${data.notes.trim()}`);
-    return parts.join('\n\n');
-};
-
-export const parseRawTextToStructured = (raw: string, isSocialDefault: boolean): { mode: CopyMode; social: StructuredCaption; doc: StructuredDocument } => {
-    const text = raw || '';
-    if (!text.trim()) {
-        return {
-            mode: isSocialDefault ? 'social_caption' : 'document_free',
-            social: { headline: '', body: '', cta: '', hashtags: '', notes: '' },
-            doc: { title: '', body: '', notes: '' },
-        };
-    }
-
-    const hasHashtags = /#[a-zA-Z0-9_]+/i.test(text);
-    const mode: CopyMode = isSocialDefault || hasHashtags ? 'social_caption' : 'document_free';
-
-    return {
-        mode,
-        social: {
-            headline: '',
-            body: text,
-            cta: '',
-            hashtags: '',
-            notes: '',
-        },
-        doc: {
-            title: '',
-            body: text,
-            notes: '',
-        },
-    };
-};
 
 export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProps> = ({
     task,
@@ -165,52 +63,50 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
     const taskNameLower = (task.name || '').toLowerCase();
     const taskCategoryLower = (task.category || '').toLowerCase();
     const isSocialTask = /legenda|social|post|instagram|feed|reels|story|carrossel/i.test(`${taskNameLower} ${taskCategoryLower}`);
-
-    const [mode, setMode] = useState<CopyMode>(isSocialTask ? 'social_caption' : 'document_free');
-    const [socialData, setSocialData] = useState<StructuredCaption>({
-        headline: '',
-        body: textContent || '',
-        cta: '',
-        hashtags: '',
-        notes: '',
-    });
-    const [docData, setDocData] = useState<StructuredDocument>({
-        title: '',
-        body: textContent || '',
-        notes: '',
-    });
+    const initialContentRef = useRef<ReturnType<typeof parseCopyContent> | null>(null);
+    if (!initialContentRef.current) initialContentRef.current = parseCopyContent(textContent, isSocialTask);
+    const initialContent = initialContentRef.current;
+    const [mode, setMode] = useState<CopyMode>(initialContent.mode);
+    const [socialData, setSocialData] = useState<StructuredCaption>(initialContent.social);
+    const [docData, setDocData] = useState<StructuredDocument>(initialContent.doc);
     const [attachmentsOpen, setAttachmentsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [uploadError, setUploadError] = useState('');
+    const loadedTaskRef = useRef(task.id);
+    const loadedVersionRef = useRef(version);
+    const lastEmittedContentRef = useRef(textContent);
 
-    // Sincroniza estado inicial caso o textContent venha preenchido de fora
     useEffect(() => {
-        if (textContent) {
-            if (mode === 'social_caption' && !socialData.body && !socialData.headline) {
-                setSocialData((prev) => ({ ...prev, body: textContent }));
-            } else if (mode === 'document_free' && !docData.body && !docData.title) {
-                setDocData((prev) => ({ ...prev, body: textContent }));
-            }
-        }
-    }, [textContent, mode]);
+        const contextChanged = loadedTaskRef.current !== task.id || loadedVersionRef.current !== version;
+        const contentChangedExternally = textContent !== lastEmittedContentRef.current;
+        if (!contextChanged && !contentChangedExternally) return;
 
-    const compiledText = useMemo(() => {
-        if (mode === 'social_caption') {
-            return compileSocialCaption(socialData);
-        }
-        return compileDocument(docData);
-    }, [mode, socialData, docData]);
+        const parsed = parseCopyContent(textContent, isSocialTask);
+        setMode(parsed.mode);
+        setSocialData(parsed.social);
+        setDocData(parsed.doc);
+        setCopied(false);
+        setUploadError('');
+        loadedTaskRef.current = task.id;
+        loadedVersionRef.current = version;
+        lastEmittedContentRef.current = textContent;
+    }, [isSocialTask, task.id, textContent, version]);
 
     // Propaga mudanças para o pai
     const handleUpdateSocial = (field: keyof StructuredCaption, value: string) => {
         const next = { ...socialData, [field]: value };
         setSocialData(next);
-        onTextContentChange(compileSocialCaption(next));
+        const serialized = serializeSocialCaption(next);
+        lastEmittedContentRef.current = serialized;
+        onTextContentChange(serialized);
     };
 
     const handleUpdateDoc = (field: keyof StructuredDocument, value: string) => {
         const next = { ...docData, [field]: value };
         setDocData(next);
-        onTextContentChange(compileDocument(next));
+        const serialized = serializeDocument(next);
+        lastEmittedContentRef.current = serialized;
+        onTextContentChange(serialized);
     };
 
     // Métricas calculadas EXCLUSIVAMENTE sobre a entrega final, excluindo as observações/notas internas
@@ -223,10 +119,10 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
 
     const characterCount = deliverableText.length;
     const wordCount = deliverableText.trim() ? deliverableText.trim().split(/\s+/).length : 0;
-    const estimatedReadingTime = Math.max(1, Math.ceil(wordCount / 180));
+    const estimatedReadingTime = wordCount === 0 ? 0 : Math.max(1, Math.ceil(wordCount / 180));
 
     const handleCopyDeliverable = async () => {
-        const textToCopy = deliverableText.trim() || compiledText.trim();
+        const textToCopy = deliverableText.trim();
         if (!textToCopy) return;
         try {
             await navigator.clipboard.writeText(textToCopy);
@@ -237,23 +133,23 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
         }
     };
 
+    const selectMode = (nextMode: CopyMode) => {
+        const serialized = nextMode === 'social_caption'
+            ? serializeSocialCaption(socialData)
+            : serializeDocument(docData);
+        setMode(nextMode);
+        lastEmittedContentRef.current = serialized;
+        onTextContentChange(serialized);
+    };
+
+    const hasValidSourceUrl = /^https?:\/\//i.test(sourceUrl.trim());
+
     return (
         <section className={`border-b bg-white dark:bg-zinc-950 ${ALLYO_BORDER}`}>
-            {/* Header da Seção de Entrega */}
             <div className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-5 sm:px-[30px] ${ALLYO_BORDER}`}>
-                <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eef3e4] text-[#798d50] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]">
-                        <FileText size={18} />
-                    </span>
-                    <div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#9db669]">Pacote de entrega</span>
-                            <span className="rounded-full bg-[#f1f4ea] px-2 py-0.5 text-[10px] font-semibold text-[#667d3a] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]">
-                                Entrega Nativa de Texto
-                            </span>
-                        </div>
-                        <h2 className="mt-1 font-season text-lg">Conteúdo & Copywriting</h2>
-                    </div>
+                <div>
+                    <span className="text-[11px] font-bold uppercase tracking-[.08em] text-[#9db669]">Pacote de entrega</span>
+                    <h2 className="mt-1 font-season text-lg">Texto da versão</h2>
                 </div>
                 <div className="flex items-center gap-2">
                     <FilterSelect
@@ -275,47 +171,39 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
             )}
 
             <div className="p-5 sm:p-[30px]">
-                {/* Seletor de Modo de Redação */}
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center rounded-full border border-[#e5e5e5] bg-[#f8f9f6] p-1 dark:border-zinc-800 dark:bg-zinc-900">
+                    <div className="grid w-full grid-cols-2 rounded-[10px] border border-[#e5e5e5] bg-[#f8f9f6] p-1 sm:w-auto dark:border-zinc-800 dark:bg-zinc-900">
                         <button
                             type="button"
-                            onClick={() => {
-                                setMode('social_caption');
-                                onTextContentChange(compileSocialCaption(socialData));
-                            }}
-                            className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                            onClick={() => selectMode('social_caption')}
+                            className={`flex min-h-9 items-center justify-center gap-2 rounded-[8px] px-3 text-xs font-semibold transition ${
                                 mode === 'social_caption'
                                     ? 'bg-[#131f15] text-white shadow-sm dark:bg-[#d0f08e] dark:text-[#131f15]'
                                     : 'text-[#777] hover:text-black dark:text-zinc-400 dark:hover:text-white'
                             }`}
                         >
-                            <span>📱</span>
-                            <span>Legenda para Redes Sociais</span>
+                            <MessageSquareText size={14} />
+                            <span>Legenda social</span>
                         </button>
                         <button
                             type="button"
-                            onClick={() => {
-                                setMode('document_free');
-                                onTextContentChange(compileDocument(docData));
-                            }}
-                            className={`flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+                            onClick={() => selectMode('document_free')}
+                            className={`flex min-h-9 items-center justify-center gap-2 rounded-[8px] px-3 text-xs font-semibold transition ${
                                 mode === 'document_free'
                                     ? 'bg-[#131f15] text-white shadow-sm dark:bg-[#d0f08e] dark:text-[#131f15]'
                                     : 'text-[#777] hover:text-black dark:text-zinc-400 dark:hover:text-white'
                             }`}
                         >
-                            <span>📄</span>
-                            <span>Documento / Artigo / Tradução</span>
+                            <FileText size={14} />
+                            <span>Documento</span>
                         </button>
                     </div>
 
-                    {/* Botão de copiar texto pronto */}
                     <button
                         type="button"
                         onClick={handleCopyDeliverable}
-                        disabled={!deliverableText.trim() && !compiledText.trim()}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-[#dedede] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#555] transition hover:border-[#9db669] hover:text-[#739044] disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
+                        disabled={!deliverableText.trim()}
+                        className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-[#dedede] bg-white px-3.5 text-xs font-semibold text-[#555] transition hover:border-[#9db669] hover:text-[#739044] disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                     >
                         {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
                         <span>{copied ? 'Copiado!' : mode === 'social_caption' ? 'Copiar legenda' : 'Copiar texto'}</span>
@@ -347,7 +235,6 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                     <label className="block text-xs font-bold uppercase tracking-[.06em] text-[#888]">
                                         Corpo da Legenda
                                     </label>
-                                    <span className="text-[11px] text-[#999]">Suporte a quebras de linha e emojis</span>
                                 </div>
                                 <textarea
                                     value={socialData.body}
@@ -391,7 +278,7 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
 
                             <div>
                                 <label className="block text-xs font-bold uppercase tracking-[.06em] text-[#888]">
-                                    Observações da Produção / Formato (opcional)
+                                    Orientações complementares (opcional)
                                 </label>
                                 <input
                                     type="text"
@@ -402,7 +289,7 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                     className="mt-1.5 w-full rounded-[10px] border border-[#dedede] bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/10 disabled:bg-[#f6f6f6] dark:border-zinc-700 dark:bg-zinc-900"
                                 />
                                 <p className="mt-1 text-[11px] text-[#999]">
-                                    As observações são orientações internas de produção e não contam nos caracteres da legenda.
+                                    Aparecem separadas da legenda e não entram na contagem de caracteres.
                                 </p>
                             </div>
                         </div>
@@ -411,12 +298,11 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                         <div>
                             <div className="flex items-center justify-between pb-2">
                                 <span className="text-xs font-bold uppercase tracking-[.06em] text-[#888] flex items-center gap-1.5">
-                                    <Sparkles size={13} className="text-[#9db669]" />
-                                    Como o cliente verá na revisão
+                                    <FileText size={13} className="text-[#9db669]" />
+                                    Prévia do cliente
                                 </span>
-                                <span className="text-[11px] text-[#999]">Simulação da leitura</span>
                             </div>
-                            <div className={`overflow-hidden rounded-[14px] border ${ALLYO_BORDER} bg-[#fafbf8] p-5 shadow-sm dark:bg-zinc-900/40`}>
+                            <div className={`overflow-hidden rounded-[10px] border ${ALLYO_BORDER} bg-[#fafbf8] p-5 dark:bg-zinc-900/40`}>
                                 <div className="border-b border-[#e5e5e5] pb-3 mb-4 dark:border-zinc-800">
                                     <span className="text-[10px] font-bold uppercase tracking-wider text-[#9db669]">
                                         {task.projectName} • {task.name}
@@ -429,8 +315,8 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                     {socialData.body || <span className="italic text-[#aaa]">O corpo da legenda preenchido será exibido aqui em tempo real...</span>}
                                 </div>
                                 {socialData.cta && (
-                                    <div className="mt-4 rounded-[8px] bg-white p-2.5 text-xs font-medium text-black border border-[#e8ece0] dark:bg-zinc-950 dark:text-white dark:border-zinc-800">
-                                        👉 {socialData.cta}
+                                    <div className="mt-4 border-t border-[#e8ece0] pt-3 text-xs font-semibold text-black dark:border-zinc-800 dark:text-white">
+                                        {socialData.cta}
                                     </div>
                                 )}
                                 {socialData.hashtags && (
@@ -439,8 +325,9 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                     </div>
                                 )}
                                 {socialData.notes && (
-                                    <div className="mt-4 pt-3 border-t border-[#e8ece0] text-[11px] text-[#777] italic dark:border-zinc-800 dark:text-zinc-400">
-                                        📌 Observações: {socialData.notes}
+                                    <div className="mt-4 flex gap-2 border-t border-[#e8ece0] pt-3 text-[11px] text-[#777] dark:border-zinc-800 dark:text-zinc-400">
+                                        <FileText size={12} className="mt-0.5 shrink-0" />
+                                        <span>Orientações: {socialData.notes}</span>
                                     </div>
                                 )}
                             </div>
@@ -468,9 +355,6 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                 <label className="block text-xs font-bold uppercase tracking-[.06em] text-[#888]">
                                     Texto Completo da Entrega
                                 </label>
-                                <span className="text-[11px] text-[#999]">
-                                    Opções completas: títulos, negrito, itálico, listas, alinhamentos, links e tela cheia
-                                </span>
                             </div>
                             <AllyoRichTextEditor
                                 value={docData.body}
@@ -482,8 +366,8 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold uppercase tracking-[.06em] text-[#888]">
-                                Notas do Redator / Referências (opcional)
+                                <label className="block text-xs font-bold uppercase tracking-[.06em] text-[#888]">
+                                    Notas e referências (opcional)
                             </label>
                             <input
                                 type="text"
@@ -494,13 +378,12 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                 className="mt-1.5 w-full rounded-[10px] border border-[#dedede] bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/10 disabled:bg-[#f6f6f6] dark:border-zinc-700 dark:bg-zinc-900"
                             />
                             <p className="mt-1 text-[11px] text-[#999]">
-                                Notas e referências são para orientações internas e não contam no tamanho do texto.
+                                Aparecem separadas do documento e não entram na contagem do texto.
                             </p>
                         </div>
                     </div>
                 )}
 
-                {/* Barra de Métricas Inteligente */}
                 <div className={`mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border bg-[#f9faf7] px-4 py-3 text-xs text-[#666] dark:bg-zinc-900 dark:text-zinc-400 ${ALLYO_BORDER}`}>
                     <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                         <span className="font-semibold text-black dark:text-white">
@@ -524,14 +407,14 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                 * Observações ({socialData.notes.trim().length} chars) não entram na contagem
                             </span>
                         ) : (
-                            <span className="text-[11px] text-[#888]">
-                                ✓ Pronto para aprovação do cliente sem anexos externos
+                            <span className="flex items-center gap-1.5 text-[11px] text-[#888]">
+                                <Check size={12} className="text-[#829454]" />
+                                Pronto para aprovação sem anexos externos
                             </span>
                         )}
                     </div>
                 </div>
 
-                {/* Gaveta Colapsável para Link ou Anexos Opcionais */}
                 <div className="mt-5 border-t pt-4 border-[#eee] dark:border-zinc-800">
                     <button
                         type="button"
@@ -544,7 +427,7 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                     </button>
 
                     {attachmentsOpen && (
-                        <div className="mt-4 space-y-4 rounded-[12px] border border-[#e5e5e5] bg-[#fafafa] p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
+                        <div className="mt-4 space-y-4 rounded-[10px] border border-[#e5e5e5] bg-[#fafafa] p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
                             <div>
                                 <label className="block text-xs font-semibold text-[#555] dark:text-zinc-300">
                                     Link de Referência Externa (Google Docs, Notion, Figma, Drive)
@@ -558,10 +441,11 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                             onChange={(e) => onSourceUrlChange?.(e.target.value)}
                                             placeholder="https://docs.google.com/document/d/..."
                                             disabled={disabled}
+                                            aria-invalid={Boolean(sourceUrl.trim()) && !hasValidSourceUrl}
                                             className="w-full rounded-[8px] border border-[#dedede] bg-white py-2 pl-9 pr-3 text-xs outline-none focus:border-[#9db669] dark:border-zinc-700 dark:bg-zinc-950"
                                         />
                                     </div>
-                                    {sourceUrl && (
+                                    {hasValidSourceUrl && (
                                         <a
                                             href={sourceUrl}
                                             target="_blank"
@@ -573,6 +457,9 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                         </a>
                                     )}
                                 </div>
+                                {sourceUrl.trim() && !hasValidSourceUrl && (
+                                    <p className="mt-1.5 text-[11px] text-red-600 dark:text-red-400">Use um link iniciado por http:// ou https://.</p>
+                                )}
                             </div>
 
                             {onUploadOptionalFile && (
@@ -592,14 +479,15 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                                 onChange={async (e) => {
                                                     const file = e.target.files?.[0];
                                                     if (!file) return;
-                                                    try {
-                                                        const uploaded = await onUploadOptionalFile(file);
+                                            try {
+                                                setUploadError('');
+                                                const uploaded = await onUploadOptionalFile(file);
                                                         onOptionalFilesChange?.([
                                                             ...optionalFiles,
                                                             { id: String(Date.now()), name: uploaded.name, size: uploaded.size, fileUrl: uploaded.fileUrl },
                                                         ]);
-                                                    } catch {
-                                                        // error handling
+                                            } catch (error: any) {
+                                                setUploadError(error?.response?.data?.message || error?.message || 'Não foi possível anexar o arquivo.');
                                                     }
                                                     e.target.value = '';
                                                 }}
@@ -617,6 +505,7 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                                     <button
                                                         type="button"
                                                         onClick={() => onOptionalFilesChange?.(optionalFiles.filter((_, i) => i !== idx))}
+                                                        aria-label={`Remover ${file.name}`}
                                                         className="text-[#999] hover:text-red-500"
                                                     >
                                                         <Trash2 size={11} />
@@ -625,6 +514,7 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                             </div>
                                         ))}
                                     </div>
+                                    {uploadError && <p className="mt-2 text-[11px] text-red-600 dark:text-red-400">{uploadError}</p>}
                                 </div>
                             )}
                         </div>

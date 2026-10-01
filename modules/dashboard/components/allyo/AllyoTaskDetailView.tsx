@@ -19,6 +19,7 @@ import { allyoService, type AllyoCatalogProduct, type AllyoDemand, type AllyoUse
 import { useToast } from '../../../../context/ToastContext';
 import { getAllyoTaskItemCount, getAllyoTaskPresentation } from './allyoTaskPresentation';
 import { createProductDeliveryProfile, findCatalogProductForTask } from './allyoProductDelivery';
+import { hasSubstantiveCopyContent } from './allyoCopyContent';
 
 const statusOptions = ['Nova', 'Em andamento', 'Em revisão', 'Alteração', 'Pronta para entrega', 'Entregue'];
 const briefingByKind = {
@@ -297,7 +298,30 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
         'Versão 1': '',
         'Versão 2': '',
     });
+    const [copySourceUrlByVersion, setCopySourceUrlByVersion] = useState<Record<string, string>>({});
+    const initializedCopyTaskRef = useRef('');
+
+    useEffect(() => {
+        const isSameTask = initializedCopyTaskRef.current === task.id;
+        setTextContentByVersion((current) => {
+            const next: Record<string, string> = isSameTask ? { ...current } : { 'Versão 1': '', 'Versão 2': '' };
+            taskDesigns.forEach((design) => {
+                if (design.textContent && !next[design.version]) next[design.version] = design.textContent;
+            });
+            return next;
+        });
+        setCopySourceUrlByVersion((current) => {
+            const next = isSameTask ? { ...current } : {};
+            taskDesigns.forEach((design) => {
+                if (design.sourceFileUrl && !next[design.version]) next[design.version] = design.sourceFileUrl;
+            });
+            return next;
+        });
+        initializedCopyTaskRef.current = task.id;
+    }, [task.id, taskDesigns]);
+
     const currentTextContent = textContentByVersion[deliveryVersion] || '';
+    const currentCopySourceUrl = copySourceUrlByVersion[deliveryVersion] || '';
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
     const approvalFiles = Array.isArray(currentFiles.approval) ? currentFiles.approval.filter(Boolean) : [];
     const sourceFiles = Array.isArray(currentFiles.source) ? currentFiles.source.filter(Boolean) : [];
@@ -314,7 +338,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const isCurrentVersionSelected = deliveryVersionNum === currentVersionNum;
     const isAnyFileUploading = isMultiFileUploading || approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
     const hasApprovalReady = isCopyDeliverable
-        ? Boolean(currentTextContent.trim())
+        ? hasSubstantiveCopyContent(currentTextContent)
         : isMultiDeliverable
         ? multiReviewFiles.length > 0
         : readyApprovalFiles.length > 0 && hasCompleteCarouselSequence;
@@ -509,7 +533,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
 
             if (isCopyDeliverable) {
                 const copyText = currentTextContent.trim();
-                const sourceFileUrl = sourceFiles.find((file) => file.fileUrl)?.fileUrl;
+                const sourceFileUrl = /^https?:\/\//i.test(currentCopySourceUrl.trim())
+                    ? currentCopySourceUrl.trim()
+                    : sourceFiles.find((file) => file.fileUrl)?.fileUrl;
                 setSavedLabel('Enviando copy para aprovação...');
                 await allyoService.submitDesignRevision(projectId, {
                     name: `${task.name} (${deliveryVersion})`,
@@ -530,7 +556,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                         version: deliveryVersion,
                         textContent: copyText,
                         sourceFileUrl,
-                        contentType: 'text/plain',
+                        contentType: 'text/html',
                         createdAt: new Date().toISOString(),
                     };
                     const existingDesigns = current.designs || [];
@@ -602,7 +628,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             // Atualiza estado local de designs para incluir a nova entrega enviada
             setLiveDemand((current: any) => {
                 if (!current) return current;
-                const newDesigns = (orderedReviewFiles.length > 0 ? orderedReviewFiles : [{ name: task.name, fileUrl: undefined, order: 0 }]).map((file, index) => ({
+                const newDesigns = (orderedReviewFiles.length > 0 ? orderedReviewFiles : [{ name: task.name, fileUrl: undefined, sourceFileUrl: undefined, order: 0 }]).map((file, index) => ({
                     id: Date.now() + index,
                     taskId: task.id,
                     name: file.name || fileNames || task.name,
@@ -780,10 +806,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             versionOptions={versionOptions}
                             onVersionChange={(v) => {
                                 setSelectedVersionByUser(v);
-                                setTextContentByVersion((prev) => ({
-                                    ...prev,
-                                    [v]: prev[v] || prev['Versão 1'] || '',
-                                }));
+                                const previousVersion = `Versão ${Math.max(1, (Number(v.replace(/\D/g, '')) || 1) - 1)}`;
+                                setTextContentByVersion((prev) => ({ ...prev, [v]: prev[v] || prev[previousVersion] || '' }));
+                                setCopySourceUrlByVersion((prev) => ({ ...prev, [v]: prev[v] || prev[previousVersion] || '' }));
                             }}
                             textContent={currentTextContent}
                             onTextContentChange={(text) => {
@@ -791,6 +816,11 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                     ...prev,
                                     [deliveryVersion]: text,
                                 }));
+                                setSavedLabel(`${deliveryVersion} editada agora`);
+                            }}
+                            sourceUrl={currentCopySourceUrl}
+                            onSourceUrlChange={(url) => {
+                                setCopySourceUrlByVersion((prev) => ({ ...prev, [deliveryVersion]: url }));
                                 setSavedLabel(`${deliveryVersion} editada agora`);
                             }}
                             optionalFiles={currentFiles.source}
