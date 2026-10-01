@@ -363,6 +363,7 @@ export interface DesignSubmission {
     fileUrl?: string;
     sourceFileUrl?: string;
     thumbnailUrl?: string;
+    textContent?: string;
     files?: Array<{
         name: string;
         fileUrl: string;

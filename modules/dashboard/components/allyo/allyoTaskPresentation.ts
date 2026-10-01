@@ -106,7 +106,7 @@ export const resolveAllyoTaskType = (task: PresentableTask): AllyoTaskType => {
     if (/video|filme|edicao|premiere|davinci|reels/.test(searchable)) return 'video';
     if (/branding|identidade|logo|logotipo|marca|brandbook|manual de marca/.test(searchable)) return 'branding';
     if (/e-mail|email|newsletter|mailing/.test(searchable)) return 'email';
-    if (/copy|redacao|conteudo|legenda|artigo|texto/.test(searchable)) return 'copy';
+    if (/copy|redacao|conteudo|legenda|artigo|texto|traducao|revisao|roteiro|slogan|naming/.test(searchable)) return 'copy';
     if (/ebook|e-book|relatorio|catalogo|folder|folheto|documento|editorial/.test(searchable)) return 'document';
     if (/social|instagram|facebook|linkedin|post|feed|story|estatico|banner|display/.test(searchable)) return 'social';
     return 'generic';

@@ -5,6 +5,7 @@ import AllyoSubmitConfirmModal from './AllyoSubmitConfirmModal';
 import { useSearchParams } from 'react-router-dom';
 import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTasks, AllyoTask } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
+import AllyoCopyDeliveryWorkspace from './AllyoCopyDeliveryWorkspace';
 import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
 import AllyoTaskChat from './AllyoTaskChat';
 import AllyoProjectFlow from './AllyoProjectFlow';
@@ -289,6 +290,14 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
     const [isSendingReview, setIsSendingReview] = useState(false);
     const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+    const isCopyDeliverable = taskPresentation.type === 'copy' || deliverableKind === 'copy' || /(copy|redacao|redação|conteudo|conteúdo|legenda|artigo|texto|traducao|tradução|revisao|revisão|roteiro|slogan|naming)/i.test(
+        `${task.category} ${task.name} ${(task.briefing?.deliverables || []).join(' ')}`
+    );
+    const [textContentByVersion, setTextContentByVersion] = useState<Record<string, string>>({
+        'Versão 1': '',
+        'Versão 2': '',
+    });
+    const currentTextContent = textContentByVersion[deliveryVersion] || '';
     const currentFiles = filesByVersion[deliveryVersion] || { approval: [], source: [] };
     const approvalFiles = Array.isArray(currentFiles.approval) ? currentFiles.approval.filter(Boolean) : [];
     const sourceFiles = Array.isArray(currentFiles.source) ? currentFiles.source.filter(Boolean) : [];
@@ -304,9 +313,15 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const deliveryVersionNum = Number(deliveryVersion.replace(/\D/g, '')) || 1;
     const isCurrentVersionSelected = deliveryVersionNum === currentVersionNum;
     const isAnyFileUploading = isMultiFileUploading || approvalFiles.some((f) => Boolean(f?.uploading)) || sourceFiles.some((f) => Boolean(f?.uploading));
-    const hasApprovalReady = isMultiDeliverable ? multiReviewFiles.length > 0 : readyApprovalFiles.length > 0 && hasCompleteCarouselSequence;
-    const sourceRequired = deliveryProfile?.sourceRequired ?? true;
-    const hasSourceReady = !sourceRequired || (isMultiDeliverable ? Boolean(multiSourceFileUrl) : sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error));
+    const hasApprovalReady = isCopyDeliverable
+        ? Boolean(currentTextContent.trim())
+        : isMultiDeliverable
+        ? multiReviewFiles.length > 0
+        : readyApprovalFiles.length > 0 && hasCompleteCarouselSequence;
+    const sourceRequired = isCopyDeliverable ? false : (deliveryProfile?.sourceRequired ?? true);
+    const hasSourceReady = isCopyDeliverable
+        ? true
+        : !sourceRequired || (isMultiDeliverable ? Boolean(multiSourceFileUrl) : sourceFiles.some((file) => Boolean(file.fileUrl) && !file.error));
     const canSendForReview = permissionsLoaded && !isClientView && isTaskInProgress && !isCurrentlyBlocked && !isInactive && !isSendingReview && !isAnyFileUploading && isCurrentVersionSelected && hasApprovalReady && hasSourceReady;
 
     useEffect(() => {
@@ -326,10 +341,16 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 return leftOrder - rightOrder;
             });
         
-        // Popula todas as versões existentes em filesByVersion
+        // Popula todas as versões existentes em filesByVersion e textContentByVersion
         matchedDesigns.forEach((d) => {
             const vNum = Number(String(d.version || '').replace(/\D/g, '')) || 1;
             const vLabel = `Versão ${vNum}`;
+            if (d.textContent) {
+                setTextContentByVersion((prev) => ({
+                    ...prev,
+                    [vLabel]: prev[vLabel] || d.textContent || '',
+                }));
+            }
             setFilesByVersion((current) => {
                 const currentVersionFiles = current[vLabel] || { approval: [], source: [] };
                 const hasSource = currentVersionFiles.source.some((item) => item.fileUrl || item.file);
@@ -364,12 +385,25 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             });
         });
 
-        // Garante que a versão atual exista em filesByVersion pronta para upload
+        // Garante que a versão atual exista em filesByVersion e textContentByVersion
         setFilesByVersion((current) => {
             if (current[latestVersionLabel]) return current;
             return { ...current, [latestVersionLabel]: { approval: [], source: [] } };
         });
+        setTextContentByVersion((current) => {
+            if (current[latestVersionLabel]) return current;
+            return { ...current, [latestVersionLabel]: current['Versão 1'] || '' };
+        });
     }, [liveDemand, task.id, task.publicId, latestVersionLabel]);
+
+    useEffect(() => {
+        if (isCopyDeliverable && deliveryVersion !== 'Versão 1' && !textContentByVersion[deliveryVersion] && textContentByVersion['Versão 1']) {
+            setTextContentByVersion((prev) => ({
+                ...prev,
+                [deliveryVersion]: prev['Versão 1'],
+            }));
+        }
+    }, [isCopyDeliverable, deliveryVersion, textContentByVersion]);
 
     const goBack = () => {
         setSearchParams((current) => {
@@ -454,7 +488,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             return false;
         }
         if (!hasApprovalReady || !hasSourceReady) {
-            const message = isCarouselSequence && !hasCompleteCarouselSequence
+            const message = isCopyDeliverable
+                ? 'Insira o texto ou legenda da entrega antes de enviar para revisão.'
+                : isCarouselSequence && !hasCompleteCarouselSequence
                 ? `Anexe exatamente ${taskItemCount} imagens na ordem dos cards ou um PDF único com ${taskItemCount} páginas${hasSourceReady ? '.' : ', além do arquivo aberto/editável.'}`
                 : sourceRequired
                 ? 'Anexe o arquivo para aprovação e o arquivo aberto/editável da versão atual.'
@@ -470,6 +506,56 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             const rawNames = isMultiDeliverable ? '' : currentFiles.approval.map((file) => decodeSafe(file.name)).join(', ');
             const fileNames = decodeSafe(rawNames);
             const projectId = task.projectId || liveDemand?.id || task.id;
+
+            if (isCopyDeliverable) {
+                const copyText = currentTextContent.trim();
+                const sourceFileUrl = sourceFiles.find((file) => file.fileUrl)?.fileUrl;
+                setSavedLabel('Enviando copy para aprovação...');
+                await allyoService.submitDesignRevision(projectId, {
+                    name: `${task.name} (${deliveryVersion})`,
+                    taskId: task.id,
+                    version: deliveryVersion,
+                    color: '#a78bfa',
+                    textContent: copyText,
+                    sourceFileUrl,
+                });
+
+                // Atualiza estado local de designs para incluir a nova entrega de copy
+                setLiveDemand((current: any) => {
+                    if (!current) return current;
+                    const newDesign = {
+                        id: Date.now(),
+                        taskId: task.id,
+                        name: `${task.name} (${deliveryVersion})`,
+                        version: deliveryVersion,
+                        textContent: copyText,
+                        sourceFileUrl,
+                        contentType: 'text/plain',
+                        createdAt: new Date().toISOString(),
+                    };
+                    const existingDesigns = current.designs || [];
+                    return {
+                        ...current,
+                        designs: [newDesign, ...existingDesigns],
+                    };
+                });
+
+                addTaskActivity(task.id, {
+                    type: 'approval_sent',
+                    author: userName?.trim() || task.creative,
+                    role: 'system',
+                    version: deliveryVersion,
+                    text: `Copy da ${deliveryVersion} enviado para aprovação do cliente.`,
+                });
+
+                await updateStatus('Em revisão');
+                setSelectedVersionByUser(null);
+                setSavedLabel(`${deliveryVersion} de copy enviada para aprovação do cliente com sucesso!`);
+                setActiveTab('messages');
+                addToast({ type: 'success', title: 'Copy enviado para revisão', message: `${deliveryVersion} está disponível para o cliente revisar e aprovar.` });
+                return true;
+            }
+
             const reviewFiles = isMultiDeliverable
                 ? []
                 : currentFiles.approval.filter((file) => Boolean(file.fileUrl) && !file.error);
@@ -687,6 +773,40 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                     {!permissionsLoaded && orderOpen && <div className="px-5 py-10 text-center text-xs text-[#8b918b] sm:px-[30px]">Carregando a experiência desta tarefa...</div>}
                     {permissionsLoaded && orderOpen && (isClientView
                         ? <AllyoClientDeliveryWorkspace task={presentationTask} designs={taskDesigns} itemCountOverride={catalogStructuredQuantity} onReview={() => setReviewModalOpen(true)} />
+                        : isCopyDeliverable
+                        ? <AllyoCopyDeliveryWorkspace
+                            task={presentationTask}
+                            version={deliveryVersion}
+                            versionOptions={versionOptions}
+                            onVersionChange={(v) => {
+                                setSelectedVersionByUser(v);
+                                setTextContentByVersion((prev) => ({
+                                    ...prev,
+                                    [v]: prev[v] || prev['Versão 1'] || '',
+                                }));
+                            }}
+                            textContent={currentTextContent}
+                            onTextContentChange={(text) => {
+                                setTextContentByVersion((prev) => ({
+                                    ...prev,
+                                    [deliveryVersion]: text,
+                                }));
+                                setSavedLabel(`${deliveryVersion} editada agora`);
+                            }}
+                            optionalFiles={currentFiles.source}
+                            onOptionalFilesChange={(files) => updateVersionFiles('source', files)}
+                            onUploadOptionalFile={async (file) => {
+                                const projectId = task.projectId || liveDemand?.id || task.id;
+                                const res = await allyoService.uploadDeliveryFile(projectId, file);
+                                return {
+                                    fileUrl: res.fileUrl,
+                                    name: res.name || file.name,
+                                    size: res.size || file.size,
+                                };
+                            }}
+                            disabled={!isTaskInProgress || !isCurrentVersionSelected}
+                            disabledReason={!isCurrentVersionSelected ? `A ${deliveryVersion} está disponível somente para consulta. Edite o texto na ${latestVersionLabel}.` : "A edição do texto fica liberada apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."}
+                          />
                         : isMultiDeliverable && task.deliverables
                         ? <AllyoMultiDeliverableWorkspace
                             key={task.id}
@@ -710,7 +830,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             allowSourceLink={deliveryProfile?.allowSourceLink ?? true}
                           />
                         : <DeliveryWorkspace kind={deliverableKind} task={presentationTask} itemCountOverride={catalogStructuredQuantity} approvalLabel={deliveryProfile?.approvalLabel} sourceLabel={deliveryProfile?.sourceLabel} />)}
-                    {permissionsLoaded && !isClientView && !isMultiDeliverable && (
+                    {permissionsLoaded && !isClientView && !isMultiDeliverable && !isCopyDeliverable && (
                         <VersionBundle
                             kind={deliverableKind}
                             version={deliveryVersion}
@@ -742,7 +862,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                             disabledReason={!isCurrentVersionSelected ? `A ${deliveryVersion} está disponível somente para consulta. Anexe os arquivos na ${latestVersionLabel}.` : "O envio de arquivos fica liberado apenas quando a tarefa estiver com o status 'Em andamento' ou 'Alteração'."}
                         />
                     )}
-                    {permissionsLoaded && !isClientView && <div className="mx-5 mb-12 mt-6 rounded-[14px] border border-[#dfe5d6] bg-[#fafcf7] p-5 sm:mx-[30px] sm:mb-16 dark:border-zinc-800 dark:bg-zinc-900/50">
+                    {permissionsLoaded && !isClientView && !isCopyDeliverable && <div className="mx-5 mb-12 mt-6 rounded-[14px] border border-[#dfe5d6] bg-[#fafcf7] p-5 sm:mx-[30px] sm:mb-16 dark:border-zinc-800 dark:bg-zinc-900/50">
                         <div className="flex items-start gap-3">
                             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#eaf1dd] text-[#71864b] dark:bg-[#d0f08e]/10 dark:text-[#d0f08e]"><ShieldCheck size={17} /></span>
                             <div><strong className="text-sm font-semibold">Pacote seguro para aprovação</strong><p className="mt-1 text-xs leading-5 text-[#747b72] dark:text-zinc-400">Na {latestVersionLabel}, envie {sourceRequired ? 'o material final e o arquivo aberto/editável correspondente' : 'o material final nos formatos definidos pelo catálogo'}. Versões anteriores ficam protegidas para preservar o histórico.</p></div>
@@ -776,7 +896,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                 ) : (
                                     <>
                                         <Send size={15} />
-                                        {isMultiDeliverable
+                                        {isCopyDeliverable
+                                            ? 'Enviar copy para revisão'
+                                            : isMultiDeliverable
                                             ? readyDeliverables > 0
                                                 ? `Enviar ${readyDeliverables} ${readyDeliverables === 1 ? 'pedido' : 'pedidos'} para revisão`
                                                 : 'Nenhum pedido pronto'
@@ -794,6 +916,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                         ? 'Processando entrega na nuvem...'
                                         : !isCurrentVersionSelected
                                         ? `A ${deliveryVersion} é somente para consulta. Selecione a ${latestVersionLabel} para enviar.`
+                                        : isCopyDeliverable
+                                        ? 'Escreva ou cole o conteúdo do copy para liberar o envio.'
                                         : !hasApprovalReady && !hasSourceReady
                                         ? 'Anexe o arquivo para aprovação e o arquivo aberto/editável.'
                                         : !hasApprovalReady
@@ -815,7 +939,9 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 onClose={() => setConfirmModalOpen(false)}
                 onConfirm={handleConfirmReviewSend}
                 isLoading={isSendingReview}
-                description={isCarouselSequence
+                description={isCopyDeliverable
+                    ? `Confirme o envio da ${deliveryVersion}. O cliente poderá revisar o texto diretamente na plataforma e solicitar ajustes se necessário.`
+                    : isCarouselSequence
                     ? `Confirme a ordem dos ${taskItemCount} cards e o arquivo aberto da ${deliveryVersion}. A sequência completa será enviada para aprovação.`
                     : sourceRequired
                     ? undefined

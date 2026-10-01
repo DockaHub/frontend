@@ -15,7 +15,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Loader2,
-    Type
+    Type,
+    Copy,
 } from 'lucide-react';
 import { GlobalWorkerOptions, getDocument, TextLayer, type PDFDocumentProxy } from 'pdfjs-dist';
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -381,6 +382,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
     const [pdfNumPages, setPdfNumPages] = useState(1);
     const commentsListRef = useRef<HTMLDivElement>(null);
     const copyContainerRef = useRef<HTMLDivElement>(null);
+    const [copyCopied, setCopyCopied] = useState(false);
 
     // Sincroniza design recebido nas props
     useEffect(() => {
@@ -933,12 +935,30 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                         onMouseUp={handleCopyMouseUp}
                                         className="relative w-[680px] max-w-[90vw] min-h-[500px] max-h-[78vh] overflow-y-auto rounded-xl bg-zinc-900 text-zinc-100 p-8 sm:p-10 shadow-2xl border border-zinc-800 select-text leading-relaxed"
                                     >
-                                        <div className="border-b border-zinc-800 pb-4 mb-6">
-                                            <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
-                                                <FileText size={14} className="text-[#9db669]" />
-                                                Material Copy / Texto
-                                            </span>
-                                            <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">{activeDesign.name}</h2>
+                                        <div className="border-b border-zinc-800 pb-4 mb-6 flex items-start justify-between gap-4">
+                                            <div>
+                                                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
+                                                    <FileText size={14} className="text-[#9db669]" />
+                                                    Material Copy / Texto
+                                                </span>
+                                                <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">{activeDesign.name}</h2>
+                                            </div>
+                                            {activeDesign.textContent && (
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        try {
+                                                            await navigator.clipboard.writeText(activeDesign.textContent || '');
+                                                            setCopyCopied(true);
+                                                            setTimeout(() => setCopyCopied(false), 2000);
+                                                        } catch {}
+                                                    }}
+                                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-800/80 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition hover:border-[#9db669] hover:text-[#d0f08e]"
+                                                >
+                                                    {copyCopied ? <CheckCircle2 size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                                                    <span>{copyCopied ? 'Copiado!' : 'Copiar texto'}</span>
+                                                </button>
+                                            )}
                                         </div>
 
                                         <div className="text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white">
