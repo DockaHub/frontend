@@ -948,7 +948,13 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                     type="button"
                                                     onClick={async () => {
                                                         try {
-                                                            await navigator.clipboard.writeText(activeDesign.textContent || '');
+                                                            let textToCopy = activeDesign.textContent || '';
+                                                            if (/<\/?[a-z][\s\S]*>/i.test(textToCopy)) {
+                                                                const temp = document.createElement('div');
+                                                                temp.innerHTML = textToCopy;
+                                                                textToCopy = temp.innerText || temp.textContent || textToCopy;
+                                                            }
+                                                            await navigator.clipboard.writeText(textToCopy);
                                                             setCopyCopied(true);
                                                             setTimeout(() => setCopyCopied(false), 2000);
                                                         } catch {}
@@ -961,9 +967,27 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             )}
                                         </div>
 
-                                        <div className="text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white">
-                                            {activeDesign.textContent || 'Sem conteúdo de texto disponível diretamente.'}
-                                        </div>
+                                        {/<\/?[a-z][\s\S]*>/i.test(activeDesign.textContent || '') ? (
+                                            <div
+                                                className="text-[15px] leading-relaxed text-zinc-200 select-text selection:bg-[#5d55c7]/40 selection:text-white
+                                                [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-white
+                                                [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-white
+                                                [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-white
+                                                [&_p]:my-2
+                                                [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
+                                                [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
+                                                [&_li]:my-0.5
+                                                [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-zinc-300
+                                                [&_pre]:bg-zinc-800/80 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
+                                                [&_hr]:my-4 [&_hr]:border-zinc-700
+                                                [&_a]:text-[#d0f08e] [&_a]:underline [&_a]:font-medium"
+                                                dangerouslySetInnerHTML={{ __html: activeDesign.textContent }}
+                                            />
+                                        ) : (
+                                            <div className="text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white">
+                                                {activeDesign.textContent || 'Sem conteúdo de texto disponível diretamente.'}
+                                            </div>
+                                        )}
 
                                         {/* Balão flutuante para comentar no trecho da copy */}
                                         {activeTextSelection && (

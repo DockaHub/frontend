@@ -7,12 +7,10 @@ import {
     Copy,
     ExternalLink,
     FileText,
-    Hash,
     HelpCircle,
     Info,
     Link2,
     Lock,
-    MessageSquare,
     Paperclip,
     Sparkles,
     Trash2,
@@ -21,6 +19,7 @@ import {
 import type { AllyoTask } from './AllyoUI';
 import { ALLYO_BORDER, FilterSelect } from './AllyoUI';
 import type { ManagedFile } from './AllyoDeliveryWorkspaces';
+import AllyoRichTextEditor from './AllyoRichTextEditor';
 
 export type CopyMode = 'social_caption' | 'document_free';
 
@@ -54,6 +53,40 @@ interface AllyoCopyDeliveryWorkspaceProps {
     disabledReason?: string;
 }
 
+export const stripHtml = (html: string): string => {
+    if (!html) return '';
+    return html
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
+};
+
+// Legenda pura sem as observações da produção (para métricas e copiar direto)
+export const getDeliverableCaption = (data: StructuredCaption): string => {
+    const parts: string[] = [];
+    if (data.headline.trim()) parts.push(data.headline.trim());
+    if (data.body.trim()) parts.push(data.body.trim());
+    if (data.cta.trim()) parts.push(data.cta.trim());
+    if (data.hashtags.trim()) parts.push(data.hashtags.trim());
+    return parts.join('\n\n');
+};
+
+// Texto puro do documento sem as notas do redator (para métricas)
+export const getDeliverableDocText = (data: StructuredDocument): string => {
+    const cleanBody = stripHtml(data.body || '').trim();
+    const parts: string[] = [];
+    if (data.title.trim()) parts.push(data.title.trim());
+    if (cleanBody) parts.push(cleanBody);
+    return parts.join('\n\n');
+};
+
 export const compileSocialCaption = (data: StructuredCaption): string => {
     const parts: string[] = [];
     if (data.headline.trim()) parts.push(data.headline.trim());
@@ -65,6 +98,18 @@ export const compileSocialCaption = (data: StructuredCaption): string => {
 };
 
 export const compileDocument = (data: StructuredDocument): string => {
+    const isHtml = /<\/?[a-z][\s\S]*>/i.test(data.body || '');
+    if (isHtml) {
+        let result = '';
+        if (data.title.trim()) {
+            result += `<h1>${data.title.trim()}</h1>\n`;
+        }
+        result += data.body || '';
+        if (data.notes.trim()) {
+            result += `\n<div class="production-notes" style="margin-top:28px; padding-top:16px; border-top:1px dashed #bbb; font-size:13px; color:#666;"><strong>📌 Observações do redator:</strong><br/>${data.notes.trim()}</div>`;
+        }
+        return result;
+    }
     const parts: string[] = [];
     if (data.title.trim()) parts.push(`# ${data.title.trim()}`);
     if (data.body.trim()) parts.push(data.body.trim());
@@ -82,7 +127,6 @@ export const parseRawTextToStructured = (raw: string, isSocialDefault: boolean):
         };
     }
 
-    // Se o texto contém hashtags ou quebras no estilo legenda
     const hasHashtags = /#[a-zA-Z0-9_]+/i.test(text);
     const mode: CopyMode = isSocialDefault || hasHashtags ? 'social_caption' : 'document_free';
 
@@ -169,20 +213,29 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
         onTextContentChange(compileDocument(next));
     };
 
-    const handleCopyCompiled = async () => {
-        if (!compiledText.trim()) return;
+    // Métricas calculadas EXCLUSIVAMENTE sobre a entrega final, excluindo as observações/notas internas
+    const deliverableText = useMemo(() => {
+        if (mode === 'social_caption') {
+            return getDeliverableCaption(socialData);
+        }
+        return getDeliverableDocText(docData);
+    }, [mode, socialData, docData]);
+
+    const characterCount = deliverableText.length;
+    const wordCount = deliverableText.trim() ? deliverableText.trim().split(/\s+/).length : 0;
+    const estimatedReadingTime = Math.max(1, Math.ceil(wordCount / 180));
+
+    const handleCopyDeliverable = async () => {
+        const textToCopy = deliverableText.trim() || compiledText.trim();
+        if (!textToCopy) return;
         try {
-            await navigator.clipboard.writeText(compiledText.trim());
+            await navigator.clipboard.writeText(textToCopy);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {
             // fallback
         }
     };
-
-    const characterCount = compiledText.length;
-    const wordCount = compiledText.trim() ? compiledText.trim().split(/\s+/).length : 0;
-    const estimatedReadingTime = Math.max(1, Math.ceil(wordCount / 180));
 
     return (
         <section className={`border-b bg-white dark:bg-zinc-950 ${ALLYO_BORDER}`}>
@@ -260,12 +313,12 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                     {/* Botão de copiar texto pronto */}
                     <button
                         type="button"
-                        onClick={handleCopyCompiled}
-                        disabled={!compiledText.trim()}
+                        onClick={handleCopyDeliverable}
+                        disabled={!deliverableText.trim() && !compiledText.trim()}
                         className="inline-flex items-center gap-1.5 rounded-full border border-[#dedede] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#555] transition hover:border-[#9db669] hover:text-[#739044] disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
                     >
                         {copied ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
-                        <span>{copied ? 'Copiado!' : 'Copiar texto completo'}</span>
+                        <span>{copied ? 'Copiado!' : mode === 'social_caption' ? 'Copiar legenda' : 'Copiar texto'}</span>
                     </button>
                 </div>
 
@@ -348,6 +401,9 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                     disabled={disabled}
                                     className="mt-1.5 w-full rounded-[10px] border border-[#dedede] bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/10 disabled:bg-[#f6f6f6] dark:border-zinc-700 dark:bg-zinc-900"
                                 />
+                                <p className="mt-1 text-[11px] text-[#999]">
+                                    As observações são orientações internas de produção e não contam nos caracteres da legenda.
+                                </p>
                             </div>
                         </div>
 
@@ -382,6 +438,11 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                         {socialData.hashtags}
                                     </div>
                                 )}
+                                {socialData.notes && (
+                                    <div className="mt-4 pt-3 border-t border-[#e8ece0] text-[11px] text-[#777] italic dark:border-zinc-800 dark:text-zinc-400">
+                                        📌 Observações: {socialData.notes}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -403,19 +464,20 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                         </div>
 
                         <div>
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between mb-1.5">
                                 <label className="block text-xs font-bold uppercase tracking-[.06em] text-[#888]">
                                     Texto Completo da Entrega
                                 </label>
-                                <span className="text-[11px] text-[#999]">Você pode estruturar títulos, tópicos e parágrafos</span>
+                                <span className="text-[11px] text-[#999]">
+                                    Opções completas: títulos, negrito, itálico, listas, alinhamentos, links e tela cheia
+                                </span>
                             </div>
-                            <textarea
+                            <AllyoRichTextEditor
                                 value={docData.body}
-                                onChange={(e) => handleUpdateDoc('body', e.target.value)}
-                                placeholder="Redija ou cole o texto final da entrega aqui..."
-                                rows={14}
+                                onChange={(html) => handleUpdateDoc('body', html)}
                                 disabled={disabled}
-                                className="mt-1.5 w-full resize-y rounded-[10px] border border-[#dedede] bg-white p-4 font-mono text-sm leading-relaxed outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/10 disabled:bg-[#f6f6f6] dark:border-zinc-700 dark:bg-zinc-900"
+                                placeholder="Redija ou cole o texto final da entrega aqui..."
+                                minHeight="360px"
                             />
                         </div>
 
@@ -431,15 +493,18 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                                 disabled={disabled}
                                 className="mt-1.5 w-full rounded-[10px] border border-[#dedede] bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-[#9db669] focus:ring-2 focus:ring-[#9db669]/10 disabled:bg-[#f6f6f6] dark:border-zinc-700 dark:bg-zinc-900"
                             />
+                            <p className="mt-1 text-[11px] text-[#999]">
+                                Notas e referências são para orientações internas e não contam no tamanho do texto.
+                            </p>
                         </div>
                     </div>
                 )}
 
-                {/* Barra de Métricas */}
+                {/* Barra de Métricas Inteligente */}
                 <div className={`mt-5 flex flex-wrap items-center justify-between gap-3 rounded-[10px] border bg-[#f9faf7] px-4 py-3 text-xs text-[#666] dark:bg-zinc-900 dark:text-zinc-400 ${ALLYO_BORDER}`}>
                     <div className="flex flex-wrap items-center gap-4 sm:gap-6">
                         <span className="font-semibold text-black dark:text-white">
-                            {characterCount.toLocaleString('pt-BR')} caracteres
+                            {characterCount.toLocaleString('pt-BR')} caracteres {mode === 'social_caption' ? 'da legenda' : 'do conteúdo'}
                             {mode === 'social_caption' && (
                                 <span className={characterCount > 2200 ? 'ml-1 text-red-500 font-bold' : 'ml-1 text-[#999]'}>
                                     / 2.200 (Instagram)
@@ -452,9 +517,18 @@ export const AllyoCopyDeliveryWorkspace: React.FC<AllyoCopyDeliveryWorkspaceProp
                             ~{estimatedReadingTime} min de leitura
                         </span>
                     </div>
-                    <span className="text-[11px] text-[#888]">
-                        ✓ Pronto para aprovação do cliente sem anexos externos
-                    </span>
+
+                    <div className="flex items-center gap-2">
+                        {mode === 'social_caption' && socialData.notes.trim() ? (
+                            <span className="text-[11px] text-[#888] italic">
+                                * Observações ({socialData.notes.trim().length} chars) não entram na contagem
+                            </span>
+                        ) : (
+                            <span className="text-[11px] text-[#888]">
+                                ✓ Pronto para aprovação do cliente sem anexos externos
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Gaveta Colapsável para Link ou Anexos Opcionais */}
