@@ -339,21 +339,21 @@ const CopyTextWithHighlights: React.FC<CopyHighlightProps> = ({
                 if (fromCommentId && fromCommentId !== toCommentId) onHover(null);
             }}
             className={isRichText
-                ? `text-[15px] leading-relaxed text-zinc-200 select-text selection:bg-[#5d55c7]/40 selection:text-white
-                    [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-white
-                    [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-white
-                    [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-white
+                ? `text-[15px] leading-relaxed text-[#343934] select-text selection:bg-[#5d55c7]/20 selection:text-[#202520] dark:text-zinc-200 dark:selection:bg-[#5d55c7]/40 dark:selection:text-white
+                    [&_h1]:text-2xl [&_h1]:font-bold [&_h1]:mt-4 [&_h1]:mb-2 [&_h1]:text-[#202520] dark:[&_h1]:text-white
+                    [&_h2]:text-xl [&_h2]:font-bold [&_h2]:mt-3 [&_h2]:mb-2 [&_h2]:text-[#202520] dark:[&_h2]:text-white
+                    [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-[#202520] dark:[&_h3]:text-white
                     [&_p]:my-2
                     [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-2
                     [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:my-2
                     [&_li]:my-0.5
-                    [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-zinc-300
-                    [&_pre]:bg-zinc-800/80 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
-                    [&_hr]:my-4 [&_hr]:border-zinc-700
-                    [&_a]:text-[#d0f08e] [&_a]:underline [&_a]:font-medium
+                    [&_blockquote]:border-l-4 [&_blockquote]:border-[#9db669] [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-3 [&_blockquote]:text-[#596159] dark:[&_blockquote]:text-zinc-300
+                    [&_pre]:bg-[#f1f3ef] dark:[&_pre]:bg-zinc-800/80 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:font-mono [&_pre]:text-xs [&_pre]:my-3 [&_pre]:overflow-x-auto
+                    [&_hr]:my-4 [&_hr]:border-[#dde2da] dark:[&_hr]:border-zinc-700
+                    [&_a]:text-[#71854e] dark:[&_a]:text-[#d0f08e] [&_a]:underline [&_a]:font-medium
                     [&_article>div]:whitespace-pre-wrap [&_article>div]:my-3
-                    [&_aside]:mt-7 [&_aside]:border-t [&_aside]:border-zinc-700 [&_aside]:pt-4 [&_aside]:text-[13px] [&_aside]:text-zinc-400`
-                : 'text-[15px] leading-relaxed text-zinc-200 whitespace-pre-wrap select-text selection:bg-[#5d55c7]/40 selection:text-white'}
+                    [&_aside]:mt-7 [&_aside]:border-t [&_aside]:border-[#dde2da] dark:[&_aside]:border-zinc-700 [&_aside]:pt-4 [&_aside]:text-[13px] [&_aside]:text-[#747b72] dark:[&_aside]:text-zinc-400`
+                : 'text-[15px] leading-relaxed text-[#343934] whitespace-pre-wrap select-text selection:bg-[#5d55c7]/20 selection:text-[#202520] dark:text-zinc-200 dark:selection:bg-[#5d55c7]/40 dark:selection:text-white'}
         />
     );
 };
@@ -545,24 +545,24 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
 
     if (isLoadingPdf) {
         return (
-            <div className="flex h-[420px] w-[320px] sm:w-[460px] flex-col items-center justify-center rounded-lg border border-zinc-800 bg-zinc-950 p-6 text-zinc-400">
+            <div className="flex h-[420px] w-[320px] sm:w-[460px] flex-col items-center justify-center rounded-lg border border-[#dfe3dc] bg-white p-6 text-[#747b72] dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-400">
                 <Loader2 className="h-8 w-8 animate-spin text-[#9db669] mb-3" />
-                <p className="text-xs font-medium text-zinc-300">Renderizando prévia do PDF...</p>
-                <p className="mt-1 text-[11px] text-zinc-500 truncate max-w-xs">{altName}</p>
+                <p className="text-xs font-medium text-[#495049] dark:text-zinc-300">Renderizando prévia do PDF...</p>
+                <p className="mt-1 text-[11px] text-[#8a9189] dark:text-zinc-500 truncate max-w-xs">{altName}</p>
             </div>
         );
     }
 
     if (pdfError) {
         return (
-            <div className="flex flex-col items-center justify-center rounded-lg border border-red-900/50 bg-red-950/20 p-8 text-center text-zinc-300 max-w-md">
-                <AlertCircle className="h-10 w-10 text-red-400 mb-2" />
-                <p className="text-sm font-semibold text-white">Falha ao abrir visualização do PDF</p>
-                <p className="mt-1 text-xs text-zinc-400">{pdfError}</p>
+            <div className="flex flex-col items-center justify-center rounded-lg border border-red-200 bg-red-50 p-8 text-center text-[#495049] max-w-md dark:border-red-900/50 dark:bg-red-950/20 dark:text-zinc-300">
+                <AlertCircle className="h-10 w-10 text-red-500 mb-2 dark:text-red-400" />
+                <p className="text-sm font-semibold text-[#202520] dark:text-white">Falha ao abrir visualização do PDF</p>
+                <p className="mt-1 text-xs text-[#747b72] dark:text-zinc-400">{pdfError}</p>
                 <button
                     type="button"
                     onClick={() => void downloadAllyoFile(url, altName)}
-                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 text-xs font-medium text-white transition"
+                    className="mt-4 inline-flex items-center gap-1.5 rounded-lg bg-[#172019] hover:bg-[#283d2b] px-3 py-1.5 text-xs font-medium text-white transition dark:bg-zinc-800 dark:hover:bg-zinc-700"
                 >
                     <Download size={13} /> Baixar anexo original
                 </button>
@@ -574,7 +574,7 @@ const AllyoPdfCanvas: React.FC<AllyoPdfCanvasProps> = ({
         <div
             ref={containerRef}
             onMouseUp={handleMouseUp}
-            className="relative select-text rounded-lg overflow-hidden bg-zinc-950 border border-zinc-800 shadow-2xl"
+            className="relative select-text rounded-lg overflow-hidden bg-white border border-[#dfe3dc] shadow-2xl dark:bg-zinc-950 dark:border-zinc-800"
         >
             <canvas
                 ref={canvasRef}
@@ -620,10 +620,10 @@ class ReviewModalErrorBoundary extends React.Component<
         if (this.state.hasError) {
             return (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-                    <div className="flex max-w-md flex-col items-center rounded-2xl border border-zinc-800 bg-[#121a14] p-8 text-center text-white shadow-2xl">
+                    <div className="flex max-w-md flex-col items-center rounded-2xl border border-[#dfe3dc] bg-white p-8 text-center text-[#202520] shadow-2xl dark:border-zinc-800 dark:bg-[#121a14] dark:text-white">
                         <AlertCircle className="h-12 w-12 text-amber-400 mb-3" />
                         <h3 className="text-base font-semibold">Não foi possível carregar a revisão</h3>
-                        <p className="mt-2 text-xs text-zinc-400">
+                        <p className="mt-2 text-xs text-[#747b72] dark:text-zinc-400">
                             Ocorreu um imprevisto ao renderizar os dados desta entrega.
                         </p>
                         <div className="mt-5 flex gap-2">
@@ -637,7 +637,7 @@ class ReviewModalErrorBoundary extends React.Component<
                             <button
                                 type="button"
                                 onClick={this.props.onClose}
-                                className="rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-zinc-700"
+                                className="rounded-lg border border-[#d8ddd5] bg-white px-4 py-2 text-xs font-medium text-[#596159] hover:bg-[#f1f3ef] dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
                             >
                                 Fechar
                             </button>
@@ -882,17 +882,17 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
-            <div className="relative flex h-[92vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl bg-[#0f1712] border border-zinc-800 text-white shadow-2xl">
+            <div className="relative flex h-[92vh] w-full max-w-[1400px] flex-col overflow-hidden rounded-2xl border border-[#dfe3dc] bg-white text-[#202520] shadow-2xl dark:border-zinc-800 dark:bg-[#0f1712] dark:text-white">
                 
                 {/* Header superior */}
-                <header className="flex h-16 shrink-0 items-center justify-between border-b border-zinc-800/80 bg-[#141e17] px-6">
+                <header className="flex h-16 shrink-0 items-center justify-between border-b border-[#dfe3dc] bg-[#fbfcf9] px-6 dark:border-zinc-800/80 dark:bg-[#141e17]">
                     <div className="flex items-center gap-3 min-w-0">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#9db669]/20 text-[#d0f08e]">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#eaf2dd] text-[#71854e] dark:bg-[#9db669]/20 dark:text-[#d0f08e]">
                             <Layers size={18} />
                         </div>
                         <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                                <h2 className="truncate text-base font-semibold text-white" title={activeDesign.name}>
+                                <h2 className="truncate text-base font-semibold text-[#202520] dark:text-white" title={activeDesign.name}>
                                     {activeDesign.name}
                                 </h2>
                                 {availableVersions && availableVersions.length > 1 ? (
@@ -907,7 +907,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                 setHoveredCommentId(null);
                                             }
                                         }}
-                                        className="rounded-lg bg-zinc-800 border border-zinc-700 px-2.5 py-0.5 text-[11px] font-semibold text-white focus:outline-none focus:ring-1 focus:ring-[#9db669] cursor-pointer"
+                                        className="cursor-pointer rounded-lg border border-[#d8ddd5] bg-white px-2.5 py-0.5 text-[11px] font-semibold text-[#343934] focus:outline-none focus:ring-1 focus:ring-[#9db669] dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
                                     >
                                         {availableVersions.map((d) => (
                                             <option key={d.id} value={d.id}>
@@ -918,19 +918,19 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                         ))}
                                     </select>
                                 ) : (
-                                    <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
+                                    <span className="rounded-full bg-[#edf0ea] px-2 py-0.5 text-[11px] font-medium text-[#596159] dark:bg-zinc-800 dark:text-zinc-300">
                                         {activeDesign.version || 'v1'}
                                     </span>
                                 )}
                                 <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
                                     activeDesign.approved
-                                        ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                                        : 'bg-amber-950/80 text-amber-300 border border-amber-800/80'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                                        : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-800/80'
                                 }`}>
                                     {activeDesign.approved ? 'Aprovado pelo cliente' : 'Em revisão com anotações'}
                                 </span>
                             </div>
-                            <p className="truncate text-xs text-zinc-400">
+                            <p className="truncate text-xs text-[#747b72] dark:text-zinc-400">
                                 {taskName || 'Revisão da entrega'} • {comments.length} {comments.length === 1 ? 'comentário' : 'comentários'} e {annotations.length} {annotations.length === 1 ? 'marcação' : 'marcações'}
                             </p>
                         </div>
@@ -941,7 +941,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => void downloadAllyoFile(fileUrl, activeDesign.name || 'arquivo-original')}
-                                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-800/60 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-700"
+                                className="hidden sm:inline-flex items-center gap-1.5 rounded-lg border border-[#d8ddd5] bg-white px-3 py-1.5 text-xs font-medium text-[#596159] transition hover:bg-[#f1f3ef] dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:bg-zinc-700"
                                 title="Baixar arquivo original"
                             >
                                 <Download size={13} />
@@ -951,7 +951,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                         <button
                             type="button"
                             onClick={onClose}
-                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition hover:border-zinc-500 hover:text-white"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[#d8ddd5] text-[#747b72] transition hover:border-[#b8c0b4] hover:bg-[#f1f3ef] hover:text-[#202520] dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-zinc-500 dark:hover:bg-transparent dark:hover:text-white"
                             aria-label="Fechar modal de revisão"
                         >
                             <X size={18} />
@@ -963,29 +963,29 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                 <div className="flex flex-1 min-h-0 overflow-hidden">
                     
                     {/* Área do Canvas com o arquivo e as marcações */}
-                    <div className="relative flex flex-1 flex-col overflow-hidden bg-[#0c120e]">
+                    <div className="relative flex flex-1 flex-col overflow-hidden bg-[#eef1ec] dark:bg-[#0c120e]">
                         
                         {/* Barra de ferramentas de Zoom e Paginação */}
-                        <div className="absolute top-4 left-4 z-20 flex items-center gap-1 rounded-xl border border-zinc-800 bg-[#162019]/90 p-1.5 shadow-lg backdrop-blur-md">
+                        <div className="absolute top-4 left-4 z-20 flex items-center gap-1 rounded-xl border border-[#d8ddd5] bg-white/90 p-1.5 shadow-lg backdrop-blur-md dark:border-zinc-800 dark:bg-[#162019]/90">
                             {isPdf && pdfNumPages > 1 && (
-                                <div className="flex items-center gap-1 border-r border-zinc-700 pr-2 mr-1">
+                                <div className="flex items-center gap-1 border-r border-[#d8ddd5] pr-2 mr-1 dark:border-zinc-700">
                                     <button
                                         type="button"
                                         disabled={pdfPage <= 1}
                                         onClick={() => setPdfPage((p) => Math.max(1, p - 1))}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#596159] hover:bg-[#eef1ec] hover:text-[#202520] disabled:opacity-30 disabled:hover:bg-transparent transition dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
                                         title="Página anterior"
                                     >
                                         <ChevronLeft size={16} />
                                     </button>
-                                    <span className="text-xs font-mono text-zinc-300 px-1">
+                                    <span className="text-xs font-mono text-[#596159] px-1 dark:text-zinc-300">
                                         {pdfPage} / {pdfNumPages}
                                     </span>
                                     <button
                                         type="button"
                                         disabled={pdfPage >= pdfNumPages}
                                         onClick={() => setPdfPage((p) => Math.min(pdfNumPages, p + 1))}
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#596159] hover:bg-[#eef1ec] hover:text-[#202520] disabled:opacity-30 disabled:hover:bg-transparent transition dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
                                         title="Próxima página"
                                     >
                                         <ChevronRight size={16} />
@@ -996,27 +996,27 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                             <button
                                 type="button"
                                 onClick={() => setZoom((z) => Math.max(30, z - 15))}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#596159] hover:bg-[#eef1ec] hover:text-[#202520] transition dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
                                 title="Diminuir zoom"
                             >
                                 <ZoomOut size={16} />
                             </button>
-                            <span className="min-w-12 text-center text-xs font-mono font-medium text-zinc-300">
+                            <span className="min-w-12 text-center text-xs font-mono font-medium text-[#596159] dark:text-zinc-300">
                                 {zoom}%
                             </span>
                             <button
                                 type="button"
                                 onClick={() => setZoom((z) => Math.min(250, z + 15))}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#596159] hover:bg-[#eef1ec] hover:text-[#202520] transition dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
                                 title="Aumentar zoom"
                             >
                                 <ZoomIn size={16} />
                             </button>
-                            <span className="mx-1 h-4 w-px bg-zinc-700" />
+                            <span className="mx-1 h-4 w-px bg-[#d8ddd5] dark:bg-zinc-700" />
                             <button
                                 type="button"
                                 onClick={() => setZoom(100)}
-                                className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-300 hover:bg-zinc-800 hover:text-white transition"
+                                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#596159] hover:bg-[#eef1ec] hover:text-[#202520] transition dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-white"
                                 title="Ajustar zoom para 100%"
                             >
                                 <RotateCcw size={14} />
@@ -1044,12 +1044,12 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                 src={fileUrl}
                                                 controls
                                                 playsInline
-                                                className="max-h-[calc(100vh-180px)] max-w-[calc(100vw-440px)] rounded-lg border border-zinc-800 bg-black shadow-2xl"
+                                                className="max-h-[calc(100vh-180px)] max-w-[calc(100vw-440px)] rounded-lg border border-[#d8ddd5] bg-black shadow-2xl dark:border-zinc-800"
                                             />
                                         ) : isAudio ? (
-                                            <div className="flex min-h-[240px] w-[620px] max-w-[85vw] flex-col items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900 p-10 shadow-2xl">
+                                            <div className="flex min-h-[240px] w-[620px] max-w-[85vw] flex-col items-center justify-center rounded-xl border border-[#d8ddd5] bg-white p-10 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
                                                 <FileText size={42} className="mb-5 text-[#9db669]" />
-                                                <strong className="mb-5 max-w-full truncate text-sm text-white">{activeDesign.name}</strong>
+                                                <strong className="mb-5 max-w-full truncate text-sm text-[#202520] dark:text-white">{activeDesign.name}</strong>
                                                 <audio src={fileUrl} controls className="w-full" />
                                             </div>
                                         ) : (
@@ -1060,7 +1060,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                     maxHeight: 'calc(100vh - 160px)',
                                                     maxWidth: 'calc(100vw - 440px)',
                                                 }}
-                                                className="rounded-lg object-contain block bg-zinc-950 border border-zinc-800 shadow-2xl"
+                                                className="rounded-lg object-contain block bg-white border border-[#d8ddd5] shadow-2xl dark:bg-zinc-950 dark:border-zinc-800"
                                                 draggable={false}
                                             />
                                         )}
@@ -1220,8 +1220,8 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                             {number}
                                                         </button>
                                                         {isHovered && parsed.snippet && (
-                                                            <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-zinc-900 border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-200 shadow-xl backdrop-blur-sm pointer-events-none">
-                                                                <span className="font-semibold text-amber-400">"{parsed.snippet.slice(0, 40)}{parsed.snippet.length > 40 ? '...' : ''}"</span>
+                                                            <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-white border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-800 shadow-xl backdrop-blur-sm pointer-events-none dark:bg-zinc-900 dark:text-amber-200">
+                                                                <span className="font-semibold text-amber-700 dark:text-amber-400">"{parsed.snippet.slice(0, 40)}{parsed.snippet.length > 40 ? '...' : ''}"</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1230,20 +1230,20 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                     </div>
                                 ) : isCopy ? (
                                     <div
-                                        className="w-[680px] max-w-[90vw] max-h-[78vh] overflow-y-auto rounded-xl bg-zinc-900 text-zinc-100 shadow-2xl border border-zinc-800 select-text leading-relaxed"
+                                        className="w-[680px] max-w-[90vw] max-h-[78vh] overflow-y-auto rounded-xl bg-white text-[#202520] shadow-2xl border border-[#d8ddd5] select-text leading-relaxed dark:bg-zinc-900 dark:text-zinc-100 dark:border-zinc-800"
                                     >
                                       <div
                                         ref={copyContainerRef}
                                         onMouseUp={handleCopyMouseUp}
                                         className="relative min-h-[500px] p-8 sm:p-10"
                                       >
-                                        <div className="border-b border-zinc-800 pb-4 mb-6 flex items-start justify-between gap-4">
+                                        <div className="border-b border-[#e2e5df] pb-4 mb-6 flex items-start justify-between gap-4 dark:border-zinc-800">
                                             <div>
-                                                <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold flex items-center gap-1.5">
+                                                <span className="text-[11px] font-mono uppercase tracking-wider text-[#747b72] font-semibold flex items-center gap-1.5 dark:text-zinc-400">
                                                     <FileText size={14} className="text-[#9db669]" />
                                                     Material Copy / Texto
                                                 </span>
-                                                <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">{activeDesign.name}</h2>
+                                                <h2 className="text-xl sm:text-2xl font-bold text-[#202520] mt-1 dark:text-white">{activeDesign.name}</h2>
                                             </div>
                                             {activeDesign.textContent && (
                                                 <button
@@ -1256,7 +1256,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                             setTimeout(() => setCopyCopied(false), 2000);
                                                         } catch {}
                                                     }}
-                                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-zinc-700 bg-zinc-800/80 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition hover:border-[#9db669] hover:text-[#d0f08e]"
+                                                    className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-[#d8ddd5] bg-white px-3.5 py-1.5 text-xs font-semibold text-[#596159] transition hover:border-[#9db669] hover:text-[#71854e] dark:border-zinc-700 dark:bg-zinc-800/80 dark:text-zinc-200 dark:hover:text-[#d0f08e]"
                                                 >
                                                     {copyCopied ? <CheckCircle2 size={13} className="text-emerald-400" /> : <Copy size={13} />}
                                                     <span>{copyCopied ? 'Copiado!' : 'Copiar texto'}</span>
@@ -1345,8 +1345,8 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                             {number}
                                                         </button>
                                                         {isHovered && parsed.snippet && (
-                                                            <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-zinc-900 border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-200 shadow-xl backdrop-blur-sm pointer-events-none">
-                                                                <span className="font-semibold text-amber-400">"{parsed.snippet.slice(0, 40)}{parsed.snippet.length > 40 ? '...' : ''}"</span>
+                                                            <div className="absolute left-full top-1/2 ml-2 -translate-y-1/2 z-40 whitespace-nowrap rounded-md bg-white border border-amber-400/60 px-2.5 py-1 text-[11px] text-amber-800 shadow-xl backdrop-blur-sm pointer-events-none dark:bg-zinc-900 dark:text-amber-200">
+                                                                <span className="font-semibold text-amber-700 dark:text-amber-400">"{parsed.snippet.slice(0, 40)}{parsed.snippet.length > 40 ? '...' : ''}"</span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1355,10 +1355,10 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                       </div>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center p-12 text-center text-zinc-400 max-w-md bg-zinc-900 rounded-xl border border-zinc-800">
-                                        <FileText size={48} className="text-zinc-500 mb-3" />
-                                        <h3 className="text-lg font-medium text-white">{activeDesign.name}</h3>
-                                        <p className="mt-1 text-xs text-zinc-400">
+                                    <div className="flex flex-col items-center justify-center p-12 text-center text-[#747b72] max-w-md bg-white rounded-xl border border-[#d8ddd5] dark:text-zinc-400 dark:bg-zinc-900 dark:border-zinc-800">
+                                        <FileText size={48} className="text-[#8a9189] mb-3 dark:text-zinc-500" />
+                                        <h3 className="text-lg font-medium text-[#202520] dark:text-white">{activeDesign.name}</h3>
+                                        <p className="mt-1 text-xs text-[#747b72] dark:text-zinc-400">
                                             {activeDesign.textContent || 'Arquivo textual ou sem prévia interativa de imagem direta.'}
                                         </p>
                                         {fileUrl && (
@@ -1376,7 +1376,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                         </div>
 
                         {/* Rodapé explicativo do canvas */}
-                        <div className="flex items-center justify-between border-t border-zinc-800/80 bg-[#121a14] px-6 py-2.5 text-xs text-zinc-400">
+                        <div className="flex items-center justify-between border-t border-[#dfe3dc] bg-[#fbfcf9] px-6 py-2.5 text-xs text-[#747b72] dark:border-zinc-800/80 dark:bg-[#121a14] dark:text-zinc-400">
                             <div className="flex items-center gap-4">
                                 <span className="flex items-center gap-1.5">
                                     <span className={isCopy
@@ -1399,19 +1399,19 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                     </div>
 
                     {/* Sidebar direita: Lista de comentários e anotações */}
-                    <aside className="flex w-96 flex-col border-l border-zinc-800 bg-[#131b15]">
+                    <aside className="flex w-96 flex-col border-l border-[#dfe3dc] bg-[#f8faf6] dark:border-zinc-800 dark:bg-[#131b15]">
                         
                         {/* Filtros da sidebar */}
-                        <div className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-                            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                        <div className="flex items-center justify-between border-b border-[#dfe3dc] px-4 py-3 dark:border-zinc-800">
+                            <span className="text-xs font-semibold uppercase tracking-wider text-[#747b72] dark:text-zinc-400">
                                 Feedback ({comments.length})
                             </span>
-                            <div className="flex rounded-lg bg-zinc-900/90 p-0.5 border border-zinc-800 text-xs">
+                            <div className="flex rounded-lg bg-[#edf0ea] p-0.5 border border-[#dfe3dc] text-xs dark:bg-zinc-900/90 dark:border-zinc-800">
                                 <button
                                     type="button"
                                     onClick={() => setFilter('all')}
                                     className={`rounded-md px-2.5 py-1 font-medium transition ${
-                                        filter === 'all' ? 'bg-[#9db669] text-black font-semibold' : 'text-zinc-400 hover:text-white'
+                                        filter === 'all' ? 'bg-[#9db669] text-black font-semibold' : 'text-[#747b72] hover:text-[#202520] dark:text-zinc-400 dark:hover:text-white'
                                     }`}
                                 >
                                     Todos
@@ -1420,7 +1420,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                     type="button"
                                     onClick={() => setFilter('open')}
                                     className={`rounded-md px-2.5 py-1 font-medium transition ${
-                                        filter === 'open' ? 'bg-[#9db669] text-black font-semibold' : 'text-zinc-400 hover:text-white'
+                                        filter === 'open' ? 'bg-[#9db669] text-black font-semibold' : 'text-[#747b72] hover:text-[#202520] dark:text-zinc-400 dark:hover:text-white'
                                     }`}
                                 >
                                     Abertos ({openComments.length})
@@ -1429,7 +1429,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                     type="button"
                                     onClick={() => setFilter('resolved')}
                                     className={`rounded-md px-2.5 py-1 font-medium transition ${
-                                        filter === 'resolved' ? 'bg-[#9db669] text-black font-semibold' : 'text-zinc-400 hover:text-white'
+                                        filter === 'resolved' ? 'bg-[#9db669] text-black font-semibold' : 'text-[#747b72] hover:text-[#202520] dark:text-zinc-400 dark:hover:text-white'
                                     }`}
                                 >
                                     Resolvidos ({resolvedComments.length})
@@ -1440,13 +1440,13 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                         {/* Lista de Comentários */}
                         <div ref={commentsListRef} className="flex-1 overflow-y-auto p-4 space-y-3">
                             {isLoading && (
-                                <p className="py-8 text-center text-xs text-zinc-500">
+                                <p className="py-8 text-center text-xs text-[#8a9189] dark:text-zinc-500">
                                     Carregando anotações e comentários...
                                 </p>
                             )}
 
                             {!isLoading && visibleComments.length === 0 && (
-                                <div className="flex flex-col items-center justify-center py-12 text-center text-zinc-500">
+                                <div className="flex flex-col items-center justify-center py-12 text-center text-[#8a9189] dark:text-zinc-500">
                                     <MessageSquare size={32} className="stroke-1 opacity-40 mb-2" />
                                     <p className="text-xs">Nenhum comentário nesta visualização.</p>
                                 </div>
@@ -1478,11 +1478,11 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                             className={`rounded-xl border p-3.5 transition-all text-xs cursor-pointer ${
                                                 c.resolved
                                                     ? isHovered
-                                                        ? 'border-emerald-500 bg-emerald-950/40 ring-1 ring-emerald-400'
-                                                        : 'border-emerald-900/40 bg-emerald-950/20 text-zinc-300'
+                                                        ? 'border-emerald-500 bg-emerald-50 ring-1 ring-emerald-300 dark:bg-emerald-950/40 dark:ring-emerald-400'
+                                                        : 'border-emerald-200 bg-emerald-50/60 text-[#495049] dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-zinc-300'
                                                     : isHovered || isSelected
-                                                    ? 'border-amber-400 bg-zinc-800/90 shadow-lg ring-2 ring-amber-400/50 scale-[1.01]'
-                                                    : 'border-zinc-800 bg-[#18231c] text-zinc-200 hover:border-zinc-700'
+                                                    ? 'border-amber-400 bg-white shadow-lg ring-2 ring-amber-300/60 scale-[1.01] dark:bg-zinc-800/90 dark:ring-amber-400/50'
+                                                    : 'border-[#dfe3dc] bg-white text-[#343934] hover:border-[#b8c0b4] dark:border-zinc-800 dark:bg-[#18231c] dark:text-zinc-200 dark:hover:border-zinc-700'
                                             }`}
                                         >
                                             <header className="flex items-start justify-between gap-2 mb-2">
@@ -1494,14 +1494,14 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                             {number}
                                                         </span>
                                                     )}
-                                                    <span className="font-semibold text-white">
+                                                    <span className="font-semibold text-[#202520] dark:text-white">
                                                         {c.author}
                                                     </span>
                                                     {(() => {
                                                         const cPage = getCommentPage(c);
                                                         if (!hasPin && !isPdf) return null;
                                                         return (
-                                                            <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
+                                                            <span className="rounded bg-[#edf0ea] px-1.5 py-0.5 text-[10px] font-mono text-[#747b72] dark:bg-zinc-800 dark:text-zinc-400">
                                                                 {hasPin
                                                                     ? `Marcação ${number}${isPdf ? ` · Pág. ${cPage}` : ''}`
                                                                     : `Pág. ${cPage}`}
@@ -1509,28 +1509,28 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                         );
                                                     })()}
                                                 </div>
-                                                <span className="text-[10px] text-zinc-400 shrink-0">
+                                                <span className="text-[10px] text-[#8a9189] shrink-0 dark:text-zinc-400">
                                                     {c.time}
                                                 </span>
                                             </header>
 
                                             {/* Trecho selecionado destacado */}
                                             {parsed.snippet && (
-                                                <div className="mb-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 p-2 text-[11px] text-amber-200 flex items-start gap-1.5">
-                                                    <Type size={13} className="shrink-0 text-amber-400 mt-0.5" />
+                                                <div className="mb-2.5 rounded-lg bg-amber-50 border border-amber-200 p-2 text-[11px] text-amber-800 flex items-start gap-1.5 dark:bg-amber-500/10 dark:border-amber-500/30 dark:text-amber-200">
+                                                    <Type size={13} className="shrink-0 text-amber-600 mt-0.5 dark:text-amber-400" />
                                                     <div className="italic leading-snug">
-                                                        <span className="font-semibold text-amber-400 not-italic">Trecho: </span>
+                                                        <span className="font-semibold text-amber-700 not-italic dark:text-amber-400">Trecho: </span>
                                                         "{parsed.snippet}"
                                                     </div>
                                                 </div>
                                             )}
 
-                                            <p className="text-[13px] leading-relaxed break-words text-zinc-100 mb-3">
+                                            <p className="text-[13px] leading-relaxed break-words text-[#343934] mb-3 dark:text-zinc-100">
                                                 {parsed.cleanText}
                                             </p>
 
-                                            <footer className="flex items-center justify-between border-t border-zinc-800/80 pt-2 text-[11px]">
-                                                <span className="text-zinc-500">
+                                            <footer className="flex items-center justify-between border-t border-[#e2e5df] pt-2 text-[11px] dark:border-zinc-800/80">
+                                                <span className="text-[#8a9189] dark:text-zinc-500">
                                                     {isCopy && parsed.snippet
                                                         ? 'Trecho marcado no texto'
                                                         : hasPin ? 'Marcador no arquivo' : 'Comentário geral'}
@@ -1543,8 +1543,8 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                                     }}
                                                     className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-medium transition ${
                                                         c.resolved
-                                                            ? 'bg-emerald-900/60 text-emerald-300 hover:bg-emerald-800'
-                                                            : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'
+                                                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-800'
+                                                            : 'bg-[#edf0ea] text-[#596159] hover:bg-[#dfe4da] hover:text-[#202520] dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 dark:hover:text-white'
                                                     }`}
                                                 >
                                                     <CheckCircle2 size={12} />
@@ -1557,20 +1557,20 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                         </div>
 
                         {/* Input para resposta do criativo */}
-                        <form onSubmit={handleSendReply} className="border-t border-zinc-800 p-4 bg-[#101712]">
+                        <form onSubmit={handleSendReply} className="border-t border-[#dfe3dc] p-4 bg-white dark:border-zinc-800 dark:bg-[#101712]">
                             {/* Prévia do trecho selecionado ao responder */}
                             {selectedSnippet && (
-                                <div className="mb-2.5 flex items-center justify-between gap-2 rounded-lg bg-amber-500/15 border border-amber-500/40 px-2.5 py-1.5 text-xs text-amber-200">
+                                <div className="mb-2.5 flex items-center justify-between gap-2 rounded-lg bg-amber-50 border border-amber-200 px-2.5 py-1.5 text-xs text-amber-800 dark:bg-amber-500/15 dark:border-amber-500/40 dark:text-amber-200">
                                     <div className="flex items-center gap-1.5 truncate">
-                                        <Type size={13} className="shrink-0 text-amber-400" />
+                                        <Type size={13} className="shrink-0 text-amber-600 dark:text-amber-400" />
                                         <span className="truncate">
-                                            <strong className="text-amber-400">Trecho:</strong> "{selectedSnippet}"
+                                            <strong className="text-amber-700 dark:text-amber-400">Trecho:</strong> "{selectedSnippet}"
                                         </span>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={() => setSelectedSnippet(null)}
-                                        className="text-amber-400 hover:text-white shrink-0 p-0.5 rounded transition"
+                                        className="text-amber-600 hover:text-amber-900 shrink-0 p-0.5 rounded transition dark:text-amber-400 dark:hover:text-white"
                                         title="Remover trecho"
                                     >
                                         <X size={13} />
@@ -1578,7 +1578,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                 </div>
                             )}
 
-                            <label className="block text-[11px] font-semibold text-zinc-400 mb-1.5 flex items-center gap-1">
+                            <label className="block text-[11px] font-semibold text-[#747b72] mb-1.5 flex items-center gap-1 dark:text-zinc-400">
                                 <CornerDownRight size={12} />
                                 Responder ao cliente sobre este arquivo
                             </label>
@@ -1589,7 +1589,7 @@ const AllyoReviewModalInner: React.FC<AllyoReviewModalProps> = ({
                                     value={replyText}
                                     onChange={(e) => setReplyText(e.target.value)}
                                     placeholder={selectedSnippet ? "Comente sobre o trecho selecionado..." : "Digite uma observação ou alinhamento..."}
-                                    className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs text-white placeholder-zinc-500 focus:border-[#9db669] focus:outline-none"
+                                    className="flex-1 rounded-lg border border-[#d8ddd5] bg-white px-3 py-2 text-xs text-[#202520] placeholder-[#9aa099] focus:border-[#9db669] focus:outline-none dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:placeholder-zinc-500"
                                 />
                                 <button
                                     type="submit"
