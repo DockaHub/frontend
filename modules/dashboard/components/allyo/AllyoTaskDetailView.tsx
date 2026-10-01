@@ -550,7 +550,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             return true;
         } catch (err: any) {
             console.error('[AllyoTaskDetailView] Erro ao enviar revisão para Railway:', err);
-            const msg = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Erro ao registrar entrega na Allyo Space';
+            const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Erro ao registrar entrega na Allyo Space';
             addToast({ type: 'error', title: 'Não foi possível enviar para revisão', message: msg });
             return false;
         } finally {
