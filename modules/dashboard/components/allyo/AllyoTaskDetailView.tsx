@@ -14,7 +14,7 @@ import AllyoTaskActions from './AllyoTaskActions';
 import AllyoClientDeliveryWorkspace from './AllyoClientDeliveryWorkspace';
 import { addTaskActivity } from './allyoTaskActivity';
 import { mapDemandToAllyoProject } from './allyoProjects';
-import { getTaskResources } from './allyoTaskResourceData';
+import { getTaskResources, buildTaskResources, isReferenceOrLinkItem } from './allyoTaskResourceData';
 import { allyoService, type AllyoCatalogProduct, type AllyoDemand, type AllyoUserCategory } from '../../../../services/allyoService';
 import { useToast } from '../../../../context/ToastContext';
 import { getAllyoTaskItemCount, getAllyoTaskPresentation } from './allyoTaskPresentation';
@@ -179,7 +179,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const projectTask = projectTasks.find((item) => item.id === task.id);
     const isTaskBlocked = projectTask?.status === 'blocked';
     const blockingTasks = (projectTask?.dependsOn || []).map((id) => projectTasks.find((item) => item.id === id)?.title).filter(Boolean);
-    const taskResources = getTaskResources(task.id);
+    const taskResources = useMemo(() => buildTaskResources(task, liveDemand), [task, liveDemand]);
     const initialStatus = isTaskBlocked ? 'Bloqueada' : task.status === 'Iniciar' ? 'Nova' : task.status === 'Concluída' ? 'Entregue' : (task.status || 'Em andamento');
     const [status, setStatus] = useState<string>(initialStatus);
 
@@ -259,13 +259,16 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
         : undefined;
     const taskItemCount = getAllyoTaskItemCount(presentationTask, taskPresentation, catalogStructuredQuantity);
     const isClientView = permissionsLoaded && !canManageTask && (viewerCategory === 'CLIENTE' || viewerCategory === null);
+    const filteredCreativeDirection = (Array.isArray(task.briefing?.creativeDirection) ? task.briefing.creativeDirection : [])
+        .filter((item) => typeof item === 'string' && !isReferenceOrLinkItem(item));
+
     const briefing = task.briefing
         ? [
             { title: '1. Objetivo desta tarefa', items: [task.briefing.objective].filter((item): item is string => Boolean(item)) },
             { title: '2. Contexto herdado do projeto', items: [task.briefing.overview, task.briefing.audience ? `Público: ${task.briefing.audience}` : null, task.briefing.tone ? `Tom: ${task.briefing.tone}` : null].filter((item): item is string => Boolean(item)) },
             { title: '3. Entregáveis', items: Array.isArray(task.briefing.deliverables) ? task.briefing.deliverables : [] },
             { title: '4. Formatos', items: Array.isArray(task.briefing.formats) ? task.briefing.formats : [] },
-            { title: '5. Direção criativa', items: Array.isArray(task.briefing.creativeDirection) ? task.briefing.creativeDirection : [] },
+            { title: '5. Direção criativa', items: filteredCreativeDirection },
         ].filter((block) => block.items.length > 0)
         : briefingByKind[deliverableKind as keyof typeof briefingByKind] || [
             { title: `1. Objetivo de ${taskPresentation.label.toLocaleLowerCase('pt-BR')}`, items: [taskPresentation.creativeHelper] },

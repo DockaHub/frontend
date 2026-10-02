@@ -61,6 +61,7 @@ export interface AllyoTask {
     version?: string | null;
     taskType?: string | null;
     deliverables?: AllyoDeliverable[];
+    files?: any[];
     briefing?: {
         inheritedFromProject: boolean;
         catalogCode?: string | null;
@@ -71,6 +72,8 @@ export interface AllyoTask {
         deliverables: string[];
         formats: string[];
         creativeDirection: string[];
+        references?: string;
+        referenceLinks?: string[];
         deliverySchema?: AllyoDeliverySchema;
     };
     feedback?: {
@@ -189,7 +192,22 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         version: task.version,
         taskType: task.taskType || task.deliverySchema?.taskType || task.briefing?.deliverySchema?.taskType || task.briefing?.taskType || null,
         deliverables: structuredDemandDeliverables(task) || demandDeliverables(task.briefing) || (sourceTasks.length === 1 ? demandDeliverables(demand.briefing) : undefined),
-        briefing: task.briefing,
+        briefing: task.briefing ? {
+            ...task.briefing,
+            referenceLinks: Array.isArray(task.briefing.referenceLinks) && task.briefing.referenceLinks.length > 0
+                ? task.briefing.referenceLinks
+                : Array.isArray(demand.briefing?.referenceLinks)
+                ? demand.briefing.referenceLinks
+                : [],
+        } : (demand.briefing ? {
+            inheritedFromProject: true,
+            ...demand.briefing,
+            deliverables: Array.isArray(demand.briefing.deliverables) ? demand.briefing.deliverables : [],
+            formats: Array.isArray(demand.briefing.formats) ? demand.briefing.formats : [],
+            creativeDirection: Array.isArray(demand.briefing.creativeDirection) ? demand.briefing.creativeDirection : [],
+            referenceLinks: Array.isArray(demand.briefing.referenceLinks) ? demand.briefing.referenceLinks : [],
+        } : undefined),
+        files: (Array.isArray(task.files) && task.files.length > 0 ? task.files : demand.files) || [],
         feedback: task.feedback || null,
     }));
 }

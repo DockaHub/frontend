@@ -1,5 +1,17 @@
 import api from './api';
 
+export interface AllyoDemandFile {
+    id: string;
+    name: string;
+    fileKey?: string;
+    contentType?: string;
+    sizeBytes?: number;
+    category?: string;
+    fileUrl?: string;
+    downloadUrl?: string;
+    createdAt?: string;
+}
+
 export interface AllyoDemandBriefing {
     objective?: string;
     targetAudience?: string;
@@ -7,6 +19,7 @@ export interface AllyoDemandBriefing {
     formats?: string[];
     creativeDirection?: string[];
     references?: string;
+    referenceLinks?: string[];
     notes?: string;
     creditsEstimated?: number;
     creditsConsumed?: number;
@@ -273,6 +286,7 @@ export interface AllyoDemand {
     tasksList?: AllyoDemandTask[];
     designsCount: number;
     designs?: AllyoDesignAsset[];
+    files?: AllyoDemandFile[];
     messagesCount: number;
     createdAt: string;
     updatedAt: string;
@@ -301,6 +315,7 @@ export interface AllyoDemandTask {
     deadlineAt?: string | null;
     deadlineDays?: number;
     orderIndex?: number;
+    files?: AllyoDemandFile[];
     briefing?: {
         inheritedFromProject: boolean;
         taskType?: string | null;
@@ -312,6 +327,8 @@ export interface AllyoDemandTask {
         deliverables: string[];
         formats: string[];
         creativeDirection: string[];
+        references?: string;
+        referenceLinks?: string[];
         deliverySchema?: {
             version?: number;
             taskType?: string | null;
