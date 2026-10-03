@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Archive, BookOpen, Check, ChevronRight, CircleDollarSign,
     FileStack, Image as ImageIcon, Loader2, PackageOpen, Plus,
@@ -73,7 +73,16 @@ const formatList = (value?: string[]) => (value || []).join(', ');
 const formatCredits = (value?: number | null) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 const slugify = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 const CATALOG_SOURCE_IMAGE_LIMIT = 20 * 1024 * 1024;
+const CATALOG_SOURCE_VIDEO_LIMIT = 50 * 1024 * 1024;
 const CATALOG_UPLOAD_IMAGE_LIMIT = 5 * 1024 * 1024;
+
+const isVideoMediaUrl = (url?: string | null): boolean => {
+    if (!url) return false;
+    const clean = url.split('?')[0].split('#')[0].toLowerCase();
+    if (clean.endsWith('.mp4') || clean.endsWith('.webm') || clean.endsWith('.ogg') || clean.endsWith('.mov')) return true;
+    const full = url.toLowerCase();
+    return full.includes('.mp4') || full.includes('.webm') || full.includes('/video/') || full.includes('format=mp4') || full.includes('ext=mp4');
+};
 
 const optimizeCatalogImage = (file: File): Promise<File> => new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
@@ -207,37 +216,197 @@ const AllyoCatalogView = () => {
     );
 };
 
-const ProductList = ({ products, busyCode, onEdit, onAction }: { products: AllyoCatalogProduct[]; busyCode: string; onEdit: (product: AllyoCatalogProduct) => void; onAction: (product: AllyoCatalogProduct, action: 'publish' | 'archive' | 'restore') => void }) => (
-    <div>
-        {products.map((product) => {
-            const meta = statusMeta[product.status];
-            const busy = busyCode === product.code;
-            return <div key={product.code} className={`grid min-h-[78px] grid-cols-[minmax(250px,1.45fr)_90px_90px_110px_110px_112px] items-center gap-5 border-b px-5 py-3 transition hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-xl:grid-cols-[minmax(230px,1.4fr)_90px_110px_110px_112px] max-lg:grid-cols-[minmax(210px,1fr)_90px_110px_112px] max-sm:grid-cols-[minmax(0,1fr)_62px_104px] ${ALLYO_BORDER}`}>
-                <button onClick={() => onEdit(product)} className="flex min-w-0 items-center gap-[10px] text-left">
-                    <ProductImage product={product} />
-                    <span className="min-w-0 flex-1">
-                        <strong className="block truncate text-sm font-medium">{product.name}</strong>
-                        <span className="mt-1 block truncate text-[11px] text-[#777] dark:text-zinc-400">{product.code} · {product.subcategory || product.category} · {product.specialistRole}</span>
-                    </span>
-                </button>
-                <DataCell label="CRÉDITOS" value={formatCredits(product.credits.original)} />
-                <DataCell label="PRAZO" value={`${product.slaHours}h`} className="max-xl:hidden" />
-                <DataCell label="VISIBILIDADE" value={product.visibleToClient ? 'Cliente' : 'Interno'} className="max-lg:hidden" />
-                <DataCell label="STATUS" value={meta.label} valueClassName={meta.textClasses} className="max-sm:hidden" />
-                <div className="flex justify-end gap-1">
-                    {product.status === 'draft' && <button disabled={busy} onClick={() => onAction(product, 'publish')} title="Publicar" aria-label={`Publicar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40 dark:hover:bg-emerald-950/40">{busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}</button>}
-                    {product.status === 'archived' ? <button disabled={busy} onClick={() => onAction(product, 'restore')} title="Restaurar" aria-label={`Restaurar ${product.name}`} className="rounded-full p-2.5 text-[#666] hover:bg-amber-50 hover:text-amber-600 disabled:opacity-40 dark:hover:bg-amber-950/40">{busy ? <Loader2 size={16} className="animate-spin" /> : <Undo2 size={16} />}</button> : <button disabled={busy} onClick={() => onAction(product, 'archive')} title="Arquivar" aria-label={`Arquivar ${product.name}`} className="rounded-full p-2.5 text-[#999] hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/30"><Archive size={16} /></button>}
-                </div>
-            </div>;
-        })}
-    </div>
-);
+const ProductList = ({
+    products,
+    busyCode,
+    onEdit,
+    onAction,
+}: {
+    products: AllyoCatalogProduct[];
+    busyCode: string;
+    onEdit: (product: AllyoCatalogProduct) => void;
+    onAction: (product: AllyoCatalogProduct, action: 'publish' | 'archive' | 'restore') => void;
+}) => {
+    const [displayLimit, setDisplayLimit] = useState(30);
+    const loadMoreRef = useRef<HTMLDivElement>(null);
 
-const ProductImage = ({ product }: { product: Pick<AllyoCatalogProduct, 'name' | 'imageUrl'> }) => (
-    <span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#9db669] bg-[#f2f5eb] text-[#829267] dark:bg-zinc-800">
-        {product.imageUrl ? <img src={product.imageUrl} alt={`Imagem de ${product.name}`} className="h-full w-full object-cover" /> : <ImageIcon size={15} strokeWidth={1.6} />}
-    </span>
-);
+    useEffect(() => {
+        setDisplayLimit(30);
+    }, [products]);
+
+    useEffect(() => {
+        if (displayLimit >= products.length || !loadMoreRef.current) return;
+        const el = loadMoreRef.current;
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                setDisplayLimit((current) => Math.min(products.length, current + 25));
+            }
+        }, { rootMargin: '300px 0px' });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [displayLimit, products.length]);
+
+    const visibleProducts = useMemo(() => products.slice(0, displayLimit), [products, displayLimit]);
+
+    return (
+        <div>
+            {visibleProducts.map((product) => {
+                const meta = statusMeta[product.status];
+                const busy = busyCode === product.code;
+                return (
+                    <div
+                        key={product.code}
+                        className={`grid min-h-[78px] grid-cols-[minmax(250px,1.45fr)_90px_90px_110px_110px_112px] items-center gap-5 border-b px-5 py-3 transition hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-xl:grid-cols-[minmax(230px,1.4fr)_90px_110px_110px_112px] max-lg:grid-cols-[minmax(210px,1fr)_90px_110px_112px] max-sm:grid-cols-[minmax(0,1fr)_62px_104px] ${ALLYO_BORDER}`}
+                    >
+                        <button onClick={() => onEdit(product)} className="flex min-w-0 items-center gap-[10px] text-left">
+                            <ProductMedia product={product} />
+                            <span className="min-w-0 flex-1">
+                                <strong className="block truncate text-sm font-medium">{product.name}</strong>
+                                <span className="mt-1 block truncate text-[11px] text-[#777] dark:text-zinc-400">
+                                    {product.code} · {product.subcategory || product.category} · {product.specialistRole}
+                                </span>
+                            </span>
+                        </button>
+                        <DataCell label="CRÉDITOS" value={formatCredits(product.credits.original)} />
+                        <DataCell label="PRAZO" value={`${product.slaHours}h`} className="max-xl:hidden" />
+                        <DataCell label="VISIBILIDADE" value={product.visibleToClient ? 'Cliente' : 'Interno'} className="max-lg:hidden" />
+                        <DataCell label="STATUS" value={meta.label} valueClassName={meta.textClasses} className="max-sm:hidden" />
+                        <div className="flex justify-end gap-1">
+                            {product.status === 'draft' && (
+                                <button
+                                    disabled={busy}
+                                    onClick={() => onAction(product, 'publish')}
+                                    title="Publicar"
+                                    aria-label={`Publicar ${product.name}`}
+                                    className="rounded-full p-2.5 text-[#666] hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40 dark:hover:bg-emerald-950/40"
+                                >
+                                    {busy ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                </button>
+                            )}
+                            {product.status === 'archived' ? (
+                                <button
+                                    disabled={busy}
+                                    onClick={() => onAction(product, 'restore')}
+                                    title="Restaurar"
+                                    aria-label={`Restaurar ${product.name}`}
+                                    className="rounded-full p-2.5 text-[#666] hover:bg-amber-50 hover:text-amber-600 disabled:opacity-40 dark:hover:bg-amber-950/40"
+                                >
+                                    {busy ? <Loader2 size={16} className="animate-spin" /> : <Undo2 size={16} />}
+                                </button>
+                            ) : (
+                                <button
+                                    disabled={busy}
+                                    onClick={() => onAction(product, 'archive')}
+                                    title="Arquivar"
+                                    aria-label={`Arquivar ${product.name}`}
+                                    className="rounded-full p-2.5 text-[#999] hover:bg-red-50 hover:text-red-600 disabled:opacity-40 dark:hover:bg-red-950/30"
+                                >
+                                    <Archive size={16} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                );
+            })}
+            {products.length > displayLimit && (
+                <div ref={loadMoreRef} className="flex justify-center p-4">
+                    <button
+                        type="button"
+                        onClick={() => setDisplayLimit((cur) => Math.min(products.length, cur + 25))}
+                        className="text-xs font-semibold text-[#829267] hover:underline"
+                    >
+                        Carregar mais produtos ({products.length - displayLimit} restantes)...
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ProductMedia = ({ product }: { product: Pick<AllyoCatalogProduct, 'name' | 'imageUrl'> }) => {
+    const [isInView, setIsInView] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [hasError, setHasError] = useState(false);
+    const containerRef = useRef<HTMLSpanElement>(null);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const isVideo = isVideoMediaUrl(product.imageUrl);
+
+    useEffect(() => {
+        if (isInView || !containerRef.current) return;
+        const el = containerRef.current;
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                setIsInView(true);
+                observer.disconnect();
+            }
+        }, { rootMargin: '200px 0px' });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [isInView]);
+
+    useEffect(() => {
+        if (!isVideo || !videoRef.current || !isInView) return;
+        const el = videoRef.current;
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                el.play().catch(() => {});
+            } else {
+                el.pause();
+            }
+        }, { threshold: 0.1 });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [isVideo, isInView]);
+
+    if (!product.imageUrl || hasError) {
+        return (
+            <span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#9db669] bg-[#f2f5eb] text-[#829267] dark:bg-zinc-800">
+                <ImageIcon size={15} strokeWidth={1.6} />
+            </span>
+        );
+    }
+
+    return (
+        <span ref={containerRef} className="relative flex h-[35px] w-[35px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#9db669] bg-[#f2f5eb] text-[#829267] dark:bg-zinc-800">
+            {!isLoaded && (
+                <span className="absolute inset-0 animate-pulse bg-zinc-200 dark:bg-zinc-700" />
+            )}
+            {isInView && (
+                isVideo ? (
+                    <video
+                        ref={videoRef}
+                        src={product.imageUrl}
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="metadata"
+                        disablePictureInPicture
+                        disableRemotePlayback
+                        aria-hidden="true"
+                        className={`h-full w-full object-cover transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        onLoadedData={() => setIsLoaded(true)}
+                        onError={() => setHasError(true)}
+                    />
+                ) : (
+                    <img
+                        src={product.imageUrl}
+                        alt={`Imagem de ${product.name}`}
+                        loading="lazy"
+                        decoding="async"
+                        className={`h-full w-full object-cover transition-opacity duration-200 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+                        ref={(node) => {
+                            if (node?.complete) setIsLoaded(true);
+                        }}
+                        onLoad={() => setIsLoaded(true)}
+                        onError={() => setHasError(true)}
+                    />
+                )
+            )}
+        </span>
+    );
+};
 
 const CatalogLoading = () => <div className="flex min-h-[400px] items-center justify-center text-sm text-[#777]"><Loader2 size={20} className="mr-2 animate-spin text-[#9db669]" /> Carregando catálogo da Allyo…</div>;
 const CatalogEmpty = ({ hasProducts }: { hasProducts: boolean }) => <div className="flex min-h-[400px] flex-col items-center justify-center px-6 text-center"><PackageOpen size={34} className="text-[#aab39a]" /><strong className="mt-4 text-base">{hasProducts ? 'Nenhum produto neste filtro' : 'O catálogo ainda está vazio'}</strong><p className="mt-2 max-w-sm text-sm leading-6 text-[#777]">{hasProducts ? 'Ajuste a busca, categoria ou situação para encontrar outros produtos.' : 'Use “Novo produto” no cabeçalho para cadastrar o primeiro serviço.'}</p></div>;
@@ -261,24 +430,38 @@ const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: All
         if (!file) return;
         setError('');
         setImageSaved(false);
-        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-            setError('Escolha uma imagem em PNG, JPG ou WebP.');
+
+        const isVideo = file.type === 'video/mp4' || file.name.toLowerCase().endsWith('.mp4');
+        const isImage = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
+
+        if (!isImage && !isVideo) {
+            setError('Escolha uma imagem em PNG, JPG ou WebP, ou um vídeo em MP4.');
             return;
         }
-        if (file.size > CATALOG_SOURCE_IMAGE_LIMIT) {
+        if (isImage && file.size > CATALOG_SOURCE_IMAGE_LIMIT) {
             setError('A imagem original precisa ter no máximo 20 MB.');
             return;
         }
+        if (isVideo && file.size > CATALOG_SOURCE_VIDEO_LIMIT) {
+            setError('O vídeo MP4 precisa ter no máximo 50 MB.');
+            return;
+        }
+
         setIsUploadingImage(true);
         try {
-            const optimizedFile = await optimizeCatalogImage(file);
-            if (optimizedFile.size > CATALOG_UPLOAD_IMAGE_LIMIT) throw new Error('Mesmo após a otimização, a imagem ficou maior que 5 MB. Escolha outra imagem.');
-            const uploaded = await allyoService.uploadCatalogProductImage(optimizedFile, product?.code);
+            let fileToSend = file;
+            if (isImage) {
+                fileToSend = await optimizeCatalogImage(file);
+                if (fileToSend.size > CATALOG_UPLOAD_IMAGE_LIMIT) {
+                    throw new Error('Mesmo após a otimização, a imagem ficou maior que 5 MB. Escolha outra imagem.');
+                }
+            }
+            const uploaded = await allyoService.uploadCatalogProductImage(fileToSend, product?.code);
             setRoot('imageUrl', uploaded.imageUrl);
             setHasPendingImageChange(!uploaded.persisted);
             setImageSaved(uploaded.persisted);
         } catch (uploadError) {
-            setError(apiErrorMessage(uploadError, 'Não foi possível enviar a imagem do produto.'));
+            setError(apiErrorMessage(uploadError, 'Não foi possível enviar a mídia do produto.'));
         } finally {
             setIsUploadingImage(false);
         }
@@ -389,29 +572,99 @@ const CatalogEditor = ({ product, categories, onClose, onSaved }: { product: All
     </Modal>;
 };
 
-const CatalogImageField = ({ imageUrl, productName, uploading, pending, saved, saveLabel, onFile, onRemove }: { imageUrl?: string | null; productName: string; uploading: boolean; pending: boolean; saved: boolean; saveLabel: string; onFile: (file?: File) => void; onRemove: () => void }) => (
-    <div className="mt-6 rounded-[14px] border border-[#e1e4dc] bg-[#fbfcf8] p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
-        <div className="grid items-center gap-5 sm:grid-cols-[220px_minmax(0,1fr)]">
-            <div className="relative aspect-[16/10] overflow-hidden rounded-[12px] border border-[#dfe3d8] bg-[#edf2e2] dark:border-zinc-700 dark:bg-zinc-800">
-                {imageUrl ? <img src={imageUrl} alt={productName ? `Imagem de ${productName}` : 'Prévia da imagem do produto'} className="h-full w-full object-cover" /> : <div className="flex h-full flex-col items-center justify-center text-[#7f9062]"><ImageIcon size={30} strokeWidth={1.5} /><span className="mt-2 text-xs font-medium">Prévia do produto</span></div>}
-                {uploading && <div className="absolute inset-0 flex items-center justify-center bg-[#0d1e1d]/70 text-sm font-semibold text-white"><Loader2 size={19} className="mr-2 animate-spin" /> Enviando</div>}
-            </div>
-            <div>
-                <strong className="block text-sm font-semibold">Imagem de apresentação</strong>
-                <p className="mt-1.5 max-w-md text-xs leading-5 text-[#6f6f6f] dark:text-zinc-400">Use uma imagem horizontal. PNG, JPG ou WebP de até 20 MB; reduzimos para no máximo 1600 × 1200 px, convertemos para WebP e removemos o nome e os metadados do arquivo.</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                    <label className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0d1e1d] px-4 text-xs font-semibold text-white transition hover:bg-[#1d3432] dark:bg-[#9db669] dark:text-[#0d1e1d] ${uploading ? 'pointer-events-none opacity-50' : ''}`}>
-                        <UploadCloud size={15} /> {imageUrl ? 'Trocar imagem' : 'Escolher imagem'}
-                        <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only" disabled={uploading} onChange={(event) => { onFile(event.target.files?.[0]); event.target.value = ''; }} />
-                    </label>
-                    {imageUrl && <button type="button" disabled={uploading} onClick={onRemove} className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d7d7d7] px-4 text-xs font-semibold text-[#555] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-red-950/30"><X size={14} /> Remover</button>}
+const CatalogImageField = ({
+    imageUrl,
+    productName,
+    uploading,
+    pending,
+    saved,
+    saveLabel,
+    onFile,
+    onRemove,
+}: {
+    imageUrl?: string | null;
+    productName: string;
+    uploading: boolean;
+    pending: boolean;
+    saved: boolean;
+    saveLabel: string;
+    onFile: (file?: File) => void;
+    onRemove: () => void;
+}) => {
+    const isVideo = isVideoMediaUrl(imageUrl);
+
+    return (
+        <div className="mt-6 rounded-[14px] border border-[#e1e4dc] bg-[#fbfcf8] p-4 dark:border-zinc-800 dark:bg-zinc-900/60">
+            <div className="grid items-center gap-5 sm:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="relative aspect-[16/10] overflow-hidden rounded-[12px] border border-[#dfe3d8] bg-[#edf2e2] dark:border-zinc-700 dark:bg-zinc-800">
+                    {imageUrl ? (
+                        isVideo ? (
+                            <video
+                                key={imageUrl}
+                                src={imageUrl}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                controls
+                                className="h-full w-full object-cover"
+                            />
+                        ) : (
+                            <img
+                                src={imageUrl}
+                                alt={productName ? `Imagem de ${productName}` : 'Prévia da imagem do produto'}
+                                className="h-full w-full object-cover"
+                            />
+                        )
+                    ) : (
+                        <div className="flex h-full flex-col items-center justify-center text-[#7f9062]">
+                            <ImageIcon size={30} strokeWidth={1.5} />
+                            <span className="mt-2 text-xs font-medium">Prévia do produto</span>
+                        </div>
+                    )}
+                    {uploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-[#0d1e1d]/70 text-sm font-semibold text-white">
+                            <Loader2 size={19} className="mr-2 animate-spin" /> Enviando
+                        </div>
+                    )}
                 </div>
-                {pending && <p className="mt-3 text-xs font-semibold text-amber-700 dark:text-amber-300">Imagem pronta. Clique em “{saveLabel}” para concluir.</p>}
-                {saved && <p className="mt-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Imagem salva no produto. Você já pode atualizar a página.</p>}
+                <div>
+                    <strong className="block text-sm font-semibold">Mídia de apresentação (Imagem ou Vídeo)</strong>
+                    <p className="mt-1.5 max-w-md text-xs leading-5 text-[#6f6f6f] dark:text-zinc-400">
+                        Use uma imagem horizontal ou vídeo MP4 animado em loop. PNG, JPG ou WebP de até 20 MB (otimizados para WebP) ou vídeos MP4 de até 50 MB (reproduzidos em loop automático).
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <label className={`inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-[#0d1e1d] px-4 text-xs font-semibold text-white transition hover:bg-[#1d3432] dark:bg-[#9db669] dark:text-[#0d1e1d] ${uploading ? 'pointer-events-none opacity-50' : ''}`}>
+                            <UploadCloud size={15} /> {imageUrl ? (isVideo ? 'Trocar mídia (MP4/Imagem)' : 'Trocar imagem') : 'Escolher arquivo'}
+                            <input
+                                type="file"
+                                accept="image/png,image/jpeg,image/webp,video/mp4"
+                                className="sr-only"
+                                disabled={uploading}
+                                onChange={(event) => {
+                                    onFile(event.target.files?.[0]);
+                                    event.target.value = '';
+                                }}
+                            />
+                        </label>
+                        {imageUrl && (
+                            <button
+                                type="button"
+                                disabled={uploading}
+                                onClick={onRemove}
+                                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d7d7d7] px-4 text-xs font-semibold text-[#555] transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-red-950/30"
+                            >
+                                <X size={14} /> Remover
+                            </button>
+                        )}
+                    </div>
+                    {pending && <p className="mt-3 text-xs font-semibold text-amber-700 dark:text-amber-300">Mídia pronta. Clique em “{saveLabel}” para concluir.</p>}
+                    {saved && <p className="mt-3 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Mídia salva no produto. Você já pode atualizar a página.</p>}
+                </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 const EditorNav = ({ active, icon, label, description, onClick }: { active: boolean; icon: React.ReactNode; label: string; description: string; onClick: () => void }) => <button onClick={onClick} className={`flex w-full items-center gap-3 rounded-[11px] px-3 py-3.5 text-left transition ${active ? 'bg-[#eaf0dd] text-[#52672f] dark:bg-[#9db669]/15 dark:text-[#d0f08e]' : 'text-[#666] hover:bg-[#f5f5f2] dark:hover:bg-zinc-800'}`}><span>{icon}</span><span className="min-w-0 flex-1"><strong className="block text-sm font-semibold">{label}</strong><small className="mt-0.5 block text-[11px] opacity-75">{description}</small></span><ChevronRight size={14} /></button>;
 const SectionTitle = ({ title, description }: { title: string; description: string }) => <div><h3 className="font-season text-2xl font-normal">{title}</h3><p className="mt-1 text-sm leading-6 text-[#727272] dark:text-zinc-400">{description}</p></div>;

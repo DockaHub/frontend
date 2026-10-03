@@ -414,7 +414,7 @@ export const allyoService = {
         if (productCode) formData.append('productCode', productCode);
         const response = await api.post('/allyo/catalog/images', formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
-            timeout: 45_000,
+            timeout: 120_000,
         });
         return response.data;
     },
