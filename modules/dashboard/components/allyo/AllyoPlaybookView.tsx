@@ -15,6 +15,18 @@ import {
     ALLYO_PLAYBOOK_WELCOME_ID,
     type AllyoPlaybookEntry,
 } from './allyoPlaybookNavigation';
+import { AllyoAboutContent, AllyoOnboardingContent } from './AllyoPlaybookFundamentals';
+import AllyoCreativeExcellenceContent from './AllyoCreativeExcellenceContent';
+import AllyoInternalCommunicationContent from './AllyoInternalCommunicationContent';
+import { AllyoGlossaryContent, AllyoPlansContent, AllyoUsefulLinksContent } from './AllyoPlaybookResourcesContent';
+
+const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
+const ABOUT_ID = 'playbook-fundamentos-sobre-allyo';
+const CREATIVE_EXCELLENCE_ID = 'playbook-fundamentos-excelencia-criativa';
+const INTERNAL_COMMUNICATION_ID = 'playbook-fundamentos-comunicacao-interna';
+const USEFUL_LINKS_ID = 'playbook-fundamentos-links-uteis';
+const PLANS_ID = 'playbook-fundamentos-planos-allyo';
+const GLOSSARY_ID = 'playbook-fundamentos-glossario';
 
 const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
     const [, setSearchParams] = useSearchParams();
@@ -36,6 +48,27 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
     };
 
     if (entry.id !== ALLYO_PLAYBOOK_WELCOME_ID) {
+        if (entry.id === ONBOARDING_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoOnboardingContent /></PlaybookContentPage>;
+        }
+        if (entry.id === ABOUT_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoAboutContent /></PlaybookContentPage>;
+        }
+        if (entry.id === CREATIVE_EXCELLENCE_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoCreativeExcellenceContent /></PlaybookContentPage>;
+        }
+        if (entry.id === INTERNAL_COMMUNICATION_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoInternalCommunicationContent /></PlaybookContentPage>;
+        }
+        if (entry.id === USEFUL_LINKS_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoUsefulLinksContent /></PlaybookContentPage>;
+        }
+        if (entry.id === PLANS_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoPlansContent /></PlaybookContentPage>;
+        }
+        if (entry.id === GLOSSARY_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoGlossaryContent /></PlaybookContentPage>;
+        }
         return <PlaybookPlaceholder entry={entry} previous={previous} next={next} onNavigate={navigate} />;
     }
 
@@ -108,6 +141,17 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
         </div>
     );
 };
+
+const PlaybookContentPage = ({ entry, previous, next, onNavigate, children }: { entry: AllyoPlaybookEntry; previous: AllyoPlaybookEntry | null; next: AllyoPlaybookEntry | null; onNavigate: (entry: AllyoPlaybookEntry | null) => void; children: React.ReactNode }) => (
+    <div className="h-full overflow-y-auto bg-[#fafafa] font-sans text-black dark:bg-zinc-950 dark:text-white">
+        <AllyoPageHeader title={entry.label} />
+        <main className="mx-auto max-w-[1480px] p-5 sm:p-[30px]">
+            <div className="mb-5 text-[9px] font-bold uppercase tracking-[.18em] text-[#7f7f7f]">Playbook · {entry.breadcrumbs.slice(0, -1).join(' · ')}</div>
+            {children}
+            <PlaybookPager previous={previous} next={next} onNavigate={onNavigate} />
+        </main>
+    </div>
+);
 
 const PlaybookPlaceholder = ({ entry, previous, next, onNavigate }: { entry: AllyoPlaybookEntry; previous: AllyoPlaybookEntry | null; next: AllyoPlaybookEntry | null; onNavigate: (entry: AllyoPlaybookEntry | null) => void }) => (
     <div className="h-full overflow-y-auto bg-[#fafafa] dark:bg-zinc-950">
