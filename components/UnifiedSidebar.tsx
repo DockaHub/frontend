@@ -283,7 +283,7 @@ const SidebarChildren: React.FC<SidebarChildrenProps> = ({
     mobile,
     depth = 0,
 }) => (
-    <div className={`${depth === 0 ? 'ml-6' : 'ml-3'} my-1 space-y-0.5 border-l border-[#e5e5e5] pl-2 dark:border-zinc-800`}>
+    <div className={`${depth === 0 ? 'ml-5' : 'ml-2'} my-1 space-y-0.5 border-l border-[#e5e5e5] pl-2 dark:border-zinc-800`}>
         {items.map((item) => {
             const hasChildren = Boolean(item.children?.length);
             const isSelected = currentView === item.id;
@@ -307,7 +307,12 @@ const SidebarChildren: React.FC<SidebarChildrenProps> = ({
                         className={`flex w-full items-center gap-1.5 rounded-md px-2 text-left transition-colors ${mobile ? 'min-h-10 py-2' : 'py-1.5'} ${isSelected ? 'font-bold' : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'}`}
                         style={isSelected ? { color: accentColor } : undefined}
                     >
-                        <span className={`min-w-0 flex-1 ${isSection ? 'text-[9px] font-semibold uppercase tracking-[.16em]' : hasChildren ? 'text-[11px] font-semibold' : 'text-xs'}`}>{item.label}</span>
+                        <span
+                            title={item.label}
+                            className={`min-w-0 flex-1 ${isSection ? 'truncate whitespace-nowrap text-[9px] font-semibold uppercase tracking-[.12em]' : hasChildren ? 'truncate whitespace-nowrap text-[11px] font-semibold' : 'text-xs leading-[1.35]'}`}
+                        >
+                            {item.label}
+                        </span>
                         {hasChildren && <ChevronDown size={12} className={`shrink-0 text-[#9f9f9f] transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
                     </button>
                     {hasChildren && isExpanded && (
@@ -357,6 +362,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     const location = useLocation();
     const [searchParams] = useSearchParams();
     const { menuItems } = useSidebarNavigation(currentOrg, user);
+    const currentView = searchParams.get('view') || 'overview';
 
     // Close menu on click outside
     useEffect(() => {
@@ -405,6 +411,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
 
     const { unreadCount } = useNotifications();
     const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
+    const isPlaybookOpen = currentView === 'playbook' || currentView.startsWith('playbook-') || expandedItems.has('playbook');
 
     const handleSelectOrg = (org: Organization) => {
         onOrgChange(org);
@@ -446,7 +453,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     const isCurrentManyways = currentOrg.slug === 'manyspace' || currentOrg.slug === 'manyways';
 
     return (
-        <div className={`relative flex h-full shrink-0 flex-col border-r border-[#e5e5e5] bg-white pb-[15px] pt-[15px] dark:border-zinc-800 dark:bg-zinc-950 ${className || 'w-[180px]'}`}>
+        <div className={`relative flex h-full shrink-0 flex-col border-r border-[#e5e5e5] bg-white pb-[15px] pt-[15px] transition-[width] duration-200 dark:border-zinc-800 dark:bg-zinc-950 ${className || (isPlaybookOpen ? 'w-[272px]' : 'w-[180px]')}`}>
 
             {/* Logo container at top left */}
             <div className="relative mb-6 flex items-center justify-between px-4 lg:px-6">
@@ -552,7 +559,6 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                 <div className="space-y-[15px] mb-6">
                     {menuItems.map((item, itemIndex) => {
                         // Determine if active: Location is dashboard AND view matches
-                        const currentView = searchParams.get('view') || 'overview';
                         const isDashboard = location.pathname.startsWith('/dashboard');
 
                         const isSelected = isDashboard && (currentView === item.id || (item.id === 'tasks' && currentView === 'task-detail') || menuContainsView(item, currentView));
