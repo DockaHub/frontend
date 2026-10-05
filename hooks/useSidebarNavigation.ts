@@ -85,6 +85,7 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 { id: 'management-clients', label: 'Clientes', icon: Building2, section: 'ADMINISTRAÇÃO' },
                 { id: 'management-users', label: 'Usuários', icon: Users, section: 'ADMINISTRAÇÃO' },
                 { id: 'management-catalog', label: 'Produtos', icon: BookOpen, section: 'ADMINISTRAÇÃO' },
+                { id: 'metrics', label: 'Métricas', icon: BarChart3, section: 'ADMINISTRAÇÃO' },
                 { id: 'settings', label: 'Configurações', icon: Settings, section: 'ADMINISTRAÇÃO' },
                 { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
                 { id: 'help-center', label: 'Central de Ajuda', icon: LifeBuoy, section: 'SUPORTE' },
@@ -194,7 +195,7 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
             if (currentOrg.slug === 'allyo') {
                 return items.filter((item) => item.id === 'management-projects'
                     ? allyoCanManageProjects
-                    : !['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id));
+                    : !['management-clients', 'management-users', 'management-catalog', 'metrics', 'settings'].includes(item.id));
             }
             return items;
         }
@@ -202,7 +203,7 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
         return items.filter(item => {
             if (currentOrg.slug === 'allyo') {
                 if (item.id === 'management-projects') return allyoCanManageProjects;
-                if (['management-clients', 'management-users', 'management-catalog', 'settings'].includes(item.id)) return false;
+                if (['management-clients', 'management-users', 'management-catalog', 'metrics', 'settings'].includes(item.id)) return false;
             }
 
             // Regras específicas da Asterysko

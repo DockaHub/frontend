@@ -9,6 +9,7 @@ import AllyoUsersView from './allyo/AllyoUsersView';
 import AllyoCatalogView from './allyo/AllyoCatalogView';
 import AllyoTaskDetailView from './allyo/AllyoTaskDetailView';
 import AllyoProjectsView from './allyo/AllyoProjectsView';
+import AllyoMetricsView from './allyo/AllyoMetricsView';
 import { AllyoPageHeader } from './allyo/AllyoUI';
 
 interface AllyoDashboardProps {
@@ -37,6 +38,8 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organ
             return <AllyoEarningsView />;
         case 'creative-panel':
             return <AllyoCreativePanelView />;
+        case 'metrics':
+            return canManageAccess ? <AllyoMetricsView /> : <AccessDenied title="Métricas" />;
         case 'clients':
             return <AllyoClientsView mode="assigned" />;
         case 'management-projects':
