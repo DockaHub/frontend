@@ -19,6 +19,7 @@ import { AllyoAboutContent, AllyoOnboardingContent } from './AllyoPlaybookFundam
 import AllyoCreativeExcellenceContent from './AllyoCreativeExcellenceContent';
 import AllyoInternalCommunicationContent from './AllyoInternalCommunicationContent';
 import { AllyoGlossaryContent, AllyoPlansContent, AllyoUsefulLinksContent } from './AllyoPlaybookResourcesContent';
+import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
 const ABOUT_ID = 'playbook-fundamentos-sobre-allyo';
@@ -73,7 +74,7 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
     }
 
     return (
-        <div className="h-full overflow-y-auto bg-[#fafafa] font-sans text-black dark:bg-zinc-950 dark:text-white">
+        <div className="allyo-playbook-readable h-full overflow-y-auto bg-[#fafafa] font-sans text-black dark:bg-zinc-950 dark:text-white">
             <AllyoPageHeader title="Boas-vindas" />
             <main className="mx-auto max-w-[1480px] space-y-5 p-5 sm:p-[30px]">
                 <div className="text-[9px] font-bold uppercase tracking-[.18em] text-[#7f7f7f]">Playbook · Fundamentos</div>
@@ -143,7 +144,7 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
 };
 
 const PlaybookContentPage = ({ entry, previous, next, onNavigate, children }: { entry: AllyoPlaybookEntry; previous: AllyoPlaybookEntry | null; next: AllyoPlaybookEntry | null; onNavigate: (entry: AllyoPlaybookEntry | null) => void; children: React.ReactNode }) => (
-    <div className="h-full overflow-y-auto bg-[#fafafa] font-sans text-black dark:bg-zinc-950 dark:text-white">
+    <div className="allyo-playbook-readable h-full overflow-y-auto bg-[#fafafa] font-sans text-black dark:bg-zinc-950 dark:text-white">
         <AllyoPageHeader title={entry.label} />
         <main className="mx-auto max-w-[1480px] p-5 sm:p-[30px]">
             <div className="mb-5 text-[9px] font-bold uppercase tracking-[.18em] text-[#7f7f7f]">Playbook · {entry.breadcrumbs.slice(0, -1).join(' · ')}</div>
@@ -154,7 +155,7 @@ const PlaybookContentPage = ({ entry, previous, next, onNavigate, children }: { 
 );
 
 const PlaybookPlaceholder = ({ entry, previous, next, onNavigate }: { entry: AllyoPlaybookEntry; previous: AllyoPlaybookEntry | null; next: AllyoPlaybookEntry | null; onNavigate: (entry: AllyoPlaybookEntry | null) => void }) => (
-    <div className="h-full overflow-y-auto bg-[#fafafa] dark:bg-zinc-950">
+    <div className="allyo-playbook-readable h-full overflow-y-auto bg-[#fafafa] dark:bg-zinc-950">
         <AllyoPageHeader title={entry.label} />
         <main className="mx-auto flex min-h-[calc(100%-75px)] max-w-[1180px] flex-col p-5 sm:p-[30px]">
             <div className="text-[9px] font-bold uppercase tracking-[.16em] text-[#7f7f7f]">Playbook · {entry.breadcrumbs.slice(0, -1).join(' · ')}</div>

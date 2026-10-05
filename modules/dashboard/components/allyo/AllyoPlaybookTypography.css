@@ -1,0 +1,20 @@
+.allyo-playbook-readable :where([class~="text-[8px]"], [class~="text-[9px]"], [class~="text-[10px]"]) {
+    font-size: 0.75rem !important;
+    line-height: 1rem !important;
+}
+
+.allyo-playbook-readable :where([class~="text-[11px]"], .text-xs) {
+    font-size: 0.875rem !important;
+    line-height: 1.375rem !important;
+}
+
+.allyo-playbook-readable .text-sm {
+    font-size: 1rem !important;
+    line-height: 1.625rem !important;
+}
+
+.allyo-playbook-readable p,
+.allyo-playbook-readable li,
+.allyo-playbook-readable dd {
+    text-wrap: pretty;
+}
