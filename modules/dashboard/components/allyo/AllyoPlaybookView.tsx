@@ -19,6 +19,7 @@ import { AllyoAboutContent, AllyoOnboardingContent } from './AllyoPlaybookFundam
 import AllyoCreativeExcellenceContent from './AllyoCreativeExcellenceContent';
 import AllyoInternalCommunicationContent from './AllyoInternalCommunicationContent';
 import { AllyoGlossaryContent, AllyoPlansContent, AllyoUsefulLinksContent } from './AllyoPlaybookResourcesContent';
+import { AllyoPeopleRoleContent } from './AllyoPeopleContent';
 import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
@@ -28,6 +29,13 @@ const INTERNAL_COMMUNICATION_ID = 'playbook-fundamentos-comunicacao-interna';
 const USEFUL_LINKS_ID = 'playbook-fundamentos-links-uteis';
 const PLANS_ID = 'playbook-fundamentos-planos-allyo';
 const GLOSSARY_ID = 'playbook-fundamentos-glossario';
+const PEOPLE_ROLE_BY_ID = {
+    'playbook-creative-ops-pessoas-cesm': 'cesm',
+    'playbook-creative-ops-pessoas-cam': 'cam',
+    'playbook-creative-ops-pessoas-cas': 'cas',
+    'playbook-creative-ops-pessoas-cqs': 'cqs',
+    'playbook-creative-ops-pessoas-ad': 'ad',
+} as const;
 
 const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
     const [, setSearchParams] = useSearchParams();
@@ -69,6 +77,10 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
         }
         if (entry.id === GLOSSARY_ID) {
             return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoGlossaryContent /></PlaybookContentPage>;
+        }
+        const peopleRole = PEOPLE_ROLE_BY_ID[entry.id as keyof typeof PEOPLE_ROLE_BY_ID];
+        if (peopleRole) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate} headerTitle="Papel e rotina" includeCurrentBreadcrumb><AllyoPeopleRoleContent role={peopleRole} /></PlaybookContentPage>;
         }
         return <PlaybookPlaceholder entry={entry} previous={previous} next={next} onNavigate={navigate} />;
     }
@@ -143,11 +155,11 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
     );
 };
 
-const PlaybookContentPage = ({ entry, previous, next, onNavigate, children }: { entry: AllyoPlaybookEntry; previous: AllyoPlaybookEntry | null; next: AllyoPlaybookEntry | null; onNavigate: (entry: AllyoPlaybookEntry | null) => void; children: React.ReactNode }) => (
+const PlaybookContentPage = ({ entry, previous, next, onNavigate, children, headerTitle, includeCurrentBreadcrumb = false }: { entry: AllyoPlaybookEntry; previous: AllyoPlaybookEntry | null; next: AllyoPlaybookEntry | null; onNavigate: (entry: AllyoPlaybookEntry | null) => void; children: React.ReactNode; headerTitle?: string; includeCurrentBreadcrumb?: boolean }) => (
     <div className="allyo-playbook-readable h-full overflow-y-auto bg-[#fafafa] font-sans text-black dark:bg-zinc-950 dark:text-white">
-        <AllyoPageHeader title={entry.label} />
+        <AllyoPageHeader title={headerTitle || entry.label} />
         <main className="mx-auto max-w-[1480px] p-5 sm:p-[30px]">
-            <div className="mb-5 text-[9px] font-bold uppercase tracking-[.18em] text-[#7f7f7f]">Playbook · {entry.breadcrumbs.slice(0, -1).join(' · ')}</div>
+            <div className="mb-5 text-[9px] font-bold uppercase tracking-[.18em] text-[#7f7f7f]">Playbook · {(includeCurrentBreadcrumb ? entry.breadcrumbs : entry.breadcrumbs.slice(0, -1)).join(' · ')}</div>
             {children}
             <PlaybookPager previous={previous} next={next} onNavigate={onNavigate} />
         </main>

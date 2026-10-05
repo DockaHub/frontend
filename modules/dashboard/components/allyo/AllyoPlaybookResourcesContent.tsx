@@ -15,6 +15,7 @@ import {
     PanelsTopLeft,
     Sparkles,
     UsersRound,
+    X,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { ALLYO_BORDER } from './AllyoUI';
@@ -82,10 +83,10 @@ export const AllyoUsefulLinksContent = () => {
 };
 
 const plans = [
-    { name: 'Essencial', summary: 'Para operações em início de escala.', features: ['Franquia mensal de créditos', 'Volume controlado de tarefas', 'Alterações conforme escopo', 'Suporte operacional', 'Direção de arte'], tone: 'neutral' },
-    { name: 'Pro', summary: 'Para uma rotina criativa recorrente.', features: ['Maior capacidade mensal', 'Mais tarefas simultâneas', 'Banco de créditos conforme contrato', 'Booster por ciclo', 'Acompanhamento de conta'], tone: 'neutral' },
-    { name: 'Premium', summary: 'Para alto volume e máxima flexibilidade.', features: ['Volume robusto de créditos', 'Tarefas e usuários ampliados', 'Banco de créditos', 'Boosters por ciclo', 'Atendimento completo'], tone: 'featured' },
-    { name: 'Enterprise', summary: 'Estrutura desenhada para operações complexas.', features: ['Créditos sob demanda', 'SLA e capacidade personalizados', 'Governança dedicada', 'Atendimento completo', 'Condições sob consulta'], tone: 'neutral' },
+    { name: 'Lite', price: 'R$ 3.499', period: '/mês', summary: 'Para times pequenos validando demanda criativa recorrente.', features: ['15 créditos mensais', 'Entregas a partir de 24h', '3 tarefas simultâneas', '5 usuários', 'Alterações ilimitadas', 'Creative Account Support', 'Art Director'], excluded: ['Banco de créditos', 'Boosters gratuitos', 'Creative Account Manager'], tone: 'neutral' },
+    { name: 'Pro', price: 'R$ 7.499', period: '/mês', summary: 'Operação criativa consistente com estrutura completa de atendimento.', features: ['25 créditos mensais', 'Entregas a partir de 24h', '15 tarefas simultâneas', '10 usuários', 'Alterações ilimitadas', '50% de banco de créditos', '1 booster gratuito por ciclo', 'Creative Account Manager', 'Creative Account Support', 'Art Director'], excluded: [], tone: 'neutral' },
+    { name: 'Premium', price: 'R$ 14.499', period: '/mês', summary: 'Volume robusto, banco de créditos ilimitado e máxima flexibilidade.', features: ['45 créditos mensais', 'Entregas a partir de 24h', 'Tarefas ilimitadas', 'Usuários ilimitados', 'Alterações ilimitadas', 'Banco de créditos ilimitado', '3 boosters gratuitos por ciclo', 'Creative Account Manager', 'Creative Account Support', 'Art Director'], excluded: [], tone: 'featured' },
+    { name: 'Enterprise', price: 'Sob consulta', period: '', summary: 'Para grandes operações com demandas customizadas e SLA dedicado.', features: ['Créditos sob demanda', 'Entregas a partir de 24h', 'Tarefas ilimitadas', 'Usuários ilimitados', 'Alterações ilimitadas', 'Banco de créditos ilimitado', '5 boosters gratuitos por ciclo', 'Creative Account Manager', 'Creative Account Support', 'Art Director'], excluded: [], tone: 'neutral' },
 ];
 
 export const AllyoPlansContent = () => (
@@ -93,7 +94,7 @@ export const AllyoPlansContent = () => (
         <section className={`rounded-[14px] border bg-white p-6 dark:bg-zinc-950 sm:p-9 ${ALLYO_BORDER}`}>
             <span className="inline-flex items-center gap-2 text-[#708346]"><CircleDollarSign size={16} /><strong className="text-xs uppercase tracking-[.12em]">Estruturas comerciais</strong></span>
             <h2 className="mt-4 font-season text-[34px] font-normal">Planos adequados ao ritmo de cada operação.</h2>
-            <p className="mt-3 max-w-[840px] text-sm leading-6 text-[#666] dark:text-zinc-400">A composição final depende de volume, complexidade, SLA e modelo de atendimento. Valores e condições comerciais devem ser confirmados na proposta vigente.</p>
+            <p className="mt-3 max-w-[940px] text-sm leading-6 text-[#666] dark:text-zinc-400">Os planos mensais combinam franquia de créditos, SLA de entrega e estrutura de atendimento. Para demandas pontuais e agências, a Allyo também oferece modelos alternativos.</p>
         </section>
 
         <section className="grid gap-[10px] md:grid-cols-2 xl:grid-cols-4">
@@ -104,8 +105,19 @@ export const AllyoPlansContent = () => (
             <span className="text-[9px] font-bold uppercase tracking-[.14em] text-[#7f7f7f]">Modelos alternativos</span>
             <h2 className="mt-2 font-season text-[28px] font-normal">Necessidades que fogem da recorrência</h2>
             <div className="mt-5 grid gap-[10px] lg:grid-cols-2">
-                <AlternativePlan eyebrow="Agências" title="Créditos avulsos e saldo acumulativo" text="Modelo para parceiros que atendem várias marcas e precisam contratar capacidade criativa de forma flexível, conforme regras comerciais vigentes." />
-                <AlternativePlan eyebrow="Projetos" title="Escopo e prazo sob consulta" text="Contratação pontual dimensionada pela complexidade, volume de créditos, especialidades envolvidas e prazo necessário para a entrega." />
+                <AlternativePlan eyebrow="Agency" title="Créditos avulsos, sem franquia mensal" text="Para agências que operam com créditos on-demand e saldo acumulativo, sem custos fixos.">
+                    <FeatureList items={['Catálogo criativo completo', 'Até 15 tarefas simultâneas', 'Entregas a partir de 48h', 'Alterações ilimitadas', 'Banco de créditos sem vencimento']} />
+                    <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                        <PriceList title="Planos de marcas" items={['5 marcas · R$ 500/mês', '10 marcas · R$ 1.000/mês', '15 marcas · R$ 1.500/mês']} />
+                        <PriceList title="Pacotes de créditos" items={['10 créditos · R$ 1.600', '30 créditos · R$ 4.650', '50 créditos · R$ 7.000']} />
+                    </div>
+                </AlternativePlan>
+                <AlternativePlan eyebrow="Projeto" title="Sob consulta" text="Ideal para empresas que precisam de uma entrega pontual, com escopo e prazo bem definidos.">
+                    <h4 className="mt-5 text-xs font-bold uppercase tracking-[.12em] text-[#7f7f7f]">Características</h4>
+                    <p className="mt-2 text-xs leading-6 text-[#666] dark:text-zinc-400">Contratação de um volume específico de créditos, dimensionado para a demanda e o prazo. Usuários ilimitados podem acessar a plataforma no contexto do projeto.</p>
+                    <h4 className="mt-5 text-xs font-bold uppercase tracking-[.12em] text-[#7f7f7f]">Vantagens</h4>
+                    <p className="mt-2 text-xs leading-6 text-[#666] dark:text-zinc-400">Ideal para ações pontuais, campanhas específicas ou projetos de grande escala que não justificam contrato recorrente.</p>
+                </AlternativePlan>
             </div>
         </section>
 
@@ -201,6 +213,8 @@ export const AllyoGlossaryContent = () => (
 );
 
 const ResourceLink = ({ icon: Icon, label, description, onClick }: { icon: LucideIcon; label: string; description: string; onClick: () => void }) => <button type="button" onClick={onClick} className={`group rounded-[14px] border bg-white p-5 text-left transition hover:-translate-y-0.5 hover:border-[#9db669] dark:bg-zinc-950 ${ALLYO_BORDER}`}><span className="flex items-center justify-between"><span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#eef3e4] text-[#768a4e] dark:bg-[#9db669]/10 dark:text-[#d0f08e]"><Icon size={16} /></span><ArrowUpRight size={15} className="text-[#aaa] transition group-hover:text-[#768a4e]" /></span><strong className="mt-4 block text-sm">{label}</strong><span className="mt-2 block text-[11px] leading-5 text-[#777] dark:text-zinc-400">{description}</span></button>;
-const PlanCard = ({ name, summary, features, tone }: { name: string; summary: string; features: string[]; tone: string }) => <article className={`relative rounded-[16px] border p-6 ${tone === 'featured' ? 'border-[#9db669] bg-[#f5f8ef] dark:bg-[#172018]' : `bg-white dark:bg-zinc-950 ${ALLYO_BORDER}`}`}>{tone === 'featured' && <span className="absolute -top-3 left-5 rounded-full bg-[#829454] px-3 py-1 text-[8px] font-bold uppercase tracking-[.14em] text-white">Mais completo</span>}<span className="text-[9px] font-bold uppercase tracking-[.16em] text-[#7f7f7f]">{name}</span><h3 className="mt-4 font-season text-[25px]">Sob consulta</h3><p className="mt-2 min-h-10 text-[11px] leading-5 text-[#777] dark:text-zinc-400">{summary}</p><ul className="mt-5 space-y-3">{features.map((feature) => <li key={feature} className="flex gap-2 text-[11px] leading-4"><Check size={14} className="shrink-0 text-[#829454]" />{feature}</li>)}</ul></article>;
-const AlternativePlan = ({ eyebrow, title, text }: { eyebrow: string; title: string; text: string }) => <article className={`rounded-[14px] border bg-white p-6 dark:bg-zinc-950 ${ALLYO_BORDER}`}><span className="text-[9px] font-bold uppercase tracking-[.14em] text-[#7f7f7f]">{eyebrow}</span><h3 className="mt-3 font-season text-xl">{title}</h3><p className="mt-3 text-xs leading-5 text-[#777] dark:text-zinc-400">{text}</p></article>;
+const PlanCard = ({ name, price, period, summary, features, excluded, tone }: { name: string; price: string; period: string; summary: string; features: string[]; excluded: string[]; tone: string }) => <article className={`relative rounded-[16px] border p-6 ${tone === 'featured' ? 'border-[#9db669] bg-[#f5f8ef] shadow-sm dark:bg-[#172018]' : `bg-white dark:bg-zinc-950 ${ALLYO_BORDER}`}`}>{tone === 'featured' && <span className="absolute -top-3 left-5 rounded-full bg-[#829454] px-3 py-1 text-[8px] font-bold uppercase tracking-[.14em] text-white">Mais popular</span>}<span className="text-[9px] font-bold uppercase tracking-[.16em] text-[#7f7f7f]">{name}</span><h3 className="mt-4 font-season text-[27px]">{price} <small className="font-sans text-xs font-normal text-[#777]">{period}</small></h3><p className="mt-2 min-h-12 text-[11px] leading-5 text-[#777] dark:text-zinc-400">{summary}</p><FeatureList items={features} />{excluded.length > 0 && <ul className="mt-3 space-y-2">{excluded.map((feature) => <li key={feature} className="flex gap-2 text-[11px] leading-5 text-[#8a8a8a]"><X size={15} className="mt-0.5 shrink-0 text-rose-500" />{feature}</li>)}</ul>}</article>;
+const FeatureList = ({ items }: { items: string[] }) => <ul className="mt-5 space-y-2">{items.map((feature) => <li key={feature} className="flex gap-2 text-[11px] leading-5"><Check size={15} className="mt-0.5 shrink-0 text-[#829454]" />{feature}</li>)}</ul>;
+const AlternativePlan = ({ eyebrow, title, text, children }: { eyebrow: string; title: string; text: string; children: React.ReactNode }) => <article className={`rounded-[14px] border bg-white p-6 dark:bg-zinc-950 ${ALLYO_BORDER}`}><span className="text-[9px] font-bold uppercase tracking-[.14em] text-[#7f7f7f]">{eyebrow}</span><h3 className="mt-3 font-season text-xl">{title}</h3><p className="mt-3 text-xs leading-6 text-[#777] dark:text-zinc-400">{text}</p>{children}</article>;
+const PriceList = ({ title, items }: { title: string; items: string[] }) => <div><h4 className="text-xs font-bold uppercase tracking-[.12em] text-[#7f7f7f]">{title}</h4><ul className="mt-2 space-y-1 text-xs leading-6 text-[#666] dark:text-zinc-400">{items.map((item) => <li key={item}>{item}</li>)}</ul></div>;
 const GlossarySection = ({ title, items }: { title: string; items: GlossaryItem[] }) => <section><div className="flex items-end justify-between border-b border-[#e3e3e3] pb-3 dark:border-zinc-800"><div><span className="text-[9px] font-bold uppercase tracking-[.16em] text-[#829454]">Glossário</span><h2 className="mt-2 font-season text-[29px]">{title}</h2></div><span className="text-[9px] font-bold uppercase tracking-[.14em] text-[#999]">{items.length} termos</span></div><div className="mt-5 grid gap-[10px] lg:grid-cols-2">{items.map(([term, definition]) => <article key={term} className={`rounded-[14px] border bg-white p-5 dark:bg-zinc-950 ${ALLYO_BORDER}`}><strong className="text-xs">{term}</strong><p className="mt-2 text-[11px] leading-5 text-[#666] dark:text-zinc-400">{definition}</p></article>)}</div></section>;
