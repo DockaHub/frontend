@@ -8,15 +8,16 @@ import {
 import { useState, useEffect } from 'react';
 import { Organization, User } from '../types';
 import api from '../services/api';
+import { ALLYO_PLAYBOOK_SECTIONS } from '../modules/dashboard/components/allyo/allyoPlaybookNavigation';
 
 export interface MenuItem {
     id: string;
     label: string;
-    icon: any;
+    icon?: any;
     section?: string;
     badgeCount?: number;
     badgeColor?: string;
-    children?: { id: string; label: string; icon?: any }[];
+    children?: MenuItem[];
 }
 
 export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User, 'role'>) => {
@@ -87,6 +88,7 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
                 { id: 'management-catalog', label: 'Produtos', icon: BookOpen, section: 'ADMINISTRAÇÃO' },
                 { id: 'metrics', label: 'Métricas', icon: BarChart3, section: 'ADMINISTRAÇÃO' },
                 { id: 'settings', label: 'Configurações', icon: Settings, section: 'ADMINISTRAÇÃO' },
+                { id: 'playbook', label: 'Playbook', icon: BookOpen, section: 'RECURSOS', children: ALLYO_PLAYBOOK_SECTIONS },
                 { id: 'creative-panel', label: 'Painel Criativo', icon: PanelsTopLeft, section: 'RECURSOS' },
                 { id: 'help-center', label: 'Central de Ajuda', icon: LifeBuoy, section: 'SUPORTE' },
             ];

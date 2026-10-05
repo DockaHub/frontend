@@ -6,8 +6,8 @@ import {
 import { Organization, User } from '../types';
 import Modal from './common/Modal';
 import UserAvatar from './common/UserAvatar';
-import { useSidebarNavigation } from '../hooks/useSidebarNavigation';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useSidebarNavigation, type MenuItem } from '../hooks/useSidebarNavigation';
+import { useNavigate, useLocation, useSearchParams, type NavigateFunction } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
 import NotificationPanel from './NotificationPanel';
 import { getBackendUrl } from '../services/api';
@@ -254,6 +254,82 @@ interface UnifiedSidebarProps {
     onClose?: () => void;
 }
 
+const menuContainsView = (item: MenuItem, view: string): boolean => Boolean(
+    item.children?.some((child) => child.id === view || menuContainsView(child, view)),
+);
+
+interface SidebarChildrenProps {
+    items: MenuItem[];
+    currentView: string;
+    currentOrg: Organization;
+    expandedItems: Set<string>;
+    toggleItem: (id: string) => void;
+    navigate: NavigateFunction;
+    onClose?: () => void;
+    accentColor: string;
+    mobile: boolean;
+    depth?: number;
+}
+
+const SidebarChildren: React.FC<SidebarChildrenProps> = ({
+    items,
+    currentView,
+    currentOrg,
+    expandedItems,
+    toggleItem,
+    navigate,
+    onClose,
+    accentColor,
+    mobile,
+    depth = 0,
+}) => (
+    <div className={`${depth === 0 ? 'ml-6' : 'ml-3'} my-1 space-y-0.5 border-l border-[#e5e5e5] pl-2 dark:border-zinc-800`}>
+        {items.map((item) => {
+            const hasChildren = Boolean(item.children?.length);
+            const isSelected = currentView === item.id;
+            const hasSelectedChild = menuContainsView(item, currentView);
+            const isExpanded = hasSelectedChild || expandedItems.has(item.id);
+            const isSection = depth === 0;
+
+            return (
+                <div key={item.id}>
+                    <button
+                        type="button"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            if (hasChildren) {
+                                toggleItem(item.id);
+                                return;
+                            }
+                            navigate(`/dashboard?view=${item.id}&org=${currentOrg.id}`);
+                            onClose?.();
+                        }}
+                        className={`flex w-full items-center gap-1.5 rounded-md px-2 text-left transition-colors ${mobile ? 'min-h-10 py-2' : 'py-1.5'} ${isSelected ? 'font-bold' : 'text-zinc-500 hover:text-black dark:text-zinc-400 dark:hover:text-white'}`}
+                        style={isSelected ? { color: accentColor } : undefined}
+                    >
+                        <span className={`min-w-0 flex-1 ${isSection ? 'text-[9px] font-semibold uppercase tracking-[.16em]' : hasChildren ? 'text-[11px] font-semibold' : 'text-xs'}`}>{item.label}</span>
+                        {hasChildren && <ChevronDown size={12} className={`shrink-0 text-[#9f9f9f] transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
+                    </button>
+                    {hasChildren && isExpanded && (
+                        <SidebarChildren
+                            items={item.children || []}
+                            currentView={currentView}
+                            currentOrg={currentOrg}
+                            expandedItems={expandedItems}
+                            toggleItem={toggleItem}
+                            navigate={navigate}
+                            onClose={onClose}
+                            accentColor={accentColor}
+                            mobile={mobile}
+                            depth={depth + 1}
+                        />
+                    )}
+                </div>
+            );
+        })}
+    </div>
+);
+
 const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
     currentOrg,
     onOrgChange,
@@ -479,7 +555,7 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                         const currentView = searchParams.get('view') || 'overview';
                         const isDashboard = location.pathname.startsWith('/dashboard');
 
-                        const isSelected = isDashboard && (currentView === item.id || (item.id === 'tasks' && currentView === 'task-detail') || (item.children?.some(child => currentView === child.id)));
+                        const isSelected = isDashboard && (currentView === item.id || (item.id === 'tasks' && currentView === 'task-detail') || menuContainsView(item, currentView));
                         const hasChildren = item.children && item.children.length > 0;
                         const isExpanded = isSelected || expandedItems.has(item.id);
 
@@ -495,11 +571,13 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
                                 }}
                                 className={`group flex w-full items-center gap-[8px] px-0 transition-all duration-150 ${onClose ? 'min-h-10 py-2' : 'py-1'}`}
                             >
-                                <item.icon
-                                    size={16}
-                                    className="shrink-0"
-                                    style={{ color: isSelected ? getAccentColor(currentOrg.slug) : getInactiveColor() }}
-                                />
+                                {item.icon && (
+                                    <item.icon
+                                        size={16}
+                                        className="shrink-0"
+                                        style={{ color: isSelected ? getAccentColor(currentOrg.slug) : getInactiveColor() }}
+                                    />
+                                )}
                                 <span
                                     className="flex-1 text-left truncate"
                                     style={{
@@ -537,28 +615,17 @@ const UnifiedSidebar: React.FC<UnifiedSidebarProps> = ({
 
                                 {/* Sub-items rendering */}
                                 {isExpanded && hasChildren && (
-                                    <div className="ml-9 border-l border-[#e5e5e5] dark:border-zinc-800 pl-3 space-y-1 my-1">
-                                        {item.children?.map(child => {
-                                            const isChildSelected = currentView === child.id;
-                                            return (
-                                                <button
-                                                    key={child.id}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        navigate(`/dashboard?view=${child.id}&org=${currentOrg.id}`);
-                                                        if (onClose) onClose();
-                                                    }}
-                                                    className={`flex w-full items-center rounded-md px-2 text-xs transition-colors ${onClose ? 'min-h-10 py-2' : 'py-1.5'} ${isChildSelected
-                                                        ? 'font-bold'
-                                                        : 'text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white'
-                                                        }`}
-                                                    style={isChildSelected ? { color: getAccentColor(currentOrg.slug) } : undefined}
-                                                >
-                                                    {child.label}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                    <SidebarChildren
+                                        items={item.children || []}
+                                        currentView={currentView}
+                                        currentOrg={currentOrg}
+                                        expandedItems={expandedItems}
+                                        toggleItem={toggleItem}
+                                        navigate={navigate}
+                                        onClose={onClose}
+                                        accentColor={getAccentColor(currentOrg.slug)}
+                                        mobile={Boolean(onClose)}
+                                    />
                                 )}
                             </div>
                             </React.Fragment>

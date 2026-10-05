@@ -10,6 +10,7 @@ import AllyoCatalogView from './allyo/AllyoCatalogView';
 import AllyoTaskDetailView from './allyo/AllyoTaskDetailView';
 import AllyoProjectsView from './allyo/AllyoProjectsView';
 import AllyoMetricsView from './allyo/AllyoMetricsView';
+import AllyoPlaybookView from './allyo/AllyoPlaybookView';
 import { AllyoPageHeader } from './allyo/AllyoUI';
 
 interface AllyoDashboardProps {
@@ -28,6 +29,9 @@ const placeholderLabels: Record<string, { title: string; description: string }> 
 const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organization }) => {
     const globalRole = String(user?.role || '').toUpperCase();
     const canManageAccess = ['ADMIN', 'OWNER', 'SUPER_ADMIN'].includes(globalRole) || organization?.memberRole === 'OWNER' || organization?.memberRole === 'ADMIN';
+    if (activeView === 'playbook' || activeView.startsWith('playbook-')) {
+        return <AllyoPlaybookView activeView={activeView} />;
+    }
     switch (activeView) {
         case 'overview':
         case 'home':
