@@ -24,6 +24,10 @@ import { AllyoAccountMaintenanceContent, AllyoCallRulesContent, AllyoClientRitua
 import { AllyoClientCommunicationContent, AllyoCreativeCostContent, AllyoFileDeliveryContent, AllyoPortfolioManagementContent, AllyoQueueManagementContent } from './AllyoCreativeOpsAdvancedProcessesContent';
 import AllyoAccessContent from './AllyoAccessContent';
 import AllyoSlaContent from './AllyoSlaContent';
+import AllyoTaskBillingContent from './AllyoTaskBillingContent';
+import AllyoVideoProjectsContent from './AllyoVideoProjectsContent';
+import AllyoVisualIdentityContent from './AllyoVisualIdentityContent';
+import AllyoArtificialIntelligenceContent from './AllyoArtificialIntelligenceContent';
 import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
@@ -35,6 +39,10 @@ const PLANS_ID = 'playbook-fundamentos-planos-allyo';
 const GLOSSARY_ID = 'playbook-fundamentos-glossario';
 const ACCESS_ID = 'playbook-creative-ops-acessos';
 const SLA_ID = 'playbook-educacional-sla';
+const TASK_BILLING_ID = 'playbook-educacional-cobranca';
+const VIDEO_PROJECTS_ID = 'playbook-educacional-video';
+const VISUAL_IDENTITY_ID = 'playbook-educacional-identidade';
+const ARTIFICIAL_INTELLIGENCE_ID = 'playbook-educacional-ia';
 const PEOPLE_ROLE_BY_ID = {
     'playbook-creative-ops-pessoas-cesm': 'cesm',
     'playbook-creative-ops-pessoas-cam': 'cam',
@@ -100,6 +108,18 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
         }
         if (entry.id === SLA_ID) {
             return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoSlaContent /></PlaybookContentPage>;
+        }
+        if (entry.id === TASK_BILLING_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoTaskBillingContent /></PlaybookContentPage>;
+        }
+        if (entry.id === VIDEO_PROJECTS_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoVideoProjectsContent /></PlaybookContentPage>;
+        }
+        if (entry.id === VISUAL_IDENTITY_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoVisualIdentityContent /></PlaybookContentPage>;
+        }
+        if (entry.id === ARTIFICIAL_INTELLIGENCE_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoArtificialIntelligenceContent /></PlaybookContentPage>;
         }
         const peopleRole = PEOPLE_ROLE_BY_ID[entry.id as keyof typeof PEOPLE_ROLE_BY_ID];
         if (peopleRole) {
