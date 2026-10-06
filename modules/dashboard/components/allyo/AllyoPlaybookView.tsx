@@ -28,6 +28,12 @@ import AllyoTaskBillingContent from './AllyoTaskBillingContent';
 import AllyoVideoProjectsContent from './AllyoVideoProjectsContent';
 import AllyoVisualIdentityContent from './AllyoVisualIdentityContent';
 import AllyoArtificialIntelligenceContent from './AllyoArtificialIntelligenceContent';
+import AllyoDesignerAgentContent from './AllyoDesignerAgentContent';
+import AllyoTaskListContent from './AllyoTaskListContent';
+import AllyoTaskStackContent from './AllyoTaskStackContent';
+import AllyoBoosterContent from './AllyoBoosterContent';
+import AllyoCanvaContent from './AllyoCanvaContent';
+import AllyoBrandKitContent from './AllyoBrandKitContent';
 import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
@@ -43,6 +49,12 @@ const TASK_BILLING_ID = 'playbook-educacional-cobranca';
 const VIDEO_PROJECTS_ID = 'playbook-educacional-video';
 const VISUAL_IDENTITY_ID = 'playbook-educacional-identidade';
 const ARTIFICIAL_INTELLIGENCE_ID = 'playbook-educacional-ia';
+const DESIGNER_AGENT_ID = 'playbook-educacional-designer-agent';
+const TASK_LIST_ID = 'playbook-educacional-lista-tarefas';
+const TASK_STACK_ID = 'playbook-educacional-stack';
+const BOOSTER_ID = 'playbook-educacional-booster';
+const CANVA_ID = 'playbook-educacional-canva';
+const BRAND_KIT_ID = 'playbook-educacional-brand-kit';
 const PEOPLE_ROLE_BY_ID = {
     'playbook-creative-ops-pessoas-cesm': 'cesm',
     'playbook-creative-ops-pessoas-cam': 'cam',
@@ -120,6 +132,24 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
         }
         if (entry.id === ARTIFICIAL_INTELLIGENCE_ID) {
             return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoArtificialIntelligenceContent /></PlaybookContentPage>;
+        }
+        if (entry.id === DESIGNER_AGENT_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoDesignerAgentContent /></PlaybookContentPage>;
+        }
+        if (entry.id === TASK_LIST_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoTaskListContent /></PlaybookContentPage>;
+        }
+        if (entry.id === TASK_STACK_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoTaskStackContent /></PlaybookContentPage>;
+        }
+        if (entry.id === BOOSTER_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoBoosterContent /></PlaybookContentPage>;
+        }
+        if (entry.id === CANVA_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoCanvaContent /></PlaybookContentPage>;
+        }
+        if (entry.id === BRAND_KIT_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoBrandKitContent /></PlaybookContentPage>;
         }
         const peopleRole = PEOPLE_ROLE_BY_ID[entry.id as keyof typeof PEOPLE_ROLE_BY_ID];
         if (peopleRole) {
