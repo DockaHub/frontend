@@ -9,6 +9,8 @@
     "build": "vite build",
     "typecheck:asterysko": "tsc --noEmit -p tsconfig.asterysko.json",
     "check:asterysko-regression": "node scripts/check-asterysko-regression.mjs",
+    "check:allyo-playbook": "node scripts/check-allyo-playbook-alignment.mjs",
+    "test:allyo-policy": "node --experimental-strip-types scripts/test-allyo-operational-policy.mts",
     "preview": "vite preview",
     "electron:dev": "cross-env NODE_ENV=development electron .",
     "electron:build": "vite build && electron-builder"

@@ -104,6 +104,11 @@ export interface AllyoClient {
     team?: string[];
     teamMemberIds?: string[];
     teamMembers?: AllyoUser[];
+    operationalPolicy?: {
+        planName: string;
+        monthlyBoosterUnits: number;
+        simultaneousTaskLimit: number;
+    };
 }
 
 export interface ClientsResponse {
@@ -267,6 +272,11 @@ export interface CreateAllyoClientPayload {
     notes?: string;
     creativeDirection?: string;
     teamMemberIds: string[];
+    operationalPolicy: {
+        planName: string;
+        monthlyBoosterUnits: number;
+        simultaneousTaskLimit: number;
+    };
 }
 
 export interface AllyoDemand {
@@ -313,6 +323,12 @@ export interface AllyoDemandTask {
     creditsConsumed?: number;
     estimatedHours?: number;
     deadlineAt?: string | null;
+    originalDeadlineAt?: string | null;
+    booster?: {
+        approvedUnits: number;
+        pendingRequest?: AllyoBoosterRequest | null;
+        requests?: AllyoBoosterRequest[];
+    };
     deadlineDays?: number;
     orderIndex?: number;
     files?: AllyoDemandFile[];
@@ -353,6 +369,26 @@ export interface AllyoDemandTask {
     } | null;
     createdAt?: string;
     updatedAt?: string;
+}
+
+export interface AllyoBoosterRequest {
+    id: string;
+    taskId: string;
+    projectId: string;
+    workspaceId?: string | null;
+    requestedByName?: string | null;
+    reason?: string | null;
+    units: number;
+    credits: number;
+    slaHours: number;
+    revisionNumber: number;
+    category?: string | null;
+    startsAt: string;
+    originalDeadlineAt?: string | null;
+    acceleratedDeadlineAt: string;
+    status: 'PENDING' | 'APPROVED' | 'REJECTED';
+    decisionNote?: string | null;
+    createdAt: string;
 }
 
 export interface DemandsResponse {
@@ -449,6 +485,33 @@ export const allyoService = {
      */
     async getDemands(params?: { status?: string; workspaceId?: string }): Promise<DemandsResponse> {
         const response = await api.get('/allyo/demands', { params });
+        return response.data;
+    },
+
+    async getBoosterRequests(status?: AllyoBoosterRequest['status']): Promise<{ count: number; requests: AllyoBoosterRequest[] }> {
+        const response = await api.get('/allyo/boosters', { params: { status } });
+        return response.data;
+    },
+
+    async requestBooster(data: {
+        taskId: string;
+        projectId: string;
+        workspaceId?: string;
+        reason?: string;
+        units: number;
+        credits: number;
+        slaHours: number;
+        revisionNumber?: number;
+        category?: string;
+        startsAt: string;
+        originalDeadlineAt?: string;
+    }): Promise<{ request: AllyoBoosterRequest }> {
+        const response = await api.post('/allyo/boosters', data);
+        return response.data;
+    },
+
+    async decideBooster(id: string, status: 'APPROVED' | 'REJECTED', note?: string): Promise<{ request: AllyoBoosterRequest }> {
+        const response = await api.patch(`/allyo/boosters/${encodeURIComponent(id)}/decision`, { status, note });
         return response.data;
     },
 

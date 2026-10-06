@@ -113,8 +113,8 @@ const profiles: Record<RoleKey, RoleProfile> = {
             { title: 'Feedback', items: ['Descrever ponto, problema e ajuste esperado', 'Indicar onde e como ajustar quando necessário', 'Evitar comentários genéricos ou subjetivos'] },
         ],
         guides: [
-            { title: 'SLA por crédito', items: ['Até 1 crédito: 24h úteis', 'De 1,1 a 2 créditos: 48h úteis', 'De 2,1 a 3 créditos: 72h úteis', 'Acima de 3 créditos: +24h por crédito adicional', 'Cada booster reduz 24h úteis'] },
-            { title: 'Início da contagem', items: ['Briefing validado até 16h: inicia no mesmo dia útil', 'Após 16h: inicia no próximo dia útil às 9h'] },
+            { title: 'SLA por item', items: ['V1: créditos arredondados para cima × SLA do produto (8h, 10h, 12h ou 24h)', 'V2+: 8h para Design Gráfico e 24h para as demais especialidades', 'Cada Booster reduz o equivalente operacional de 1 crédito'] },
+            { title: 'Início da contagem', items: ['Antes das 9h: inicia às 9h do mesmo dia útil', 'Entre 9h e 18h: inicia no momento da liberação', 'A partir das 18h: inicia no próximo dia útil às 9h', 'Simulações após 16h iniciam no próximo dia útil'] },
             { title: 'Checklist de liberação', items: ['Escopo e cobrança corretos', 'Volume validado', 'Prazo viável', 'Briefing claro e completo', 'Insumos aplicados corretamente'] },
             { title: 'Status e prioridade', items: ['Nova e Análise CQS: preparar e validar', 'Em andamento: acompanhar produção', 'Aprovação CQS: revisão interna', 'Análise CAM: escalada estratégica', 'Aprovação externa: validação do cliente', 'Bloqueada ou Alterar: dependência e ajustes'] },
             { title: 'Copywriting', items: ['Produção e versionamento no documento oficial', 'Compartilhamento com o CQS', 'Revisão e comentários no próprio documento', 'Solicitação de ajustes quando necessário', 'Novo envio e aprovação final'] },
@@ -136,7 +136,7 @@ const profiles: Record<RoleKey, RoleProfile> = {
         ],
         guides: [
             { title: 'Papel na operação', items: ['Entrega visualmente bem resolvida', 'Identidade da marca preservada', 'Peça funcional para canal e objetivo', 'Qualidade técnica adequada'] },
-            { title: 'Início e booster', items: ['Validação até 16h: inicia no mesmo dia útil', 'Após 16h: inicia no próximo dia útil às 9h', 'Cada booster reduz 24h úteis'] },
+            { title: 'Início e booster', items: ['Liberação entre 9h e 18h: contagem imediata', 'A partir das 18h: próximo dia útil às 9h', 'Simulações após 16h: próximo dia útil', 'Cada Booster reduz o equivalente de 1 crédito conforme o SLA do item'] },
             { title: 'Escopo e briefing', items: ['Confirmar item correto do catálogo', 'Validar créditos e volume', 'Ler briefing e histórico completos', 'Acionar CAM em caso de desalinhamento'] },
             { title: 'Status da tarefa', items: ['Nova ou Análise CQS: aguardar validação', 'Iniciar ou Em andamento: produzir', 'Alterar: executar ajustes', 'Aprovação externa: aguardar cliente'] },
             { title: 'Prioridade de pauta', items: ['Prazo curto', 'Tarefas com booster', 'Demandas que destravam fluxo', 'Entregas de maior impacto'] },

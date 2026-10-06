@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     Activity, Ban, BriefcaseBusiness, CheckCircle2, Copy, EllipsisVertical,
-    History, Layers3, Link2, LockKeyhole, Pencil, Power, Trash2, UserRoundCog,
+    History, Layers3, Link2, LockKeyhole, Pencil, Power, Trash2, UserRoundCog, Zap,
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
@@ -11,6 +11,7 @@ import type { AllyoTask } from './AllyoUI';
 import { addTaskActivity, readTaskActivity } from './allyoTaskActivity';
 import AllyoUserPicker from './AllyoUserPicker';
 import { ALLYO_TASK_PRESENTATIONS, resolveAllyoTaskType, type AllyoTaskType } from './allyoTaskPresentation';
+import { calculateAllyoSlaHours } from './allyoOperationalPolicy';
 
 type Confirmation = 'deactivate-project' | 'deactivate-task' | 'delete-task' | null;
 
@@ -23,6 +24,8 @@ interface AllyoTaskActionsProps {
     onDeleted: () => void;
     currentVersion: string;
     versionOptions: string[];
+    slaHours: number;
+    workspaceId?: string;
 }
 
 const confirmationCopy: Record<Exclude<Confirmation, null>, { title: string; description: string; action: string; danger?: boolean }> = {
@@ -44,11 +47,11 @@ const confirmationCopy: Record<Exclude<Confirmation, null>, { title: string; des
     },
 };
 
-const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatusChanged, onDeleted, currentVersion, versionOptions }: AllyoTaskActionsProps) => {
+const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatusChanged, onDeleted, currentVersion, versionOptions, slaHours, workspaceId }: AllyoTaskActionsProps) => {
     const { addToast } = useToast();
     const rootRef = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
-    const [modal, setModal] = useState<'edit' | 'responsible' | 'stack' | 'project' | 'activity' | 'version' | null>(null);
+    const [modal, setModal] = useState<'edit' | 'responsible' | 'stack' | 'project' | 'activity' | 'version' | 'booster' | null>(null);
     const [confirmation, setConfirmation] = useState<Confirmation>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [title, setTitle] = useState(task.name);
@@ -61,8 +64,11 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     const [dependsOn, setDependsOn] = useState<string[]>(task.dependsOn || []);
     const [workflowStage, setWorkflowStage] = useState(task.workflowStage || 'Produção');
     const [requiresClientApproval, setRequiresClientApproval] = useState(Boolean(task.requiresClientApproval));
+    const [boosterUnits, setBoosterUnits] = useState(1);
+    const [boosterReason, setBoosterReason] = useState('');
     const [projectStatus, setProjectStatus] = useState('Em andamento');
     const currentVersionNumber = Number(currentVersion.replace(/\D/g, '')) || 1;
+    const calculatedSlaHours = calculateAllyoSlaHours({ credits, slaHours, revisionNumber: currentVersionNumber, category: team, boosterUnits: task.boosterUnits });
     const reducibleVersions = versionOptions.filter((version) => (Number(version.replace(/\D/g, '')) || 0) < currentVersionNumber);
     const [targetVersion, setTargetVersion] = useState(reducibleVersions[reducibleVersions.length - 1] || '');
     const activities = modal === 'activity' ? readTaskActivity(task.id).slice().reverse() : [];
@@ -148,7 +154,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         setIsSaving(true);
         try {
             await allyoService.updateTask(task.id, { title: normalizedTitle, team: normalizedTeam, credits, taskType });
-            onTaskEdited({ name: normalizedTitle, category: normalizedTeam, credits, estimatedHours: credits * 12, taskType });
+            onTaskEdited({ name: normalizedTitle, category: normalizedTeam, credits, estimatedHours: calculatedSlaHours, taskType });
             recordAction(`Editou a tarefa: título, tipo de entrega, equipe e custo de ${credits.toLocaleString('pt-BR')} crédito(s) foram atualizados.`);
             setModal(null);
             addToast({ type: 'success', title: 'Tarefa atualizada', message: 'As alterações foram salvas no projeto.' });
@@ -213,6 +219,32 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const requestBooster = async (event: React.FormEvent) => {
+        event.preventDefault();
+        setIsSaving(true);
+        try {
+            await allyoService.requestBooster({
+                taskId: task.id,
+                projectId: task.projectId,
+                workspaceId,
+                reason: boosterReason.trim() || undefined,
+                units: boosterUnits,
+                credits: task.credits,
+                slaHours,
+                revisionNumber: currentVersionNumber,
+                category: task.category,
+                startsAt: new Date().toISOString(),
+                originalDeadlineAt: task.deadlineAt || undefined,
+            });
+            onTaskEdited({ boosterPending: true });
+            recordAction(`Solicitou ${boosterUnits} Booster(s) para análise operacional.`);
+            setModal(null);
+            addToast({ type: 'success', title: 'Booster enviado para análise' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível solicitar o Booster', message: error.response?.data?.message || 'Tente novamente.' });
+        } finally { setIsSaving(false); }
     };
 
     const reduceTaskVersion = async (event: React.FormEvent) => {
@@ -350,6 +382,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                         <MenuItem icon={<BriefcaseBusiness size={15} />} label="Gerenciar projeto" onClick={() => showModal('project')} />
                         <MenuItem icon={<UserRoundCog size={15} />} label="Responsáveis" onClick={() => showModal('responsible')} />
                         <MenuItem icon={<Layers3 size={15} />} label="Stack da tarefa" onClick={() => showModal('stack')} />
+                        <MenuItem icon={<Zap size={15} />} label={task.boosterPending ? 'Booster em análise' : 'Solicitar Booster'} onClick={() => !task.boosterPending && showModal('booster')} />
                         <MenuItem icon={<LockKeyhole size={15} />} label={isBlocked ? 'Remover bloqueio' : 'Bloquear tarefa'} onClick={() => void toggleBlocked()} />
 
                         <div className="my-1.5 h-px bg-[#eceee9] dark:bg-zinc-800" />
@@ -372,8 +405,8 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                     <AllyoField label="Nome da tarefa" required><AllyoInput required minLength={2} value={title} onChange={(event) => setTitle(event.target.value)} /></AllyoField>
                     <AllyoField label="Tipo de entrega" required><AllyoSelect value={taskType} onChange={(event) => setTaskType(event.target.value as AllyoTaskType)}>{Object.values(ALLYO_TASK_PRESENTATIONS).map((definition) => <option key={definition.type} value={definition.type}>{definition.label}</option>)}</AllyoSelect></AllyoField>
                     <AllyoField label="Equipe ou especialidade" required><AllyoInput required value={team} onChange={(event) => setTeam(event.target.value)} placeholder="Ex.: Design, Motion ou Storyboard" /></AllyoField>
-                    <AllyoField label="Créditos da tarefa" hint="1 crédito = 12 horas"><AllyoInput required type="number" min="0.01" step="0.01" value={credits} onChange={(event) => setCredits(Number(event.target.value))} /></AllyoField>
-                    <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] px-4 py-3 text-xs text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">Prazo automático desta tarefa: <strong>{(credits * 12).toLocaleString('pt-BR')} horas</strong>.</div>
+                    <AllyoField label="Créditos da tarefa" hint={`V1: arredondamento para cima × ${slaHours}h do produto`}><AllyoInput required type="number" min="0.01" step="0.01" value={credits} onChange={(event) => setCredits(Number(event.target.value))} /></AllyoField>
+                    <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] px-4 py-3 text-xs text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">Prazo automático desta tarefa: <strong>{calculatedSlaHours.toLocaleString('pt-BR')} horas úteis</strong>. V2+ usa 8h para design gráfico e 24h para as demais especialidades.</div>
                 </form>
             </Modal>
 
@@ -397,7 +430,16 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                 <form id="allyo-manage-project" onSubmit={saveProject} className="space-y-4">
                     <div className="rounded-[12px] border border-[#e5e5e5] bg-[#fafbf8] p-4 dark:border-zinc-800 dark:bg-zinc-950"><span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#829454]">Projeto</span><strong className="mt-1 block text-sm">{task.projectName}</strong></div>
                     <AllyoField label="Status"><AllyoSelect value={projectStatus} onChange={(event) => setProjectStatus(event.target.value)}><option>Em andamento</option><option>Em revisão</option><option>Concluído</option><option>Rascunho</option></AllyoSelect></AllyoField>
-                    <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] p-4 text-xs leading-5 text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">O deadline é calculado automaticamente pela stack: cada crédito representa 12 horas, tarefas dependentes são somadas e tarefas paralelas compartilham a mesma janela.</div>
+                    <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] p-4 text-xs leading-5 text-[#62685f] dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-300">O deadline é calculado em horas úteis (9h–18h): na V1, créditos arredondados para cima × SLA do produto; em revisões, 8h para design gráfico e 24h para as demais especialidades. Dependências são sequenciais e tarefas paralelas compartilham a janela.</div>
+                </form>
+            </Modal>
+
+            <Modal isOpen={modal === 'booster'} onClose={() => setModal(null)} title="Solicitar Booster" size="sm" footer={<><AllyoSecondaryButton type="button" onClick={() => setModal(null)}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-request-booster" disabled={isSaving}>{isSaving ? 'Enviando...' : 'Enviar para análise'}</AllyoPrimaryButton></>}>
+                <form id="allyo-request-booster" onSubmit={requestBooster} className="space-y-4">
+                    <p className="text-sm leading-6 text-[#777] dark:text-zinc-400">Cada unidade reduz o equivalente a um crédito ({slaHours}h) do SLA. A solicitação só altera o prazo depois da aprovação operacional.</p>
+                    <AllyoField label="Quantidade" required><AllyoInput type="number" min="1" max={Math.max(1, Math.ceil(task.credits))} value={boosterUnits} onChange={(event) => setBoosterUnits(Number(event.target.value))} /></AllyoField>
+                    <AllyoField label="Justificativa" hint="opcional"><AllyoInput value={boosterReason} onChange={(event) => setBoosterReason(event.target.value)} placeholder="Contexto da antecipação" /></AllyoField>
+                    <div className="rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] p-4 text-xs dark:border-zinc-700 dark:bg-zinc-950">Impacto estimado: <strong>{calculatedSlaHours}h úteis → {calculateAllyoSlaHours({ credits: task.credits, slaHours, revisionNumber: currentVersionNumber, category: task.category, boosterUnits: (task.boosterUnits || 0) + boosterUnits })}h úteis</strong>.</div>
                 </form>
             </Modal>
 

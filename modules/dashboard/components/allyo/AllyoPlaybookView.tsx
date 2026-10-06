@@ -35,6 +35,7 @@ import AllyoBoosterContent from './AllyoBoosterContent';
 import AllyoCanvaContent from './AllyoCanvaContent';
 import AllyoBrandKitContent from './AllyoBrandKitContent';
 import AllyoCatalogPlaybookContent, { ALLYO_CATALOG_PLAYBOOK_IDS } from './AllyoCatalogPlaybookContent';
+import AllyoPlatformGuideContent, { ALLYO_PLATFORM_GUIDE_IDS } from './AllyoPlatformGuideContent';
 import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
@@ -154,6 +155,9 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
         }
         if (ALLYO_CATALOG_PLAYBOOK_IDS.includes(entry.id as (typeof ALLYO_CATALOG_PLAYBOOK_IDS)[number])) {
             return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoCatalogPlaybookContent pageId={entry.id} /></PlaybookContentPage>;
+        }
+        if (ALLYO_PLATFORM_GUIDE_IDS.includes(entry.id)) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoPlatformGuideContent pageId={entry.id} /></PlaybookContentPage>;
         }
         const peopleRole = PEOPLE_ROLE_BY_ID[entry.id as keyof typeof PEOPLE_ROLE_BY_ID];
         if (peopleRole) {

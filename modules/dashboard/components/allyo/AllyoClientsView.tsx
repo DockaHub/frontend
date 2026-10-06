@@ -13,6 +13,7 @@ const emptyClientForm = {
     monthlyCredits: '20', contractStart: '', contractEnd: '', cam: '', responsibleEmail: '', logo: '',
     fileNamingPattern: '{{client_name}}_{{project_name}}_{{task_id}}', aiRestricted: false,
     requireTwoFactor: false, billingStatus: 'OK' as 'OK' | 'Aviso' | 'Bloqueado', notes: '', creativeDirection: '', teamMemberIds: [] as string[],
+    planName: 'Personalizado', monthlyBoosterUnits: '0', simultaneousTaskLimit: '1',
 };
 
 const clientToForm = (client: AllyoClient) => ({
@@ -21,6 +22,9 @@ const clientToForm = (client: AllyoClient) => ({
     fileNamingPattern: client.fileNamingPattern || '{{client_name}}_{{project_name}}_{{task_id}}', aiRestricted: Boolean(client.aiRestricted),
     requireTwoFactor: Boolean(client.requireTwoFactor), billingStatus: (client.billingStatus || 'OK') as 'OK' | 'Aviso' | 'Bloqueado', notes: client.notes || '', creativeDirection: client.creativeDirection || '',
     teamMemberIds: client.teamMemberIds || client.teamMembers?.map((member) => member.id) || [],
+    planName: client.operationalPolicy?.planName || 'Personalizado',
+    monthlyBoosterUnits: String(client.operationalPolicy?.monthlyBoosterUnits ?? 0),
+    simultaneousTaskLimit: String(client.operationalPolicy?.simultaneousTaskLimit ?? 1),
 });
 
 const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
@@ -135,6 +139,11 @@ const ClientDetailsModal = ({ client, users, canManage, onClose, onEdit, onAddCr
                     <ClientMetric icon={<UserRound size={16} />} label="CAM RESPONSÁVEL" value={client.cam} bordered />
                     <ClientMetric icon={<CalendarClock size={16} />} label="VENCIMENTO" value={client.contractEnd} bordered />
                 </div>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                    <DataCell label="PLANO" value={client.operationalPolicy?.planName || 'Personalizado'} />
+                    <DataCell label="BOOSTERS POR CICLO" value={String(client.operationalPolicy?.monthlyBoosterUnits ?? 0)} />
+                    <DataCell label="TAREFAS SIMULTÂNEAS" value={String(client.operationalPolicy?.simultaneousTaskLimit ?? 1)} />
+                </div>
 
                 {(() => {
                     const ids = new Set(client.teamMemberIds || []);
@@ -223,6 +232,11 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
                 billingStatus: form.billingStatus, notes: form.notes.trim() || undefined,
                 creativeDirection: form.creativeDirection.trim() || undefined,
                 teamMemberIds: form.teamMemberIds,
+                operationalPolicy: {
+                    planName: form.planName.trim() || 'Personalizado',
+                    monthlyBoosterUnits: Number(form.monthlyBoosterUnits),
+                    simultaneousTaskLimit: Number(form.simultaneousTaskLimit),
+                },
             };
             const result = client ? await allyoService.updateClient(client.id, payload) : await allyoService.createClient(payload);
             onSaved(result.client);
@@ -260,6 +274,9 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
                         <AllyoField label="Área"><AllyoSelect value={form.area} onChange={(event) => update('area', event.target.value)}><option value="">Selecione</option><option>Marketing</option><option>Comunicação</option><option>Branding</option><option>Design</option><option>Conteúdo</option><option>Produto</option><option>Comercial</option><option>Outro</option></AllyoSelect></AllyoField>
                         <AllyoField label="Tier"><AllyoSelect value={form.tier} onChange={(event) => update('tier', event.target.value as '1' | '2' | '3')}><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option></AllyoSelect></AllyoField>
                         <AllyoField label="Créditos mensais" required><AllyoInput required type="number" min="1" value={form.monthlyCredits} onChange={(event) => update('monthlyCredits', event.target.value)} /></AllyoField>
+                        <AllyoField label="Plano" required><AllyoInput required value={form.planName} onChange={(event) => update('planName', event.target.value)} placeholder="Ex.: Scale" /></AllyoField>
+                        <AllyoField label="Boosters por ciclo" required><AllyoInput required type="number" min="0" value={form.monthlyBoosterUnits} onChange={(event) => update('monthlyBoosterUnits', event.target.value)} /></AllyoField>
+                        <AllyoField label="Tarefas simultâneas" required><AllyoInput required type="number" min="1" value={form.simultaneousTaskLimit} onChange={(event) => update('simultaneousTaskLimit', event.target.value)} /></AllyoField>
                         <AllyoField label="CAM responsável" hint="opcional" className="lg:col-span-2"><AllyoInput value={form.cam} onChange={(event) => update('cam', event.target.value)} placeholder="Nome do responsável de atendimento" /></AllyoField>
                         <AllyoField label="Inadimplência"><AllyoSelect value={form.billingStatus} onChange={(event) => update('billingStatus', event.target.value as 'OK' | 'Aviso' | 'Bloqueado')}><option value="OK">OK</option><option value="Aviso">Aviso</option><option value="Bloqueado">Bloqueado</option></AllyoSelect></AllyoField>
                     </div>

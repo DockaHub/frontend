@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import {
     ArrowRight,
@@ -17,6 +17,8 @@ import {
     Zap,
 } from 'lucide-react';
 import { ALLYO_BORDER } from './AllyoUI';
+import { allyoService, type AllyoBoosterRequest } from '../../../../services/allyoService';
+import { useToast } from '../../../../context/ToastContext';
 
 const singleTaskSteps = [
     'Recusar o booster.',
@@ -49,21 +51,32 @@ const bestPractices = [
     'Usar aprovação interna com critério',
 ];
 
-const managementRows = [
-    ['Campanha de remarketing', 'Cliente A', 'Solicitante 01', '19/06, 10:45', '2 boosters', 'Aprovado'],
-    ['Carrossel de iniciativas', 'Cliente B', 'Solicitante 02', '18/06, 18:50', '2 boosters', 'Aprovado'],
-    ['Capas para portal', 'Cliente C', 'Solicitante 03', '18/06, 17:48', '1 booster', 'Aprovado'],
-    ['Brochura institucional', 'Cliente D', 'Solicitante 04', '18/06, 10:05', '1 booster', 'Aprovado'],
-];
-
-const AllyoBoosterContent = () => (
+const AllyoBoosterContent = () => {
+    const { addToast } = useToast();
+    const [requests, setRequests] = useState<AllyoBoosterRequest[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const loadRequests = () => allyoService.getBoosterRequests()
+        .then((response) => setRequests(response.requests || []))
+        .catch((error) => console.warn('[AllyoBoosterContent] Não foi possível carregar Boosters:', error))
+        .finally(() => setIsLoading(false));
+    useEffect(() => { void loadRequests(); }, []);
+    const decide = async (request: AllyoBoosterRequest, status: 'APPROVED' | 'REJECTED') => {
+        try {
+            await allyoService.decideBooster(request.id, status);
+            await loadRequests();
+            addToast({ type: 'success', title: status === 'APPROVED' ? 'Booster aprovado' : 'Booster recusado' });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível decidir o Booster', message: error.response?.data?.message || 'Tente novamente.' });
+        }
+    };
+    return (
     <div className="space-y-12">
         <section className="overflow-hidden rounded-[18px] border border-indigo-100 bg-gradient-to-br from-[#f3f3ff] via-white to-[#f8f9ff] p-6 dark:border-indigo-500/20 dark:from-indigo-950/25 dark:via-zinc-950 dark:to-zinc-900 sm:p-8">
             <div className="grid items-center gap-8 xl:grid-cols-[.95fr_1.05fr]">
                 <div>
                     <div className="flex flex-wrap gap-2"><Pill icon={Sparkles}>Sprint de excelência</Pill><Pill icon={Zap}>Booster</Pill></div>
                     <h2 className="mt-5 max-w-[680px] font-season text-[clamp(32px,4vw,48px)] leading-[1.05]">Acelerador de prazo, com validação obrigatória.</h2>
-                    <p className="mt-5 max-w-[680px] text-sm leading-7 text-[#626875] dark:text-zinc-300">Booster antecipa a entrega de uma tarefa mediante consumo de créditos extras. Toda solicitação precisa passar por validação operacional antes da aprovação, garantindo visibilidade e qualidade da entrega.</p>
+                    <p className="mt-5 max-w-[680px] text-sm leading-7 text-[#626875] dark:text-zinc-300">Booster antecipa a entrega de uma tarefa ao reduzir o equivalente operacional de um crédito no SLA. Toda solicitação precisa passar por validação antes da aprovação, garantindo visibilidade e qualidade da entrega.</p>
                     <div className="mt-6 grid gap-[10px] sm:grid-cols-2">
                         <MiniInfo icon={Clock3} title="O que é">Acelerador de prazo que antecipa a entrega de uma tarefa.</MiniInfo>
                         <MiniInfo icon={ShieldAlert} title="Ponto crítico" critical>Validar sempre antes de aprovar. Booster sem validação compromete prazo, qualidade e o cliente.</MiniInfo>
@@ -149,14 +162,16 @@ const AllyoBoosterContent = () => (
 
         <Section eyebrow="Plataforma Faster" title="Gestão de Boosters no painel" description="As solicitações ficam centralizadas no painel, com tarefa, cliente, solicitante, data, quantidade e status.">
             <div className={`overflow-hidden rounded-[17px] border bg-white shadow-sm dark:bg-zinc-950 ${ALLYO_BORDER}`}>
-                <div className="overflow-x-auto"><table className="min-w-[820px] w-full text-left text-[10px]"><thead className="bg-[#f6f7fa] text-[9px] uppercase text-[#717783] dark:bg-zinc-900"><tr>{['Tarefa', 'Cliente', 'Solicitante', 'Data', 'Qtd.', 'Status'].map((heading) => <th key={heading} className="px-4 py-3 font-semibold">{heading}</th>)}</tr></thead><tbody>{managementRows.map((row) => <tr key={row[0]} className="border-t border-black/6 dark:border-white/10">{row.map((cell, index) => <td key={cell} className={`px-4 py-3 ${index === 0 ? 'font-medium' : 'text-[#69707c] dark:text-zinc-400'}`}>{index === 5 ? <span className="rounded-full bg-emerald-100 px-2 py-1 text-[9px] text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">Aprovado</span> : cell}</td>)}</tr>)}</tbody></table></div>
+                <div className="overflow-x-auto"><table className="min-w-[900px] w-full text-left text-[10px]"><thead className="bg-[#f6f7fa] text-[9px] uppercase text-[#717783] dark:bg-zinc-900"><tr>{['Tarefa', 'Solicitante', 'Data', 'Qtd.', 'Novo prazo', 'Status', 'Ações'].map((heading) => <th key={heading} className="px-4 py-3 font-semibold">{heading}</th>)}</tr></thead><tbody>{requests.map((request) => <tr key={request.id} className="border-t border-black/6 dark:border-white/10"><td className="px-4 py-3 font-medium">#{request.taskId}</td><td className="px-4 py-3 text-[#69707c] dark:text-zinc-400">{request.requestedByName || 'Usuário Allyo'}</td><td className="px-4 py-3 text-[#69707c] dark:text-zinc-400">{new Date(request.createdAt).toLocaleString('pt-BR')}</td><td className="px-4 py-3">{request.units}</td><td className="px-4 py-3">{new Date(request.acceleratedDeadlineAt).toLocaleString('pt-BR')}</td><td className="px-4 py-3"><span className="rounded-full bg-[#f0f2ec] px-2 py-1 text-[9px] dark:bg-zinc-800">{{ PENDING: 'Pendente', APPROVED: 'Aprovado', REJECTED: 'Recusado' }[request.status]}</span></td><td className="px-4 py-3">{request.status === 'PENDING' ? <span className="flex gap-2"><button type="button" onClick={() => void decide(request, 'APPROVED')} className="rounded-full bg-emerald-600 px-3 py-1.5 font-semibold text-white">Aprovar</button><button type="button" onClick={() => void decide(request, 'REJECTED')} className="rounded-full bg-rose-600 px-3 py-1.5 font-semibold text-white">Recusar</button></span> : '—'}</td></tr>)}</tbody></table></div>
+                {!isLoading && requests.length === 0 && <div className="px-6 py-10 text-center text-xs text-[#767c87]">Nenhuma solicitação de Booster registrada.</div>}
             </div>
-            <div className="mt-3 flex items-center justify-end gap-2 text-[10px] text-[#767c87] dark:text-zinc-500"><Database size={13} />Mostrando 4 registros de exemplo</div>
+            <div className="mt-3 flex items-center justify-end gap-2 text-[10px] text-[#767c87] dark:text-zinc-500"><Database size={13} />{isLoading ? 'Carregando registros' : `${requests.length} registro(s) operacional(is)`}</div>
         </Section>
 
         <section className={`rounded-[17px] border bg-white p-6 dark:bg-zinc-950 sm:p-8 ${ALLYO_BORDER}`}><h3 className="font-season text-[26px]">Reforce o aprendizado</h3><p className="mt-3 text-xs leading-6 text-[#676d79] dark:text-zinc-400">Use a gravação da sprint e o material oficial para revisar o processo de análise, aprovação e gestão de Boosters.</p><div className="mt-5 grid gap-[10px] md:grid-cols-2"><ResourceCard title="Gravação da sprint" label="Assistir conteúdo" /><ResourceCard title="Apresentação oficial" label="Consultar material" /></div></section>
     </div>
-);
+    );
+};
 
 const Section = ({ eyebrow, title, description, children }: { eyebrow: string; title: string; description?: string; children: ReactNode }) => <section><span className="text-[9px] font-bold uppercase tracking-[.18em] text-indigo-500">{eyebrow}</span><h3 className="mt-2 font-season text-[clamp(27px,3vw,35px)] leading-tight">{title}</h3>{description && <p className="mb-6 mt-3 max-w-[830px] text-xs leading-6 text-[#686e79] dark:text-zinc-400">{description}</p>}{!description && <div className="mb-6" />}{children}</section>;
 const Panel = ({ children, className = '' }: { children: ReactNode; className?: string }) => <article className={`rounded-[17px] border bg-white p-5 shadow-sm dark:bg-zinc-950 sm:p-6 ${ALLYO_BORDER} ${className}`}>{children}</article>;

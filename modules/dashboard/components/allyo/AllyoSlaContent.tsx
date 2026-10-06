@@ -237,15 +237,15 @@ const AllyoSlaContent = () => {
 
             <ContentSection title="Exemplos de contabilização de prazo" icon={Calculator} description="Veja como o cronômetro é aplicado em diferentes cenários, combinando regra de início, horas por crédito e dias úteis.">
                 <div className="grid gap-[10px] lg:grid-cols-3">
-                    <ExampleCard tone="mint" number="1" title="Banner" rate="8h por crédito" credits="2 créditos" entry="ter. 23/06/2026, 10h" steps={['SLA V1 = 2 × 8h = 16h úteis', 'Jornada de 9h às 18h (9h úteis/dia)']} result="25/06/2026 às 12h" />
+                    <ExampleCard tone="mint" number="1" title="Banner" rate="8h por crédito" credits="2 créditos" entry="ter. 23/06/2026, 10h" steps={['SLA V1 = 2 × 8h = 16h úteis', 'Jornada de 9h às 18h (9h úteis/dia)']} result="24/06/2026 às 17h" />
                     <ExampleCard tone="violet" number="2" title="Apresentação de slides" rate="10h por crédito" credits="3 créditos" entry="sex. 26/06/2026, 19h" steps={['Início do SLA: 29/06/2026 às 09h', 'SLA V1 = 3 × 10h = 30h úteis']} result="02/07/2026 às 12h" />
-                    <ExampleCard tone="orange" number="3" title="Edição de vídeo" rate="24h por crédito" credits="2 créditos" entry="qua. 24/06/2026, 08h" steps={['Início do SLA: 24/06/2026 às 09h', 'SLA V1 = 2 × 24h = 48h úteis (≈ 5 dias úteis e meio)']} result="01/07/2026 às 09h" />
+                    <ExampleCard tone="orange" number="3" title="Edição de vídeo" rate="24h por crédito" credits="2 créditos" entry="qua. 24/06/2026, 08h" steps={['Início do SLA: 24/06/2026 às 09h', 'SLA V1 = 2 × 24h = 48h úteis (5 dias úteis + 3h)']} result="01/07/2026 às 12h" />
                 </div>
                 <div className="mt-6 flex flex-wrap items-center gap-2"><Badge tone="blue">Revisões (V2+)</Badge><span className="text-[11px] text-[#737782] dark:text-zinc-400">Após a 1ª entrega, o SLA passa a ser fixo: 8h para Design Gráfico e 24h para demais especialidades.</span></div>
                 <div className="mt-4 grid gap-[10px] lg:grid-cols-3">
-                    <ExampleCard tone="mint" number="4" title="Banner (V2)" rate="V2+ · 8h fixas" credits="Revisão" entry="qui. 25/06/2026, 14h" steps={['Especialidade: Design Gráfico', 'SLA V2 = 8h úteis (fixo, independe de créditos)']} result="26/06/2026 às 14h" />
+                    <ExampleCard tone="mint" number="4" title="Banner (V2)" rate="V2+ · 8h fixas" credits="Revisão" entry="qui. 25/06/2026, 14h" steps={['Especialidade: Design Gráfico', 'SLA V2 = 8h úteis (fixo, independe de créditos)']} result="26/06/2026 às 13h" />
                     <ExampleCard tone="violet" number="5" title="Apresentação de slides (V3)" rate="V2+ · 8h fixas" credits="Revisão" entry="qui. 02/07/2026, 16h" steps={['Especialidade: Design Gráfico', 'SLA V3 = 8h úteis (mesma regra de V2)']} result="03/07/2026 às 15h" />
-                    <ExampleCard tone="orange" number="6" title="Edição de vídeo (V2)" rate="V2+ · 24h fixas" credits="Revisão" entry="qua. 01/07/2026, 10h" steps={['Especialidade: Vídeo & Áudio (demais)', 'SLA V2 = 24h úteis (fixo)']} result="02/07/2026 às 10h" />
+                    <ExampleCard tone="orange" number="6" title="Edição de vídeo (V2)" rate="V2+ · 24h fixas" credits="Revisão" entry="qua. 01/07/2026, 10h" steps={['Especialidade: Vídeo & Áudio (demais)', 'SLA V2 = 24h úteis (fixo)']} result="03/07/2026 às 16h" />
                 </div>
             </ContentSection>
         </div>

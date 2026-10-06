@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import { normalizeAllyoTaskStatus, type AllyoCanonicalStatus } from './allyoOperationalPolicy';
 
 export const ALLYO_BORDER = 'border-[#e5e5e5] dark:border-zinc-800';
 export const ALLYO_ACCENT = '#9db669';
@@ -50,13 +51,17 @@ export interface AllyoTask {
     client: string;
     deadline: string;
     time: string;
-    status: 'Iniciar' | 'Em andamento' | 'Em revisão' | 'Alteração' | 'Concluída' | 'Bloqueada' | 'Inativa';
+    status: AllyoCanonicalStatus;
     cam: string;
     creative: string;
     workflowStage?: string;
     dependsOn?: string[];
     requiresClientApproval?: boolean;
     dependencyBlocked?: boolean;
+    deadlineAt?: string | null;
+    originalDeadlineAt?: string | null;
+    boosterUnits?: number;
+    boosterPending?: boolean;
     delivery?: string | null;
     version?: string | null;
     taskType?: string | null;
@@ -88,22 +93,6 @@ export const numericTaskId = (value: string) => {
     let hash = 2166136261;
     for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
     return String(100000 + ((hash >>> 0) % 900000));
-};
-
-const mapTaskStatus = (status: string): AllyoTask['status'] => {
-    const statusMap: Record<string, AllyoTask['status']> = {
-        'A iniciar': 'Iniciar',
-        'Rascunho': 'Iniciar',
-        'Em andamento': 'Em andamento',
-        'Em revisão': 'Em revisão',
-        'Alteração': 'Alteração',
-        'Em alteração': 'Alteração',
-        'Concluído': 'Concluída',
-        'Concluída': 'Concluída',
-        'Bloqueada': 'Bloqueada',
-        'Inativa': 'Inativa',
-    };
-    return statusMap[status] || 'Em andamento';
 };
 
 const demandDeliverables = (source: any): AllyoDeliverable[] | undefined => Array.isArray(source?.deliverables)
@@ -170,7 +159,7 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         projectName: demand.name,
         credits: Math.max(0.01, Number(task.credits ?? 1)),
         creditsConsumed: Number(task.creditsConsumed || 0),
-        estimatedHours: Number(task.estimatedHours ?? (Number(task.credits ?? 1) * 12)),
+        estimatedHours: Number(task.estimatedHours ?? 0),
         category: task.team || demand.service || 'Design',
         client,
         deadline: (() => {
@@ -181,13 +170,17 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
             const value = new Date(task.deadlineAt || demand.deadline || '');
             return Number.isNaN(value.getTime()) ? 'A definir' : `${value.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }).replace(':', 'h')}min`;
         })(),
-        status: mapTaskStatus(task.status || demand.status),
+        status: normalizeAllyoTaskStatus(task.status || demand.status),
         cam: 'Marina',
         creative: task.assignee || projectCreative,
         workflowStage: task.workflowStage || 'Produção',
         dependsOn: Array.isArray(task.dependsOn) ? task.dependsOn : [],
         requiresClientApproval: Boolean(task.requiresClientApproval),
         dependencyBlocked: Boolean(task.dependencyBlocked),
+        deadlineAt: task.deadlineAt || demand.deadline || null,
+        originalDeadlineAt: task.originalDeadlineAt || null,
+        boosterUnits: Number(task.booster?.approvedUnits || 0),
+        boosterPending: Boolean(task.booster?.pendingRequest),
         delivery: task.delivery,
         version: task.version,
         taskType: task.taskType || task.deliverySchema?.taskType || task.briefing?.deliverySchema?.taskType || task.briefing?.taskType || null,
@@ -306,7 +299,7 @@ const statusColor: Record<AllyoTask['status'], string> = {
     'Inativa': 'text-red-500 dark:text-red-400',
 };
 
-export const TaskRow = ({ task }: { task: AllyoTask }) => {
+export const TaskRow = ({ task, visibleColumns = ['credits', 'id', 'client', 'deadline', 'status'] }: { task: AllyoTask; visibleColumns?: string[] }) => {
     const [, setSearchParams] = useSearchParams();
 
     const openTask = () => {
@@ -323,7 +316,8 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
             <button
                 type="button"
                 onClick={openTask}
-                className="grid min-h-[78px] w-full grid-cols-[minmax(220px,1.35fr)_76px_70px_90px_minmax(155px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70 max-lg:grid-cols-[minmax(190px,1fr)_76px_minmax(155px,1fr)_105px_18px] max-md:grid-cols-[minmax(190px,1fr)_76px_105px_18px] max-sm:grid-cols-[minmax(0,1fr)_68px_18px]"
+                style={{ gridTemplateColumns: `minmax(220px, 1.35fr) ${visibleColumns.map((column) => column === 'deadline' ? 'minmax(155px, 1fr)' : column === 'status' ? '105px' : '90px').join(' ')} 18px` }}
+                className="grid min-h-[78px] w-full items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] sm:px-[30px] dark:hover:bg-zinc-900/70"
             >
                 <span className="flex min-w-0 items-center gap-[10px]">
                     <span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center rounded-full border border-[#9db669] text-[#9db669]" aria-hidden="true">
@@ -334,14 +328,14 @@ export const TaskRow = ({ task }: { task: AllyoTask }) => {
                         <span className="block truncate text-[11px] text-[#777] dark:text-zinc-400">{task.projectName} · {task.category}</span>
                     </span>
                 </span>
-                <span className="min-w-0" aria-label={formatTaskCredits(task.credits)}>
+                {visibleColumns.includes('credits') && <span className="min-w-0" aria-label={formatTaskCredits(task.credits)}>
                     <span className="block text-[9px] font-medium leading-none text-[#616161] dark:text-zinc-500">CRÉDITOS</span>
                     <span className="mt-[10px] flex items-center gap-1.5 text-sm font-medium leading-none text-black dark:text-zinc-200"><span aria-hidden="true" className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-[#9db669] text-[9px] font-bold text-[#72894c] dark:text-[#d0f08e]">C</span>{task.credits.toLocaleString('pt-BR')}</span>
-                </span>
-                <DataCell label="ID" value={task.publicId || task.id} className="max-lg:hidden" />
-                <DataCell label="CLIENTE" value={task.client} className="max-lg:hidden" />
-                <DataCell label="DEADLINE" value={`${task.deadline} • ${task.time}`} className="max-md:hidden" />
-                <DataCell label="STATUS" value={task.status} valueClassName={statusColor[task.status]} className="max-sm:hidden" />
+                </span>}
+                {visibleColumns.includes('id') && <DataCell label="ID" value={task.publicId || task.id} />}
+                {visibleColumns.includes('client') && <DataCell label="CLIENTE" value={task.client} />}
+                {visibleColumns.includes('deadline') && <DataCell label="DEADLINE" value={`${task.deadline} • ${task.time}`} />}
+                {visibleColumns.includes('status') && <DataCell label="STATUS" value={task.status} valueClassName={statusColor[task.status]} />}
                 <ChevronRight size={18} className="text-[#9f9f9f]" />
             </button>
         </div>

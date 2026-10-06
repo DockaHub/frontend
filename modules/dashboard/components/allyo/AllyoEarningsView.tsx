@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
 import { ALLYO_BORDER, AllyoPageHeader, FilterSelect } from './AllyoUI';
 import { allyoService, AllyoDemand } from '../../../../services/allyoService';
+import { payableTaskIdsAfterStackClosure } from './allyoOperationalPolicy';
 
 interface DeliveryRow {
     id: string;
@@ -43,16 +44,19 @@ const AllyoEarningsView = () => {
             .finally(() => setIsLoading(false));
     }, []);
 
-    const taskEntries = useMemo(() => demands.flatMap((demand) => (demand.tasksList || []).map((task) => {
+    const taskEntries = useMemo(() => demands.flatMap((demand) => {
+        const payableIds = payableTaskIdsAfterStackClosure(demand.tasksList || []);
+        return (demand.tasksList || []).map((task) => {
         const taskDesigns = (demand.designs || []).filter((design) => design.taskId === task.id || (!design.taskId && (demand.tasksList || []).length === 1));
         const hasSubmittedVersion = taskDesigns.length > 0 || ((demand.tasksList || []).length === 1 && demand.designsCount > 0);
         const completed = task.status === 'Concluído' || task.status === 'Concluída';
         const approved = taskDesigns.some((design) => design.approved) || (completed && hasSubmittedVersion && taskDesigns.length === 0);
-        return { demand, task, taskDesigns, hasSubmittedVersion, approved };
-    })), [demands]);
+        return { demand, task, taskDesigns, hasSubmittedVersion, approved, stackClosed: payableIds.has(task.id) };
+    });
+    }), [demands]);
 
-    const approvedTasks = useMemo(() => taskEntries.filter((entry) => entry.approved), [taskEntries]);
-    const pendingTasks = useMemo(() => taskEntries.filter((entry) => !entry.approved && entry.hasSubmittedVersion), [taskEntries]);
+    const approvedTasks = useMemo(() => taskEntries.filter((entry) => entry.approved && entry.stackClosed), [taskEntries]);
+    const pendingTasks = useMemo(() => taskEntries.filter((entry) => entry.hasSubmittedVersion && (!entry.approved || !entry.stackClosed)), [taskEntries]);
 
     const approvedCredits = useMemo(() => {
         return approvedTasks.reduce((sum, entry) => sum + Number(entry.task.credits ?? 0), 0);
@@ -75,9 +79,16 @@ const AllyoEarningsView = () => {
             approvedAt: new Date(task.updatedAt || demand.updatedAt || demand.createdAt).toLocaleDateString('pt-BR'),
             versions: taskDesigns.length || (demand.tasksList?.length === 1 ? demand.designsCount : 1) || 1,
             credits: Number(task.credits ?? 0),
-            boosters: 0,
+            boosters: Number(task.booster?.approvedUnits || 0),
         }));
     }, [approvedTasks]);
+
+    const visibleDeliveries = useMemo(() => period === 'Últimos 30 dias'
+        ? deliveries.filter((row) => {
+            const [day, month, year] = row.approvedAt.split('/').map(Number);
+            return Date.now() - new Date(year, month - 1, day).getTime() <= 30 * 24 * 60 * 60 * 1000;
+        })
+        : deliveries, [deliveries, period]);
 
     return (
         <div className="h-full overflow-y-auto bg-white font-sans text-black dark:bg-zinc-950 dark:text-white">
@@ -127,8 +138,8 @@ const AllyoEarningsView = () => {
                             <FilterSelect label="Período" value={period} options={['Todas as entregas', 'Últimos 30 dias']} onChange={setPeriod} />
                             <button
                                 type="button"
-                                disabled={deliveries.length === 0}
-                                onClick={() => downloadReport(deliveries)}
+                                disabled={visibleDeliveries.length === 0}
+                                onClick={() => downloadReport(visibleDeliveries)}
                                 className="inline-flex min-h-9 items-center gap-[10px] rounded-full bg-[#131f15] px-[15px] py-2 text-xs font-semibold text-white transition hover:bg-[#253829] disabled:opacity-40"
                             >
                                 <Download size={13} /> <span className="hidden sm:inline">Baixar relatório</span>
@@ -147,7 +158,7 @@ const AllyoEarningsView = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {deliveries.map((row) => (
+                                {visibleDeliveries.map((row) => (
                                     <tr key={row.id} className={`border-b text-sm font-medium transition-colors hover:bg-[#fafbf8] dark:hover:bg-zinc-900/60 ${ALLYO_BORDER}`}>
                                         <td className="px-[30px] py-5 truncate font-mono text-xs">{row.id}</td>
                                         <td className="px-3 py-5">{row.approvedAt}</td>
@@ -159,7 +170,7 @@ const AllyoEarningsView = () => {
                             </tbody>
                         </table>
 
-                        {!isLoading && deliveries.length === 0 && (
+                        {!isLoading && visibleDeliveries.length === 0 && (
                             <div className="flex min-h-64 flex-col items-center justify-center px-6 text-center">
                                 <strong className="text-sm font-semibold">Nenhuma entrega realizada ainda</strong>
                                 <span className="mt-2 text-xs text-[#7f7f7f]">As demandas aprovadas pelos clientes na Allyo Space aparecerão aqui contabilizando créditos e saldo.</span>

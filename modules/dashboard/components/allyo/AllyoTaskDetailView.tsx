@@ -700,7 +700,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
                 <div className="ml-auto flex items-center gap-3">
                     <span className="hidden text-[11px] font-medium text-[#8f8f8f] lg:inline" aria-live="polite">{savedLabel}</span>
-                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={applyTaskChanges} onStatusChanged={applyStatusChange} onDeleted={goBack} currentVersion={latestVersionLabel} versionOptions={versionOptions} />}
+                    {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={applyTaskChanges} onStatusChanged={applyStatusChange} onDeleted={goBack} currentVersion={latestVersionLabel} versionOptions={versionOptions} slaHours={Number(catalogProduct?.slaHours || 12)} workspaceId={liveDemand?.workspace?.id} />}
                 </div>
             </section>
 

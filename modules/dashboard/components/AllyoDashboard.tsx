@@ -43,7 +43,7 @@ const AllyoDashboard: React.FC<AllyoDashboardProps> = ({ activeView, user, organ
         case 'creative-panel':
             return <AllyoCreativePanelView />;
         case 'metrics':
-            return canManageAccess ? <AllyoMetricsView /> : <AccessDenied title="Métricas" />;
+            return <AllyoMetricsView />;
         case 'clients':
             return <AllyoClientsView mode="assigned" />;
         case 'management-projects':
