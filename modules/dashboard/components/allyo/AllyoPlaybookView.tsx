@@ -22,6 +22,7 @@ import { AllyoGlossaryContent, AllyoPlansContent, AllyoUsefulLinksContent } from
 import { AllyoPeopleRoleContent } from './AllyoPeopleContent';
 import { AllyoAccountMaintenanceContent, AllyoCallRulesContent, AllyoClientRitualsContent, AllyoInternalRitualsContent } from './AllyoCreativeOpsProcessesContent';
 import { AllyoClientCommunicationContent, AllyoCreativeCostContent, AllyoFileDeliveryContent, AllyoPortfolioManagementContent, AllyoQueueManagementContent } from './AllyoCreativeOpsAdvancedProcessesContent';
+import AllyoAccessContent from './AllyoAccessContent';
 import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
@@ -31,6 +32,7 @@ const INTERNAL_COMMUNICATION_ID = 'playbook-fundamentos-comunicacao-interna';
 const USEFUL_LINKS_ID = 'playbook-fundamentos-links-uteis';
 const PLANS_ID = 'playbook-fundamentos-planos-allyo';
 const GLOSSARY_ID = 'playbook-fundamentos-glossario';
+const ACCESS_ID = 'playbook-creative-ops-acessos';
 const PEOPLE_ROLE_BY_ID = {
     'playbook-creative-ops-pessoas-cesm': 'cesm',
     'playbook-creative-ops-pessoas-cam': 'cam',
@@ -90,6 +92,9 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
         }
         if (entry.id === GLOSSARY_ID) {
             return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoGlossaryContent /></PlaybookContentPage>;
+        }
+        if (entry.id === ACCESS_ID) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><AllyoAccessContent /></PlaybookContentPage>;
         }
         const peopleRole = PEOPLE_ROLE_BY_ID[entry.id as keyof typeof PEOPLE_ROLE_BY_ID];
         if (peopleRole) {
