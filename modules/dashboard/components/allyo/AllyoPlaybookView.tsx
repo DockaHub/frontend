@@ -20,6 +20,7 @@ import AllyoCreativeExcellenceContent from './AllyoCreativeExcellenceContent';
 import AllyoInternalCommunicationContent from './AllyoInternalCommunicationContent';
 import { AllyoGlossaryContent, AllyoPlansContent, AllyoUsefulLinksContent } from './AllyoPlaybookResourcesContent';
 import { AllyoPeopleRoleContent } from './AllyoPeopleContent';
+import { AllyoAccountMaintenanceContent, AllyoCallRulesContent, AllyoClientRitualsContent, AllyoInternalRitualsContent } from './AllyoCreativeOpsProcessesContent';
 import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
@@ -35,6 +36,12 @@ const PEOPLE_ROLE_BY_ID = {
     'playbook-creative-ops-pessoas-cas': 'cas',
     'playbook-creative-ops-pessoas-cqs': 'cqs',
     'playbook-creative-ops-pessoas-ad': 'ad',
+} as const;
+const CREATIVE_OPS_PROCESS_BY_ID = {
+    'playbook-creative-ops-rituais-cliente': AllyoClientRitualsContent,
+    'playbook-creative-ops-rituais-internos': AllyoInternalRitualsContent,
+    'playbook-creative-ops-regras-calls': AllyoCallRulesContent,
+    'playbook-creative-ops-manutencao-contas': AllyoAccountMaintenanceContent,
 } as const;
 
 const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
@@ -81,6 +88,10 @@ const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
         const peopleRole = PEOPLE_ROLE_BY_ID[entry.id as keyof typeof PEOPLE_ROLE_BY_ID];
         if (peopleRole) {
             return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate} headerTitle="Papel e rotina" includeCurrentBreadcrumb><AllyoPeopleRoleContent role={peopleRole} /></PlaybookContentPage>;
+        }
+        const ProcessContent = CREATIVE_OPS_PROCESS_BY_ID[entry.id as keyof typeof CREATIVE_OPS_PROCESS_BY_ID];
+        if (ProcessContent) {
+            return <PlaybookContentPage entry={entry} previous={previous} next={next} onNavigate={navigate}><ProcessContent /></PlaybookContentPage>;
         }
         return <PlaybookPlaceholder entry={entry} previous={previous} next={next} onNavigate={navigate} />;
     }
