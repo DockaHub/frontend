@@ -21,6 +21,7 @@ import AllyoInternalCommunicationContent from './AllyoInternalCommunicationConte
 import { AllyoGlossaryContent, AllyoPlansContent, AllyoUsefulLinksContent } from './AllyoPlaybookResourcesContent';
 import { AllyoPeopleRoleContent } from './AllyoPeopleContent';
 import { AllyoAccountMaintenanceContent, AllyoCallRulesContent, AllyoClientRitualsContent, AllyoInternalRitualsContent } from './AllyoCreativeOpsProcessesContent';
+import { AllyoClientCommunicationContent, AllyoCreativeCostContent, AllyoFileDeliveryContent, AllyoPortfolioManagementContent, AllyoQueueManagementContent } from './AllyoCreativeOpsAdvancedProcessesContent';
 import './AllyoPlaybookTypography.css';
 
 const ONBOARDING_ID = 'playbook-fundamentos-onboarding';
@@ -42,6 +43,11 @@ const CREATIVE_OPS_PROCESS_BY_ID = {
     'playbook-creative-ops-rituais-internos': AllyoInternalRitualsContent,
     'playbook-creative-ops-regras-calls': AllyoCallRulesContent,
     'playbook-creative-ops-manutencao-contas': AllyoAccountMaintenanceContent,
+    'playbook-creative-ops-custo-criativo': AllyoCreativeCostContent,
+    'playbook-creative-ops-carteiras': AllyoPortfolioManagementContent,
+    'playbook-creative-ops-entrega-arquivos': AllyoFileDeliveryContent,
+    'playbook-creative-ops-pauta': AllyoQueueManagementContent,
+    'playbook-creative-ops-comunicacao-cliente': AllyoClientCommunicationContent,
 } as const;
 
 const AllyoPlaybookView = ({ activeView }: { activeView: string }) => {
