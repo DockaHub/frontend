@@ -40,7 +40,7 @@ interface AllyoCopyDeliveryWorkspaceProps {
     onSourceUrlChange?: (url: string) => void;
     optionalFiles?: ManagedFile[];
     onOptionalFilesChange?: (files: ManagedFile[]) => void;
-    onUploadOptionalFile?: (file: File) => Promise<{ fileUrl: string; name: string; size: number }>;
+    onUploadOptionalFile?: (file: File) => Promise<{ fileKey?: string; fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
 }

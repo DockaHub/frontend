@@ -32,6 +32,7 @@ export interface ManagedFile {
     name: string;
     size: number;
     file?: File;
+    fileKey?: string;
     fileUrl?: string;
     uploading?: boolean;
     progress?: number;
@@ -315,8 +316,8 @@ export const VersionBundle = ({
     sourceFiles: ManagedFile[];
     onApprovalFilesChange: (files: ManagedFile[]) => void;
     onSourceFilesChange: (files: ManagedFile[]) => void;
-    onUploadApprovalFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
-    onUploadSourceFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
+    onUploadApprovalFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileKey?: string; fileUrl: string; name: string; size: number }>;
+    onUploadSourceFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileKey?: string; fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
     expectedApprovalFiles?: number;
@@ -417,7 +418,7 @@ export const FileSlot = ({
     onFilesChange: (files: ManagedFile[]) => void;
     accept: string;
     optional?: boolean;
-    onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
+    onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileKey?: string; fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
     ordered?: boolean;
@@ -473,7 +474,7 @@ export const FileSlot = ({
                     });
                     currentList = currentList.map((item) =>
                         item.id === targetId
-                            ? { ...item, fileUrl: uploaded.fileUrl, uploading: false, progress: 100, error: undefined }
+                            ? { ...item, fileKey: uploaded.fileKey, fileUrl: uploaded.fileUrl, uploading: false, progress: 100, error: undefined }
                             : item
                     );
                     onFilesChange(currentList);

@@ -413,13 +413,15 @@ export interface DesignSubmission {
     taskId?: string;
     version?: string;
     color?: string;
+    fileKey?: string;
     fileUrl?: string;
     sourceFileUrl?: string;
     thumbnailUrl?: string;
     textContent?: string;
     files?: Array<{
         name: string;
-        fileUrl: string;
+        fileKey?: string;
+        fileUrl?: string;
         thumbnailUrl?: string;
         sourceFileUrl?: string;
         order: number;
@@ -611,7 +613,7 @@ export const allyoService = {
         projectId: string,
         file: File,
         onProgress?: (percent: number) => void
-    ): Promise<{ name: string; size: number; fileUrl: string; contentType: string }> {
+    ): Promise<{ name: string; size: number; fileKey: string; fileUrl: string; contentType: string }> {
         const formData = new FormData();
         formData.append("file", file);
         const response = await api.post(`/allyo/projects/${encodeURIComponent(projectId)}/designs/upload`, formData, {

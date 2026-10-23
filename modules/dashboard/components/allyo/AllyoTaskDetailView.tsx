@@ -288,7 +288,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const [savedLabel, setSavedLabel] = useState('Alterações salvas automaticamente');
     const [readyDeliverables, setReadyDeliverables] = useState(0);
     const [multiSourceFileUrl, setMultiSourceFileUrl] = useState<string | undefined>();
-    const [multiReviewFiles, setMultiReviewFiles] = useState<Array<{ name: string; fileUrl: string; sourceFileUrl?: string; order: number }>>([]);
+    const [multiReviewFiles, setMultiReviewFiles] = useState<Array<{ name: string; fileKey?: string; fileUrl: string; sourceFileUrl?: string; order: number }>>([]);
     const [isMultiFileUploading, setIsMultiFileUploading] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'messages'>('details');
     const [administrativeBlock, setAdministrativeBlock] = useState<boolean | null>(null);
@@ -612,6 +612,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                     name: isCarouselSequence && !hasSingleApprovalPdf
                         ? `Card ${String(index + 1).padStart(2, '0')} · ${decodeSafe(file.name)}`
                         : decodeSafe(file.name),
+                    fileKey: file.fileKey,
                     fileUrl: file.fileUrl!,
                     sourceFileUrl,
                     order: index,
@@ -623,7 +624,8 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 taskId: task.id,
                 version: deliveryVersion,
                 color: '#d7ff70',
-                fileUrl: orderedReviewFiles.length === 1 ? orderedReviewFiles[0].fileUrl : undefined,
+                fileKey: orderedReviewFiles.length === 1 ? orderedReviewFiles[0].fileKey : undefined,
+                fileUrl: orderedReviewFiles.length === 1 && !orderedReviewFiles[0].fileKey ? orderedReviewFiles[0].fileUrl : undefined,
                 files: orderedReviewFiles.length > 1 ? orderedReviewFiles : undefined,
                 sourceFileUrl: orderedReviewFiles[0]?.sourceFileUrl || sourceFileUrl,
             });
@@ -832,6 +834,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                                 const projectId = task.projectId || liveDemand?.id || task.id;
                                 const res = await allyoService.uploadDeliveryFile(projectId, file);
                                 return {
+                                    fileKey: res.fileKey,
                                     fileUrl: res.fileUrl,
                                     name: res.name || file.name,
                                     size: res.size || file.size,

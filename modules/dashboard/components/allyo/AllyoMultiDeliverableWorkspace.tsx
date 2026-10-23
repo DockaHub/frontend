@@ -15,9 +15,9 @@ interface AllyoMultiDeliverableWorkspaceProps {
         hasSourceFile: boolean;
         isUploading: boolean;
         sourceFileUrl?: string;
-        reviewFiles: Array<{ name: string; fileUrl: string; sourceFileUrl?: string; order: number }>;
+        reviewFiles: Array<{ name: string; fileKey?: string; fileUrl: string; sourceFileUrl?: string; order: number }>;
     }) => void;
-    onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileUrl: string; name: string; size: number }>;
+    onUploadFile?: (file: File, onProgress?: (percent: number) => void) => Promise<{ fileKey?: string; fileUrl: string; name: string; size: number }>;
     disabled?: boolean;
     disabledReason?: string;
     versionOptions?: string[];
@@ -91,6 +91,7 @@ const AllyoMultiDeliverableWorkspace = ({
             .filter((file) => Boolean(file.fileUrl) && !file.error)
             .map((file, fileIndex) => ({
                 name: `Pedido ${String(itemIndex + 1).padStart(2, '0')} · ${item.title} · ${file.name}`,
+                fileKey: file.fileKey,
                 fileUrl: file.fileUrl!,
                 sourceFileUrl: associatedSource?.fileUrl,
                 order: itemIndex * 100 + fileIndex,
