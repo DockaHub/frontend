@@ -1153,6 +1153,28 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
         }
     };
 
+    const confirmTestPayment = async () => {
+        const processId = String(selectedProcess?.id || '');
+        if (!processId || oneTimePaymentSubmitting) return;
+        try {
+            setOneTimePaymentSubmitting(true);
+            setSubscriptionFeedback(null);
+            await api.post(`/asterysko/portal/payments/${processId}/simulate`);
+            setProcesses(current => current.map(process => String(process.id) === processId ? { ...process, paymentStatus: 'PAID', status: process.status === 'WAITING_PAYMENT' ? 'NEW' : process.status } : process));
+            setSelectedProcess((current: any) => current && String(current.id) === processId ? { ...current, paymentStatus: 'PAID', status: current.status === 'WAITING_PAYMENT' ? 'NEW' : current.status } : current);
+            setPaymentChoiceConfirmed(true);
+            setSubscriptionFeedback({ type: 'success', message: 'Pagamento de teste confirmado. O financeiro e o processo foram atualizados.' });
+            await fetchSubscriptionContext(processId, false);
+        } catch (paymentError: any) {
+            setSubscriptionFeedback({
+                type: 'error',
+                message: paymentError.response?.data?.message || 'Não foi possível confirmar o pagamento de teste.'
+            });
+        } finally {
+            setOneTimePaymentSubmitting(false);
+        }
+    };
+
     const payOpenedInvoice = () => {
         if (!paymentReceipt || String(paymentReceipt.type || '').toUpperCase() === 'TAX') return;
         if (paymentReceipt.invoiceUrl) {
@@ -1242,6 +1264,10 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const startServicePayment = () => {
         if (subscriptionLoading || selectedProcessPaymentConfirmed) return;
         setSubscriptionFeedback(null);
+        if (subscriptionContext?.testPaymentEnabled) {
+            void confirmTestPayment();
+            return;
+        }
         if (subscriptionContext?.eligible) {
             const requiresSetupRetry = subscription && RETRYABLE_SUBSCRIPTION_SETUP_STATUSES.has(subscriptionStatus);
             openPaymentSheet(subscription && !requiresSetupRetry ? 'payment-method' : 'setup');
@@ -1626,11 +1652,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                                 <button type="button" onClick={() => void copyPixCode()}>{pixCopied ? <Check size={17} /> : <Copy size={17} />}{pixCopied ? 'Copiado' : 'Copiar Pix'}</button>
                                             </div>
                                         ) : (
-                                            <button className="ast-formalization__primary" type="button" onClick={startServicePayment} disabled={subscriptionLoading || oneTimePaymentSubmitting || (!subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !serviceInvoice)}>
-                                                <CreditCard size={18} /> {subscriptionLoading ? 'Carregando cobrança...' : oneTimePaymentSubmitting ? 'Preparando pagamento...' : 'Escolher forma de pagamento'}
+                                            <button className="ast-formalization__primary" type="button" onClick={startServicePayment} disabled={subscriptionLoading || oneTimePaymentSubmitting || (!subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !subscriptionContext?.testPaymentEnabled && !serviceInvoice)}>
+                                                <CreditCard size={18} /> {subscriptionLoading ? 'Carregando cobrança...' : oneTimePaymentSubmitting ? 'Confirmando pagamento...' : subscriptionContext?.testPaymentEnabled ? 'Confirmar pagamento de teste' : 'Escolher forma de pagamento'}
                                             </button>
                                         )}
-                                        {!subscriptionLoading && !subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !serviceInvoice && (
+                                        {!subscriptionLoading && !subscriptionContext?.configured && !subscriptionContext?.oneTimePaymentConfigured && !subscriptionContext?.testPaymentEnabled && !serviceInvoice && (
                                             <p className="ast-formalization__waiting"><Clock3 size={17} /> A cobrança está sendo preparada pela nossa equipe.</p>
                                         )}
                                     </section>
