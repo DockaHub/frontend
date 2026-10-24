@@ -113,6 +113,7 @@ const DEFAULT_DOCUMENTS = [
     { name: 'Protocolo INPI', key: 'inpiProtocol', fields: ['protocolReceiptUrl'], icon: 'processo_documentos-imgGroup2.svg' },
     { name: 'Guia GRU', key: 'gru', fields: ['gruUrl'], icon: 'processo_documentos-imgGroup2.svg' },
     { name: 'Comprovante GRU', key: 'gruReceipt', fields: ['gruReceiptUrl'], icon: 'processo_documentos-imgGroup2.svg' },
+    { name: 'Nota Fiscal (NFS-e)', key: 'nfse', fields: ['nfsePdfUrl'], icon: 'processo_documentos-imgGroup2.svg' },
     { name: 'Certificado de registro', key: 'certificate', fields: ['certificateUrl'], icon: 'processo_documentos-imgGroup2.svg' },
     { name: 'Logomarca', key: 'logo', fields: ['brandLogo'], icon: 'processo_documentos-imgGroup3.svg' },
 ];

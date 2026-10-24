@@ -3,7 +3,7 @@ import { ArrowLeft, CalendarDays, ChevronDown, ChevronUp, Clock3, MessageCircle,
 import AllyoReviewModal from './AllyoReviewModal';
 import AllyoSubmitConfirmModal from './AllyoSubmitConfirmModal';
 import { useSearchParams } from 'react-router-dom';
-import { ALLYO_BORDER, ALLYO_TASKS, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTasks, AllyoTask } from './AllyoUI';
+import { ALLYO_BORDER, ALLYO_TASKS, AllyoStatusBadge, FilterSelect, formatTaskCredits, todayLabel, mapDemandToTasks, AllyoTask } from './AllyoUI';
 import { DeliveryWorkspace, deliverableCopy, getDeliverableKind, ManagedFile, VersionBundle } from './AllyoDeliveryWorkspaces';
 import AllyoCopyDeliveryWorkspace from './AllyoCopyDeliveryWorkspace';
 import AllyoMultiDeliverableWorkspace from './AllyoMultiDeliverableWorkspace';
@@ -15,7 +15,7 @@ import AllyoClientDeliveryWorkspace from './AllyoClientDeliveryWorkspace';
 import { addTaskActivity } from './allyoTaskActivity';
 import { mapDemandToAllyoProject } from './allyoProjects';
 import { getTaskResources, buildTaskResources, isReferenceOrLinkItem } from './allyoTaskResourceData';
-import { allyoService, type AllyoCatalogProduct, type AllyoDemand, type AllyoUserCategory } from '../../../../services/allyoService';
+import { allyoService, type AllyoCatalogProduct, type AllyoDemand, type AllyoUser, type AllyoUserCategory } from '../../../../services/allyoService';
 import { useToast } from '../../../../context/ToastContext';
 import { getAllyoTaskItemCount, getAllyoTaskPresentation } from './allyoTaskPresentation';
 import { createProductDeliveryProfile, findCatalogProductForTask } from './allyoProductDelivery';
@@ -119,6 +119,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     const [liveTask, setLiveTask] = useState<AllyoTask | null>(null);
     const [liveDemand, setLiveDemand] = useState<AllyoDemand | null>(null);
     const [catalogProducts, setCatalogProducts] = useState<AllyoCatalogProduct[]>([]);
+    const [creativeUsers, setCreativeUsers] = useState<AllyoUser[]>([]);
     const [taskChanges, setTaskChanges] = useState<Partial<AllyoTask>>({});
     const [canManageTask, setCanManageTask] = useState(false);
     const [viewerCategory, setViewerCategory] = useState<AllyoUserCategory | null>(null);
@@ -149,6 +150,17 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
 
     useEffect(() => {
         let active = true;
+        allyoService.getUsers()
+            .then((response) => {
+                if (!active) return;
+                setCreativeUsers((response.users || []).filter((user) => user.category !== 'CLIENTE' && String(user.status || 'Ativo').toLocaleLowerCase('pt-BR') !== 'inativo'));
+            })
+            .catch((error) => console.warn('[AllyoTaskDetailView] Não foi possível carregar os responsáveis:', error));
+        return () => { active = false; };
+    }, []);
+
+    useEffect(() => {
+        let active = true;
         allyoService.getPermissions()
             .then((permissions) => { if (active) { setCanManageTask(permissions.canManageProjects); setViewerCategory(permissions.category); setPermissionsLoaded(true); } })
             .catch(() => { if (active) { setCanManageTask(false); setViewerCategory(null); setPermissionsLoaded(true); } });
@@ -171,6 +183,14 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
     };
     const sourceTask = liveTask || ALLYO_TASKS.find((item) => item.id === taskId) || defaultTask;
     const task = { ...sourceTask, ...taskChanges };
+    const assignedCreative = useMemo(() => {
+        const assignee = task.creative?.trim().toLocaleLowerCase('pt-BR');
+        if (!assignee || assignee === 'a definir') return null;
+        return creativeUsers.find((user) => user.name.trim().toLocaleLowerCase('pt-BR') === assignee) || null;
+    }, [creativeUsers, task.creative]);
+    const assigneeName = assignedCreative?.name || (task.creative && task.creative !== 'A definir' ? task.creative : null);
+    const assigneeRole = assignedCreative?.jobTitle || assignedCreative?.categoryLabel || assignedCreative?.role || task.category;
+    const visibleTaskMembers = task.members?.length ? task.members : (assigneeName ? [{ userId: assignedCreative?.id || assigneeName, name: assigneeName, jobTitle: assigneeRole, avatarUrl: assignedCreative?.avatarUrl || null, role: 'RESPONSIBLE' as const, assignedAt: '' }] : []);
     const catalogProduct = useMemo(() => findCatalogProductForTask(task, catalogProducts), [catalogProducts, task]);
     const deliveryProfile = useMemo(() => catalogProduct ? createProductDeliveryProfile(catalogProduct) : null, [catalogProduct]);
     const presentationTask = deliveryProfile ? { ...task, taskType: deliveryProfile.taskType } : task;
@@ -696,10 +716,28 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             </header>
 
             <section className={`sticky top-[75px] z-30 flex flex-wrap items-center gap-x-6 gap-y-3 border-b bg-white/95 px-5 py-3 backdrop-blur-sm sm:px-[30px] dark:bg-zinc-950/95 ${ALLYO_BORDER}`}>
-                <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isCurrentlyBlocked || isInactive || isClientView || !permissionsLoaded ? <span className="inline-flex items-center gap-1.5 rounded-full bg-[#f1f2ef] px-3 py-2 text-xs font-semibold text-[#737a72] dark:bg-zinc-800 dark:text-zinc-300"><span className={`h-1.5 w-1.5 rounded-full ${isInactive ? 'bg-red-400' : status === 'Em revisão' ? 'bg-amber-400' : 'bg-[#8e958d]'}`} />{isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status}</span> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} />}</div>
+                <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Status</span>{isCurrentlyBlocked || isInactive || isClientView || !permissionsLoaded ? <AllyoStatusBadge status={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} /> : <FilterSelect label="Status" value={status} options={statusOptions} onChange={updateStatus} includeAll={false} colorizeStatus />}</div>
                 <MetaItem label="Créditos da tarefa" value={formatTaskCredits(task.credits)} />
                 <MetaItem label="Deadline" value={`${task.deadline}, ${task.time}`} icon={<Clock3 size={14} />} />
-                <div className="flex items-center gap-[10px]"><span className="text-sm text-[#a4a4a4]">Equipe</span><span className="flex -space-x-2"><Avatar initials="MA" color="bg-[#9db669]" /><Avatar initials="LC" color="bg-[#2a2ad7]" /><Avatar initials="JA" color="bg-[#fd6b32]" /></span></div>
+                <div className="flex min-w-0 items-center gap-[10px]">
+                    <span className="text-sm text-[#a4a4a4]">Equipe</span>
+                    {visibleTaskMembers.length ? (
+                        <span className="flex min-w-0 items-center pl-2">
+                            {visibleTaskMembers.slice(0, 6).map((member) => <span
+                                key={member.userId}
+                                tabIndex={0}
+                                className="group/member relative -ml-2 shrink-0 rounded-full first:ml-0 hover:z-20 focus:z-20 focus:outline-none"
+                                aria-label={`${member.name}, ${member.role === 'RESPONSIBLE' ? 'Responsável' : 'Observador'}`}
+                            >
+                                <span className="block origin-left transition-transform duration-200 ease-out group-hover/member:-translate-y-0.5 group-hover/member:scale-110 group-focus/member:-translate-y-0.5 group-focus/member:scale-110"><Avatar name={member.name} imageUrl={member.avatarUrl || undefined} /></span>
+                                <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-2 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-[#132321] px-2.5 py-1.5 text-[10px] font-semibold text-white shadow-lg group-hover/member:block group-focus/member:block dark:bg-white dark:text-zinc-900">{member.name}<small className="ml-1 font-normal opacity-70">· {member.role === 'RESPONSIBLE' ? 'Responsável' : 'Observador'}</small></span>
+                            </span>)}
+                            {visibleTaskMembers.length > 6 && <span className="-ml-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-[#eef2e8] text-[9px] font-bold dark:border-zinc-950 dark:bg-zinc-800">+{visibleTaskMembers.length - 6}</span>}
+                        </span>
+                    ) : (
+                        <span className="text-xs font-semibold text-[#777] dark:text-zinc-300">A definir</span>
+                    )}
+                </div>
                 <div className="ml-auto flex items-center gap-3">
                     <span className="hidden text-[11px] font-medium text-[#8f8f8f] lg:inline" aria-live="polite">{savedLabel}</span>
                     {canManageTask && <AllyoTaskActions task={task} currentStatus={isInactive ? 'Inativa' : isCurrentlyBlocked ? 'Bloqueada' : status} userName={userName} onTaskEdited={applyTaskChanges} onStatusChanged={applyStatusChange} onDeleted={goBack} currentVersion={latestVersionLabel} versionOptions={versionOptions} slaHours={Number(catalogProduct?.slaHours || 12)} workspaceId={liveDemand?.workspace?.id} />}
@@ -995,7 +1033,24 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
 };
 
 const MetaItem = ({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) => <div className="flex items-center gap-[10px] text-sm"><span className="text-[#a4a4a4]">{label}</span><strong className="flex items-center gap-1.5 font-medium text-black dark:text-white">{icon}{value}</strong></div>;
-const Avatar = ({ initials, color }: { initials: string; color: string }) => <span className={`flex h-7 w-7 items-center justify-center rounded-full border-2 border-white text-[8px] font-bold text-white dark:border-zinc-950 ${color}`}>{initials}</span>;
+const avatarInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+};
+
+const avatarColor = (name: string) => {
+    const palette = ['#78904d', '#2a2ad7', '#fd6b32', '#007f73', '#9a4d8c'];
+    const hash = Array.from(name).reduce((total, character) => total + character.charCodeAt(0), 0);
+    return palette[hash % palette.length];
+};
+
+const Avatar = ({ name, imageUrl }: { name: string; imageUrl?: string }) => (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white text-[8px] font-bold text-white shadow-sm dark:border-zinc-950" style={{ backgroundColor: avatarColor(name) }}>
+        {imageUrl ? <img src={imageUrl} alt="" className="h-full w-full object-cover" /> : avatarInitials(name)}
+    </span>
+);
 const Tag = ({ children }: { children: React.ReactNode }) => <span className="inline-flex rounded-[5px] border border-[#c2c2c2] bg-white px-2 py-1.5 text-[11px] font-medium leading-none text-black dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">{children}</span>;
 
 const CollapsibleSection = ({ title, icon, open, onToggle, children }: { title: string; icon?: React.ReactNode; open: boolean; onToggle: () => void; children: React.ReactNode }) => (

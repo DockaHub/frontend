@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import { useToast } from '../../../../context/ToastContext';
-import { allyoService, type AllyoDemandTask, type AllyoUser } from '../../../../services/allyoService';
+import { allyoService, type AllyoDemandTask, type AllyoTaskMemberRole, type AllyoUser } from '../../../../services/allyoService';
 import { AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton, AllyoSelect } from './AllyoForm';
 import type { AllyoTask } from './AllyoUI';
 import { addTaskActivity, readTaskActivity } from './allyoTaskActivity';
@@ -58,7 +58,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
     const [team, setTeam] = useState(task.category);
     const [credits, setCredits] = useState(task.credits);
     const [taskType, setTaskType] = useState<AllyoTaskType>(() => resolveAllyoTaskType(task));
-    const [responsibleId, setResponsibleId] = useState<string[]>([]);
+    const [taskMembers, setTaskMembers] = useState<Array<{ userId: string; role: AllyoTaskMemberRole }>>([]);
     const [responsibleUsers, setResponsibleUsers] = useState<AllyoUser[]>([]);
     const [stackTasks, setStackTasks] = useState<AllyoDemandTask[]>([]);
     const [dependsOn, setDependsOn] = useState<string[]>(task.dependsOn || []);
@@ -85,18 +85,30 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
 
     useEffect(() => {
         if (modal !== 'responsible') return;
-        allyoService.getUsers()
+        allyoService.getTaskMembers(task.id)
             .then((response) => {
-                const users = response.users || [];
+                const users = response.candidates || [];
                 setResponsibleUsers(users);
-                const current = users.find((user) => user.name.trim().toLocaleLowerCase('pt-BR') === task.creative.trim().toLocaleLowerCase('pt-BR'));
-                setResponsibleId(current ? [current.id] : []);
+                if (response.members?.length) {
+                    setTaskMembers(response.members.map((member) => ({ userId: member.userId, role: member.role })));
+                    return;
+                }
+                const currentName = task.creative.trim().toLocaleLowerCase('pt-BR');
+                const discipline = `${task.name} ${task.category}`.toLocaleLowerCase('pt-BR');
+                const preferred = users.find((user) => user.name.trim().toLocaleLowerCase('pt-BR') === currentName)
+                    || users.find((user) => {
+                        const profile = `${user.jobTitle || ''} ${user.category || ''}`.toLocaleLowerCase('pt-BR');
+                        if (/(copy|conteúdo|roteiro|texto)/.test(discipline)) return /(copy|conteúdo|redator)/.test(profile);
+                        if (/(motion|vídeo|video|animação)/.test(discipline)) return /(motion|vídeo|video)/.test(profile);
+                        return /(diretor.*arte|art director|design)/.test(profile);
+                    }) || users[0];
+                setTaskMembers(users.map((user) => ({ userId: user.id, role: user.id === preferred?.id ? 'RESPONSIBLE' : 'OBSERVER' })));
             })
             .catch(() => {
                 setResponsibleUsers([]);
-                setResponsibleId([]);
+                setTaskMembers([]);
             });
-    }, [modal, task.creative]);
+    }, [modal, task.category, task.creative, task.id, task.name]);
 
     useEffect(() => {
         if (modal !== 'stack') return;
@@ -131,7 +143,7 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
             setCredits(task.credits);
             setTaskType(resolveAllyoTaskType(task));
         }
-        if (next === 'responsible') setResponsibleId([]);
+        if (next === 'responsible') setTaskMembers([]);
         if (next === 'project') {
             setProjectStatus(task.status === 'Concluída' ? 'Concluído' : task.status === 'Em revisão' ? 'Em revisão' : 'Em andamento');
         }
@@ -167,18 +179,19 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
 
     const saveResponsible = async (event: React.FormEvent) => {
         event.preventDefault();
-        const selected = responsibleUsers.find((user) => user.id === responsibleId[0]);
-        if (!selected) {
-            addToast({ type: 'warning', title: 'Selecione um usuário cadastrado' });
+        const responsible = taskMembers.find((member) => member.role === 'RESPONSIBLE');
+        const selected = responsibleUsers.find((user) => user.id === responsible?.userId);
+        if (!selected || taskMembers.length === 0) {
+            addToast({ type: 'warning', title: 'Defina ao menos um responsável' });
             return;
         }
         setIsSaving(true);
         try {
-            await allyoService.updateTask(task.id, { assigneeId: selected.id });
-            onTaskEdited({ creative: selected.name });
-            recordAction(`Alterou o responsável da tarefa para “${selected.name}”.`);
+            const response = await allyoService.updateTaskMembers(task.id, taskMembers);
+            onTaskEdited({ creative: selected.name, members: response.task.members || [] });
+            recordAction(`Atualizou a equipe da tarefa: ${taskMembers.length} membro(s), com “${selected.name}” como responsável.`);
             setModal(null);
-            addToast({ type: 'success', title: 'Responsável atualizado' });
+            addToast({ type: 'success', title: 'Equipe da tarefa atualizada' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível alterar o responsável', message: error.response?.data?.message || 'Tente novamente.' });
         } finally {
@@ -410,10 +423,33 @@ const AllyoTaskActions = ({ task, currentStatus, userName, onTaskEdited, onStatu
                 </form>
             </Modal>
 
-            <Modal isOpen={modal === 'responsible'} onClose={() => setModal(null)} title="Editar responsáveis" size="sm" footer={<><AllyoSecondaryButton type="button" onClick={() => setModal(null)}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-edit-responsible" disabled={isSaving}>{isSaving ? 'Salvando...' : 'Alterar'}</AllyoPrimaryButton></>}>
-                <form id="allyo-edit-responsible" onSubmit={saveResponsible}>
-                    <p className="mb-4 text-sm leading-6 text-[#777] dark:text-zinc-400">Selecione um usuário interno. O cargo exibido ao lado do nome ajuda a direcionar a tarefa à especialidade correta.</p>
-                    <AllyoField label="Responsável" required><AllyoUserPicker users={responsibleUsers} selectedIds={responsibleId} onChange={setResponsibleId} multiple={false} placeholder="Digite o nome do responsável" /></AllyoField>
+            <Modal isOpen={modal === 'responsible'} onClose={() => setModal(null)} title="Editar responsáveis" size="md" footer={<><AllyoSecondaryButton type="button" onClick={() => setModal(null)}>Cancelar</AllyoSecondaryButton><AllyoPrimaryButton type="submit" form="allyo-edit-responsible" disabled={isSaving || taskMembers.length === 0}>{isSaving ? 'Salvando...' : 'Salvar equipe'}</AllyoPrimaryButton></>}>
+                <form id="allyo-edit-responsible" onSubmit={saveResponsible} className="space-y-4">
+                    <p className="text-sm leading-6 text-[#777] dark:text-zinc-400">A equipe disponível vem da conta deste cliente. Um membro executa como responsável; os demais acompanham como observadores.</p>
+                    <AllyoField label="Adicionar membro"><AllyoUserPicker users={responsibleUsers} selectedIds={taskMembers.map((member) => member.userId)} onChange={(ids) => setTaskMembers((current) => {
+                        const currentById = new Map(current.map((member) => [member.userId, member]));
+                        const next = ids.map((userId) => currentById.get(userId) || { userId, role: 'OBSERVER' as const });
+                        if (!next.some((member) => member.role === 'RESPONSIBLE') && next[0]) next[0] = { ...next[0], role: 'RESPONSIBLE' };
+                        return next;
+                    })} multiple showSelected={false} placeholder="Selecione um membro da equipe da conta" /></AllyoField>
+                    <div className="space-y-2">
+                        {taskMembers.map((member) => {
+                            const user = responsibleUsers.find((candidate) => candidate.id === member.userId);
+                            if (!user) return null;
+                            return <div key={member.userId} className="flex items-center gap-3 rounded-[12px] border border-[#e3e6df] bg-[#fafbf8] p-3 dark:border-zinc-700 dark:bg-zinc-950">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#d7ff70] text-[11px] font-bold text-[#172019]">{user.avatarUrl ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" /> : user.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()}</span>
+                                <span className="min-w-0 flex-1"><strong className="block truncate text-xs">{user.name}</strong><small className="block truncate text-[10px] text-[#888]">{user.jobTitle || user.categoryLabel || 'Equipe Allyo'}</small></span>
+                                <AllyoSelect value={member.role} onChange={(event) => setTaskMembers((current) => current.map((item) => item.userId === member.userId ? { ...item, role: event.target.value as AllyoTaskMemberRole } : event.target.value === 'RESPONSIBLE' ? { ...item, role: 'OBSERVER' } : item))} className="max-w-[145px]"><option value="RESPONSIBLE">Responsável</option><option value="OBSERVER">Observador</option></AllyoSelect>
+                                <button type="button" className="rounded-full p-2 text-[#888] hover:bg-red-50 hover:text-red-600" onClick={() => setTaskMembers((current) => {
+                                    const remaining = current.filter((item) => item.userId !== member.userId);
+                                    if (member.role === 'RESPONSIBLE' && remaining[0]) remaining[0] = { ...remaining[0], role: 'RESPONSIBLE' };
+                                    return remaining;
+                                })} aria-label={`Remover ${user.name}`}><Trash2 size={15} /></button>
+                            </div>;
+                        })}
+                        {taskMembers.length === 0 && <div className="rounded-[12px] border border-dashed border-[#d9ddd4] p-5 text-center text-xs text-[#888]">Nenhum membro selecionado.</div>}
+                    </div>
+                    <p className="text-[10px] leading-4 text-[#888]">Esta composição fica registrada somente nesta tarefa. Alterar a equipe da conta não muda tarefas antigas.</p>
                 </form>
             </Modal>
 

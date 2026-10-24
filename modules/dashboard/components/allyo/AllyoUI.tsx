@@ -2,9 +2,25 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { CalendarDays, Check, ChevronDown, ChevronRight, Grid2X2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { normalizeAllyoTaskStatus, type AllyoCanonicalStatus } from './allyoOperationalPolicy';
+import type { AllyoTaskMember } from '../../../../services/allyoService';
 
 export const ALLYO_BORDER = 'border-[#e5e5e5] dark:border-zinc-800';
 export const ALLYO_ACCENT = '#9db669';
+
+export const allyoStatusClassName = (status: string) => {
+    const normalized = status.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR').trim();
+    if (/^(concluido|concluida|entregue|aprovado|aprovada|finalizada)$/.test(normalized)) return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300';
+    if (/^(em andamento|producao|liberada)$/.test(normalized)) return 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-300';
+    if (/^(em revisao|aguardando aprovacao|aprovacao externa|pronta para entrega)$/.test(normalized)) return 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300';
+    if (/^(alteracao|em alteracao|pendente|pendencia|recusado|recusada)$/.test(normalized)) return 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300';
+    if (/^bloquead[ao]$/.test(normalized)) return 'border-zinc-200 bg-zinc-100 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400';
+    if (/^(inativ[ao]|desativada)$/.test(normalized)) return 'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-300';
+    return 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-300';
+};
+
+export const AllyoStatusBadge = ({ status, className = '' }: { status: string; className?: string }) => (
+    <span className={`inline-flex w-fit items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold leading-none ${allyoStatusClassName(status)} ${className}`}><i className="h-1.5 w-1.5 rounded-full bg-current" />{status}</span>
+);
 
 export interface AllyoDeliverableScene {
     id: string;
@@ -54,6 +70,7 @@ export interface AllyoTask {
     status: AllyoCanonicalStatus;
     cam: string;
     creative: string;
+    members?: AllyoTaskMember[];
     workflowStage?: string;
     dependsOn?: string[];
     requiresClientApproval?: boolean;
@@ -173,6 +190,7 @@ export function mapDemandToTasks(demand: any): AllyoTask[] {
         status: normalizeAllyoTaskStatus(task.status || demand.status),
         cam: 'Marina',
         creative: task.assignee || projectCreative,
+        members: Array.isArray(task.members) ? task.members : [],
         workflowStage: task.workflowStage || 'Produção',
         dependsOn: Array.isArray(task.dependsOn) ? task.dependsOn : [],
         requiresClientApproval: Boolean(task.requiresClientApproval),
@@ -289,16 +307,6 @@ export const AllyoPageHeader = ({ title, actions }: { title: string; actions?: R
     </header>
 );
 
-const statusColor: Record<AllyoTask['status'], string> = {
-    'Iniciar': 'text-[#9db669]',
-    'Em andamento': 'text-[#2a2ad7] dark:text-indigo-300',
-    'Em revisão': 'text-[#fd6b32]',
-    'Alteração': 'text-[#ff7a45]',
-    'Concluída': 'text-emerald-600 dark:text-emerald-400',
-    'Bloqueada': 'text-[#737a72] dark:text-zinc-400',
-    'Inativa': 'text-red-500 dark:text-red-400',
-};
-
 export const TaskRow = ({ task, visibleColumns = ['credits', 'id', 'client', 'deadline', 'status'] }: { task: AllyoTask; visibleColumns?: string[] }) => {
     const [, setSearchParams] = useSearchParams();
 
@@ -335,21 +343,21 @@ export const TaskRow = ({ task, visibleColumns = ['credits', 'id', 'client', 'de
                 {visibleColumns.includes('id') && <DataCell label="ID" value={task.publicId || task.id} />}
                 {visibleColumns.includes('client') && <DataCell label="CLIENTE" value={task.client} />}
                 {visibleColumns.includes('deadline') && <DataCell label="DEADLINE" value={`${task.deadline} • ${task.time}`} />}
-                {visibleColumns.includes('status') && <DataCell label="STATUS" value={task.status} valueClassName={statusColor[task.status]} />}
+                {visibleColumns.includes('status') && <DataCell label="STATUS" value={<AllyoStatusBadge status={task.status} />} />}
                 <ChevronRight size={18} className="text-[#9f9f9f]" />
             </button>
         </div>
     );
 };
 
-export const DataCell = ({ label, value, className = '', valueClassName = '' }: { label: string; value: string; className?: string; valueClassName?: string }) => (
+export const DataCell = ({ label, value, className = '', valueClassName = '' }: { label: string; value: ReactNode; className?: string; valueClassName?: string }) => (
     <span className={`min-w-0 ${className}`}>
         <span className="block text-[9px] font-medium leading-none text-[#616161] dark:text-zinc-500">{label}</span>
         <span className={`mt-[10px] block truncate text-sm font-medium leading-none text-black dark:text-zinc-200 ${valueClassName}`}>{value}</span>
     </span>
 );
 
-export const FilterSelect = ({ label, value, options, onChange, includeAll = true }: { label: string; value: string; options: string[]; onChange: (value: string) => void; includeAll?: boolean }) => {
+export const FilterSelect = ({ label, value, options, onChange, includeAll = true, colorizeStatus = false }: { label: string; value: string; options: string[]; onChange: (value: string) => void; includeAll?: boolean; colorizeStatus?: boolean }) => {
     const [open, setOpen] = useState(false);
     const rootRef = useRef<HTMLDivElement>(null);
     const menuId = useId();
@@ -382,9 +390,10 @@ export const FilterSelect = ({ label, value, options, onChange, includeAll = tru
                 onClick={() => setOpen((current) => !current)}
                 aria-expanded={open}
                 aria-controls={menuId}
-                className={`flex min-h-9 items-center gap-[10px] rounded-full border bg-white py-2 pl-[15px] pr-[13px] text-xs font-semibold outline-none transition-all dark:bg-zinc-900 dark:text-white ${open ? 'border-[#9db669] shadow-[0_0_0_3px_rgba(157,182,105,.13)] dark:border-[#d0f08e]' : 'border-[#e5e5e5] hover:border-[#b9ca94] dark:border-zinc-700'}`}
+                className={`flex min-h-9 items-center gap-[10px] rounded-full border bg-white py-2 pl-[15px] pr-[13px] text-xs font-semibold outline-none transition-all dark:bg-zinc-900 dark:text-white ${open ? 'border-[#9db669] shadow-[0_0_0_3px_rgba(157,182,105,.13)] dark:border-[#d0f08e]' : 'border-[#e5e5e5] hover:border-[#b9ca94] dark:border-zinc-700'} ${colorizeStatus && value !== 'Todos' ? allyoStatusClassName(value) : ''}`}
             >
-                <span className={`max-w-[180px] truncate ${value === 'Todos' ? 'text-black dark:text-white' : 'text-[#72844d] dark:text-[#d0f08e]'}`}>{visibleValue}</span>
+                {colorizeStatus && value !== 'Todos' && <i className="h-1.5 w-1.5 rounded-full bg-current" />}
+                <span className={`max-w-[180px] truncate ${colorizeStatus && value !== 'Todos' ? 'text-current' : value === 'Todos' ? 'text-black dark:text-white' : 'text-[#72844d] dark:text-[#d0f08e]'}`}>{visibleValue}</span>
                 <ChevronDown size={13} className={`shrink-0 transition-transform ${open ? 'rotate-180 text-[#9db669]' : 'text-black dark:text-zinc-400'}`} />
             </button>
 

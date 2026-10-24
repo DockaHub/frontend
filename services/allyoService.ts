@@ -154,6 +154,25 @@ export interface UsersResponse {
     users: AllyoUser[];
 }
 
+export type AllyoTaskMemberRole = 'RESPONSIBLE' | 'OBSERVER';
+
+export interface AllyoTaskMember {
+    userId: string;
+    name: string;
+    jobTitle?: string | null;
+    avatarUrl?: string | null;
+    avatarInitials?: string;
+    avatarColor?: string;
+    role: AllyoTaskMemberRole;
+    assignedAt: string;
+}
+
+export interface AllyoTaskMembersResponse {
+    members: AllyoTaskMember[];
+    candidates: AllyoUser[];
+    history: Array<{ id: string; userId: string; name: string; action: 'ADDED' | 'ROLE_CHANGED' | 'REMOVED'; previousRole?: AllyoTaskMemberRole | null; role?: AllyoTaskMemberRole | null; actorName: string; createdAt: string }>;
+}
+
 export type AllyoImpersonationResponse =
     | {
         mode: 'manyspace';
@@ -310,6 +329,7 @@ export interface AllyoDemandTask {
     team: string;
     assignee?: string | null;
     assigneeId?: string | null;
+    members?: AllyoTaskMember[];
     status: 'A iniciar' | 'Em andamento' | 'Em revisão' | 'Concluído' | string;
     delivery?: string | null;
     version?: string | null;
@@ -598,6 +618,16 @@ export const allyoService = {
 
     async updateTask(taskId: string, data: { status?: string; title?: string; team?: string; assignee?: string | null; assigneeId?: string | null; delivery?: string | null; version?: string | null; taskType?: string | null; workflowStage?: string; dependsOn?: string[]; requiresClientApproval?: boolean; credits?: number; deadlineDays?: number; orderIndex?: number }) {
         const response = await api.patch(`/allyo/tasks/${encodeURIComponent(taskId)}`, data);
+        return response.data;
+    },
+
+    async getTaskMembers(taskId: string): Promise<AllyoTaskMembersResponse> {
+        const response = await api.get(`/allyo/tasks/${encodeURIComponent(taskId)}/members`);
+        return response.data;
+    },
+
+    async updateTaskMembers(taskId: string, members: Array<{ userId: string; role: AllyoTaskMemberRole }>): Promise<{ task: AllyoDemandTask }> {
+        const response = await api.put(`/allyo/tasks/${encodeURIComponent(taskId)}/members`, { members });
         return response.data;
     },
 

@@ -6,19 +6,10 @@ import { useToast } from '../../../../context/ToastContext';
 import { allyoService, type AllyoDemand, type AllyoUser } from '../../../../services/allyoService';
 import { socketService } from '../../../../services/socketService';
 import { AllyoField, AllyoInput, AllyoPrimaryButton, AllyoSecondaryButton, AllyoSelect } from './AllyoForm';
-import { ALLYO_BORDER, AllyoPageHeader, DataCell, FilterSelect, mapDemandToTasks } from './AllyoUI';
+import { ALLYO_BORDER, AllyoPageHeader, AllyoStatusBadge, DataCell, FilterSelect, mapDemandToTasks } from './AllyoUI';
 import AllyoUserPicker from './AllyoUserPicker';
 
 const unique = (values: string[]) => Array.from(new Set(values.filter(Boolean))).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-
-const projectStatusClass = (status: string) => {
-    if (status === 'Concluído') return 'text-emerald-600 dark:text-emerald-400';
-    if (status === 'Em revisão') return 'text-[#fd6b32]';
-    if (status === 'Alteração') return 'text-[#ff7a45]';
-    if (status === 'Inativo') return 'text-red-500 dark:text-red-400';
-    if (status === 'Rascunho') return 'text-[#8b8b8b]';
-    return 'text-[#2a2ad7] dark:text-indigo-300';
-};
 
 const formatProjectDeadline = (value?: string) => {
     if (!value) return 'A definir';
@@ -141,13 +132,12 @@ const ProjectRow = ({ project, onClick }: { project: AllyoDemand; onClick: () =>
     const taskCount = project.tasksList?.length || project.tasks || 0;
     return (
         <div className={`border-t ${ALLYO_BORDER}`}>
-            <button type="button" onClick={onClick} className="grid min-h-[78px] w-full grid-cols-[minmax(230px,1.35fr)_minmax(120px,.7fr)_90px_120px_minmax(150px,1fr)_105px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9db669] sm:px-[30px] dark:hover:bg-zinc-900/70 max-xl:grid-cols-[minmax(210px,1.3fr)_120px_90px_minmax(150px,1fr)_105px_18px] max-lg:grid-cols-[minmax(200px,1fr)_90px_minmax(140px,1fr)_105px_18px] max-sm:grid-cols-[minmax(0,1fr)_92px_18px]">
+            <button type="button" onClick={onClick} className="grid min-h-[78px] w-full grid-cols-[minmax(230px,1.35fr)_minmax(120px,.7fr)_90px_120px_120px_18px] items-center gap-5 px-5 py-4 text-left transition-colors hover:bg-[#fafbf8] focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9db669] sm:px-[30px] dark:hover:bg-zinc-900/70 max-xl:grid-cols-[minmax(210px,1.3fr)_90px_120px_120px_18px] max-lg:grid-cols-[minmax(200px,1fr)_90px_120px_18px] max-sm:grid-cols-[minmax(0,1fr)_92px_18px]">
                 <span className="flex min-w-0 items-center gap-[10px]"><span className="flex h-[35px] w-[35px] shrink-0 items-center justify-center rounded-full border border-[#9db669] text-[#78904d]"><FolderKanban size={16} strokeWidth={1.6} /></span><span className="min-w-0"><strong className="block truncate text-sm font-medium">{project.name}</strong><span className="mt-1 block truncate text-[11px] text-[#777] dark:text-zinc-400">{project.service || 'Projeto criativo'} · {client}</span></span></span>
                 <DataCell label="CLIENTE" value={client} className="max-xl:hidden" />
                 <DataCell label="TAREFAS" value={String(taskCount)} />
                 <DataCell label="PROGRESSO" value={`${Math.round(Number(project.progress || 0))}%`} className="max-lg:hidden" />
-                <DataCell label="RESPONSÁVEIS" value={(project.team || []).join(', ') || 'A definir'} className="max-sm:hidden" />
-                <DataCell label="STATUS" value={project.status} valueClassName={projectStatusClass(project.status)} className="max-sm:hidden" />
+                <DataCell label="STATUS" value={<AllyoStatusBadge status={project.status} />} className="max-sm:hidden" />
                 <ChevronRight size={18} className="text-[#9f9f9f]" />
             </button>
         </div>
@@ -252,7 +242,7 @@ const ProjectManagementModal = ({ project, onClose, onSaved, onDeleted, onOpenTa
 
                 <section>
                     <div className={`flex items-center justify-between border-b pb-3 ${ALLYO_BORDER}`}><span><strong className="block text-sm font-semibold">Tarefas do projeto</strong><span className="mt-1 block text-[11px] text-[#888]">Abra uma tarefa para administrar responsáveis, bloqueios, status e entregas.</span></span><span className="rounded-full bg-[#edf2e2] px-2.5 py-1 text-[10px] font-semibold text-[#607738] dark:bg-[#9db669]/15 dark:text-[#cce18e]">{tasks.length}</span></div>
-                    <div>{tasks.map((task) => <button key={task.id} type="button" onClick={() => onOpenTask(task.id)} className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_110px_90px_18px] items-center gap-4 border-b py-3 text-left transition hover:bg-[#fafbf8] dark:hover:bg-zinc-800/50 ${ALLYO_BORDER}`}><span className="flex min-w-0 items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#dfe5d5] text-[#7a904f]"><FolderKanban size={14} /></span><span className="min-w-0"><strong className="block truncate text-xs font-semibold">{task.name}</strong><span className="mt-1 block truncate text-[10px] text-[#888]">#{task.publicId || task.id} · {task.category}</span></span></span><span className="max-sm:hidden"><span className="flex items-center gap-1.5 text-[10px] text-[#777]"><UsersRound size={12} /> {task.creative}</span></span><span className={`text-[10px] font-semibold ${projectStatusClass(task.status)}`}>{task.status}</span><ChevronRight size={15} className="text-[#aaa]" /></button>)}</div>
+                    <div>{tasks.map((task) => <button key={task.id} type="button" onClick={() => onOpenTask(task.id)} className={`grid min-h-[64px] w-full grid-cols-[minmax(0,1fr)_110px_120px_18px] items-center gap-4 border-b py-3 text-left transition hover:bg-[#fafbf8] dark:hover:bg-zinc-800/50 ${ALLYO_BORDER}`}><span className="flex min-w-0 items-center gap-3"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#dfe5d5] text-[#7a904f]"><FolderKanban size={14} /></span><span className="min-w-0"><strong className="block truncate text-xs font-semibold">{task.name}</strong><span className="mt-1 block truncate text-[10px] text-[#888]">#{task.publicId || task.id} · {task.category}</span></span></span><span className="max-sm:hidden"><span className="flex items-center gap-1.5 text-[10px] text-[#777]"><UsersRound size={12} /> {task.creative}</span></span><AllyoStatusBadge status={task.status} /><ChevronRight size={15} className="text-[#aaa]" /></button>)}</div>
                     {tasks.length === 0 && <div className="flex min-h-28 items-center justify-center text-xs text-[#888]">Este projeto ainda não possui tarefas.</div>}
                 </section>
             </form>
