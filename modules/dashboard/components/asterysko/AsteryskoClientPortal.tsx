@@ -935,6 +935,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
     const getDocumentUrl = (document: typeof DEFAULT_DOCUMENTS[number]) => getValue(
         selectedProcess?.documents?.[document.key],
+        selectedProcess?.intakeDocuments?.[`${document.key}PdfUrl`],
+        selectedProcess?.intakeDocuments?.[document.key],
         ...document.fields.map(field => selectedProcess?.[field])
     );
 
