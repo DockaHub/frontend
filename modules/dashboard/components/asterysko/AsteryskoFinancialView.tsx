@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Search, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, X, Receipt } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Plus, Search, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, X, Receipt, CalendarRange, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
 
@@ -7,13 +7,30 @@ interface AsteryskoFinancialViewProps {
     organization?: Organization;
 }
 
+type PeriodMode = 'month' | 'custom' | 'all';
+
+const toDateInputValue = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const startOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1);
+const endOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0);
+
 const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
     const [invoices, setInvoices] = useState<any[]>([]);
+    const [paidInvoices, setPaidInvoices] = useState<any[]>([]);
     const [clients, setClients] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [statusFilter, setStatusFilter] = useState<'all' | 'PAID' | 'PENDING' | 'OVERDUE'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [periodMode, setPeriodMode] = useState<PeriodMode>('month');
+    const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
+    const [customFrom, setCustomFrom] = useState(() => toDateInputValue(startOfMonth(new Date())));
+    const [customTo, setCustomTo] = useState(() => toDateInputValue(endOfMonth(new Date())));
 
     // Modal States
     const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -27,18 +44,68 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
     const [invoiceDueDate, setInvoiceDueDate] = useState('');
     const [invoicePaymentMethod, setInvoicePaymentMethod] = useState('PIX');
 
-    const fetchInvoices = async () => {
+    const selectedPeriod = useMemo(() => {
+        if (periodMode === 'all') return null;
+        const fromDate = periodMode === 'month'
+            ? startOfMonth(monthCursor)
+            : new Date(`${customFrom}T00:00:00`);
+        const inclusiveTo = periodMode === 'month'
+            ? endOfMonth(monthCursor)
+            : new Date(`${customTo}T00:00:00`);
+        if (Number.isNaN(fromDate.getTime()) || Number.isNaN(inclusiveTo.getTime()) || fromDate > inclusiveTo) {
+            return undefined;
+        }
+        const exclusiveTo = new Date(inclusiveTo);
+        exclusiveTo.setDate(exclusiveTo.getDate() + 1);
+        return { from: fromDate, to: exclusiveTo };
+    }, [customFrom, customTo, monthCursor, periodMode]);
+
+    const periodLabel = useMemo(() => {
+        if (periodMode === 'all') return 'Todo o período';
+        if (periodMode === 'custom') {
+            if (!selectedPeriod) return 'Período inválido';
+            return `${selectedPeriod.from.toLocaleDateString('pt-BR')} a ${new Date(selectedPeriod.to.getTime() - 1).toLocaleDateString('pt-BR')}`;
+        }
+        const label = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(monthCursor);
+        return label.charAt(0).toUpperCase() + label.slice(1);
+    }, [monthCursor, periodMode, selectedPeriod]);
+
+    const fetchInvoices = useCallback(async () => {
+        if (selectedPeriod === undefined) {
+            setInvoices([]);
+            setPaidInvoices([]);
+            return;
+        }
         try {
             setIsLoading(true);
-            const response = await api.get('/asterysko/financial/invoices');
-            setInvoices(Array.isArray(response.data) ? response.data : []);
+            const periodParams = selectedPeriod
+                ? { from: selectedPeriod.from.toISOString(), to: selectedPeriod.to.toISOString() }
+                : undefined;
+            const [issuedResponse, paidResponse] = await Promise.all([
+                api.get('/asterysko/financial/invoices', {
+                    params: periodParams ? { ...periodParams, dateField: 'createdAt' } : undefined
+                }),
+                selectedPeriod
+                    ? api.get('/asterysko/financial/invoices', {
+                        params: {
+                            from: selectedPeriod.from.toISOString(),
+                            to: selectedPeriod.to.toISOString(),
+                            dateField: 'paidAt'
+                        }
+                    })
+                    : Promise.resolve(null)
+            ]);
+            const issued = Array.isArray(issuedResponse.data) ? issuedResponse.data : [];
+            setInvoices(issued);
+            setPaidInvoices(paidResponse && Array.isArray(paidResponse.data) ? paidResponse.data : issued);
         } catch (error) {
             console.error('Failed to fetch invoices', error);
             setInvoices([]);
+            setPaidInvoices([]);
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [selectedPeriod]);
 
     const fetchClients = async () => {
         try {
@@ -52,8 +119,15 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
 
     useEffect(() => {
         fetchInvoices();
+    }, [fetchInvoices]);
+
+    useEffect(() => {
         fetchClients();
     }, []);
+
+    const moveMonth = (offset: number) => {
+        setMonthCursor(current => new Date(current.getFullYear(), current.getMonth() + offset, 1));
+    };
 
     useEffect(() => {
         const handleClickOutside = () => setOpenMenuId(null);
@@ -147,7 +221,9 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
     // Calculate totals for dashboard cards
     const serviceInvoices = invoices.filter(invoice => String(invoice.type || '').toUpperCase() !== 'TAX');
     const totalBilled = serviceInvoices.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
-    const totalPaid = serviceInvoices.filter(i => i.status === 'PAID').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
+    const totalPaid = paidInvoices
+        .filter(invoice => String(invoice.type || '').toUpperCase() !== 'TAX' && invoice.status === 'PAID')
+        .reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
     const totalPending = serviceInvoices.filter(i => i.status === 'PENDING').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
     const totalOverdue = serviceInvoices.filter(i => i.status === 'OVERDUE').reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0);
 
@@ -348,6 +424,86 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                 </button>
             </div>
 
+            {/* Period Filter */}
+            <div className="flex flex-col gap-3 border-b border-[#e5e5e5] bg-[#fafafa] px-4 py-4 dark:border-zinc-800 dark:bg-zinc-900/40 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="flex w-full items-center gap-1 rounded-xl border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900 sm:w-auto">
+                        {[
+                            { id: 'month', label: 'Por mês' },
+                            { id: 'custom', label: 'Intervalo' },
+                            { id: 'all', label: 'Tudo' },
+                        ].map(option => (
+                            <button
+                                key={option.id}
+                                type="button"
+                                onClick={() => setPeriodMode(option.id as PeriodMode)}
+                                className={`min-h-9 flex-1 whitespace-nowrap rounded-lg px-3 text-xs font-semibold transition-colors sm:flex-none ${
+                                    periodMode === option.id
+                                        ? 'bg-[#0412dd] text-white shadow-sm dark:bg-[#3b48ff]'
+                                        : 'text-zinc-500 hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white'
+                                }`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {periodMode === 'month' && (
+                        <div className="flex min-h-11 items-center justify-between rounded-xl border border-zinc-200 bg-white px-1 dark:border-zinc-700 dark:bg-zinc-900 sm:min-w-[310px]">
+                            <button type="button" onClick={() => moveMonth(-1)} className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="Mês anterior">
+                                <ChevronLeft size={17} />
+                            </button>
+                            <div className="flex items-center gap-2 px-2 text-xs font-bold text-black dark:text-white">
+                                <CalendarRange size={15} className="text-[#0412dd] dark:text-[#3b48ff]" />
+                                <span>{periodLabel}</span>
+                            </div>
+                            <button type="button" onClick={() => moveMonth(1)} className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-black dark:hover:bg-zinc-800 dark:hover:text-white" aria-label="Próximo mês">
+                                <ChevronRight size={17} />
+                            </button>
+                        </div>
+                    )}
+
+                    {periodMode === 'custom' && (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[auto_1fr_auto_1fr] sm:items-center">
+                            <label htmlFor="financial-period-from" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">De</label>
+                            <input
+                                id="financial-period-from"
+                                type="date"
+                                value={customFrom}
+                                onChange={event => setCustomFrom(event.target.value)}
+                                className="min-h-11 rounded-xl border border-zinc-200 bg-white px-3 text-xs text-black outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                            />
+                            <label htmlFor="financial-period-to" className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">Até</label>
+                            <input
+                                id="financial-period-to"
+                                type="date"
+                                value={customTo}
+                                min={customFrom || undefined}
+                                onChange={event => setCustomTo(event.target.value)}
+                                className="min-h-11 rounded-xl border border-zinc-200 bg-white px-3 text-xs text-black outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-900 dark:text-white"
+                            />
+                        </div>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-between gap-3 lg:justify-end">
+                    <div className="min-w-0 text-right">
+                        <p className={`truncate text-xs font-semibold ${selectedPeriod === undefined ? 'text-red-500' : 'text-zinc-700 dark:text-zinc-200'}`}>{periodLabel}</p>
+                        <p className="text-[10px] text-zinc-400">Filtrado pela data de emissão</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={fetchInvoices}
+                        disabled={isLoading || selectedPeriod === undefined}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-100 hover:text-black disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-white"
+                        aria-label="Atualizar dados financeiros"
+                        title="Atualizar"
+                    >
+                        <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+            </div>
+
             {/* Dashboard KPI Grid */}
             <div className="grid grid-cols-2 border-l border-t border-[#e5e5e5] dark:border-zinc-800 lg:grid-cols-4">
                 
@@ -358,7 +514,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                     <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-black dark:text-white">
                         {formatCurrency(totalBilled)}
                     </div>
-                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Honorários emitidos no período</p>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Honorários emitidos · {periodLabel}</p>
                     </div>
                 </div>
 
@@ -369,7 +525,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                     <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(totalPaid)}
                     </div>
-                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Pagamentos já confirmados</p>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Pagamentos confirmados · {periodLabel}</p>
                     </div>
                 </div>
                 
@@ -380,7 +536,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                     <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-amber-600 dark:text-amber-400">
                         {formatCurrency(totalPending)}
                     </div>
-                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Faturas dentro do vencimento</p>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Pendentes entre as emitidas · {periodLabel}</p>
                     </div>
                 </div>
 
@@ -391,7 +547,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                     <div className="break-words font-season text-[clamp(18px,5.5vw,32px)] font-[420] leading-none text-red-600 dark:text-red-400">
                         {formatCurrency(totalOverdue)}
                     </div>
-                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Cobranças que precisam de atenção</p>
+                    <p className="mt-3 text-[10px] font-semibold leading-4 text-[#9f9f9f] dark:text-zinc-500">Vencidas entre as emitidas · {periodLabel}</p>
                     </div>
                 </div>
             </div>
@@ -470,6 +626,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                 const clientEmail = inv.client?.user?.email || 'Sem e-mail';
                                 const formattedVal = formatCurrency(Number(inv.amount) || 0);
                                 const formattedDueDate = inv.dueDate ? new Date(inv.dueDate).toLocaleDateString('pt-BR') : '--';
+                                const formattedCreatedAt = inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('pt-BR') : '--';
 
                                 return (
                                     <div 
@@ -500,7 +657,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                             <p className="font-medium text-zinc-700 dark:text-zinc-300 truncate">
                                                 {inv.description || 'Fatura de Honorários'}
                                             </p>
-                                            <span className="text-[9.5px] font-semibold text-zinc-400 uppercase">{inv.paymentMethod || 'PIX'}</span>
+                                            <span className="text-[9.5px] font-semibold uppercase text-zinc-400">Emitida em {formattedCreatedAt} · {inv.paymentMethod || 'PIX'}</span>
                                         </div>
 
                                         {/* Vencimento */}
