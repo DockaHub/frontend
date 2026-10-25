@@ -342,10 +342,12 @@ const AppContent: React.FC = () => {
     );
   }
 
+  const isPublicRadar = location.pathname === '/radar' || location.pathname.startsWith('/radar-da-marca');
+  if (isPublicRadar) {
+    return <PublicTrademarkRadarPage />;
+  }
+
   if (!isAuthenticated) {
-    if (location.pathname.startsWith('/radar-da-marca')) {
-      return <PublicTrademarkRadarPage />;
-    }
     if (location.pathname.startsWith('/portal/welcome')) {
       return <WelcomePage theme={theme} onToggleTheme={toggleTheme} />;
     }
@@ -433,6 +435,7 @@ const AppContent: React.FC = () => {
           <Route path="/portal/login" element={<AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />} />
           <Route path="/sign/:dealId" element={<ContractSignaturePage dealId={location.pathname.split('/')[2]} />} />
           <Route path="/radar-da-marca" element={<PublicTrademarkRadarPage />} />
+          <Route path="/radar" element={<PublicTrademarkRadarPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard/*" element={

@@ -1,8 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Radar, Search, ShieldCheck, Sparkles } from 'lucide-react';
 import api from '../../../services/api';
-import { INPI_CLASSES } from '../../dashboard/components/asterysko/AsteryskoResearchView';
 import { formatStatusLabel } from '../../dashboard/components/asterysko/utils/statusPresentation';
+
+const ACTIVITY_OPTIONS = [
+    { id: 'technology', label: 'Tecnologia, software ou aplicativo', classes: ['9', '42'] },
+    { id: 'commerce', label: 'Loja, comércio ou e-commerce', classes: ['35'] },
+    { id: 'marketing', label: 'Marketing, publicidade ou comunicação', classes: ['35', '41'] },
+    { id: 'consulting', label: 'Consultoria ou serviços empresariais', classes: ['35'] },
+    { id: 'education', label: 'Cursos, escola ou educação', classes: ['41'] },
+    { id: 'events', label: 'Eventos, cultura ou entretenimento', classes: ['41'] },
+    { id: 'restaurant', label: 'Restaurante, bar ou alimentação', classes: ['43', '29', '30'] },
+    { id: 'health', label: 'Clínica, saúde ou serviços médicos', classes: ['44'] },
+    { id: 'beauty', label: 'Beleza, estética ou cosméticos', classes: ['3', '44'] },
+    { id: 'fashion', label: 'Roupas, calçados ou acessórios', classes: ['25', '35'] },
+    { id: 'construction', label: 'Construção, reforma ou instalação', classes: ['37', '19'] },
+    { id: 'legal', label: 'Serviços jurídicos', classes: ['45'] },
+    { id: 'finance', label: 'Finanças, seguros ou imóveis', classes: ['36'] },
+    { id: 'logistics', label: 'Transporte, entregas ou logística', classes: ['39'] },
+    { id: 'hotel', label: 'Hotel, pousada ou hospedagem', classes: ['43'] },
+    { id: 'telecom', label: 'Telecomunicações', classes: ['38'] },
+    { id: 'manufacturing', label: 'Indústria ou fabricação sob encomenda', classes: ['40'] },
+];
 
 type Conflict = {
     id: string;
@@ -43,7 +62,7 @@ const riskContent = {
 
 const PublicTrademarkRadarPage: React.FC = () => {
     const [brandName, setBrandName] = useState('');
-    const [ncl, setNcl] = useState('');
+    const [activityId, setActivityId] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [result, setResult] = useState<RadarResult | null>(null);
@@ -52,15 +71,16 @@ const PublicTrademarkRadarPage: React.FC = () => {
     const visibleConflicts = useMemo(() => (
         result?.conflicts.filter(conflict => !onlyActive || conflict.active) || []
     ), [result, onlyActive]);
+    const selectedActivity = ACTIVITY_OPTIONS.find(option => option.id === activityId);
 
     const runSearch = async () => {
-        if (brandName.trim().length < 2 || !ncl) return;
+        if (brandName.trim().length < 2 || !selectedActivity) return;
         setLoading(true);
         setError('');
         setResult(null);
         try {
             const response = await api.get<RadarResult>('/asterysko/analysis/public', {
-                params: { name: brandName.trim(), ncl },
+                params: { name: brandName.trim(), ncl: selectedActivity.classes.join(',') },
             });
             setResult(response.data);
         } catch (requestError: any) {
@@ -106,15 +126,15 @@ const PublicTrademarkRadarPage: React.FC = () => {
 
                             <label className="mb-2 mt-5 block text-xs font-bold text-zinc-700">Ramo de atividade</label>
                             <div className="relative">
-                                <select value={ncl} onChange={event => setNcl(event.target.value)} className="h-14 w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 pr-11 text-sm font-medium outline-none focus:border-[#0412dd] focus:ring-4 focus:ring-blue-100">
-                                    <option value="">Selecione a classe da atividade</option>
-                                    {INPI_CLASSES.map(item => <option key={item.number} value={item.number}>NCL {item.number} — {item.description}</option>)}
+                                <select value={activityId} onChange={event => setActivityId(event.target.value)} className="h-14 w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 pr-11 text-sm font-medium outline-none focus:border-[#0412dd] focus:ring-4 focus:ring-blue-100">
+                                    <option value="">O que sua empresa faz?</option>
+                                    {ACTIVITY_OPTIONS.map(item => <option key={item.id} value={item.id}>{item.label}</option>)}
                                 </select>
                                 <ChevronDown size={18} className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400" />
                             </div>
 
                             {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs font-medium text-red-700">{error}</p>}
-                            <button onClick={() => void runSearch()} disabled={brandName.trim().length < 2 || !ncl} className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#0412dd] text-sm font-bold text-white shadow-lg shadow-blue-700/20 transition hover:bg-[#101fc5] disabled:cursor-not-allowed disabled:opacity-40">
+                            <button onClick={() => void runSearch()} disabled={brandName.trim().length < 2 || !selectedActivity} className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[#0412dd] text-sm font-bold text-white shadow-lg shadow-blue-700/20 transition hover:bg-[#101fc5] disabled:cursor-not-allowed disabled:opacity-40">
                                 <Radar size={18} /> Analisar disponibilidade
                             </button>
                             <p className="mt-4 text-center text-[10px] leading-4 text-zinc-400">Busca preliminar. O resultado não substitui uma análise jurídica completa.</p>
@@ -138,7 +158,7 @@ const PublicTrademarkRadarPage: React.FC = () => {
                             <div className="rounded-[26px] border border-black/5 bg-white p-5 shadow-sm sm:p-7">
                                 <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">Resultado para</p>
                                 <h1 className="mt-2 break-words font-season text-4xl">{brandName}</h1>
-                                <p className="mt-2 text-xs font-semibold text-zinc-500">Classe NCL {ncl}</p>
+                                <p className="mt-2 text-xs font-semibold text-zinc-500">{selectedActivity?.label}</p>
                                 <p className="mt-5 text-sm leading-6 text-zinc-700">{result.summary}</p>
                             </div>
                             <div className="rounded-[26px] border p-6 text-center" style={{ backgroundColor: tone.soft, borderColor: `${tone.color}33` }}>
@@ -165,7 +185,7 @@ const PublicTrademarkRadarPage: React.FC = () => {
                                     <details key={conflict.id} className="group p-5">
                                         <summary className="flex cursor-pointer list-none items-start gap-3">
                                             <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${conflict.riskContribution === 'high' ? 'bg-red-500' : conflict.riskContribution === 'medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                                            <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{conflict.brandName}</strong><span className="mt-1 block text-[11px] text-zinc-500">Processo {conflict.processNumber} · NCL {conflict.nclClass || ncl}</span></span>
+                                            <span className="min-w-0 flex-1"><strong className="block truncate text-sm">{conflict.brandName}</strong><span className="mt-1 block text-[11px] text-zinc-500">Processo {conflict.processNumber} · Classe INPI {conflict.nclClass}</span></span>
                                             <span className="text-sm font-black text-zinc-700">{conflict.similarity}%</span>
                                             <ChevronDown size={16} className="mt-0.5 text-zinc-400 transition group-open:rotate-180" />
                                         </summary>
