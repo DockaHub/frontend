@@ -274,6 +274,10 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const [isSavingContact, setIsSavingContact] = useState(false);
     const [responsibleOptions, setResponsibleOptions] = useState<any[]>([]);
     const [isSavingResponsible, setIsSavingResponsible] = useState(false);
+    const [commissionType, setCommissionType] = useState('FIXED');
+    const [commissionValue, setCommissionValue] = useState('');
+    const [commissionScope, setCommissionScope] = useState('FIRST_PAYMENT');
+    const [isSavingCommission, setIsSavingCommission] = useState(false);
 
     // Plans & Proposal States
     const [commercialPlans, setCommercialPlans] = useState<any[]>([]);
@@ -345,6 +349,9 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
         if (dealDetails) {
             setSelectedPlanId(dealDetails.planId || '');
             setDealEstimatedValue(dealDetails.value ? dealDetails.value.toString().replace('R$ ', '').trim() : '');
+            setCommissionType(dealDetails.commissionType || 'FIXED');
+            setCommissionValue(dealDetails.commissionValue === null || dealDetails.commissionValue === undefined ? '' : String(dealDetails.commissionValue));
+            setCommissionScope(dealDetails.commissionScope || 'FIRST_PAYMENT');
             const client = dealDetails.client;
             if (client) {
                 const rawCpf = client.cpfCnpj || '';
@@ -532,6 +539,45 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             alert(error.response?.data?.error || 'Não foi possível definir o responsável pelo lead.');
         } finally {
             setIsSavingResponsible(false);
+        }
+    };
+
+    const handleOperationalResponsibleChange = async (operationalUserId: string) => {
+        if (!currentDeal?.id) return;
+        try {
+            setIsSavingResponsible(true);
+            const normalizedId = operationalUserId || null;
+            await api.put(`/asterysko/crm/deals/${currentDeal.id}`, { operationalUserId: normalizedId });
+            const selectedResponsible = responsibleOptions.find(option => option.id === normalizedId);
+            setDealDetails((previous: any) => ({
+                ...(previous || currentDeal),
+                operationalUserId: normalizedId,
+                operationalUserName: selectedResponsible?.name || 'Não definido',
+                operationalUser: selectedResponsible ? { id: selectedResponsible.id, name: selectedResponsible.name } : null
+            }));
+            onUpdate?.();
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Não foi possível definir o responsável operacional.');
+        } finally {
+            setIsSavingResponsible(false);
+        }
+    };
+
+    const handleSaveCommission = async () => {
+        if (!currentDeal?.id) return;
+        try {
+            setIsSavingCommission(true);
+            await api.put(`/asterysko/crm/deals/${currentDeal.id}`, {
+                commissionType,
+                commissionValue: commissionValue === '' ? null : Number(commissionValue.replace(',', '.')),
+                commissionScope
+            });
+            await fetchDetails();
+            onUpdate?.();
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Não foi possível salvar a regra de comissão.');
+        } finally {
+            setIsSavingCommission(false);
         }
     };
 
@@ -976,6 +1022,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
             : 'Não informada');
     const priority = currentDeal?.priority === 'high' ? 'Alta' : currentDeal?.priority === 'low' ? 'Baixa' : 'Normal';
     const assignedUser = currentDeal?.assignedUser?.name || currentDeal?.assignedUserName || 'Sem dono';
+    const operationalUser = currentDeal?.operationalUser?.name || currentDeal?.operationalUserName || 'Não definido';
     const isGruStage = currentDeal?.status === 'federal_fee';
     const isReadyToFileStage = currentDeal?.status === 'ready_to_file';
     const proxyAwaitingValidation = Boolean(currentDeal?.process?.proxySignedUrl)
@@ -1764,7 +1811,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                         </div>
                                         <div className="mt-1 flex flex-col items-stretch gap-3 border-t border-zinc-100 pt-3 dark:border-zinc-800/80 sm:flex-row sm:items-center sm:justify-between">
                                             <p className="text-[11px] font-medium text-[#666] dark:text-zinc-400">
-                                                Responsável: <span className="font-bold text-black dark:text-white">{assignedUser}</span>
+                                                Responsável: <span className="font-bold text-black dark:text-white">{getPhaseForStage(currentDeal?.status) === 'commercial' ? assignedUser : operationalUser}</span>
                                             </p>
                                             <button 
                                                 onClick={() => isGruStage
@@ -1985,7 +2032,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                             <span className="text-[13px] font-medium text-black dark:text-white">{priority}</span>
                                         </div>
                                         <div className="flex justify-between items-center gap-3">
-                                            <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Responsável</span>
+                                            <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Responsável comercial</span>
                                             <select
                                                 aria-label="Responsável pelo contato"
                                                 value={currentDeal?.assignedUserId || ''}
@@ -1999,10 +2046,49 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
                                                 ))}
                                             </select>
                                         </div>
+                                        <div className="flex justify-between items-center gap-3">
+                                            <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Responsável operacional</span>
+                                            <select
+                                                aria-label="Responsável operacional"
+                                                value={currentDeal?.operationalUserId || ''}
+                                                onChange={event => handleOperationalResponsibleChange(event.target.value)}
+                                                disabled={isSavingResponsible}
+                                                className="min-w-0 max-w-[170px] rounded-lg border border-[#e5e5e5] bg-white px-2 py-1.5 text-right text-[12px] font-medium text-black outline-none transition-colors focus:border-[#0412dd] disabled:cursor-wait disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-950 dark:text-white"
+                                            >
+                                                <option value="">Não definido</option>
+                                                {responsibleOptions.map(option => (
+                                                    <option key={option.id} value={option.id}>{option.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-[13px] font-semibold text-[#666] dark:text-zinc-400">Data de Entrada</span>
                                             <span className="text-[13px] font-medium text-black dark:text-white">{dealDate}</span>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div className="border-t border-[#e5e5e5] pt-6 dark:border-zinc-800">
+                                    <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-[#9f9f9f]">Comissão comercial</p>
+                                    <div className="flex flex-col gap-2.5">
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <select value={commissionType} onChange={event => setCommissionType(event.target.value)} className="rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-xs font-semibold dark:border-zinc-700 dark:bg-zinc-950 dark:text-white">
+                                                <option value="FIXED">Valor fixo</option>
+                                                <option value="PERCENTAGE">Percentual</option>
+                                            </select>
+                                            <div className="relative">
+                                                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400">{commissionType === 'PERCENTAGE' ? '%' : 'R$'}</span>
+                                                <input value={commissionValue} onChange={event => setCommissionValue(event.target.value)} inputMode="decimal" placeholder="0,00" className="w-full rounded-lg border border-[#e5e5e5] bg-white py-2 pl-8 pr-2 text-xs font-semibold outline-none focus:border-[#0412dd] dark:border-zinc-700 dark:bg-zinc-950 dark:text-white" />
+                                            </div>
+                                        </div>
+                                        <select value={commissionScope} onChange={event => setCommissionScope(event.target.value)} className="rounded-lg border border-[#e5e5e5] bg-white px-2 py-2 text-xs font-semibold dark:border-zinc-700 dark:bg-zinc-950 dark:text-white">
+                                            <option value="FIRST_PAYMENT">Somente no primeiro pagamento</option>
+                                            <option value="CONTRACT_LIFETIME">Durante toda a vigência</option>
+                                        </select>
+                                        <button type="button" onClick={handleSaveCommission} disabled={isSavingCommission} className="rounded-lg bg-[#0412dd] px-3 py-2 text-xs font-bold text-white disabled:opacity-50">
+                                            {isSavingCommission ? 'Salvando...' : 'Salvar regra de comissão'}
+                                        </button>
+                                        <p className="text-[10.5px] leading-relaxed text-zinc-500">A comissão entra em Minhas Metas apenas quando o pagamento do cliente for confirmado.</p>
                                     </div>
                                 </div>
 

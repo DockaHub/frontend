@@ -51,6 +51,7 @@ const INITIAL_FORM = {
     planId: '',
     serviceInterest: 'Registro de marca',
     assignedUserId: '',
+    operationalUserId: '',
     leadOrigin: 'Instagram',
     status: 'leads',
     priority: 'medium',
@@ -149,6 +150,7 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
                 contactPhone: formData.contactPhone.trim() || null,
                 clientId: formData.clientId || null,
                 assignedUserId: formData.assignedUserId,
+                operationalUserId: formData.operationalUserId || null,
                 planId: formData.planId,
                 priority: formData.priority,
                 description: formData.internalNotes.trim() || null,
@@ -215,6 +217,7 @@ const AsteryskoNewLeadModal: React.FC<Props> = ({ isOpen, onClose, onSuccess, or
 
                     <div className="px-4 pb-2 pt-5 sm:px-6"><h3 className="font-season text-[18px] font-[420] text-black dark:text-white">Organização do atendimento</h3></div>
                     <Field label="Responsável comercial"><select className={`${inputClass} appearance-none`} value={formData.assignedUserId} onChange={event => setFormData(current => ({ ...current, assignedUserId: event.target.value }))}><option value="">Selecione uma pessoa da equipe Asterysko</option>{members.map(member => <option key={member.id} value={member.id}>{member.name} {member.email ? `— ${member.email}` : ''}</option>)}</select></Field>
+                    <Field label="Responsável operacional"><select className={`${inputClass} appearance-none`} value={formData.operationalUserId} onChange={event => setFormData(current => ({ ...current, operationalUserId: event.target.value }))}><option value="">Definir depois</option>{members.map(member => <option key={member.id} value={member.id}>{member.name} {member.email ? `— ${member.email}` : ''}</option>)}</select></Field>
                     <Field label="Etapa inicial do CRM">
                         <select className={`${inputClass} appearance-none cursor-pointer`} value={formData.status} onChange={event => setFormData(current => ({ ...current, status: event.target.value }))}>
                             <optgroup label="Comercial" className="font-semibold text-black dark:text-white">
