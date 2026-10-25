@@ -39,6 +39,7 @@ import { ContractSignaturePage } from './modules/asterysko/public/ContractSignat
 import AsteryskoClientPortal from './modules/dashboard/components/asterysko/AsteryskoClientPortal';
 import { AsteryskoLoginPage } from './modules/asterysko/public/AsteryskoLoginPage';
 import WelcomePage from './modules/asterysko/public/WelcomePage';
+import PublicTrademarkRadarPage from './modules/asterysko/public/PublicTrademarkRadarPage';
 import { getApiBaseUrl } from './services/api';
 import { useDynamicFaviconAndTitle } from './hooks/useDynamicFaviconAndTitle';
 
@@ -342,6 +343,9 @@ const AppContent: React.FC = () => {
   }
 
   if (!isAuthenticated) {
+    if (location.pathname.startsWith('/radar-da-marca')) {
+      return <PublicTrademarkRadarPage />;
+    }
     if (location.pathname.startsWith('/portal/welcome')) {
       return <WelcomePage theme={theme} onToggleTheme={toggleTheme} />;
     }
@@ -428,6 +432,7 @@ const AppContent: React.FC = () => {
           <Route path="/portal/welcome" element={<WelcomePage theme={theme} onToggleTheme={toggleTheme} />} />
           <Route path="/portal/login" element={<AsteryskoLoginPage theme={theme} onToggleTheme={toggleTheme} />} />
           <Route path="/sign/:dealId" element={<ContractSignaturePage dealId={location.pathname.split('/')[2]} />} />
+          <Route path="/radar-da-marca" element={<PublicTrademarkRadarPage />} />
 
           {/* Protected Routes */}
           <Route path="/dashboard/*" element={

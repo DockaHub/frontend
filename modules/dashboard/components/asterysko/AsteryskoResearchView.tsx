@@ -9,7 +9,7 @@ interface NclClass {
 }
 
 // Hardcoded standard NCL Classes (Classificação de Nice) for INPI
-const INPI_CLASSES: NclClass[] = [
+export const INPI_CLASSES: NclClass[] = [
     // Produtos (1 a 34)
     { number: 1, description: 'Produtos químicos destinados à indústria, à ciência e à fotografia, bem como à agricultura, horticultura e silvicultura.' },
     { number: 2, description: 'Tintas, vernizes, lacas; preservativos contra ferrugem e contra deterioração da madeira.' },
@@ -71,7 +71,7 @@ interface Conflict {
 }
 
 interface AnalysisResult {
-    riskLevel: 'HIGH' | 'MEDIUM' | 'LOW';
+    riskLevel: 'HIGH' | 'MEDIUM' | 'LOW' | 'INCONCLUSIVE';
     score: number;
     summary: string;
     conflicts: Conflict[];
@@ -237,15 +237,18 @@ const AsteryskoResearchView: React.FC = () => {
                             <div className={`flex w-full flex-col items-center justify-center rounded-2xl border p-5 text-center shadow-sm sm:p-8 md:w-[320px] ${
                                 results.riskLevel === 'HIGH' ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-900/30' :
                                 results.riskLevel === 'MEDIUM' ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30' :
+                                results.riskLevel === 'INCONCLUSIVE' ? 'bg-zinc-50 dark:bg-zinc-900/30 border-zinc-200 dark:border-zinc-700' :
                                 'bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30'
                             }`}>
                                 {results.riskLevel === 'HIGH' && <AlertTriangle size={48} className="text-red-500 mb-4" />}
                                 {results.riskLevel === 'MEDIUM' && <Info size={48} className="text-amber-500 mb-4" />}
+                                {results.riskLevel === 'INCONCLUSIVE' && <Info size={48} className="text-zinc-500 mb-4" />}
                                 {results.riskLevel === 'LOW' && <CheckCircle size={48} className="text-green-500 mb-4" />}
                                 
                                 <div className={`text-4xl font-bold mb-2 ${
                                     results.riskLevel === 'HIGH' ? 'text-red-600 dark:text-red-400' :
                                     results.riskLevel === 'MEDIUM' ? 'text-amber-600 dark:text-amber-400' :
+                                    results.riskLevel === 'INCONCLUSIVE' ? 'text-zinc-600 dark:text-zinc-300' :
                                     'text-green-600 dark:text-green-400'
                                 }`}>
                                     {results.score}%
@@ -253,6 +256,7 @@ const AsteryskoResearchView: React.FC = () => {
                                 <div className={`text-sm font-bold uppercase tracking-wide ${
                                     results.riskLevel === 'HIGH' ? 'text-red-600/70 dark:text-red-400/70' :
                                     results.riskLevel === 'MEDIUM' ? 'text-amber-600/70 dark:text-amber-400/70' :
+                                    results.riskLevel === 'INCONCLUSIVE' ? 'text-zinc-500 dark:text-zinc-400' :
                                     'text-green-600/70 dark:text-green-400/70'
                                 }`}>
                                     Chances de sucesso
