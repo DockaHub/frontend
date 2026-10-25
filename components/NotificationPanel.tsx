@@ -9,6 +9,7 @@ import {
     FileText,
     FolderOpen,
     Info,
+    BadgeDollarSign,
     RefreshCw,
     Users,
     X,
@@ -65,6 +66,8 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
                 return <BriefcaseBusiness size={16} className="text-orange-600" />;
             case 'DOCUMENT':
                 return <FileText size={16} className="text-indigo-600" />;
+            case 'COMMISSION':
+                return <BadgeDollarSign size={16} className="text-emerald-600" />;
             case 'WARNING':
                 return <AlertTriangle size={16} className="text-amber-600" />;
             default:

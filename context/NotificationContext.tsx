@@ -96,10 +96,19 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
                     ? previous
                     : [notification, ...previous]
             ));
+            const normalizedType = String(notification.type || '').toUpperCase();
+            const toastType = normalizedType === 'WARNING'
+                ? 'warning'
+                : ['ERROR', 'PAYMENT_FAILED'].includes(normalizedType)
+                    ? 'error'
+                    : normalizedType === 'COMMISSION'
+                        ? 'success'
+                        : 'info';
             addToast({
-                type: 'info',
+                type: toastType,
                 title: notification.title,
-                message: notification.message
+                message: notification.message,
+                duration: normalizedType === 'WARNING' ? 7000 : 5000
             });
         };
 
