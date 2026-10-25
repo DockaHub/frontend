@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     AlertTriangle,
     Bell,
@@ -12,12 +12,15 @@ import {
     BadgeDollarSign,
     RefreshCw,
     Users,
+    Radio,
     X,
 } from 'lucide-react';
 import { useNotifications, Notification } from '../context/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useToast } from '../context/ToastContext';
+import { disableWebPush, enableWebPush, getWebPushState } from '../services/webPushService';
 
 interface NotificationPanelProps {
     onClose: () => void;
@@ -34,6 +37,35 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
         markAllAsRead,
     } = useNotifications();
     const navigate = useNavigate();
+    const { addToast } = useToast();
+    const [pushActive, setPushActive] = useState(false);
+    const [pushSupported, setPushSupported] = useState(false);
+    const [pushBusy, setPushBusy] = useState(false);
+
+    useEffect(() => {
+        void getWebPushState().then(state => {
+            setPushSupported(state.supported);
+            setPushActive(state.active);
+        });
+    }, []);
+
+    const toggleWebPush = async () => {
+        setPushBusy(true);
+        try {
+            if (pushActive) await disableWebPush();
+            else await enableWebPush();
+            setPushActive(!pushActive);
+            addToast({
+                type: 'success',
+                title: pushActive ? 'Web Push desativado' : 'Web Push ativado',
+                message: pushActive ? 'Este dispositivo não receberá mais alertas.' : 'Você receberá alertas mesmo com o Docka Hub fechado.',
+            });
+        } catch (error: any) {
+            addToast({ type: 'error', title: 'Não foi possível ativar', message: error?.message || 'Verifique a permissão do navegador.' });
+        } finally {
+            setPushBusy(false);
+        }
+    };
 
     const handleNotificationClick = async (notification: Notification) => {
         if (notification.link) {
@@ -119,6 +151,25 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ onClose }) => {
                     </button>
                 </div>
             </div>
+
+            {pushSupported && (
+                <button
+                    type="button"
+                    onClick={() => void toggleWebPush()}
+                    disabled={pushBusy}
+                    className="mx-3 mt-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-700 flex items-center gap-3 text-left hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-60"
+                >
+                    <Radio size={17} className={pushActive ? 'text-emerald-600' : 'text-[#fd6b32]'} />
+                    <span className="flex-1 min-w-0">
+                        <span className="block text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                            {pushActive ? 'Web Push ativo' : 'Ativar notificações neste dispositivo'}
+                        </span>
+                        <span className="block text-[10px] text-zinc-500 mt-0.5">
+                            {pushActive ? 'Clique para desativar' : 'Receba alertas mesmo com o sistema fechado'}
+                        </span>
+                    </span>
+                </button>
+            )}
 
             <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {loading && notifications.length === 0 ? (
