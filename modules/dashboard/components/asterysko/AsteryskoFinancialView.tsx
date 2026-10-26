@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Search, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, X, Receipt, CalendarRange, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Plus, Search, MoreVertical, ExternalLink, Copy, Edit2, Trash2, Loader2, X, Receipt, CalendarRange, ChevronLeft, ChevronRight, RefreshCw, FileUp, Download } from 'lucide-react';
 import api from '../../../../services/api';
 import { Organization } from '../../../../types';
+import { forceDownloadFile } from './utils/fileDownload';
 
 interface AsteryskoFinancialViewProps {
     organization?: Organization;
@@ -27,6 +28,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
     const [statusFilter, setStatusFilter] = useState<'all' | 'PAID' | 'PENDING' | 'OVERDUE'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+    const [uploadingFiscalInvoiceId, setUploadingFiscalInvoiceId] = useState<string | null>(null);
     const [periodMode, setPeriodMode] = useState<PeriodMode>('month');
     const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
     const [customFrom, setCustomFrom] = useState(() => toDateInputValue(startOfMonth(new Date())));
@@ -212,6 +214,30 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
         const link = `https://cliente.asterysko.com/portal/financial?invoiceId=${inv.id}`;
         navigator.clipboard.writeText(link);
         alert('Link da fatura copiado para a área de transferência!');
+    };
+
+    const handleFiscalInvoiceUpload = async (invoice: any, file?: File) => {
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('file', file);
+        try {
+            setUploadingFiscalInvoiceId(invoice.id);
+            await api.post(`/asterysko/financial/invoices/${invoice.id}/fiscal-invoice`, formData);
+            alert(invoice.fiscalInvoiceUrl ? 'Nota fiscal substituída com sucesso!' : 'Nota fiscal anexada com sucesso!');
+            await fetchInvoices();
+        } catch (error: any) {
+            alert(error?.response?.data?.error || 'Erro ao anexar a nota fiscal.');
+        } finally {
+            setUploadingFiscalInvoiceId(null);
+            setOpenMenuId(null);
+        }
+    };
+
+    const downloadFiscalInvoice = (invoice: any) => {
+        void forceDownloadFile(
+            `/api/asterysko/financial/invoices/${invoice.id}/fiscal-invoice`,
+            invoice.fiscalInvoiceName || `NFS-e_Asterysko_${invoice.id.slice(0, 8)}.pdf`
+        );
     };
 
     const formatCurrency = (value: number) => {
@@ -658,6 +684,7 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                                 {inv.description || 'Fatura de Honorários'}
                                             </p>
                                             <span className="text-[9.5px] font-semibold uppercase text-zinc-400">Emitida em {formattedCreatedAt} · {inv.paymentMethod || 'PIX'}</span>
+                                            {inv.fiscalInvoiceUrl && <span className="mt-1 block text-[9.5px] font-bold uppercase text-emerald-600 dark:text-emerald-400">NFS-e anexada</span>}
                                         </div>
 
                                         {/* Vencimento */}
@@ -708,6 +735,29 @@ const AsteryskoFinancialView: React.FC<AsteryskoFinancialViewProps> = () => {
                                                     >
                                                         <Edit2 size={14} /> Editar Fatura
                                                     </button>
+
+                                                    {isPaid && String(inv.type || '').toUpperCase() !== 'TAX' && (
+                                                        <label className="flex w-full cursor-pointer items-center gap-2 px-3.5 py-2 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800">
+                                                            {uploadingFiscalInvoiceId === inv.id ? <Loader2 size={14} className="animate-spin" /> : <FileUp size={14} />}
+                                                            {inv.fiscalInvoiceUrl ? 'Substituir Nota Fiscal' : 'Anexar Nota Fiscal'}
+                                                            <input
+                                                                type="file"
+                                                                accept="application/pdf,.pdf"
+                                                                className="hidden"
+                                                                disabled={uploadingFiscalInvoiceId === inv.id}
+                                                                onChange={event => void handleFiscalInvoiceUpload(inv, event.target.files?.[0])}
+                                                            />
+                                                        </label>
+                                                    )}
+
+                                                    {inv.fiscalInvoiceUrl && (
+                                                        <button
+                                                            onClick={() => { downloadFiscalInvoice(inv); setOpenMenuId(null); }}
+                                                            className="flex w-full items-center gap-2 px-3.5 py-2 text-left text-xs font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                                                        >
+                                                            <Download size={14} /> Baixar Nota Fiscal
+                                                        </button>
+                                                    )}
 
                                                     <button 
                                                         onClick={() => { handleDeleteInvoice(inv.id); setOpenMenuId(null); }}

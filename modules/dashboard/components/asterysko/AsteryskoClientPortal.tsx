@@ -2124,7 +2124,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                                 <section className="ast-receipt-modal__fiscal">
                                     <div>
                                         <small>Nota fiscal de serviço</small>
-                                        <strong>{paymentReceipt.fiscalInvoice.number ? `NFS-e nº ${paymentReceipt.fiscalInvoice.number}` : 'NFS-e em processamento'}</strong>
+                                        <strong>{paymentReceipt.fiscalInvoice.number ? `NFS-e nº ${paymentReceipt.fiscalInvoice.number}` : paymentReceipt.fiscalInvoice.type === 'MANUAL' ? 'NFS-e disponível' : 'NFS-e em processamento'}</strong>
                                         <p>{paymentReceipt.fiscalInvoice.status === 'AUTHORIZED' ? 'Emitida e autorizada pela prefeitura.' : paymentReceipt.fiscalInvoice.statusDescription || 'Aguardando autorização da prefeitura.'}</p>
                                     </div>
                                     <span>{paymentReceipt.fiscalInvoice.status === 'AUTHORIZED' ? 'Emitida' : formatStatusLabel(paymentReceipt.fiscalInvoice.status)}</span>
