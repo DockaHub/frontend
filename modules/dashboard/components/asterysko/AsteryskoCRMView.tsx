@@ -29,6 +29,11 @@ interface DealCard {
     assignedUserName?: string;
     processId?: string;
     inpiProcessNumber?: string;
+    lastRpiNumber?: number | null;
+    lastRpiDate?: string | null;
+    oppositionDeadline?: string | null;
+    lastClientUpdateAt?: string | null;
+    nextClientUpdateAt?: string | null;
 }
 
 interface Column {
@@ -409,6 +414,29 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                                                         <p className="text-[10px] font-mono text-zinc-500 truncate">
                                                             INPI: {card.inpiProcessNumber}
                                                         </p>
+                                                    )}
+                                                    {card.lastRpiNumber && (
+                                                        <p className="text-[10px] text-zinc-500 truncate">
+                                                            Última publicação: RPI {card.lastRpiNumber}
+                                                            {card.lastRpiDate ? ` · ${new Date(card.lastRpiDate).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' })}` : ''}
+                                                        </p>
+                                                    )}
+                                                    {card.status === 'filed' && card.oppositionDeadline && (
+                                                        <p className="text-[10px] font-semibold text-sky-600 dark:text-sky-400 truncate">
+                                                            Prazo de oposição: {new Date(card.oppositionDeadline).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' })}
+                                                        </p>
+                                                    )}
+                                                    {card.status === 'examination' && card.nextClientUpdateAt && (
+                                                        <>
+                                                            {card.lastClientUpdateAt && (
+                                                                <p className="text-[10px] text-zinc-500 truncate">
+                                                                    Cliente atualizado: {new Date(card.lastClientUpdateAt).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' })}
+                                                                </p>
+                                                            )}
+                                                            <p className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 truncate">
+                                                                Próximo acompanhamento: {new Date(card.nextClientUpdateAt).toLocaleDateString('pt-BR', { timeZone: 'America/Fortaleza' })}
+                                                            </p>
+                                                        </>
                                                     )}
                                                 </div>
                                             ) : activeTab === 'onboarding' ? (

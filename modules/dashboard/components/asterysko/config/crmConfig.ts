@@ -40,7 +40,7 @@ export const CRM_STAGES: CrmStageConfig[] = [
 
     // PROCESSUAL
     { id: 'filed', title: 'Protocolado (RPI)', phase: 'processual', color: 'bg-sky-500', colorDot: 'bg-sky-600' },
-    { id: 'examination', title: 'Exame de Mérito', phase: 'processual', color: 'bg-violet-500', colorDot: 'bg-violet-600' },
+    { id: 'examination', title: 'Aguardando exame de mérito', phase: 'processual', color: 'bg-violet-500', colorDot: 'bg-violet-600' },
     { id: 'opposition', title: 'Oposição / Exigência', phase: 'processual', color: 'bg-amber-600', colorDot: 'bg-amber-700' },
     { id: 'granted', title: 'Deferida', phase: 'processual', color: 'bg-emerald-500', colorDot: 'bg-emerald-600' },
     { id: 'won', title: 'Concluído', phase: 'processual', color: 'bg-green-600', colorDot: 'bg-green-700' },
