@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot, Monitor, Building2 } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot, Monitor, Building2, ScrollText } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
@@ -8,8 +8,9 @@ import OrganizationIconSettings from '../../../../components/OrganizationIconSet
 import { AsteryskoReceitaFederalSettings } from './AsteryskoReceitaFederalSettings';
 import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
 import { resolveFileUrl } from './utils/fileDownload';
+import AsteryskoSystemLogsPanel from './AsteryskoSystemLogsPanel';
 
-export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'receita_federal' | 'scout_ai' | 'plans' | 'portal';
+export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'receita_federal' | 'scout_ai' | 'plans' | 'portal' | 'logs';
 
 interface AsteryskoSettingsViewProps {
     onOpenClientPortal?: () => void;
@@ -70,6 +71,7 @@ const ASTERYSKO_SETTINGS_TABS: Array<{
     { id: 'receita_federal', label: 'Receita Federal & CNPJs', icon: Building2 },
     { id: 'plans', label: 'Planos & Honorários', icon: CreditCard },
     { id: 'portal', label: 'Portal do Cliente', icon: Users },
+    { id: 'logs', label: 'Logs do Sistema', icon: ScrollText },
 ];
 
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
@@ -2131,6 +2133,10 @@ const WhatsAppCard: React.FC = () => {
                             <AsteryskoTrademarkGovernanceArea />
 
                         </div>
+                    )}
+
+                    {activeSettingsTab === 'logs' && (
+                        <AsteryskoSystemLogsPanel />
                     )}
 
                     {/* TAB 3: PLANS & PRICING TABLE */}
