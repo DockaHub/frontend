@@ -371,6 +371,16 @@ export interface AsteryskoOpportunity {
     commercialPotential?: number | null;
     preliminaryViability?: number | null;
     protectionNeed?: number | null;
+    website?: string | null;
+    createdAt?: string;
+    contacts?: Array<{
+        id: string;
+        name: string;
+        role?: string | null;
+        email?: string | null;
+        phone?: string | null;
+        whatsapp?: string | null;
+    }>;
 }
 
 export interface OpportunityCounts {

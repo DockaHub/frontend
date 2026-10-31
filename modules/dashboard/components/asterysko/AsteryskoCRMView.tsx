@@ -249,7 +249,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
             if (oldPhase !== newPhase) {
                 const phaseLabels: Record<CrmPhaseId, string> = {
-                    opportunities: 'Oportunidades',
+                    opportunities: 'Contatos',
                     commercial: 'Comercial',
                     onboarding: 'Onboarding',
                     processual: 'Processual'
@@ -350,6 +350,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
                         <AsteryskoOpportunitiesTab
                             organizationId={organization?.id}
                             onTotalChange={setOpportunityCount}
+                            onLeadCreated={() => fetchDeals(true)}
                         />
                     </div>
                 )}

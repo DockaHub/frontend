@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot, Monitor, Building2, ScrollText } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot, Monitor, ScrollText } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import { Organization } from '../../../../types';
 import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
-import { AsteryskoReceitaFederalSettings } from './AsteryskoReceitaFederalSettings';
 import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
 import { resolveFileUrl } from './utils/fileDownload';
 import AsteryskoSystemLogsPanel from './AsteryskoSystemLogsPanel';
 
-export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'receita_federal' | 'scout_ai' | 'plans' | 'portal' | 'logs';
+export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'plans' | 'portal' | 'logs';
 
 interface AsteryskoSettingsViewProps {
     onOpenClientPortal?: () => void;
@@ -68,7 +67,6 @@ const ASTERYSKO_SETTINGS_TABS: Array<{
     { id: 'emails', label: 'E-mails', icon: Mail },
     { id: 'crm_rules', label: 'Fluxo do Negócio', icon: CheckSquare },
     { id: 'rpi', label: 'Marcas & RPI', icon: Shield },
-    { id: 'receita_federal', label: 'Receita Federal & CNPJs', icon: Building2 },
     { id: 'plans', label: 'Planos & Honorários', icon: CreditCard },
     { id: 'portal', label: 'Portal do Cliente', icon: Users },
     { id: 'logs', label: 'Logs do Sistema', icon: ScrollText },
@@ -83,7 +81,9 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
 }) => {
     const visibleTabsKey = visibleTabs?.join('|') || 'all';
     const availableTabs = ASTERYSKO_SETTINGS_TABS.filter((tab) => !visibleTabs || visibleTabs.includes(tab.id));
-    const effectiveInitialTab: AsteryskoSettingsTab = initialTab === 'scout_ai' ? 'receita_federal' : initialTab;
+    const effectiveInitialTab: AsteryskoSettingsTab = ASTERYSKO_SETTINGS_TABS.some(tab => tab.id === initialTab)
+        ? initialTab
+        : 'notifications';
     const [activeSettingsTab, setActiveSettingsTab] = useState<AsteryskoSettingsTab>(effectiveInitialTab);
     const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
@@ -1961,10 +1961,6 @@ const WhatsAppCard: React.FC = () => {
 
                     {activeSettingsTab === 'emails' && (
                         <EmailTemplatesVisualManager />
-                    )}
-
-                    {(activeSettingsTab === 'receita_federal' || (activeSettingsTab as any) === 'scout_ai') && (
-                        <AsteryskoReceitaFederalSettings organizationId={organization?.id} />
                     )}
 
                     {activeSettingsTab === 'crm_rules' && (

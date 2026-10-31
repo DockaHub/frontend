@@ -129,7 +129,7 @@ const DockaSettingsView: React.FC<DockaSettingsViewProps> = ({ organization, org
                             organization={selectedOrganization}
                             embedded
                             initialTab="rpi"
-                            visibleTabs={['rpi', 'scout_ai']}
+                            visibleTabs={['rpi']}
                         />
                     )}
 

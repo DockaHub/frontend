@@ -16,7 +16,7 @@ export interface CrmPhaseConfig {
 }
 
 export const CRM_PHASES: CrmPhaseConfig[] = [
-    { id: 'opportunities', label: 'Oportunidades', allowCreateLead: false },
+    { id: 'opportunities', label: 'Contatos', description: 'Prospecção ativa antes da conversão em lead', allowCreateLead: false },
     { id: 'commercial', label: 'Comercial', allowCreateLead: true },
     { id: 'onboarding', label: 'Onboarding', allowCreateLead: true },
     { id: 'processual', label: 'Processual', allowCreateLead: true },
