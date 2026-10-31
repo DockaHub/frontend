@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot, Monitor, ScrollText } from 'lucide-react';
+import { Shield, CreditCard, Users, Link, Copy, Eye, Plus, Edit2, Trash2, DollarSign, Info, AlertCircle, Upload, MessageSquare, RefreshCw, Smartphone, QrCode, Power, Send, Check, Bell, Mail, CheckSquare, Clock, Bot, Monitor } from 'lucide-react';
 import Modal from '../../../../components/common/Modal';
 import api from '../../../../services/api';
 import { useToast } from '../../../../context/ToastContext';
 import { Organization } from '../../../../types';
-import OrganizationIconSettings from '../../../../components/OrganizationIconSettings';
 import { AsteryskoTrademarkGovernanceArea } from './AsteryskoTrademarkGovernanceArea';
 import { resolveFileUrl } from './utils/fileDownload';
-import AsteryskoSystemLogsPanel from './AsteryskoSystemLogsPanel';
 
-export type AsteryskoSettingsTab = 'notifications' | 'emails' | 'crm_rules' | 'rpi' | 'plans' | 'portal' | 'logs';
+export type AsteryskoSettingsTab = 'notifications' | 'crm_rules' | 'rpi' | 'plans' | 'portal';
 
 interface AsteryskoSettingsViewProps {
     onOpenClientPortal?: () => void;
@@ -63,13 +61,11 @@ const ASTERYSKO_SETTINGS_TABS: Array<{
     label: string;
     icon: React.ComponentType<{ size?: number }>;
 }> = [
-    { id: 'notifications', label: 'Conexões & Notificações', icon: Smartphone },
-    { id: 'emails', label: 'E-mails', icon: Mail },
+    { id: 'notifications', label: 'Comunicações', icon: Smartphone },
     { id: 'crm_rules', label: 'Fluxo do Negócio', icon: CheckSquare },
     { id: 'rpi', label: 'Marcas & RPI', icon: Shield },
     { id: 'plans', label: 'Planos & Honorários', icon: CreditCard },
     { id: 'portal', label: 'Portal do Cliente', icon: Users },
-    { id: 'logs', label: 'Logs do Sistema', icon: ScrollText },
 ];
 
 const SETTINGS_GRID_CLASS = 'grid min-w-0 border-l border-t border-[#e5e5e5] dark:border-zinc-800';
@@ -112,20 +108,61 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const [clientPortalDomain, setClientPortalDomain] = useState(organization?.clientPortalDomain || '');
+    const [clientPortalPrimaryColor, setClientPortalPrimaryColor] = useState(organization?.clientPortalPrimaryColor || '#1a1fd3');
+    const [savingPortalIdentity, setSavingPortalIdentity] = useState(false);
+    const [rpiSyncStatus, setRpiSyncStatus] = useState<any>(null);
+    const [showEmailPreviews, setShowEmailPreviews] = useState(false);
 
     useEffect(() => {
         if (organization?.clientPortalDomain !== undefined) {
             setClientPortalDomain(organization.clientPortalDomain || '');
         }
+        setClientPortalPrimaryColor(organization?.clientPortalPrimaryColor || '#1a1fd3');
     }, [organization]);
+
+    const portalBaseUrl = clientPortalDomain
+        ? `https://${clientPortalDomain.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`
+        : 'https://cliente.asterysko.com';
+    const portalAccessUrl = `${portalBaseUrl}/portal`;
 
     const handleUpdateDomain = async () => {
         if (!organization) return;
         try {
-            await api.patch(`/organizations/${organization.id}`, { clientPortalDomain });
+            setSavingPortalIdentity(true);
+            const response = await api.patch(`/organizations/${organization.id}`, { clientPortalDomain });
+            setClientPortalDomain(response.data.clientPortalDomain || '');
             addToast({ type: 'success', title: 'Salvo', message: 'Domínio atualizado com sucesso.' });
         } catch (error) {
             addToast({ type: 'error', title: 'Erro', message: 'Falha ao atualizar o domínio.' });
+        } finally {
+            setSavingPortalIdentity(false);
+        }
+    };
+
+    const handleUpdatePortalColor = async () => {
+        if (!organization) return;
+        if (!/^#[0-9a-fA-F]{6}$/.test(clientPortalPrimaryColor)) {
+            addToast({ type: 'error', title: 'Cor inválida', message: 'Use uma cor hexadecimal completa, como #1a1fd3.' });
+            return;
+        }
+        try {
+            setSavingPortalIdentity(true);
+            const response = await api.patch(`/organizations/${organization.id}`, { clientPortalPrimaryColor });
+            setClientPortalPrimaryColor(response.data.clientPortalPrimaryColor || clientPortalPrimaryColor);
+            addToast({ type: 'success', title: 'Identidade atualizada', message: 'A cor principal já está disponível no Portal do Cliente.' });
+        } catch {
+            addToast({ type: 'error', title: 'Erro', message: 'Não foi possível salvar a cor do portal.' });
+        } finally {
+            setSavingPortalIdentity(false);
+        }
+    };
+
+    const copyPortalLink = async () => {
+        try {
+            await navigator.clipboard.writeText(portalAccessUrl);
+            addToast({ type: 'success', title: 'Link copiado', message: portalAccessUrl });
+        } catch {
+            addToast({ type: 'error', title: 'Não foi possível copiar', message: 'Copie o endereço diretamente do campo.' });
         }
     };
 
@@ -159,8 +196,12 @@ const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
     const fetchInpiHistory = async () => {
         try {
             setLoadingHistory(true);
-            const response = await api.get('/asterysko/inpi/history');
-            setInpiHistory(response.data);
+            const [historyResponse, statusResponse] = await Promise.all([
+                api.get('/asterysko/inpi/history'),
+                api.get('/asterysko/inpi/sync-status')
+            ]);
+            setInpiHistory(historyResponse.data);
+            setRpiSyncStatus(statusResponse.data);
         } catch (error) {
             console.error('Error fetching INPI history:', error);
         } finally {
@@ -1426,14 +1467,10 @@ const EmailTemplatesVisualManager: React.FC = () => {
 };
 
 // Standalone CrmStageTaskManager component outside parent render scope
-const CrmStageTaskManager: React.FC = () => {
+const CrmStageTaskManager: React.FC<{ organizationId?: string }> = ({ organizationId }) => {
     const { addToast } = useToast();
     const [selectedStageKey, setSelectedStageKey] = useState('leads');
     const [tasksMap, setTasksMap] = useState<Record<string, { id: string; title: string; due: string }[]>>(() => {
-        const saved = localStorage.getItem('asterysko_crm_stage_tasks');
-        if (saved) {
-            try { return JSON.parse(saved); } catch (e) {}
-        }
         return {
             'leads': [
                 { id: 'leads_contact', title: 'Fazer contato inicial via WhatsApp / Ligação', due: 'Hoje' },
@@ -1493,6 +1530,38 @@ const CrmStageTaskManager: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [newTitle, setNewTitle] = useState('');
     const [newDue, setNewDue] = useState('Hoje');
+    const [loadingTasks, setLoadingTasks] = useState(Boolean(organizationId));
+    const [savingTasks, setSavingTasks] = useState(false);
+
+    useEffect(() => {
+        if (!organizationId) return;
+        let mounted = true;
+        const loadTasks = async () => {
+            try {
+                const response = await api.get(`/organizations/${organizationId}`);
+                const remoteTasks = response.data?.asteryskoCrmStageTasks;
+                const savedLocal = localStorage.getItem('asterysko_crm_stage_tasks');
+                let localTasks: Record<string, { id: string; title: string; due: string }[]> | null = null;
+                if (savedLocal) {
+                    try { localTasks = JSON.parse(savedLocal); } catch { localTasks = null; }
+                }
+                if (remoteTasks && typeof remoteTasks === 'object' && !Array.isArray(remoteTasks)) {
+                    if (mounted) setTasksMap(remoteTasks);
+                } else if (localTasks) {
+                    if (mounted) setTasksMap(localTasks);
+                    await api.patch(`/organizations/${organizationId}`, { asteryskoCrmStageTasks: localTasks });
+                    localStorage.removeItem('asterysko_crm_stage_tasks');
+                    addToast({ type: 'success', title: 'Configuração sincronizada', message: 'As tarefas deste navegador foram migradas para toda a equipe.' });
+                }
+            } catch (error) {
+                addToast({ type: 'error', title: 'Falha ao carregar regras', message: 'As tarefas padrão foram mantidas temporariamente.' });
+            } finally {
+                if (mounted) setLoadingTasks(false);
+            }
+        };
+        void loadTasks();
+        return () => { mounted = false; };
+    }, [addToast, organizationId]);
 
     const stagesList = [
         { key: 'leads', label: 'Novos Leads' },
@@ -1510,12 +1579,24 @@ const CrmStageTaskManager: React.FC = () => {
         { key: 'won', label: 'Concluído' }
     ];
 
-    const saveTasks = (newMap: Record<string, { id: string; title: string; due: string }[]>) => {
+    const saveTasks = async (newMap: Record<string, { id: string; title: string; due: string }[]>) => {
+        const previousMap = tasksMap;
         setTasksMap(newMap);
-        localStorage.setItem('asterysko_crm_stage_tasks', JSON.stringify(newMap));
+        if (!organizationId) return;
+        try {
+            setSavingTasks(true);
+            await api.patch(`/organizations/${organizationId}`, { asteryskoCrmStageTasks: newMap });
+            localStorage.removeItem('asterysko_crm_stage_tasks');
+        } catch {
+            setTasksMap(previousMap);
+            addToast({ type: 'error', title: 'Alteração não salva', message: 'Não foi possível atualizar as regras para a equipe.' });
+            throw new Error('CRM_STAGE_TASK_SAVE_FAILED');
+        } finally {
+            setSavingTasks(false);
+        }
     };
 
-    const handleAddTask = () => {
+    const handleAddTask = async () => {
         if (!newTitle.trim()) return;
         const task = {
             id: `task_${Date.now()}`,
@@ -1527,20 +1608,24 @@ const CrmStageTaskManager: React.FC = () => {
             ...tasksMap,
             [selectedStageKey]: [...currentTasks, task]
         };
-        saveTasks(updatedMap);
-        setNewTitle('');
-        setIsAddModalOpen(false);
-        addToast({ type: 'success', title: 'Tarefa Criada', message: 'Nova tarefa pré-definida salva para esta etapa!' });
+        try {
+            await saveTasks(updatedMap);
+            setNewTitle('');
+            setIsAddModalOpen(false);
+            addToast({ type: 'success', title: 'Tarefa criada', message: 'A regra já está disponível para toda a equipe.' });
+        } catch { /* toast exibido por saveTasks */ }
     };
 
-    const handleDeleteTask = (taskId: string) => {
+    const handleDeleteTask = async (taskId: string) => {
         const currentTasks = tasksMap[selectedStageKey] || [];
         const updatedMap = {
             ...tasksMap,
             [selectedStageKey]: currentTasks.filter(t => t.id !== taskId)
         };
-        saveTasks(updatedMap);
-        addToast({ type: 'success', title: 'Tarefa Removida', message: 'Tarefa excluída da etapa com sucesso.' });
+        try {
+            await saveTasks(updatedMap);
+            addToast({ type: 'success', title: 'Tarefa removida', message: 'A regra foi removida para toda a equipe.' });
+        } catch { /* toast exibido por saveTasks */ }
     };
 
     const currentStageObj = stagesList.find(s => s.key === selectedStageKey) || stagesList[0];
@@ -1554,11 +1639,12 @@ const CrmStageTaskManager: React.FC = () => {
                         <CheckSquare size={16} className="text-[#0412dd] dark:text-[#3b48ff]" /> Gerenciador de Tarefas por Etapa (CRM)
                     </h3>
                     <p className={SETTINGS_SECTION_DESCRIPTION_CLASS}>
-                        Defina quais tarefas e prazos o time deve executar ao mover negócios para cada etapa do funil.
+                        Defina quais tarefas e prazos o time deve executar ao mover negócios para cada etapa do funil. As alterações são compartilhadas com toda a equipe.
                     </p>
                 </div>
                 <button
                     onClick={() => setIsAddModalOpen(true)}
+                    disabled={loadingTasks || savingTasks}
                     className={`${SETTINGS_PRIMARY_ACTION_CLASS} w-full sm:w-auto`}
                 >
                     <Plus size={14} /> + Nova Tarefa
@@ -1612,7 +1698,8 @@ const CrmStageTaskManager: React.FC = () => {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={() => handleDeleteTask(task.id)}
+                                        onClick={() => void handleDeleteTask(task.id)}
+                                        disabled={savingTasks}
                                         className="rounded-lg p-1.5 text-zinc-400 opacity-100 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30 lg:opacity-0 lg:group-hover:opacity-100"
                                         title="Excluir tarefa"
                                     >
@@ -1678,11 +1765,11 @@ const CrmStageTaskManager: React.FC = () => {
                             Cancelar
                         </button>
                         <button
-                            onClick={handleAddTask}
-                            disabled={!newTitle.trim()}
+                            onClick={() => void handleAddTask()}
+                            disabled={!newTitle.trim() || savingTasks}
                             className="px-5 py-2 bg-[#0412dd] hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50 cursor-pointer"
                         >
-                            Salvar Tarefa
+                            {savingTasks ? 'Salvando...' : 'Salvar tarefa'}
                         </button>
                     </div>
                 </div>
@@ -1969,18 +2056,25 @@ const WhatsAppCard: React.FC = () => {
 
                             {/* WhatsApp Templates Section */}
                             <NotificationTemplatesManager />
-                        </div>
-                    )}
 
-                    {activeSettingsTab === 'emails' && (
-                        <div className={`${SETTINGS_GRID_CLASS} animate-in fade-in duration-300`}>
-                            <EmailTemplatesVisualManager />
+                            <section className={`${SETTINGS_PANEL_CLASS} xl:col-span-2`}>
+                                <div className={SETTINGS_PANEL_HEADER_CLASS}>
+                                    <div>
+                                        <h3 className={SETTINGS_SECTION_TITLE_CLASS}><Mail size={16} className="text-[#0412dd]" /> Prévia visual dos e-mails</h3>
+                                        <p className={SETTINGS_SECTION_DESCRIPTION_CLASS}>Consulta auxiliar dos modelos já cobertos pela configuração de comunicações.</p>
+                                    </div>
+                                    <button type="button" onClick={() => setShowEmailPreviews((current) => !current)} className="flex min-h-9 items-center justify-center gap-2 rounded-full border border-[#e5e5e5] px-4 text-xs font-semibold text-black dark:border-zinc-700 dark:text-white">
+                                        <Eye size={14} /> {showEmailPreviews ? 'Ocultar prévias' : 'Consultar prévias'}
+                                    </button>
+                                </div>
+                                {showEmailPreviews && <EmailTemplatesVisualManager />}
+                            </section>
                         </div>
                     )}
 
                     {activeSettingsTab === 'crm_rules' && (
                         <div className={`${SETTINGS_GRID_CLASS} animate-in fade-in duration-300`}>
-                            <CrmStageTaskManager />
+                            <CrmStageTaskManager organizationId={organization?.id} />
                         </div>
                     )}
 
@@ -2090,8 +2184,29 @@ const WhatsAppCard: React.FC = () => {
                                                             <p className="mt-1 text-xs leading-relaxed text-[#666] dark:text-zinc-400">Toda terça-feira, a partir das 10h, o sistema busca a edição mais recente de Marcas e envia o XML para a fila de processamento.</p>
                                                         </div>
                                                     </div>
-                                                    <span className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">Ativa</span>
+                                                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white ${rpiSyncStatus?.enabled && rpiSyncStatus?.started ? 'bg-emerald-600' : 'bg-amber-600'}`}>
+                                                        {rpiSyncStatus?.enabled && rpiSyncStatus?.started ? (rpiSyncStatus?.running ? 'Executando' : 'Ativa') : 'Atenção'}
+                                                    </span>
                                                 </div>
+                                                <div className="mt-4 grid gap-px border border-emerald-100 bg-emerald-100 text-[10.5px] dark:border-emerald-900/40 dark:bg-emerald-900/40 sm:grid-cols-2">
+                                                    <div className="bg-white px-3 py-2.5 text-[#666] dark:bg-zinc-950 dark:text-zinc-400">
+                                                        <strong className="block text-black dark:text-white">Última execução</strong>
+                                                        {rpiSyncStatus?.latestProcessing
+                                                            ? `RPI ${rpiSyncStatus.latestProcessing.rpiNumber} · ${rpiSyncStatus.latestProcessing.status === 'COMPLETED' ? 'concluída' : rpiSyncStatus.latestProcessing.status.toLowerCase()}`
+                                                            : 'Nenhuma execução registrada'}
+                                                    </div>
+                                                    <div className="bg-white px-3 py-2.5 text-[#666] dark:bg-zinc-950 dark:text-zinc-400">
+                                                        <strong className="block text-black dark:text-white">Próxima execução</strong>
+                                                        {rpiSyncStatus?.nextScheduledAt
+                                                            ? new Date(rpiSyncStatus.nextScheduledAt).toLocaleString('pt-BR', { timeZone: rpiSyncStatus.timeZone || 'America/Fortaleza', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                                                            : 'Aguardando agendamento'}
+                                                    </div>
+                                                </div>
+                                                {rpiSyncStatus?.latestProcessing?.status === 'FAILED' && (
+                                                    <div className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-900/50 dark:bg-red-950/20 dark:text-red-300">
+                                                        Última falha: {rpiSyncStatus.latestProcessing.errorMessage || 'erro não detalhado'}
+                                                    </div>
+                                                )}
                                                 <div className="mt-4 grid gap-px border border-emerald-100 bg-emerald-100 text-[10.5px] dark:border-emerald-900/40 dark:bg-emerald-900/40 sm:grid-cols-2">
                                                     <div className="bg-white px-3 py-2.5 text-[#666] dark:bg-zinc-950 dark:text-zinc-400"><strong className="block text-black dark:text-white">Sem duplicidade</strong>Uma edição já recebida não é baixada novamente.</div>
                                                     <div className="bg-white px-3 py-2.5 text-[#666] dark:bg-zinc-950 dark:text-zinc-400"><strong className="block text-black dark:text-white">Contingência automática</strong>Nova tentativa espaçada se o portal estiver indisponível.</div>
@@ -2151,10 +2266,6 @@ const WhatsAppCard: React.FC = () => {
                             <AsteryskoTrademarkGovernanceArea />
 
                         </div>
-                    )}
-
-                    {activeSettingsTab === 'logs' && (
-                        <AsteryskoSystemLogsPanel />
                     )}
 
                     {/* TAB 3: PLANS & PRICING TABLE */}
@@ -2266,9 +2377,9 @@ const WhatsAppCard: React.FC = () => {
                                             <div className="flex flex-col gap-2 sm:flex-row">
                                                 <div className="flex min-w-0 flex-1 items-center rounded-xl border border-docka-200 bg-docka-50 px-3 py-2 text-sm text-docka-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">
                                                     <Link size={14} className="mr-2 text-docka-400 dark:text-zinc-500" />
-                                                    <span className="truncate">portal.asterysko.com/login</span>
+                                                    <span className="truncate">{portalAccessUrl}</span>
                                                 </div>
-                                                <button className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400">
+                                                <button onClick={() => void copyPortalLink()} className="p-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-xl hover:bg-docka-50 dark:hover:bg-zinc-700 text-docka-600 dark:text-zinc-400" aria-label="Copiar link do portal">
                                                     <Copy size={16} />
                                                 </button>
                                                 <button
@@ -2293,7 +2404,6 @@ const WhatsAppCard: React.FC = () => {
                                                         placeholder="Ex: cliente.asterysko.com"
                                                         value={clientPortalDomain}
                                                         onChange={(e) => setClientPortalDomain(e.target.value)}
-                                                        onBlur={handleUpdateDomain}
                                                         onKeyDown={(e) => {
                                                             if (e.key === 'Enter') {
                                                                 e.preventDefault();
@@ -2303,7 +2413,8 @@ const WhatsAppCard: React.FC = () => {
                                                     />
                                                     <button
                                                         onClick={handleUpdateDomain}
-                                                        className="min-h-11 rounded-xl bg-docka-100 px-4 py-2 text-sm font-bold text-docka-700 transition-colors hover:bg-docka-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 sm:min-h-0"
+                                                        disabled={savingPortalIdentity}
+                                                        className="min-h-11 rounded-xl bg-docka-100 px-4 py-2 text-sm font-bold text-docka-700 transition-colors hover:bg-docka-200 disabled:opacity-50 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700 sm:min-h-0"
                                                     >
                                                         Salvar
                                                     </button>
@@ -2312,7 +2423,7 @@ const WhatsAppCard: React.FC = () => {
                                                     <div className="mt-3 p-4 bg-slate-50 dark:bg-zinc-800/50 rounded-xl border border-slate-200 dark:border-zinc-700/50">
                                                         <h5 className="text-xs font-bold text-slate-700 dark:text-zinc-300 mb-2 flex items-center gap-2">
                                                             Configuração de Zona DNS
-                                                            <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs px-1.5 py-0.5 rounded font-semibold">Pendente</span>
+                                                            <span className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs px-1.5 py-0.5 rounded font-semibold">Configurado</span>
                                                         </h5>
                                                         <p className="text-xs text-slate-500 dark:text-zinc-500 mb-4">Adicione o registro abaixo no seu provedor de domínio (Cloudflare, Hostinger, Registro.br, etc) para ativar o redirecionamento. A propagação pode levar alguns minutos.</p>
 
@@ -2347,8 +2458,20 @@ const WhatsAppCard: React.FC = () => {
                                             <div>
                                                 <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Cor Primária</label>
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded bg-blue-600 border border-docka-200 dark:border-zinc-700" />
-                                                    <input className="flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100" defaultValue="#2563EB" />
+                                                    <input
+                                                        type="color"
+                                                        value={clientPortalPrimaryColor}
+                                                        onChange={(event) => setClientPortalPrimaryColor(event.target.value)}
+                                                        className="h-10 w-10 shrink-0 cursor-pointer rounded border border-docka-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-800"
+                                                        aria-label="Selecionar cor principal"
+                                                    />
+                                                    <input
+                                                        value={clientPortalPrimaryColor}
+                                                        onChange={(event) => setClientPortalPrimaryColor(event.target.value)}
+                                                        className="min-w-0 flex-1 px-3 py-2 bg-white dark:bg-zinc-800 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-900 dark:text-zinc-100"
+                                                        maxLength={7}
+                                                    />
+                                                    <button type="button" onClick={() => void handleUpdatePortalColor()} disabled={savingPortalIdentity} className="min-h-10 rounded-lg px-3 text-xs font-bold text-white disabled:opacity-50" style={{ backgroundColor: clientPortalPrimaryColor }}>Salvar</button>
                                                 </div>
                                             </div>
 
@@ -2379,11 +2502,24 @@ const WhatsAppCard: React.FC = () => {
 
                                         </div>
 
-                                        {organization && (
-                                            <div className="mt-8 pt-6 border-t border-docka-100 dark:border-zinc-800">
-                                                <OrganizationIconSettings organization={organization} />
+                                        <div className="overflow-hidden border border-[#e5e5e5] bg-[#f3f3f3] dark:border-zinc-800 dark:bg-zinc-900">
+                                            <div className="flex items-center justify-between border-b border-[#e5e5e5] bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950">
+                                                <div className="flex items-center gap-3">
+                                                    {organization?.logo ? (
+                                                        <img src={resolveFileUrl(organization.logo)} alt="" className="h-8 w-8 rounded-lg object-contain" />
+                                                    ) : (
+                                                        <span className="flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold text-white" style={{ backgroundColor: clientPortalPrimaryColor }}>A</span>
+                                                    )}
+                                                    <span><strong className="block text-xs text-black dark:text-white">{organization?.name || 'Asterysko'}</strong><small className="text-[10px] text-[#7f7f7f]">Portal do cliente</small></span>
+                                                </div>
+                                                <span className="rounded-full px-3 py-1.5 text-[10px] font-bold text-white" style={{ backgroundColor: clientPortalPrimaryColor }}>Cor aplicada</span>
                                             </div>
-                                        )}
+                                            <div className="p-4 sm:p-5">
+                                                <p className="font-season text-xl font-[420] text-black dark:text-white">Prévia da identidade</p>
+                                                <p className="mt-1 text-xs text-[#7f7f7f]">Logo, nome e cor principal usados no acesso e nas ações do portal.</p>
+                                            </div>
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>

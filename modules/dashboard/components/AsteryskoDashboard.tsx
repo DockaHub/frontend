@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
 import { User, Organization } from '../../../types';
-import PlaceholderView from '../../../components/PlaceholderView';
 import { LayoutTemplate } from 'lucide-react';
 import AsteryskoCRMView from './asterysko/AsteryskoCRMView';
 import AsteryskoProcessesView from './asterysko/AsteryskoProcessesView';
@@ -26,6 +25,9 @@ interface AsteryskoDashboardProps {
 
 const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ user, activeView, organization }) => {
     const [viewingAsClient, setViewingAsClient] = useState(false);
+    const canManageSettings = ['ADMIN', 'OWNER', 'SUPER_ADMIN'].includes(String(user?.role || '').toUpperCase())
+        || organization?.memberRole === 'OWNER'
+        || organization?.memberRole === 'ADMIN';
 
     // If viewing as client, override everything else
     if (viewingAsClient) {
@@ -56,7 +58,17 @@ const AsteryskoDashboard: React.FC<AsteryskoDashboardProps> = ({ user, activeVie
         case 'financial':
             return <div className="h-full bg-[#fafafa] dark:bg-zinc-950"><AsteryskoFinancialView /></div>;
         case 'settings':
-            return <AsteryskoSettingsView onOpenClientPortal={() => setViewingAsClient(true)} organization={organization} />;
+            return canManageSettings
+                ? <AsteryskoSettingsView onOpenClientPortal={() => setViewingAsClient(true)} organization={organization} visibleTabs={['notifications', 'crm_rules', 'plans', 'portal']} />
+                : (
+                    <div className="flex h-full min-h-0 w-full items-center justify-center bg-white p-6 text-center dark:bg-zinc-950">
+                        <div className="max-w-md">
+                            <LayoutTemplate size={28} className="mx-auto text-[#0412dd] dark:text-[#3b48ff]" />
+                            <h1 className="mt-4 font-season text-2xl font-[420] text-black dark:text-white">Configurações restritas</h1>
+                            <p className="mt-2 text-xs leading-6 text-[#7f7f7f] dark:text-zinc-400">Somente administradores da Asterysko podem alterar integrações, planos, regras do CRM e o Portal do Cliente.</p>
+                        </div>
+                    </div>
+                );
         case 'performance':
             return <AsteryskoPerformanceView />;
         case 'documents':

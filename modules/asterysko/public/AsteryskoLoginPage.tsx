@@ -53,6 +53,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     const [error, setError] = useState('');
     const [transitioning, setTransitioning] = useState(false);
     const [transitionDirection, setTransitionDirection] = useState<TransitionDirection>('forward');
+    const [primaryColor, setPrimaryColor] = useState('#1a1fd3');
     const otpRefs = useRef<Array<HTMLInputElement | null>>([]);
     const transitionTimer = useRef<number | null>(null);
 
@@ -69,6 +70,17 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
 
     useEffect(() => () => {
         if (transitionTimer.current) window.clearTimeout(transitionTimer.current);
+    }, []);
+
+    useEffect(() => {
+        const hostname = window.location.hostname.toLowerCase();
+        if (['localhost', '127.0.0.1'].includes(hostname)) return;
+        api.get('/organizations/public/resolve-domain', { params: { domain: hostname } })
+            .then((response) => {
+                const color = response.data?.clientPortalPrimaryColor;
+                if (/^#[0-9a-fA-F]{6}$/.test(color || '')) setPrimaryColor(color);
+            })
+            .catch(() => undefined);
     }, []);
 
     const transitionTo = (nextStep: LoginStep, direction: TransitionDirection) => {
@@ -177,7 +189,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
 
     if (portalLoading) {
         return (
-            <div className="ast-page ast-portal-loader" role="status" aria-live="polite">
+            <div className="ast-page ast-portal-loader" role="status" aria-live="polite" style={{ '--ast-blue': primaryColor } as React.CSSProperties}>
                 <AsteryskoAnimatedMark className="ast-portal-loader__mark" />
                 <p>Preparando seu portal...</p>
             </div>
@@ -190,7 +202,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
     const stepClass = `ast-auth-step ast-auth-step--${transitioning ? 'leaving' : 'entering'} ast-auth-step--${transitionDirection}`;
 
     return (
-        <div className={authClass}>
+        <div className={authClass} style={{ '--ast-blue': primaryColor } as React.CSSProperties}>
             <div className="ast-auth__stage">
                 {step !== 'selection' && (
                     <button className="ast-round-button ast-auth__back" type="button" onClick={goBack} aria-label="Voltar">

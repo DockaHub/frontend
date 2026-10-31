@@ -46,6 +46,8 @@ export interface Organization {
   iconBg?: string;
   iconScale?: number;
   clientPortalDomain?: string;
+  clientPortalPrimaryColor?: string;
+  asteryskoCrmStageTasks?: Record<string, Array<{ id: string; title: string; due: string }>>;
   leadsAguardando?: number;
   membersPreview?: Array<{
     id: string;

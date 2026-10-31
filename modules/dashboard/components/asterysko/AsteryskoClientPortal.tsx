@@ -363,6 +363,7 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     const [view, setView] = useState<PortalView>(() => onboarding ? 'details' : getInitialView());
     const [processTab, setProcessTab] = useState<ProcessTab>(() => onboarding ? 'formalization' : 'details');
     const [clientData, setClientData] = useState<any>(null);
+    const [branding, setBranding] = useState<{ name: string; logo?: string | null; primaryColor: string }>({ name: 'Asterysko', primaryColor: '#1a1fd3' });
     const [processes, setProcesses] = useState<any[]>([]);
     const [financials, setFinancials] = useState<any>({ invoices: [], contracts: [] });
     const [benefits, setBenefits] = useState<PortalBenefit[]>([]);
@@ -466,7 +467,13 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
                 const invoices = financialResponse.data?.invoices;
                 const contracts = financialResponse.data?.contracts;
                 const portalBenefits = dashboardResponse.data?.benefits;
+                const portalBranding = dashboardResponse.data?.branding;
                 setClientData(client || null);
+                if (portalBranding) setBranding({
+                    name: portalBranding.name || 'Asterysko',
+                    logo: portalBranding.logo || null,
+                    primaryColor: /^#[0-9a-fA-F]{6}$/.test(portalBranding.primaryColor || '') ? portalBranding.primaryColor : '#1a1fd3'
+                });
                 setBenefits(Array.isArray(portalBenefits) ? portalBenefits : []);
                 setFinancials({
                     invoices: Array.isArray(invoices) ? invoices : [],
@@ -1273,7 +1280,11 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
     }
 
     return (
-        <div className={`ast-page ${onboarding ? 'ast-page--onboarding' : ''}`} ref={pageRef}>
+        <div
+            className={`ast-page ${onboarding ? 'ast-page--onboarding' : ''}`}
+            ref={pageRef}
+            style={{ '--ast-blue': branding.primaryColor } as React.CSSProperties}
+        >
             <main className="ast-portal__stage">
                 {onboarding && (
                     <header className="ast-onboarding-nav">
@@ -1287,8 +1298,8 @@ export const AsteryskoClientPortal: React.FC<AsteryskoClientPortalProps> = ({ on
 
                 {!onboarding && <header className="ast-desktop-nav" aria-label="Navegação principal do portal">
                     <button className="ast-desktop-nav__brand" type="button" onClick={goHome} aria-label="Ir para o início">
-                        <img src={`${ASSET_ROOT}/brand-mark.svg`} alt="" />
-                        <span><strong>Asterysko</strong><small>Portal do cliente</small></span>
+                        <img src={branding.logo ? resolveFileUrl(branding.logo) : `${ASSET_ROOT}/brand-mark.svg`} alt="" />
+                        <span><strong>{branding.name}</strong><small>Portal do cliente</small></span>
                     </button>
 
                     <nav className="ast-desktop-nav__links" aria-label="Áreas do portal">

@@ -218,6 +218,7 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
     const [newObservation, setNewObservation] = useState('');
     const [observations, setObservations] = useState<any[]>([]);
     const [dealDetails, setDealDetails] = useState<any>(null);
+    const [configuredStageTasks, setConfiguredStageTasks] = useState<Record<string, { id: string; title: string; due: string }[]> | null>(null);
     const [isLoadingDetails, setIsLoadingDetails] = useState(false);
     const [uploadingFile, setUploadingFile] = useState(false);
     const [showUploadMenu, setShowUploadMenu] = useState(false);
@@ -299,8 +300,21 @@ const AsteryskoDealDetailsModal: React.FC<Props> = ({ isOpen, onClose, card, onU
 
     const currentDeal = dealDetails || card;
     const clientId = currentDeal?.clientId || currentDeal?.client?.id;
-    const stageTasks = stageTasksMap[currentDeal?.status] || stageTasksMap['leads'] || [];
+    const effectiveStageTasksMap = configuredStageTasks || stageTasksMap;
+    const stageTasks = effectiveStageTasksMap[currentDeal?.status] || effectiveStageTasksMap['leads'] || [];
     const completedTasks = Array.isArray(currentDeal?.members) ? currentDeal.members : [];
+
+    useEffect(() => {
+        if (!isOpen) return;
+        let mounted = true;
+        api.get('/asterysko/crm/stage-tasks')
+            .then((response) => {
+                const tasks = response.data?.tasks;
+                if (mounted && tasks && typeof tasks === 'object' && !Array.isArray(tasks)) setConfiguredStageTasks(tasks);
+            })
+            .catch(() => undefined);
+        return () => { mounted = false; };
+    }, [isOpen]);
 
     const fetchInvoices = async () => {
         if (!clientId) return;
