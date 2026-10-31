@@ -85,9 +85,9 @@ export const AsteryskoTrademarkGovernanceArea: React.FC = () => {
     };
 
     return (
-        <div className="flex w-full min-w-0 flex-col gap-5 border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:gap-6 sm:p-7 lg:p-10">
+        <div className="w-full min-w-0 border-b border-r border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
             {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-[#e5e5e5] pb-4 dark:border-zinc-800">
+            <div className="flex min-h-[72px] items-start justify-between gap-3 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:items-center sm:px-7 lg:px-10">
                 <div className="flex min-w-0 items-start gap-3">
                     <Database className="mt-0.5 shrink-0 text-[#0412dd] dark:text-[#3b48ff]" size={22} />
                     <div className="min-w-0">
@@ -104,7 +104,8 @@ export const AsteryskoTrademarkGovernanceArea: React.FC = () => {
                 </button>
             </div>
 
-            {actionMsg && (
+            <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-7 lg:p-10">
+                {actionMsg && (
                 <div className="p-3 rounded-xl border border-emerald-200 bg-emerald-50 text-xs font-semibold text-emerald-800">
                     {actionMsg}
                 </div>
@@ -241,6 +242,7 @@ export const AsteryskoTrademarkGovernanceArea: React.FC = () => {
                             ))}
                         </tbody>
                     </table>
+                </div>
                 </div>
             </div>
         </div>

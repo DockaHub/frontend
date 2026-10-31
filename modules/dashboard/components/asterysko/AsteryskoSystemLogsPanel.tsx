@@ -154,8 +154,8 @@ const AsteryskoSystemLogsPanel: React.FC = () => {
     };
 
     return (
-        <div className="space-y-5 animate-in fade-in duration-300">
-            <section className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="grid min-w-0 border-l border-t border-[#e5e5e5] animate-in fade-in duration-300 dark:border-zinc-800">
+            <section className="overflow-hidden border-b border-r border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="flex min-h-[72px] flex-col justify-center gap-4 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-10">
                     <div>
                         <h3 className="flex items-center gap-2 font-season text-lg font-[420] text-black dark:text-white">
@@ -223,7 +223,7 @@ const AsteryskoSystemLogsPanel: React.FC = () => {
                 )}
             </section>
 
-            <section className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
+            <section className="overflow-hidden border-b border-r border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="grid gap-3 border-b border-[#e5e5e5] p-4 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-5 sm:p-5">
                     <label className="relative sm:col-span-2 lg:col-span-1">
                         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />

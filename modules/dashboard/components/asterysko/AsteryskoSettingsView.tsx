@@ -72,7 +72,8 @@ const ASTERYSKO_SETTINGS_TABS: Array<{
     { id: 'logs', label: 'Logs do Sistema', icon: ScrollText },
 ];
 
-const SETTINGS_PANEL_CLASS = 'min-w-0 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950';
+const SETTINGS_GRID_CLASS = 'grid min-w-0 border-l border-t border-[#e5e5e5] dark:border-zinc-800';
+const SETTINGS_PANEL_CLASS = 'min-w-0 overflow-hidden border-b border-r border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950';
 const SETTINGS_PANEL_HEADER_CLASS = 'flex min-h-[72px] flex-col items-stretch justify-center gap-3 border-b border-[#e5e5e5] bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-10';
 const SETTINGS_PANEL_BODY_CLASS = 'p-4 sm:p-7 lg:p-10';
 const SETTINGS_SECTION_TITLE_CLASS = 'flex items-center gap-2 font-season text-lg font-[420] text-black dark:text-white';
@@ -1935,7 +1936,7 @@ const WhatsAppCard: React.FC = () => {
 
                 {/* SETTINGS TABS NAVIGATION */}
                 <nav
-                    className={`${embedded ? 'mb-5' : 'sticky top-[76px] z-10'} custom-scrollbar flex snap-x snap-mandatory overflow-x-auto border-b border-[#e5e5e5] bg-white/95 px-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-7 lg:grid lg:overflow-visible lg:px-10`}
+                    className={`${embedded ? '' : 'sticky top-[76px] z-10'} custom-scrollbar flex snap-x snap-mandatory gap-px overflow-x-auto border-b border-[#e5e5e5] bg-[#e5e5e5] backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-800 lg:grid lg:overflow-visible`}
                     style={{ gridTemplateColumns: `repeat(${Math.max(availableTabs.length, 1)}, minmax(0, 1fr))` }}
                     aria-label="Seções das configurações"
                 >
@@ -1949,7 +1950,7 @@ const WhatsAppCard: React.FC = () => {
                                 className={`flex min-h-[52px] min-w-[145px] flex-1 snap-start items-center justify-center gap-2 border-b-2 px-3 py-3 text-xs font-semibold transition-colors sm:min-w-[160px] sm:px-4 lg:min-w-0 ${
                                     activeSettingsTab === tab.id
                                         ? 'border-[#0412dd] bg-blue-50/50 text-[#0412dd] dark:border-[#3b48ff] dark:bg-blue-950/20 dark:text-blue-400'
-                                        : 'border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
+                                        : 'border-transparent bg-white text-zinc-500 hover:bg-zinc-50 hover:text-black dark:bg-zinc-950 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
                                 }`}
                             >
                                 <TabIcon size={16} /> {tab.label}
@@ -1958,11 +1959,11 @@ const WhatsAppCard: React.FC = () => {
                     })}
                 </nav>
 
-                <div className="w-full min-w-0 space-y-6 px-4 py-5 sm:px-7 sm:py-7 lg:px-10 lg:py-8">
+                <div className="w-full min-w-0">
                     
                     {/* TAB 1: NOTIFICATIONS & WHATSAPP */}
                     {activeSettingsTab === 'notifications' && (
-                        <div className="grid min-w-0 items-start gap-6 animate-in fade-in duration-300 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.7fr)]">
+                        <div className={`${SETTINGS_GRID_CLASS} items-stretch animate-in fade-in duration-300 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.7fr)]`}>
                             {/* WhatsApp Connection Section */}
                             <WhatsAppCard />
 
@@ -1972,17 +1973,19 @@ const WhatsAppCard: React.FC = () => {
                     )}
 
                     {activeSettingsTab === 'emails' && (
-                        <EmailTemplatesVisualManager />
+                        <div className={`${SETTINGS_GRID_CLASS} animate-in fade-in duration-300`}>
+                            <EmailTemplatesVisualManager />
+                        </div>
                     )}
 
                     {activeSettingsTab === 'crm_rules' && (
-                        <div className="min-w-0 animate-in fade-in duration-300">
+                        <div className={`${SETTINGS_GRID_CLASS} animate-in fade-in duration-300`}>
                             <CrmStageTaskManager />
                         </div>
                     )}
 
                     {activeSettingsTab === 'rpi' && (
-                        <div className="min-w-0 space-y-6 animate-in fade-in duration-300">
+                        <div className={`${SETTINGS_GRID_CLASS} animate-in fade-in duration-300`}>
                             <div className={SETTINGS_PANEL_CLASS}>
                                 <div className={SETTINGS_PANEL_HEADER_CLASS}>
                                     <h3 className={SETTINGS_SECTION_TITLE_CLASS}>
@@ -2156,7 +2159,7 @@ const WhatsAppCard: React.FC = () => {
 
                     {/* TAB 3: PLANS & PRICING TABLE */}
                     {activeSettingsTab === 'plans' && (
-                        <div className="min-w-0 animate-in fade-in duration-300">
+                        <div className={`${SETTINGS_GRID_CLASS} animate-in fade-in duration-300`}>
                             {/* Fees Table Section */}
                             <div className={SETTINGS_PANEL_CLASS}>
                                 <div className={SETTINGS_PANEL_HEADER_CLASS}>
@@ -2247,7 +2250,7 @@ const WhatsAppCard: React.FC = () => {
 
                     {/* TAB 4: CLIENT PORTAL & BRANDING */}
                     {activeSettingsTab === 'portal' && (
-                        <div className="grid min-w-0 items-start gap-6 animate-in fade-in duration-300 xl:grid-cols-12">
+                        <div className={`${SETTINGS_GRID_CLASS} items-stretch animate-in fade-in duration-300 xl:grid-cols-12`}>
                             {/* Client Portal Management */}
                             <div className={`${SETTINGS_PANEL_CLASS} xl:col-span-7`}>
                                 <div className={SETTINGS_PANEL_HEADER_CLASS}>
