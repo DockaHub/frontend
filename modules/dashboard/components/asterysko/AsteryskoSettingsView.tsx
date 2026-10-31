@@ -72,6 +72,13 @@ const ASTERYSKO_SETTINGS_TABS: Array<{
     { id: 'logs', label: 'Logs do Sistema', icon: ScrollText },
 ];
 
+const SETTINGS_PANEL_CLASS = 'min-w-0 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950';
+const SETTINGS_PANEL_HEADER_CLASS = 'flex min-h-[72px] flex-col items-stretch justify-center gap-3 border-b border-[#e5e5e5] bg-white px-4 py-4 dark:border-zinc-800 dark:bg-zinc-950 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-10';
+const SETTINGS_PANEL_BODY_CLASS = 'p-4 sm:p-7 lg:p-10';
+const SETTINGS_SECTION_TITLE_CLASS = 'flex items-center gap-2 font-season text-lg font-[420] text-black dark:text-white';
+const SETTINGS_SECTION_DESCRIPTION_CLASS = 'mt-1 text-[11px] leading-relaxed text-[#7f7f7f] dark:text-zinc-400 sm:text-xs';
+const SETTINGS_PRIMARY_ACTION_CLASS = 'flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-[#0412dd] px-5 text-xs font-semibold text-white transition-colors hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#3b48ff] dark:hover:bg-blue-500 sm:min-h-9';
+
 const AsteryskoSettingsView: React.FC<AsteryskoSettingsViewProps> = ({
     onOpenClientPortal,
     organization,
@@ -773,20 +780,20 @@ const NotificationTemplatesManager: React.FC = () => {
     const channelTemplates = (Array.isArray(templates) ? templates : []).filter(t => (t.channel || 'WHATSAPP') === activeChannel);
 
     return (
-        <div className="mt-8 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-            <div className="flex flex-col items-start justify-between gap-4 border-b border-docka-100 bg-docka-50/20 p-4 dark:border-zinc-800 dark:bg-zinc-800/20 sm:p-6 md:flex-row md:items-center">
+        <div className={SETTINGS_PANEL_CLASS}>
+            <div className={SETTINGS_PANEL_HEADER_CLASS}>
                 <div>
-                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                    <h3 className={SETTINGS_SECTION_TITLE_CLASS}>
                         <MessageSquare size={16} className="text-emerald-500" /> Automação de Mensagens & Notificações
                     </h3>
-                    <p className="text-xs text-docka-500 dark:text-zinc-400 mt-1">
+                    <p className={SETTINGS_SECTION_DESCRIPTION_CLASS}>
                         Configure e personalize as mensagens automáticas disparadas a cada etapa do processo.
                     </p>
                 </div>
 
                 <button
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-700 active:scale-95 md:min-h-0 md:w-auto"
+                    className={`${SETTINGS_PRIMARY_ACTION_CLASS} w-full bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 md:w-auto`}
                 >
                     <Plus size={14} /> Nova Notificação
                 </button>
@@ -836,7 +843,7 @@ const NotificationTemplatesManager: React.FC = () => {
                 </button>
             </div>
 
-            <div className="space-y-4 p-4 sm:p-6">
+            <div className={`space-y-4 ${SETTINGS_PANEL_BODY_CLASS}`}>
                 {loading ? (
                     <div className="py-12 text-center text-docka-400 text-xs italic flex items-center justify-center gap-2">
                         <RefreshCw size={14} className="animate-spin" /> Carregando modelo de notificações...
@@ -1300,9 +1307,9 @@ const EmailTemplatesVisualManager: React.FC = () => {
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-                <div className="border-b border-docka-100 bg-gradient-to-br from-[#0412dd]/[0.06] via-white to-white px-6 py-6 dark:border-zinc-800 dark:from-[#4150ff]/10 dark:via-zinc-900 dark:to-zinc-900">
-                    <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div className={SETTINGS_PANEL_CLASS}>
+                <div className={SETTINGS_PANEL_HEADER_CLASS}>
+                    <div className="flex w-full flex-col justify-between gap-4 sm:flex-row sm:items-start">
                         <div>
                             <div className="mb-2 flex items-center gap-2">
                                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0412dd] text-white shadow-sm">
@@ -1312,7 +1319,7 @@ const EmailTemplatesVisualManager: React.FC = () => {
                                     {visualStandard}
                                 </span>
                             </div>
-                            <h2 className="text-lg font-bold text-docka-900 dark:text-zinc-100">Modelos de e-mail</h2>
+                            <h2 className="font-season text-xl font-[420] text-black dark:text-white">Modelos de e-mail</h2>
                             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-docka-500 dark:text-zinc-400">
                                 Confira a aparência exata dos e-mails enviados aos clientes. Cabeçalho, tipografia, botões e rodapé seguem o mesmo padrão visual em todas as etapas.
                             </p>
@@ -1539,26 +1546,26 @@ const CrmStageTaskManager: React.FC = () => {
     const currentTasksList = tasksMap[selectedStageKey] || [];
 
     return (
-        <div className="mt-6 overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-            <div className="flex flex-col justify-between gap-4 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:flex-row sm:items-center sm:px-6">
+        <div className={SETTINGS_PANEL_CLASS}>
+            <div className={SETTINGS_PANEL_HEADER_CLASS}>
                 <div>
-                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                    <h3 className={SETTINGS_SECTION_TITLE_CLASS}>
                         <CheckSquare size={16} className="text-[#0412dd] dark:text-[#3b48ff]" /> Gerenciador de Tarefas por Etapa (CRM)
                     </h3>
-                    <p className="text-xs text-docka-500 dark:text-zinc-400 mt-0.5">
+                    <p className={SETTINGS_SECTION_DESCRIPTION_CLASS}>
                         Defina quais tarefas e prazos o time deve executar ao mover negócios para cada etapa do funil.
                     </p>
                 </div>
                 <button
                     onClick={() => setIsAddModalOpen(true)}
-                    className="flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-xl bg-[#0412dd] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-blue-700 sm:min-h-0 sm:w-auto"
+                    className={`${SETTINGS_PRIMARY_ACTION_CLASS} w-full sm:w-auto`}
                 >
                     <Plus size={14} /> + Nova Tarefa
                 </button>
             </div>
 
             {/* Stages Selector Tabs */}
-            <div className="p-4 sm:p-6">
+            <div className={SETTINGS_PANEL_BODY_CLASS}>
                 <div className="flex gap-2 overflow-x-auto pb-3 custom-scrollbar border-b border-docka-100 dark:border-zinc-800 mb-6">
                     {stagesList.map(st => {
                         const count = (tasksMap[st.key] || []).length;
@@ -1796,9 +1803,9 @@ const WhatsAppCard: React.FC = () => {
     }, []);
 
     return (
-        <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
-                <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+        <div className={SETTINGS_PANEL_CLASS}>
+            <div className={SETTINGS_PANEL_HEADER_CLASS}>
+                <h3 className={SETTINGS_SECTION_TITLE_CLASS}>
                     <MessageSquare size={16} className="text-emerald-500" /> Conexão WhatsApp (Evolution API)
                 </h3>
                 <div className="flex items-center gap-2">
@@ -1821,7 +1828,7 @@ const WhatsAppCard: React.FC = () => {
                     </button>
                 </div>
             </div>
-            <div className="p-4 sm:p-6">
+            <div className={SETTINGS_PANEL_BODY_CLASS}>
                 {status === 'connected' ? (
                     <div className="space-y-6">
                         <div className="flex flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center">
@@ -1916,9 +1923,9 @@ const WhatsAppCard: React.FC = () => {
 
     const settingsContent = (
         <>
-            <div className={`${embedded ? 'pb-10 sm:pb-20' : 'h-full min-h-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]'} bg-white animate-in fade-in duration-500 dark:bg-zinc-950`}>
+            <div className={`${embedded ? 'pb-10 sm:pb-20' : 'h-full min-h-0 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]'} w-full bg-white font-sans animate-in fade-in duration-500 dark:bg-zinc-950`}>
                 {!embedded && (
-                    <header className="sticky top-0 z-20 flex min-h-[76px] items-center border-b border-[#e5e5e5] bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-7">
+                    <header className="sticky top-0 z-20 flex min-h-[76px] items-center border-b border-[#e5e5e5] bg-white/95 px-4 py-3 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-7 lg:px-10">
                         <div className="min-w-0">
                             <h1 className="font-season text-xl font-[420] text-black dark:text-white sm:text-[22px]">Configurações</h1>
                             <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-400 sm:text-xs">Preferências, integrações e regras da operação Asterysko.</p>
@@ -1927,14 +1934,19 @@ const WhatsAppCard: React.FC = () => {
                 )}
 
                 {/* SETTINGS TABS NAVIGATION */}
-                <nav className={`${embedded ? 'mb-5 sm:mb-8' : 'sticky top-[76px] z-10'} custom-scrollbar flex snap-x snap-mandatory overflow-x-auto border-b border-[#e5e5e5] bg-white/95 px-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-6`} aria-label="Seções das configurações">
+                <nav
+                    className={`${embedded ? 'mb-5' : 'sticky top-[76px] z-10'} custom-scrollbar flex snap-x snap-mandatory overflow-x-auto border-b border-[#e5e5e5] bg-white/95 px-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 sm:px-7 lg:grid lg:overflow-visible lg:px-10`}
+                    style={{ gridTemplateColumns: `repeat(${Math.max(availableTabs.length, 1)}, minmax(0, 1fr))` }}
+                    aria-label="Seções das configurações"
+                >
                     {availableTabs.map((tab) => {
                         const TabIcon = tab.icon;
                         return (
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveSettingsTab(tab.id)}
-                                className={`flex min-h-[52px] min-w-[145px] flex-1 snap-start items-center justify-center gap-2 border-b-2 px-3 py-3 text-xs font-semibold transition-colors sm:min-w-[160px] sm:px-4 ${
+                                aria-current={activeSettingsTab === tab.id ? 'page' : undefined}
+                                className={`flex min-h-[52px] min-w-[145px] flex-1 snap-start items-center justify-center gap-2 border-b-2 px-3 py-3 text-xs font-semibold transition-colors sm:min-w-[160px] sm:px-4 lg:min-w-0 ${
                                     activeSettingsTab === tab.id
                                         ? 'border-[#0412dd] bg-blue-50/50 text-[#0412dd] dark:border-[#3b48ff] dark:bg-blue-950/20 dark:text-blue-400'
                                         : 'border-transparent text-zinc-500 hover:bg-zinc-50 hover:text-black dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-white'
@@ -1946,11 +1958,11 @@ const WhatsAppCard: React.FC = () => {
                     })}
                 </nav>
 
-                <div className={`mx-auto space-y-5 px-4 py-5 sm:space-y-8 sm:px-6 sm:py-8 ${activeSettingsTab === 'emails' ? 'max-w-6xl' : 'max-w-5xl'}`}>
+                <div className="w-full min-w-0 space-y-6 px-4 py-5 sm:px-7 sm:py-7 lg:px-10 lg:py-8">
                     
                     {/* TAB 1: NOTIFICATIONS & WHATSAPP */}
                     {activeSettingsTab === 'notifications' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="grid min-w-0 items-start gap-6 animate-in fade-in duration-300 xl:grid-cols-[minmax(320px,0.8fr)_minmax(0,1.7fr)]">
                             {/* WhatsApp Connection Section */}
                             <WhatsAppCard />
 
@@ -1964,20 +1976,20 @@ const WhatsAppCard: React.FC = () => {
                     )}
 
                     {activeSettingsTab === 'crm_rules' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="min-w-0 animate-in fade-in duration-300">
                             <CrmStageTaskManager />
                         </div>
                     )}
 
                     {activeSettingsTab === 'rpi' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
-                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-                                <div className="px-6 py-4 border-b border-docka-100 dark:border-zinc-800 bg-docka-50/30 dark:bg-zinc-800/30">
-                                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                        <div className="min-w-0 space-y-6 animate-in fade-in duration-300">
+                            <div className={SETTINGS_PANEL_CLASS}>
+                                <div className={SETTINGS_PANEL_HEADER_CLASS}>
+                                    <h3 className={SETTINGS_SECTION_TITLE_CLASS}>
                                         <Shield size={16} /> Motor INPI (Revista da Propriedade Industrial)
                                     </h3>
                                 </div>
-                                <div className="p-6 space-y-4">
+                                <div className={`space-y-4 ${SETTINGS_PANEL_BODY_CLASS}`}>
                                     <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/30 rounded-xl text-xs text-blue-700 dark:text-blue-300 mb-4">
                                         <strong>Uma RPI, dois destinos:</strong> o XML alimenta a base do Radar da Marca e, ao mesmo tempo, cruza os números do INPI para atualizar automaticamente processos, etapas do CRM e notificações da Asterysko.
                                         <div className="mt-3 grid gap-2 sm:grid-cols-2">
@@ -2063,17 +2075,23 @@ const WhatsAppCard: React.FC = () => {
                                             )}
                                         </div>
 
-                                        {/* Legacy Credentials info */}
+                                        {/* Automatic weekly sync */}
                                         <div>
-                                            <p className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-2">Acesso API Automática (Futuro)</p>
-                                            <div className="space-y-4 opacity-50 pointer-events-none">
-                                                <div>
-                                                    <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Login e-INPI</label>
-                                                    <input className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="asterysko_pi" disabled />
+                                            <p className="mb-2 block text-xs font-bold uppercase text-docka-700 dark:text-zinc-400">Sincronização automática</p>
+                                            <div className="border border-emerald-200 bg-emerald-50/50 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/15">
+                                                <div className="flex items-start justify-between gap-4">
+                                                    <div className="flex min-w-0 items-start gap-3">
+                                                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"><Bot size={17} /></span>
+                                                        <div>
+                                                            <h4 className="font-season text-base font-[420] text-black dark:text-white">Coleta semanal do INPI</h4>
+                                                            <p className="mt-1 text-xs leading-relaxed text-[#666] dark:text-zinc-400">Toda terça-feira, a partir das 10h, o sistema busca a edição mais recente de Marcas e envia o XML para a fila de processamento.</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="shrink-0 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white">Ativa</span>
                                                 </div>
-                                                <div>
-                                                    <label className="block text-xs uppercase font-bold text-docka-500 mb-1">Senha</label>
-                                                    <input type="password" className="w-full px-3 py-2 bg-docka-50 dark:bg-zinc-800/50 border border-docka-200 dark:border-zinc-700 rounded-lg text-sm text-docka-700" value="********" disabled />
+                                                <div className="mt-4 grid gap-px border border-emerald-100 bg-emerald-100 text-[10.5px] dark:border-emerald-900/40 dark:bg-emerald-900/40 sm:grid-cols-2">
+                                                    <div className="bg-white px-3 py-2.5 text-[#666] dark:bg-zinc-950 dark:text-zinc-400"><strong className="block text-black dark:text-white">Sem duplicidade</strong>Uma edição já recebida não é baixada novamente.</div>
+                                                    <div className="bg-white px-3 py-2.5 text-[#666] dark:bg-zinc-950 dark:text-zinc-400"><strong className="block text-black dark:text-white">Contingência automática</strong>Nova tentativa espaçada se o portal estiver indisponível.</div>
                                                 </div>
                                             </div>
                                         </div>
@@ -2091,7 +2109,7 @@ const WhatsAppCard: React.FC = () => {
                                             ) : (!Array.isArray(inpiHistory) || inpiHistory.length === 0) ? (
                                                 <div className="text-sm border-2 border-dashed border-docka-200 dark:border-zinc-800 p-6 rounded-xl text-center text-docka-500 dark:text-zinc-500 flex flex-col items-center">
                                                     <Info size={20} className="mb-2 opacity-50" />
-                                                    Nenhum histórico de Revista do INPI encontrado. Faça seu primeiro Upload.
+                                                    Nenhuma Revista do INPI foi processada ainda.
                                                 </div>
                                             ) : (
                                                 inpiHistory.map((log: any) => (
@@ -2099,6 +2117,7 @@ const WhatsAppCard: React.FC = () => {
                                                         <div className="flex flex-col">
                                                             <span className="font-bold text-docka-900 dark:text-zinc-100 flex items-center gap-2">
                                                                 RPI {log.rpiNumber}
+                                                                {log.status === 'DOWNLOADING' && <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-xs font-bold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300">Baixando</span>}
                                                                 {log.status === 'QUEUED' && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Na fila</span>}
                                                                 {log.status === 'PROCESSING' && <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 rounded-full font-bold animate-pulse">Processando...</span>}
                                                                 {log.status === 'COMPLETED' && <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 rounded-full font-bold">Concluído</span>}
@@ -2137,21 +2156,21 @@ const WhatsAppCard: React.FC = () => {
 
                     {/* TAB 3: PLANS & PRICING TABLE */}
                     {activeSettingsTab === 'plans' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="min-w-0 animate-in fade-in duration-300">
                             {/* Fees Table Section */}
-                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-                                <div className="flex flex-col items-stretch justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:flex-row sm:items-center sm:px-6">
-                                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                            <div className={SETTINGS_PANEL_CLASS}>
+                                <div className={SETTINGS_PANEL_HEADER_CLASS}>
+                                    <h3 className={SETTINGS_SECTION_TITLE_CLASS}>
                                         <CreditCard size={16} /> Tabela de Planos Asterysko
                                     </h3>
                                     <button
                                         onClick={() => { setSelectedPlan({ category: 'registration', commissionSales: 0, commissionOps: 0, billingMode: 'ONE_TIME', taxChargeTiming: 'SEPARATE', active: true }); setIsModalOpen(true); }}
-                                        className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 sm:min-h-0"
+                                        className={SETTINGS_PRIMARY_ACTION_CLASS}
                                     >
                                         <Plus size={14} /> Novo Plano
                                     </button>
                                 </div>
-                                <div className="p-4 sm:p-6">
+                                <div className={SETTINGS_PANEL_BODY_CLASS}>
                                     {loading ? (
                                         <div className="py-8 text-center text-docka-400 text-xs italic">Carregando honorários...</div>
                                     ) : (
@@ -2228,16 +2247,16 @@ const WhatsAppCard: React.FC = () => {
 
                     {/* TAB 4: CLIENT PORTAL & BRANDING */}
                     {activeSettingsTab === 'portal' && (
-                        <div className="space-y-8 animate-in fade-in duration-300">
+                        <div className="grid min-w-0 items-start gap-6 animate-in fade-in duration-300 xl:grid-cols-12">
                             {/* Client Portal Management */}
-                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-                                <div className="flex items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
-                                    <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm flex items-center gap-2">
+                            <div className={`${SETTINGS_PANEL_CLASS} xl:col-span-7`}>
+                                <div className={SETTINGS_PANEL_HEADER_CLASS}>
+                                    <h3 className={SETTINGS_SECTION_TITLE_CLASS}>
                                         <Users size={16} /> Portal do Cliente
                                     </h3>
                                     <span className="text-xs font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">ATIVO</span>
                                 </div>
-                                <div className="space-y-6 p-4 sm:p-6">
+                                <div className={`space-y-6 ${SETTINGS_PANEL_BODY_CLASS}`}>
                                     <div className="flex items-center gap-4">
                                         <div className="flex-1">
                                             <label className="block text-xs font-bold text-docka-700 dark:text-zinc-400 uppercase mb-1">Link de Acesso Geral</label>
@@ -2366,23 +2385,23 @@ const WhatsAppCard: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-docka-100 bg-docka-50/30 px-4 py-4 dark:border-zinc-800 dark:bg-zinc-800/30 sm:px-6">
+                            <div className={`${SETTINGS_PANEL_CLASS} xl:col-span-5`}>
+                                <div className={SETTINGS_PANEL_HEADER_CLASS}>
                                     <div>
-                                        <h3 className="font-bold text-docka-900 dark:text-zinc-100 text-sm">Benefícios do cliente</h3>
+                                        <h3 className={SETTINGS_SECTION_TITLE_CLASS}>Benefícios do cliente</h3>
                                         <p className="mt-1 text-xs text-docka-500 dark:text-zinc-400">Somente benefícios ativos aparecem na página inicial do portal.</p>
                                     </div>
                                     <button
                                         type="button"
                                         onClick={openNewBenefit}
                                         disabled={!organization}
-                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+                                        className={SETTINGS_PRIMARY_ACTION_CLASS}
                                     >
                                         <Plus size={16} /> Novo benefício
                                     </button>
                                 </div>
 
-                                <div className="p-4 sm:p-6">
+                                <div className={SETTINGS_PANEL_BODY_CLASS}>
                                     {loadingBenefits ? (
                                         <div className="py-8 text-center text-xs text-docka-400">Carregando benefícios...</div>
                                     ) : portalBenefits.length === 0 ? (

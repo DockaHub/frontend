@@ -85,13 +85,13 @@ export const AsteryskoTrademarkGovernanceArea: React.FC = () => {
     };
 
     return (
-        <div className="flex w-full flex-col gap-5 rounded-2xl border border-[#e5e5e5] bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:gap-6 sm:p-6">
+        <div className="flex w-full min-w-0 flex-col gap-5 border border-[#e5e5e5] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950 sm:gap-6 sm:p-7 lg:p-10">
             {/* Header */}
             <div className="flex items-start justify-between gap-3 border-b border-[#e5e5e5] pb-4 dark:border-zinc-800">
                 <div className="flex min-w-0 items-start gap-3">
                     <Database className="mt-0.5 shrink-0 text-[#0412dd] dark:text-[#3b48ff]" size={22} />
                     <div className="min-w-0">
-                        <h3 className="text-base font-bold text-black dark:text-white sm:text-lg">Controle da base de marcas</h3>
+                        <h3 className="font-season text-lg font-[420] text-black dark:text-white sm:text-xl">Controle da base de marcas</h3>
                         <p className="mt-1 text-xs leading-5 text-[#666] dark:text-[#aaa]">Acompanhe a atualização da base do Radar e restaure versões anteriores quando necessário.</p>
                     </div>
                 </div>
@@ -126,13 +126,13 @@ export const AsteryskoTrademarkGovernanceArea: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700/50 flex flex-col gap-1">
                         <span className="text-[11px] font-bold text-[#888] uppercase">Versão ativa</span>
-                        <span className="text-base font-bold text-black dark:text-white">{freshness.version}</span>
+                        <span className="font-season text-lg font-[420] text-black dark:text-white">{freshness.version}</span>
                         <span className="text-xs text-[#666] dark:text-[#aaa]">{freshness.recordCount.toLocaleString('pt-BR')} registros</span>
                     </div>
 
                     <div className="p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-xl border border-zinc-200 dark:border-zinc-700/50 flex flex-col gap-1">
                         <span className="text-[11px] font-bold text-[#888] uppercase">Data de Referência</span>
-                        <span className="text-base font-bold text-black dark:text-white">
+                        <span className="font-season text-lg font-[420] text-black dark:text-white">
                             {freshness.referenceDate ? new Date(freshness.referenceDate).toLocaleDateString('pt-BR') : 'Sem data'}
                         </span>
                         <span className="text-xs text-[#666] dark:text-[#aaa]">Defasagem: {freshness.daysStale} dias</span>
@@ -164,7 +164,7 @@ export const AsteryskoTrademarkGovernanceArea: React.FC = () => {
 
             {/* Snapshots Table */}
             <div className="mt-2 flex flex-col gap-3">
-                <h4 className="text-sm font-bold text-black dark:text-white">Versões da base</h4>
+                <h4 className="font-season text-lg font-[420] text-black dark:text-white">Versões da base</h4>
                 <div className="space-y-3 md:hidden">
                     {snapshots.length === 0 ? (
                         <div className="rounded-xl border border-dashed border-[#e5e5e5] p-5 text-center text-xs text-zinc-500 dark:border-zinc-800">Nenhuma versão encontrada.</div>

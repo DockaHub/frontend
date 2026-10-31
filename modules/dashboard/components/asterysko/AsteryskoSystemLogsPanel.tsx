@@ -155,10 +155,10 @@ const AsteryskoSystemLogsPanel: React.FC = () => {
 
     return (
         <div className="space-y-5 animate-in fade-in duration-300">
-            <section className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
-                <div className="flex flex-col gap-4 border-b border-[#e5e5e5] px-4 py-5 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <section className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
+                <div className="flex min-h-[72px] flex-col justify-center gap-4 border-b border-[#e5e5e5] px-4 py-4 dark:border-zinc-800 sm:flex-row sm:items-center sm:justify-between sm:px-7 lg:px-10">
                     <div>
-                        <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                        <h3 className="flex items-center gap-2 font-season text-lg font-[420] text-black dark:text-white">
                             <Server size={17} /> Logs do sistema
                         </h3>
                         <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
@@ -179,37 +179,37 @@ const AsteryskoSystemLogsPanel: React.FC = () => {
                             type="button"
                             onClick={() => void loadLogs()}
                             disabled={loading}
-                            className="flex items-center gap-2 rounded-lg bg-zinc-900 px-3 py-2 text-xs font-bold text-white hover:bg-zinc-800 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+                            className="flex min-h-9 items-center gap-2 rounded-full bg-[#0412dd] px-4 text-xs font-semibold text-white hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff] dark:hover:bg-blue-500"
                         >
                             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Atualizar
                         </button>
                     </div>
                 </div>
 
-                <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-4 sm:p-6">
+                <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-7 lg:grid-cols-4 lg:p-10">
                     <div className={`border p-4 ${summary?.status === 'healthy' ? 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-900/50 dark:bg-emerald-950/20' : 'border-amber-200 bg-amber-50/70 dark:border-amber-900/50 dark:bg-amber-950/20'}`}>
                         <div className="flex items-center justify-between">
                             <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Saúde operacional</span>
                             {summary?.status === 'healthy' ? <CheckCircle2 size={17} className="text-emerald-600" /> : <AlertTriangle size={17} className="text-amber-600" />}
                         </div>
-                        <p className="mt-2 text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                        <p className="mt-2 font-season text-xl font-[420] text-zinc-900 dark:text-zinc-100">
                             {summary?.status === 'healthy' ? 'Sem falhas' : 'Requer atenção'}
                         </p>
                         <p className="mt-1 text-xs text-zinc-500">Resumo das últimas 24 horas</p>
                     </div>
                     <div className="border border-red-100 bg-red-50/40 p-4 dark:border-red-950 dark:bg-red-950/10">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Erros</span>
-                        <p className="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">{summary?.errors ?? '—'}</p>
+                        <p className="mt-2 font-season text-2xl font-[420] text-red-600 dark:text-red-400">{summary?.errors ?? '—'}</p>
                         <p className="mt-1 text-xs text-zinc-500">Falhas registradas</p>
                     </div>
                     <div className="border border-amber-100 bg-amber-50/40 p-4 dark:border-amber-950 dark:bg-amber-950/10">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Alertas</span>
-                        <p className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">{summary?.warnings ?? '—'}</p>
+                        <p className="mt-2 font-season text-2xl font-[420] text-amber-600 dark:text-amber-400">{summary?.warnings ?? '—'}</p>
                         <p className="mt-1 text-xs text-zinc-500">Situações para acompanhar</p>
                     </div>
                     <div className="border border-blue-100 bg-blue-50/40 p-4 dark:border-blue-950 dark:bg-blue-950/10">
                         <span className="text-[11px] font-bold uppercase tracking-wide text-zinc-500">Eventos</span>
-                        <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{summary?.events ?? '—'}</p>
+                        <p className="mt-2 font-season text-2xl font-[420] text-blue-600 dark:text-blue-400">{summary?.events ?? '—'}</p>
                         <p className="mt-1 text-xs text-zinc-500">Atividade do logger global</p>
                     </div>
                 </div>
@@ -223,7 +223,7 @@ const AsteryskoSystemLogsPanel: React.FC = () => {
                 )}
             </section>
 
-            <section className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-900/40">
+            <section className="overflow-hidden border border-[#e5e5e5] bg-white dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="grid gap-3 border-b border-[#e5e5e5] p-4 dark:border-zinc-800 sm:grid-cols-2 lg:grid-cols-5 sm:p-5">
                     <label className="relative sm:col-span-2 lg:col-span-1">
                         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
