@@ -346,7 +346,7 @@ const AsteryskoCRMView: React.FC<Props> = ({ organization }) => {
 
                 {/* Operational View for Opportunities Tab */}
                 {activeTab === 'opportunities' && (
-                    <div className="w-full min-w-0 p-4 sm:p-6 md:p-8">
+                    <div className="w-full min-w-0">
                         <AsteryskoOpportunitiesTab
                             organizationId={organization?.id}
                             onTotalChange={setOpportunityCount}

@@ -68,16 +68,16 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
         } finally { setLoading(false); }
     };
 
-    const inputClass = 'w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-[#0412dd] focus:ring-2 focus:ring-[#0412dd]/15 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white';
+    const inputClass = 'w-full rounded-xl border border-[#e5e5e5] bg-white px-3.5 py-2.5 text-xs text-black outline-none transition focus:border-[#0412dd] focus:ring-2 focus:ring-[#0412dd]/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white';
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm">
-            <div className="my-8 w-full max-w-xl overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="my-8 w-full max-w-xl overflow-hidden rounded-2xl border border-[#e5e5e5] bg-white font-sans shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
                 <div className="flex items-start justify-between border-b border-zinc-100 p-5 dark:border-zinc-800 sm:p-6">
                     <div>
                         <p className="text-[11px] font-bold uppercase tracking-wider text-[#0412dd] dark:text-[#3b48ff]">Prospecção ativa</p>
-                        <h2 className="mt-1 text-xl font-bold text-zinc-900 dark:text-white">Novo contato</h2>
-                        <p className="mt-1 text-xs text-zinc-500">Cadastre somente o necessário. O contato ainda não será um lead comercial.</p>
+                        <h2 className="mt-1 font-season text-[22px] font-[420] text-black dark:text-white">Novo contato</h2>
+                        <p className="mt-1 text-[11px] text-[#7f7f7f]">Cadastre somente o necessário. O contato ainda não será um lead comercial.</p>
                     </div>
                     <button type="button" onClick={onClose} className="rounded-full p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800" aria-label="Fechar"><X size={19} /></button>
                 </div>
@@ -108,8 +108,8 @@ export const AsteryskoNewOpportunityModal: React.FC<Props> = ({ isOpen, organiza
                     </div>
 
                     <div className="flex justify-end gap-2 border-t border-zinc-100 pt-5 dark:border-zinc-800">
-                        <button type="button" onClick={onClose} className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300">Cancelar</button>
-                        <button type="submit" disabled={loading || !organizationId} className="inline-flex min-w-32 items-center justify-center gap-2 rounded-xl bg-[#0412dd] px-5 py-2.5 text-sm font-bold text-white hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]">{loading && <Loader2 size={15} className="animate-spin" />}Salvar contato</button>
+                        <button type="button" onClick={onClose} className="rounded-full border border-[#e5e5e5] px-4 py-2.5 text-xs font-semibold text-[#7f7f7f] hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300">Cancelar</button>
+                        <button type="submit" disabled={loading || !organizationId} className="inline-flex min-w-32 items-center justify-center gap-2 rounded-full bg-[#0412dd] px-5 py-2.5 text-xs font-semibold text-white hover:bg-blue-800 disabled:opacity-50 dark:bg-[#3b48ff]">{loading && <Loader2 size={14} className="animate-spin" />}Salvar contato</button>
                     </div>
                 </form>
             </div>
