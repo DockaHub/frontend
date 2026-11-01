@@ -72,6 +72,7 @@ interface RuntimeDetails {
     trackingMode: 'native_service' | 'automation_engine';
     statusExplanation: string;
     executionCount: number;
+    nativeSourceFlowId?: string | null;
     lastExecution?: AutomationExecution | null;
 }
 
@@ -393,11 +394,15 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
             target = saved;
         }
         const nextStatus: FlowStatus = editingFlow.status === 'active' ? 'paused' : 'active';
+        if (nextStatus === 'active' && target.runtime?.nativeSourceFlowId) {
+            const confirmed = window.confirm('Ao ativar esta versão editável, o fluxo nativo original será pausado para evitar disparos duplicados. Deseja continuar?');
+            if (!confirmed) return;
+        }
         try {
             const response = await api.patch<AutomationFlow>(`/automations/${target.id}/status`, { status: nextStatus.toUpperCase() });
             setEditingFlow(normalizeFlow(response.data));
             await loadFlows(true);
-            addToast({ type: nextStatus === 'active' ? 'success' : 'info', title: nextStatus === 'active' ? 'Automação ativada' : 'Automação pausada', message: nextStatus === 'active' ? 'Novos eventos já podem iniciar este fluxo.' : 'Nenhuma nova execução será iniciada.' });
+            addToast({ type: nextStatus === 'active' ? 'success' : 'info', title: nextStatus === 'active' ? 'Automação ativada' : 'Automação pausada', message: nextStatus === 'active' ? (target.runtime?.nativeSourceFlowId ? 'A versão editável assumiu o controle e o fluxo nativo original foi pausado.' : 'Novos eventos já podem iniciar este fluxo.') : 'Nenhuma nova execução será iniciada.' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível alterar o status', message: error.response?.data?.error || 'Tente novamente.' });
         }
@@ -481,7 +486,7 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
             const personalized = normalizeFlow(response.data);
             await loadFlows(true);
             openEditor(personalized);
-            addToast({ type: 'success', title: 'Versão editável criada', message: 'O fluxo original continua protegido. Agora você pode alterar gatilhos, ações e mensagens nesta versão.' });
+            addToast({ type: 'success', title: 'Controle editável criado', message: 'Edite livremente. O fluxo nativo permanece ativo até esta versão ser ativada.' });
         } catch (error: any) {
             addToast({ type: 'error', title: 'Não foi possível personalizar', message: error.response?.data?.error || 'Tente novamente.' });
         }
@@ -516,11 +521,17 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
 
     const updateTriggerConfiguration = (config: Record<string, any>, triggerType: string) => {
         if (!editingFlow || !selectedNode || !isEditable) return;
+        const managedMetadata = editingFlow.triggerConfig?.managedNativeFlowId ? {
+            managedNativeFlowId: editingFlow.triggerConfig.managedNativeFlowId,
+            nativeEventType: editingFlow.triggerConfig.nativeEventType,
+            clonedFrom: editingFlow.triggerConfig.clonedFrom,
+        } : {};
+        const nextConfig = { ...config, ...managedMetadata };
         setEditingFlow({
             ...editingFlow,
-            triggerConfig: config,
+            triggerConfig: nextConfig,
             triggerType,
-            nodes: editingFlow.nodes.map((item) => item.id === selectedNode.id ? { ...item, config } : item),
+            nodes: editingFlow.nodes.map((item) => item.id === selectedNode.id ? { ...item, config: nextConfig } : item),
         });
     };
 
@@ -557,12 +568,17 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
             newNode.config = { url: '' };
         }
         const nextNodes = template.kind === 'trigger' ? [newNode, ...editingFlow.nodes.filter((item) => item.kind !== 'trigger')] : [...editingFlow.nodes, newNode];
+        const managedMetadata = editingFlow.triggerConfig?.managedNativeFlowId ? {
+            managedNativeFlowId: editingFlow.triggerConfig.managedNativeFlowId,
+            nativeEventType: editingFlow.triggerConfig.nativeEventType,
+            clonedFrom: editingFlow.triggerConfig.clonedFrom,
+        } : {};
         setEditingFlow({
             ...editingFlow,
             nodes: nextNodes,
             ...(template.kind === 'trigger' ? {
                 triggerType: template.app === 'Agenda' ? 'SCHEDULE' : template.app === 'Webhook' ? 'WEBHOOK' : 'EVENT',
-                triggerConfig: newNode.config,
+                triggerConfig: { ...newNode.config, ...managedMetadata },
             } : {}),
         });
         setSelectedNodeId(newNode.id);
@@ -613,15 +629,15 @@ const DockaAutomationView: React.FC<{ organizations: Organization[] }> = ({ orga
     return (
         <div className="flex h-full flex-col overflow-hidden bg-white text-docka-900 dark:bg-zinc-950 dark:text-zinc-100">
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-docka-200 px-4 dark:border-zinc-800 lg:px-5">
-                <div className="flex min-w-0 items-center gap-3"><button onClick={() => setEditingFlow(null)} className="rounded-lg p-2 text-docka-500 hover:bg-docka-50 dark:hover:bg-zinc-900" aria-label="Voltar para fluxos"><ArrowLeft size={17} /></button><div className="hidden items-center gap-2 text-xs text-docka-400 md:flex"><span>Automações</span><span>/</span></div><input value={editingFlow.name} disabled={!isEditable} onChange={(event) => updateFlow({ name: event.target.value })} className="min-w-0 max-w-[280px] truncate border-none bg-transparent text-sm font-bold outline-none disabled:opacity-100 sm:min-w-[260px]" aria-label="Nome do fluxo" /><span className={`hidden rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-wider sm:inline-flex ${statusStyles[editingFlow.status]}`}>{statusLabel[editingFlow.status]}</span>{!isEditable && <span className="hidden rounded-full bg-violet-50 px-2 py-1 text-[9px] font-bold text-violet-600 lg:inline-flex dark:bg-violet-950/40 dark:text-violet-300">Fluxo do sistema</span>}</div>
-                <div className="flex shrink-0 items-center gap-2">{!isEditable && <button onClick={() => void personalizeFlow()} className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-xs font-bold text-violet-700 hover:bg-violet-100 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300"><Pencil size={14} /> Personalizar</button>}{isEditable && <button onClick={() => void testFlow(true)} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm hover:bg-docka-50 sm:flex dark:border-zinc-700 dark:bg-zinc-900"><Play size={14} /> Validar</button>}{isEditable && <button onClick={() => void deleteFlow()} className="hidden rounded-xl border border-red-100 bg-white p-2.5 text-red-600 hover:bg-red-50 sm:flex dark:border-red-900 dark:bg-zinc-900 dark:hover:bg-red-950/30" aria-label="Excluir fluxo"><Trash2 size={15} /></button>}{isEditable && <button onClick={() => void saveFlow()} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm transition hover:bg-docka-50 md:flex dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"><Save size={15} /> Salvar</button>}<button onClick={toggleFlow} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm ${editingFlow.status === 'active' ? 'bg-amber-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500'}`}><Radio size={14} /> {editingFlow.status === 'active' ? 'Pausar' : 'Ativar'}</button></div>
+                <div className="flex min-w-0 items-center gap-3"><button onClick={() => setEditingFlow(null)} className="rounded-lg p-2 text-docka-500 hover:bg-docka-50 dark:hover:bg-zinc-900" aria-label="Voltar para fluxos"><ArrowLeft size={17} /></button><div className="hidden items-center gap-2 text-xs text-docka-400 md:flex"><span>Automações</span><span>/</span></div><input value={editingFlow.name} disabled={!isEditable} onChange={(event) => updateFlow({ name: event.target.value })} className="min-w-0 max-w-[280px] truncate border-none bg-transparent text-sm font-bold outline-none disabled:opacity-100 sm:min-w-[260px]" aria-label="Nome do fluxo" /><span className={`hidden rounded-full border px-2 py-1 text-[9px] font-black uppercase tracking-wider sm:inline-flex ${statusStyles[editingFlow.status]}`}>{statusLabel[editingFlow.status]}</span>{!isEditable && <span className="hidden rounded-full bg-violet-50 px-2 py-1 text-[9px] font-bold text-violet-600 lg:inline-flex dark:bg-violet-950/40 dark:text-violet-300">Fluxo do sistema</span>}{editingFlow.runtime?.nativeSourceFlowId && <span className="hidden rounded-full bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-700 lg:inline-flex dark:bg-blue-950/40 dark:text-blue-300">Controle personalizado</span>}</div>
+                <div className="flex shrink-0 items-center gap-2">{!isEditable && <button onClick={() => void personalizeFlow()} className="flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-2 text-xs font-bold text-violet-700 hover:bg-violet-100 dark:border-violet-900 dark:bg-violet-950/40 dark:text-violet-300"><Pencil size={14} /> Editar e assumir controle</button>}{isEditable && <button onClick={() => void testFlow(true)} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm hover:bg-docka-50 sm:flex dark:border-zinc-700 dark:bg-zinc-900"><Play size={14} /> Validar</button>}{isEditable && <button onClick={() => void deleteFlow()} className="hidden rounded-xl border border-red-100 bg-white p-2.5 text-red-600 hover:bg-red-50 sm:flex dark:border-red-900 dark:bg-zinc-900 dark:hover:bg-red-950/30" aria-label="Excluir fluxo"><Trash2 size={15} /></button>}{isEditable && <button onClick={() => void saveFlow()} className="hidden items-center gap-2 rounded-xl border border-docka-200 bg-white px-3.5 py-2 text-xs font-bold shadow-sm transition hover:bg-docka-50 md:flex dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"><Save size={15} /> Salvar</button>}<button onClick={toggleFlow} className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold text-white shadow-sm ${editingFlow.status === 'active' ? 'bg-amber-500' : 'bg-gradient-to-r from-violet-600 to-fuchsia-500'}`}><Radio size={14} /> {editingFlow.status === 'active' ? 'Pausar' : 'Ativar'}</button></div>
             </header>
 
             <div className="flex min-h-0 flex-1">
                 <aside className={`${mobileCatalogOpen ? 'fixed inset-y-0 left-0 z-50 flex w-[280px]' : 'hidden'} ${catalogHighlight ? 'lg:ring-4 lg:ring-inset lg:ring-violet-100 dark:lg:ring-violet-950/40' : ''} flex-col border-r border-docka-200 bg-white shadow-2xl transition-shadow dark:border-zinc-800 dark:bg-zinc-950 lg:static lg:inset-auto lg:z-auto lg:flex lg:w-[240px] lg:shrink-0 lg:shadow-none`}>
                     <div className="flex h-14 items-center justify-between border-b border-docka-100 px-4 dark:border-zinc-800"><div className="flex items-center gap-2"><Sparkles size={16} className="text-violet-600" /><span className="text-xs font-bold">{isEditable ? 'Adicionar etapa' : 'Etapas disponíveis'}</span></div><button onClick={() => setMobileCatalogOpen(false)} className="lg:hidden"><X size={18} /></button></div>
                     <div className="grid grid-cols-2 border-b border-docka-100 p-2 dark:border-zinc-800">{(['trigger', 'action'] as NodeKind[]).map((kind) => <button key={kind} disabled={!isEditable} onClick={() => setCatalogKind(kind)} className={`rounded-lg py-2 text-[10px] font-black uppercase tracking-wider transition disabled:cursor-not-allowed disabled:opacity-40 ${catalogKind === kind ? 'bg-violet-50 text-violet-700 dark:bg-violet-950/40 dark:text-violet-300' : 'text-docka-400'}`}>{kind === 'trigger' ? 'Gatilhos' : 'Ações'}</button>)}</div>
-                    <div className="custom-scrollbar flex-1 overflow-y-auto p-3"><p className="mb-3 px-1 text-[9px] font-black uppercase tracking-[.18em] text-docka-400">{catalogKind === 'trigger' ? 'Iniciar quando...' : 'Depois, faça...'}</p>{!isEditable && <div className="mb-3 rounded-xl border border-violet-100 bg-violet-50 p-3 text-[9px] leading-4 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300"><p>Este é o fluxo original do sistema. Crie uma versão editável para melhorar gatilhos e ações sem comprometer a operação atual.</p><button onClick={() => void personalizeFlow()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-2 py-2 text-[10px] font-bold text-white"><Pencil size={12} /> Personalizar fluxo</button></div>}<div className="grid grid-cols-2 gap-2">{templates.filter((item) => item.kind === catalogKind).map((item) => <button key={`${item.kind}-${item.app}`} disabled={!isEditable} onClick={() => addNode(item)} className="group min-h-[108px] rounded-2xl border border-docka-100 bg-docka-50/60 p-3 text-left transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-violet-800 dark:hover:bg-zinc-900"><span className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-sm" style={{ backgroundColor: item.color }}>{iconFor(item.icon, 16)}</span><span className="block text-xs font-bold">{item.app}</span><span className="mt-1 block text-[9px] leading-3 text-docka-400">{item.title}</span></button>)}</div></div>
+                    <div className="custom-scrollbar flex-1 overflow-y-auto p-3"><p className="mb-3 px-1 text-[9px] font-black uppercase tracking-[.18em] text-docka-400">{catalogKind === 'trigger' ? 'Iniciar quando...' : 'Depois, faça...'}</p>{!isEditable && <div className="mb-3 rounded-xl border border-violet-100 bg-violet-50 p-3 text-[9px] leading-4 text-violet-700 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-300"><p>Você pode pausar ou ativar este fluxo nativo agora. Para mudar gatilhos, ações e mensagens, assuma o controle em uma versão editável. O original só será pausado quando a nova versão for ativada.</p><button onClick={() => void personalizeFlow()} className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-2 py-2 text-[10px] font-bold text-white"><Pencil size={12} /> Editar e assumir controle</button></div>}<div className="grid grid-cols-2 gap-2">{templates.filter((item) => item.kind === catalogKind).map((item) => <button key={`${item.kind}-${item.app}`} disabled={!isEditable} onClick={() => addNode(item)} className="group min-h-[108px] rounded-2xl border border-docka-100 bg-docka-50/60 p-3 text-left transition hover:-translate-y-0.5 hover:border-violet-200 hover:bg-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-800 dark:bg-zinc-900/70 dark:hover:border-violet-800 dark:hover:bg-zinc-900"><span className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-sm" style={{ backgroundColor: item.color }}>{iconFor(item.icon, 16)}</span><span className="block text-xs font-bold">{item.app}</span><span className="mt-1 block text-[9px] leading-3 text-docka-400">{item.title}</span></button>)}</div></div>
                 </aside>
                 {mobileCatalogOpen && <button className="fixed inset-0 z-40 bg-black/30 lg:hidden" onClick={() => setMobileCatalogOpen(false)} aria-label="Fechar catálogo" />}
 
@@ -716,7 +732,8 @@ const TriggerConfiguration = ({ node, flowId, onChange }: { node: AutomationNode
     const webhookUrl = node.app === 'Webhook' && config.secret && !flowId.startsWith('draft-')
         ? `${String(api.defaults.baseURL || '').replace(/\/$/, '')}/automations/hooks/${flowId}/${config.secret}`
         : '';
-    return <><Field label="Evento que inicia o fluxo"><div className="relative"><select value={config.eventType || events[0].eventType} onChange={(event) => onChange({ ...config, eventType: event.target.value }, node.app === 'Webhook' ? 'WEBHOOK' : 'EVENT')} className="automation-input appearance-none pr-9">{events.map((event) => <option key={event.eventType} value={event.eventType}>{event.label}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div></Field>{node.app === 'Webhook' && <Field label="URL de entrada">{webhookUrl ? <div className="space-y-2"><input readOnly value={webhookUrl} className="automation-input" /><button type="button" onClick={() => void navigator.clipboard.writeText(webhookUrl)} className="text-[10px] font-bold text-violet-600">Copiar URL do webhook</button></div> : <p className="rounded-xl bg-docka-50 p-3 text-[10px] text-docka-500 dark:bg-zinc-900">Salve o fluxo para gerar a URL segura de entrada.</p>}</Field>}</>;
+    const hasExecutableEvent = events.some((event) => event.eventType === config.eventType);
+    return <><Field label="Evento que inicia o fluxo"><div className="relative"><select value={config.eventType || events[0].eventType} onChange={(event) => onChange({ ...config, eventType: event.target.value }, node.app === 'Webhook' ? 'WEBHOOK' : 'EVENT')} className="automation-input appearance-none pr-9">{config.eventType && !hasExecutableEvent && <option value={config.eventType}>Escolha um novo gatilho para ativar</option>}{events.map((event) => <option key={event.eventType} value={event.eventType}>{event.label}</option>)}</select><ChevronDown size={14} className="pointer-events-none absolute right-3 top-3 text-docka-400" /></div>{config.eventType && !hasExecutableEvent && <p className="mt-2 rounded-lg bg-amber-50 p-2 text-[9px] leading-4 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300">O evento original pertence ao módulo nativo. Selecione um gatilho do motor antes de ativar esta versão.</p>}</Field>{node.app === 'Webhook' && <Field label="URL de entrada">{webhookUrl ? <div className="space-y-2"><input readOnly value={webhookUrl} className="automation-input" /><button type="button" onClick={() => void navigator.clipboard.writeText(webhookUrl)} className="text-[10px] font-bold text-violet-600">Copiar URL do webhook</button></div> : <p className="rounded-xl bg-docka-50 p-3 text-[10px] text-docka-500 dark:bg-zinc-900">Salve o fluxo para gerar a URL segura de entrada.</p>}</Field>}</>;
 };
 
 const ActionConfiguration = ({ node, onChange }: { node: AutomationNode; onChange: (patch: Partial<AutomationNode>) => void }) => {
