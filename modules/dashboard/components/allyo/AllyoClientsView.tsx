@@ -13,8 +13,23 @@ const emptyClientForm = {
     monthlyCredits: '20', contractStart: '', contractEnd: '', cam: '', responsibleEmail: '', logo: '',
     fileNamingPattern: '{{client_name}}_{{project_name}}_{{task_id}}', aiRestricted: false,
     requireTwoFactor: false, billingStatus: 'OK' as 'OK' | 'Aviso' | 'Bloqueado', notes: '', creativeDirection: '', teamMemberIds: [] as string[],
-    planName: 'Personalizado', monthlyBoosterUnits: '0', simultaneousTaskLimit: '1',
+    planName: 'Personalizado', contractStatus: 'VIGENTE' as 'VIGENTE' | 'EM_RENOVACAO' | 'SUSPENSO' | 'ENCERRADO',
+    planStatus: 'ATIVO' as 'ATIVO' | 'PAUSADO' | 'CANCELADO', boosterIncluded: false,
+    monthlyBoosterUnits: '0', simultaneousTaskLimit: '1',
 };
+
+const CONTRACT_STATUS_LABELS = {
+    VIGENTE: 'Vigente',
+    EM_RENOVACAO: 'Em renovação',
+    SUSPENSO: 'Suspenso',
+    ENCERRADO: 'Encerrado',
+} as const;
+
+const PLAN_STATUS_LABELS = {
+    ATIVO: 'Ativo',
+    PAUSADO: 'Pausado',
+    CANCELADO: 'Cancelado',
+} as const;
 
 const normalizedPersonKey = (value?: string) => value?.trim().toLocaleLowerCase('pt-BR') || '';
 
@@ -54,6 +69,9 @@ const clientToForm = (client: AllyoClient, users: AllyoUser[] = []) => ({
     requireTwoFactor: Boolean(client.requireTwoFactor), billingStatus: (client.billingStatus || 'OK') as 'OK' | 'Aviso' | 'Bloqueado', notes: client.notes || '', creativeDirection: client.creativeDirection || '',
     teamMemberIds: clientTeamMemberIds(client, users),
     planName: client.operationalPolicy?.planName || 'Personalizado',
+    contractStatus: client.operationalPolicy?.contractStatus || 'VIGENTE',
+    planStatus: client.operationalPolicy?.planStatus || 'ATIVO',
+    boosterIncluded: client.operationalPolicy?.boosterIncluded ?? ((client.operationalPolicy?.monthlyBoosterUnits || 0) > 0),
     monthlyBoosterUnits: String(client.operationalPolicy?.monthlyBoosterUnits ?? 0),
     simultaneousTaskLimit: String(client.operationalPolicy?.simultaneousTaskLimit ?? 1),
 });
@@ -158,7 +176,7 @@ const ClientDetailsModal = ({ client, users, canManage, onClose, onEdit, onAddCr
                         )}
                     </div>
                     <div className="min-w-0">
-                        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#739044]"><BadgeCheck size={14} /> Cliente ativo</span>
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[.08em] text-[#739044]"><BadgeCheck size={14} /> Contrato {CONTRACT_STATUS_LABELS[client.operationalPolicy?.contractStatus || 'VIGENTE'].toLocaleLowerCase('pt-BR')}</span>
                         <h2 className="mt-1 truncate font-season text-[28px] font-normal text-black dark:text-white">{client.name}</h2>
                         <p className="mt-1 text-xs text-[#7f7f7f] dark:text-zinc-400">{client.segment} • contrato desde {client.since}</p>
                     </div>
@@ -170,9 +188,11 @@ const ClientDetailsModal = ({ client, users, canManage, onClose, onEdit, onAddCr
                     <ClientMetric icon={<UserRound size={16} />} label="CAM RESPONSÁVEL" value={client.cam} bordered />
                     <ClientMetric icon={<CalendarClock size={16} />} label="VENCIMENTO" value={client.contractEnd} bordered />
                 </div>
-                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                    <DataCell label="CONTRATO" value={CONTRACT_STATUS_LABELS[client.operationalPolicy?.contractStatus || 'VIGENTE']} />
                     <DataCell label="PLANO" value={client.operationalPolicy?.planName || 'Personalizado'} />
-                    <DataCell label="BOOSTERS POR CICLO" value={String(client.operationalPolicy?.monthlyBoosterUnits ?? 0)} />
+                    <DataCell label="STATUS DO PLANO" value={PLAN_STATUS_LABELS[client.operationalPolicy?.planStatus || 'ATIVO']} />
+                    <DataCell label="BOOSTER INCLUSO" value={(client.operationalPolicy?.boosterIncluded ?? ((client.operationalPolicy?.monthlyBoosterUnits || 0) > 0)) ? `${client.operationalPolicy?.monthlyBoosterUnits || 0} por ciclo` : 'Não incluso'} />
                     <DataCell label="TAREFAS SIMULTÂNEAS" value={String(client.operationalPolicy?.simultaneousTaskLimit ?? 1)} />
                 </div>
 
@@ -246,6 +266,10 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
             addToast({ type: 'warning', title: 'Defina a equipe inicial', message: 'Selecione ao menos um usuário interno para receber os projetos e tarefas desta empresa.' });
             return;
         }
+        if (form.boosterIncluded && (!Number.isInteger(Number(form.monthlyBoosterUnits)) || Number(form.monthlyBoosterUnits) < 1)) {
+            addToast({ type: 'warning', title: 'Informe os Boosters do contrato', message: 'Defina quantos Boosters estão incluídos em cada ciclo.' });
+            return;
+        }
         setIsSaving(true);
         try {
             const payload = {
@@ -261,7 +285,10 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
                 teamMemberIds: form.teamMemberIds,
                 operationalPolicy: {
                     planName: form.planName.trim() || 'Personalizado',
-                    monthlyBoosterUnits: Number(form.monthlyBoosterUnits),
+                    contractStatus: form.contractStatus,
+                    planStatus: form.planStatus,
+                    boosterIncluded: form.boosterIncluded,
+                    monthlyBoosterUnits: form.boosterIncluded ? Number(form.monthlyBoosterUnits) : 0,
                     simultaneousTaskLimit: Number(form.simultaneousTaskLimit),
                 },
             };
@@ -292,20 +319,25 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
                         <AllyoField label="E-mail responsável" hint="opcional"><AllyoInput type="email" value={form.responsibleEmail} onChange={(event) => update('responsibleEmail', event.target.value)} placeholder="financeiro@empresa.com" /></AllyoField>
                         <AllyoField label="Início do contrato"><AllyoInput type="date" value={form.contractStart} onChange={(event) => update('contractStart', event.target.value)} /></AllyoField>
                         <AllyoField label="Fim do contrato"><AllyoInput type="date" value={form.contractEnd} onChange={(event) => update('contractEnd', event.target.value)} /></AllyoField>
+                        <AllyoField label="Situação do contrato" required><AllyoSelect value={form.contractStatus} onChange={(event) => update('contractStatus', event.target.value as typeof form.contractStatus)}><option value="VIGENTE">Vigente</option><option value="EM_RENOVACAO">Em renovação</option><option value="SUSPENSO">Suspenso</option><option value="ENCERRADO">Encerrado</option></AllyoSelect></AllyoField>
                     </div>
                 </FormSection>
 
-                <FormSection title="Perfil e operação">
+                <FormSection title="Plano e operação" description="Condições vigentes que controlam capacidade, simultaneidade e acesso a Boosters.">
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                         <AllyoField label="Segmento" required className="lg:col-span-2"><AllyoSelect required value={form.segment} onChange={(event) => update('segment', event.target.value)}><option value="">Selecione</option><option>Tecnologia</option><option>Serviços</option><option>Varejo</option><option>Indústria</option><option>Educação</option><option>Saúde</option><option>Financeiro</option><option>Entretenimento</option><option>Outro</option></AllyoSelect></AllyoField>
                         <AllyoField label="Área"><AllyoSelect value={form.area} onChange={(event) => update('area', event.target.value)}><option value="">Selecione</option><option>Marketing</option><option>Comunicação</option><option>Branding</option><option>Design</option><option>Conteúdo</option><option>Produto</option><option>Comercial</option><option>Outro</option></AllyoSelect></AllyoField>
                         <AllyoField label="Tier"><AllyoSelect value={form.tier} onChange={(event) => update('tier', event.target.value as '1' | '2' | '3')}><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option></AllyoSelect></AllyoField>
                         <AllyoField label="Créditos mensais" required><AllyoInput required type="number" min="1" value={form.monthlyCredits} onChange={(event) => update('monthlyCredits', event.target.value)} /></AllyoField>
                         <AllyoField label="Plano" required><AllyoInput required value={form.planName} onChange={(event) => update('planName', event.target.value)} placeholder="Ex.: Scale" /></AllyoField>
-                        <AllyoField label="Boosters por ciclo" required><AllyoInput required type="number" min="0" value={form.monthlyBoosterUnits} onChange={(event) => update('monthlyBoosterUnits', event.target.value)} /></AllyoField>
+                        <AllyoField label="Status do plano" required><AllyoSelect value={form.planStatus} onChange={(event) => update('planStatus', event.target.value as typeof form.planStatus)}><option value="ATIVO">Ativo</option><option value="PAUSADO">Pausado</option><option value="CANCELADO">Cancelado</option></AllyoSelect></AllyoField>
                         <AllyoField label="Tarefas simultâneas" required><AllyoInput required type="number" min="1" value={form.simultaneousTaskLimit} onChange={(event) => update('simultaneousTaskLimit', event.target.value)} /></AllyoField>
                         <AllyoField label="CAM responsável" hint="opcional" className="lg:col-span-2"><AllyoInput value={form.cam} onChange={(event) => update('cam', event.target.value)} placeholder="Nome do responsável de atendimento" /></AllyoField>
                         <AllyoField label="Inadimplência"><AllyoSelect value={form.billingStatus} onChange={(event) => update('billingStatus', event.target.value as 'OK' | 'Aviso' | 'Bloqueado')}><option value="OK">OK</option><option value="Aviso">Aviso</option><option value="Bloqueado">Bloqueado</option></AllyoSelect></AllyoField>
+                    </div>
+                    <div className="mt-4 grid items-start gap-4 sm:grid-cols-2">
+                        <AllyoToggle checked={form.boosterIncluded} onChange={(value) => { update('boosterIncluded', value); if (!value) update('monthlyBoosterUnits', '0'); }} label="Booster incluso no contrato" description="Indica se o plano vigente concede Boosters recorrentes sem contratação adicional." />
+                        {form.boosterIncluded && <AllyoField label="Boosters incluídos por ciclo" required><AllyoInput required type="number" min="1" step="1" value={form.monthlyBoosterUnits} onChange={(event) => update('monthlyBoosterUnits', event.target.value)} /></AllyoField>}
                     </div>
                 </FormSection>
 

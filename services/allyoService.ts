@@ -106,6 +106,9 @@ export interface AllyoClient {
     teamMembers?: AllyoUser[];
     operationalPolicy?: {
         planName: string;
+        contractStatus: 'VIGENTE' | 'EM_RENOVACAO' | 'SUSPENSO' | 'ENCERRADO';
+        planStatus: 'ATIVO' | 'PAUSADO' | 'CANCELADO';
+        boosterIncluded: boolean;
         monthlyBoosterUnits: number;
         simultaneousTaskLimit: number;
     };
@@ -274,6 +277,9 @@ export interface CreateAllyoClientPayload {
     teamMemberIds: string[];
     operationalPolicy: {
         planName: string;
+        contractStatus: 'VIGENTE' | 'EM_RENOVACAO' | 'SUSPENSO' | 'ENCERRADO';
+        planStatus: 'ATIVO' | 'PAUSADO' | 'CANCELADO';
+        boosterIncluded: boolean;
         monthlyBoosterUnits: number;
         simultaneousTaskLimit: number;
     };
