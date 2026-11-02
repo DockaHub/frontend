@@ -31,6 +31,13 @@ const PLAN_STATUS_LABELS = {
     CANCELADO: 'Cancelado',
 } as const;
 
+const ALLYO_PLAN_PRESETS = {
+    Lite: { monthlyCredits: '15', simultaneousTaskLimit: '3', boosterIncluded: false, monthlyBoosterUnits: '0' },
+    Pro: { monthlyCredits: '25', simultaneousTaskLimit: '15', boosterIncluded: true, monthlyBoosterUnits: '1' },
+    Premium: { monthlyCredits: '45', simultaneousTaskLimit: '1000', boosterIncluded: true, monthlyBoosterUnits: '3' },
+    Enterprise: { monthlyCredits: null, simultaneousTaskLimit: '1000', boosterIncluded: true, monthlyBoosterUnits: '5' },
+} as const;
+
 const normalizedPersonKey = (value?: string) => value?.trim().toLocaleLowerCase('pt-BR') || '';
 
 const clientTeamUsers = (client: AllyoClient | null | undefined, users: AllyoUser[]) => {
@@ -247,6 +254,19 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
     }, [client, isOpen, users]);
 
     const update = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [field]: value }));
+    const selectedPlanPreset = form.planName in ALLYO_PLAN_PRESETS ? form.planName : 'Personalizado';
+    const applyPlanPreset = (planName: string) => setForm((current) => {
+        if (!(planName in ALLYO_PLAN_PRESETS)) return { ...current, planName: 'Personalizado' };
+        const preset = ALLYO_PLAN_PRESETS[planName as keyof typeof ALLYO_PLAN_PRESETS];
+        return {
+            ...current,
+            planName,
+            monthlyCredits: preset.monthlyCredits ?? current.monthlyCredits,
+            simultaneousTaskLimit: preset.simultaneousTaskLimit,
+            boosterIncluded: preset.boosterIncluded,
+            monthlyBoosterUnits: preset.monthlyBoosterUnits,
+        };
+    });
 
     const handleLogo = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -329,7 +349,8 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
                         <AllyoField label="Área"><AllyoSelect value={form.area} onChange={(event) => update('area', event.target.value)}><option value="">Selecione</option><option>Marketing</option><option>Comunicação</option><option>Branding</option><option>Design</option><option>Conteúdo</option><option>Produto</option><option>Comercial</option><option>Outro</option></AllyoSelect></AllyoField>
                         <AllyoField label="Tier"><AllyoSelect value={form.tier} onChange={(event) => update('tier', event.target.value as '1' | '2' | '3')}><option value="1">Tier 1</option><option value="2">Tier 2</option><option value="3">Tier 3</option></AllyoSelect></AllyoField>
                         <AllyoField label="Créditos mensais" required><AllyoInput required type="number" min="1" value={form.monthlyCredits} onChange={(event) => update('monthlyCredits', event.target.value)} /></AllyoField>
-                        <AllyoField label="Plano" required><AllyoInput required value={form.planName} onChange={(event) => update('planName', event.target.value)} placeholder="Ex.: Scale" /></AllyoField>
+                        <AllyoField label="Plano Allyo" required><AllyoSelect value={selectedPlanPreset} onChange={(event) => applyPlanPreset(event.target.value)}><option>Lite</option><option>Pro</option><option>Premium</option><option>Enterprise</option><option>Personalizado</option></AllyoSelect></AllyoField>
+                        {selectedPlanPreset === 'Personalizado' && <AllyoField label="Nome do plano personalizado" required><AllyoInput required value={form.planName === 'Personalizado' ? '' : form.planName} onChange={(event) => update('planName', event.target.value || 'Personalizado')} placeholder="Ex.: Enterprise Brasil" /></AllyoField>}
                         <AllyoField label="Status do plano" required><AllyoSelect value={form.planStatus} onChange={(event) => update('planStatus', event.target.value as typeof form.planStatus)}><option value="ATIVO">Ativo</option><option value="PAUSADO">Pausado</option><option value="CANCELADO">Cancelado</option></AllyoSelect></AllyoField>
                         <AllyoField label="Tarefas simultâneas" required><AllyoInput required type="number" min="1" value={form.simultaneousTaskLimit} onChange={(event) => update('simultaneousTaskLimit', event.target.value)} /></AllyoField>
                         <AllyoField label="CAM responsável" hint="opcional" className="lg:col-span-2"><AllyoInput value={form.cam} onChange={(event) => update('cam', event.target.value)} placeholder="Nome do responsável de atendimento" /></AllyoField>
