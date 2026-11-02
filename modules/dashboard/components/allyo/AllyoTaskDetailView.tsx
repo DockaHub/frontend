@@ -758,7 +758,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 {isMultiDeliverable ? <><span>Isso é uma solicitação com</span><Tag>{task.deliverables?.length} entregas</Tag><span>com aprovação individual</span><Tag>{deliveryProfile?.approvalLabel || taskPresentation.approval}</Tag>{sourceRequired && <><span>e um pacote final de</span><Tag>{deliveryProfile?.sourceLabel || taskPresentation.editable}</Tag></>}</> : <><span>Isso é uma solicitação para</span><Tag>{taskPresentation.label}</Tag><span>com</span><Tag>{taskItemCount} {taskPresentation.itemLabel}{taskItemCount === 1 ? '' : 's'}</Tag><span>para aprovação em</span><Tag>{deliveryProfile?.approvalLabel || taskPresentation.approval}</Tag>{sourceRequired && <><span>e</span><Tag>{deliveryProfile?.sourceLabel || taskPresentation.editable}</Tag></>}</>}
             </div>
 
-            {project && <AllyoProjectFlow project={project} currentTaskId={task.id} />}
+            {project && <AllyoProjectFlow project={project} currentTaskId={task.id} onOpenTask={openReferencedTask} />}
 
             <div className="grid min-w-0 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px]">
                 <main className={`min-w-0 border-r ${ALLYO_BORDER}`}>

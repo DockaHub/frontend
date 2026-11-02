@@ -11,7 +11,7 @@ const statusCopy: Record<AllyoFlowTaskStatus, { label: string; className: string
     review: { label: 'Em revisão', className: 'bg-[#fff0e9] text-[#b65c31] dark:bg-orange-500/10 dark:text-orange-300', icon: Clock3 },
 };
 
-const AllyoProjectFlow = ({ project, currentTaskId }: { project: AllyoProject; currentTaskId: string }) => {
+const AllyoProjectFlow = ({ project, currentTaskId, onOpenTask }: { project: AllyoProject; currentTaskId: string; onOpenTask: (taskId: string) => void }) => {
     const [open, setOpen] = useState(false);
     const tasks = useMemo(() => project.stages.flatMap((stage) => stage.tasks), [project.stages]);
     const tasksById = useMemo(() => new Map(tasks.map((task) => [task.id, task])), [tasks]);
@@ -43,7 +43,7 @@ const AllyoProjectFlow = ({ project, currentTaskId }: { project: AllyoProject; c
                     </div>
 
                     <div className="overflow-x-auto pb-2">
-                        <div className="grid min-w-[920px] grid-cols-4 gap-3">
+                        <div className="grid min-w-max grid-flow-col auto-cols-[minmax(240px,300px)] gap-3 pr-1">
                             {project.stages.map((stage, stageIndex) => (
                                 <div key={stage.id} className="min-w-0">
                                     <div className="mb-3 flex items-center gap-2 px-1">
@@ -51,8 +51,8 @@ const AllyoProjectFlow = ({ project, currentTaskId }: { project: AllyoProject; c
                                         <strong className="text-[11px] font-bold uppercase tracking-[.08em] text-[#626a63] dark:text-zinc-400">{stage.title}</strong>
                                         {stageIndex < project.stages.length - 1 && <span className="ml-auto flex flex-1 items-center"><span className="h-px flex-1 bg-[#dce1d8] dark:bg-zinc-700" /><ArrowRight size={12} className="-ml-px text-[#b3b9b1]" /></span>}
                                     </div>
-                                    <div className="space-y-2.5">
-                                        {stage.tasks.map((task) => <FlowTaskCard key={task.id} task={task} current={task.id === currentTaskId} tasksById={tasksById} parallel={stage.tasks.length > 1} />)}
+                                    <div className="space-y-2">
+                                        {stage.tasks.map((task) => <FlowTaskCard key={task.id} task={task} current={task.id === currentTaskId} tasksById={tasksById} parallel={stage.tasks.length > 1} onOpenTask={onOpenTask} />)}
                                     </div>
                                 </div>
                             ))}
@@ -86,7 +86,7 @@ const CompactFlow = ({ project, currentTaskId, inProgress, blocked }: { project:
     </div>
 );
 
-const FlowTaskCard = ({ task, current, tasksById, parallel }: { task: AllyoFlowTask; current: boolean; tasksById: Map<string, AllyoFlowTask>; parallel: boolean }) => {
+const FlowTaskCard = ({ task, current, tasksById, parallel, onOpenTask }: { task: AllyoFlowTask; current: boolean; tasksById: Map<string, AllyoFlowTask>; parallel: boolean; onOpenTask: (taskId: string) => void }) => {
     const status = statusCopy[task.status] || statusCopy.available;
     const StatusIcon = status?.icon || statusCopy.available.icon;
     const blockers = (task.dependsOn || []).map((id) => {
@@ -95,15 +95,15 @@ const FlowTaskCard = ({ task, current, tasksById, parallel }: { task: AllyoFlowT
         return `${dependency.title}${dependency.requiresClientApproval ? ' (aprovação do cliente)' : ''}`;
     }).filter((value): value is string => Boolean(value));
     return (
-        <article className={`min-h-[132px] rounded-[12px] border bg-white p-3.5 transition dark:bg-zinc-900 ${current ? 'border-[#9db669] shadow-[0_0_0_2px_rgba(157,182,105,.13)]' : task.status === 'blocked' ? 'border-[#e5e7e2] opacity-80 dark:border-zinc-800' : ALLYO_BORDER}`} aria-current={current ? 'step' : undefined}>
-            <div className="flex items-start justify-between gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[9px] font-bold ${status.className}`}><StatusIcon size={10} />{status.label}</span>{current && <span className="text-[9px] font-bold uppercase tracking-[.08em] text-[#7e9252]">Sua tarefa</span>}</div>
-            <h3 className="mt-3 text-[12px] font-semibold leading-4 text-[#202520] dark:text-zinc-100">{task.title}</h3>
-            <p className="mt-1 text-[10px] text-[#858b85]">{task.specialty} · {task.assignee}</p>
-            <div className="mt-3 flex items-end justify-between gap-2">
-                {task.status === 'blocked' && blockers.length > 0 ? <span className="line-clamp-2 text-[9px] leading-3.5 text-[#8a9089]">Aguarda {blockers.join(' e ')}</span> : parallel ? <span className="text-[9px] text-[#8a9089]">Pode acontecer em paralelo</span> : <span />}
+        <button type="button" onClick={() => onOpenTask(task.id)} className={`group block min-h-[104px] w-full rounded-[10px] border bg-white p-3 text-left transition duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#78944a] focus-visible:ring-offset-2 dark:bg-zinc-900 ${current ? 'border-2 border-[#78944a] bg-[#f4f8ec] shadow-[0_0_0_3px_rgba(120,148,74,.16)] dark:bg-[#9db669]/10' : task.status === 'blocked' ? 'border-[#e1e5de] opacity-80 hover:border-[#aeb9a6] hover:opacity-100 dark:border-zinc-800' : `${ALLYO_BORDER} hover:border-[#9db669] hover:bg-[#fafcf7] dark:hover:bg-zinc-800`}`} aria-current={current ? 'step' : undefined} aria-label={`Abrir tarefa ${task.title}${current ? ', tarefa atual' : ''}`}>
+            <div className="flex items-start justify-between gap-2"><span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[9px] font-bold ${status.className}`}><StatusIcon size={10} />{status.label}</span>{current && <span className="inline-flex items-center gap-1.5 rounded-full bg-[#315844] px-2 py-1 text-[9px] font-extrabold uppercase tracking-[.06em] text-white shadow-sm"><Circle size={6} fill="currentColor" />Você está aqui</span>}</div>
+            <h3 className="mt-2 text-[12px] font-semibold leading-4 text-[#202520] dark:text-zinc-100">{task.title}</h3>
+            <p className="mt-0.5 truncate text-[10px] text-[#858b85]">{task.specialty} · {task.assignee}</p>
+            <div className="mt-2 flex items-end justify-between gap-2">
+                {task.status === 'blocked' && blockers.length > 0 ? <span className="line-clamp-1 text-[9px] leading-3.5 text-[#8a9089]">Aguarda {blockers.join(' e ')}</span> : parallel ? <span className="text-[9px] text-[#8a9089]">Pode acontecer em paralelo</span> : <span />}
                 <span className="shrink-0 text-[10px] font-semibold text-[#68705f]">C {task.credits.toLocaleString('pt-BR')}</span>
             </div>
-        </article>
+        </button>
     );
 };
 
