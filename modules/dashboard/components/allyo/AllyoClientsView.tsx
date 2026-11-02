@@ -16,12 +16,43 @@ const emptyClientForm = {
     planName: 'Personalizado', monthlyBoosterUnits: '0', simultaneousTaskLimit: '1',
 };
 
-const clientToForm = (client: AllyoClient) => ({
+const normalizedPersonKey = (value?: string) => value?.trim().toLocaleLowerCase('pt-BR') || '';
+
+const clientTeamUsers = (client: AllyoClient | null | undefined, users: AllyoUser[]) => {
+    const byId = new Map(users.map((user) => [user.id, user]));
+    client?.teamMembers?.forEach((member) => {
+        if (!byId.has(member.id)) byId.set(member.id, member);
+    });
+    return Array.from(byId.values());
+};
+
+const clientTeamMemberIds = (client: AllyoClient, users: AllyoUser[]) => {
+    const storedIds = new Set([
+        ...(client.teamMemberIds || []),
+        ...(client.teamMembers || []).map((member) => member.id),
+    ].filter(Boolean));
+    const storedPeople = client.teamMembers || [];
+    const storedEmails = new Set(storedPeople.map((member) => normalizedPersonKey(member.email)).filter(Boolean));
+    const storedNames = new Set([
+        ...(client.team || []),
+        ...storedPeople.map((member) => member.name),
+    ].map(normalizedPersonKey).filter(Boolean));
+
+    if (users.length === 0) return Array.from(storedIds);
+
+    return users
+        .filter((user) => storedIds.has(user.id)
+            || storedEmails.has(normalizedPersonKey(user.email))
+            || storedNames.has(normalizedPersonKey(user.name)))
+        .map((user) => user.id);
+};
+
+const clientToForm = (client: AllyoClient, users: AllyoUser[] = []) => ({
     name: client.name || '', legalName: client.legalName || '', document: client.document || '', segment: client.segment || '', area: client.area || '', tier: (client.tier || '2') as '1' | '2' | '3',
     monthlyCredits: String(client.monthlyCredits || 1), contractStart: client.contractStart || '', contractEnd: client.contractEndDate || '', cam: client.cam === 'Não definido' ? '' : client.cam || '', responsibleEmail: client.responsibleEmail || '', logo: client.logo || '',
     fileNamingPattern: client.fileNamingPattern || '{{client_name}}_{{project_name}}_{{task_id}}', aiRestricted: Boolean(client.aiRestricted),
     requireTwoFactor: Boolean(client.requireTwoFactor), billingStatus: (client.billingStatus || 'OK') as 'OK' | 'Aviso' | 'Bloqueado', notes: client.notes || '', creativeDirection: client.creativeDirection || '',
-    teamMemberIds: client.teamMemberIds || client.teamMembers?.map((member) => member.id) || [],
+    teamMemberIds: clientTeamMemberIds(client, users),
     planName: client.operationalPolicy?.planName || 'Personalizado',
     monthlyBoosterUnits: String(client.operationalPolicy?.monthlyBoosterUnits ?? 0),
     simultaneousTaskLimit: String(client.operationalPolicy?.simultaneousTaskLimit ?? 1),
@@ -108,7 +139,7 @@ const AllyoClientsView = ({ mode }: { mode: 'assigned' | 'management' }) => {
                     addToast({ type: 'success', title: 'Empresa cadastrada', message: `${client.name} já pode receber projetos e usuários.` });
                 }}
             />
-            <ClientFormModal users={users} client={editingClient} isOpen={Boolean(editingClient)} onClose={() => setEditingClient(null)} onSaved={(client) => { replaceClient(client); setEditingClient(null); addToast({ type: 'success', title: 'Empresa atualizada', message: 'Os dados, o contrato e a equipe inicial foram salvos.' }); }} />
+            <ClientFormModal users={users} client={editingClient} isOpen={Boolean(editingClient)} onClose={() => setEditingClient(null)} onSaved={(client) => { replaceClient(client); setEditingClient(null); addToast({ type: 'success', title: 'Empresa atualizada', message: 'Os dados, o contrato e a equipe padrão para novas demandas foram salvos.' }); }} />
             <AddCreditsModal client={creditClient} onClose={() => setCreditClient(null)} onSaved={(client) => { replaceClient(client); setCreditClient(null); }} />
         </div>
     );
@@ -191,12 +222,8 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
             setForm(emptyClientForm);
             return;
         }
-        const next = clientToForm(client);
-        if (next.teamMemberIds.length === 0 && client.team?.length) {
-            const teamNames = new Set(client.team.map((name) => name.trim().toLocaleLowerCase('pt-BR')));
-            next.teamMemberIds = users.filter((user) => teamNames.has(user.name.trim().toLocaleLowerCase('pt-BR'))).map((user) => user.id);
-        }
-        setForm(next);
+        const availableUsers = clientTeamUsers(client, users);
+        setForm(clientToForm(client, availableUsers));
     }, [client, isOpen, users]);
 
     const update = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [field]: value }));
@@ -282,9 +309,9 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
                     </div>
                 </FormSection>
 
-                <FormSection title="Equipe inicial" description="Esta equipe será herdada pelos projetos da empresa. Cada tarefa será direcionada ao integrante cujo cargo corresponda à especialidade solicitada.">
-                    <AllyoField label="Responsáveis internos" required hint="busque pelo nome cadastrado">
-                        <AllyoUserPicker users={users} selectedIds={form.teamMemberIds} onChange={(ids) => update('teamMemberIds', ids)} placeholder="Busque Art Director, Copywriter, Motion Designer…" />
+                <FormSection title="Equipe padrão para novas demandas" description="Esta equipe será usada somente em projetos e tarefas criados depois desta alteração. Projetos e tarefas existentes não serão modificados; neles, a troca continua sendo manual.">
+                    <AllyoField label="Responsáveis internos padrão" required hint="busque pelo nome cadastrado">
+                        <AllyoUserPicker users={clientTeamUsers(client, users)} selectedIds={form.teamMemberIds} onChange={(ids) => update('teamMemberIds', ids)} placeholder="Busque Art Director, Copywriter, Motion Designer…" />
                     </AllyoField>
                 </FormSection>
 
