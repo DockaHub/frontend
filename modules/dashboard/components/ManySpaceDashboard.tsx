@@ -2,14 +2,14 @@ import React from 'react';
 import { LayoutTemplate } from 'lucide-react';
 import { Organization } from '../../../types';
 import PlaceholderView from '../../../components/PlaceholderView';
-import DockaOverviewView from './docka/DockaOverviewView';
+import DockaOperationsView from './docka/DockaOperationsView';
 import DockaEcosystemView from './docka/DockaEcosystemView';
 import DockaAuditView from './docka/DockaAuditView';
 import DockaBillingView from './docka/DockaBillingView';
 import DockaSettingsView from './docka/DockaSettingsView';
 import DockaFormsView from './docka/DockaFormsView';
 import UserHomeView from './docka/UserHomeView';
-import DockaGroupFinanceView from './docka/DockaGroupFinanceView';
+import DockaUnifiedFinanceView from './docka/DockaUnifiedFinanceView';
 import DockaClientsView from './docka/DockaClientsView';
 import DockaTeamAccessView from './docka/DockaTeamAccessView';
 import DockaAutomationView from './docka/DockaAutomationView';
@@ -25,7 +25,7 @@ const ManySpaceDashboard: React.FC<ManySpaceDashboardProps> = ({ activeView, org
         case 'home':
             return <UserHomeView />;
         case 'overview':
-            return <DockaOverviewView />;
+            return <DockaOperationsView />;
         case 'ecosystem':
             return <DockaEcosystemView />;
         case 'clients':
@@ -39,7 +39,7 @@ const ManySpaceDashboard: React.FC<ManySpaceDashboardProps> = ({ activeView, org
         case 'audit':
             return <DockaAuditView />;
         case 'finance':
-            return <DockaGroupFinanceView />;
+            return <DockaUnifiedFinanceView />;
         case 'billing':
             return <DockaBillingView />;
         case 'settings':

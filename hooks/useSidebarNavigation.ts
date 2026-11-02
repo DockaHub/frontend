@@ -160,7 +160,7 @@ export const useSidebarNavigation = (currentOrg: Organization, user?: Pick<User,
         // ManySpace (Holding)
         if (currentOrg.slug === 'manyspace') {
             return [
-                { id: 'overview', label: 'Início', icon: Home },
+                { id: 'overview', label: 'Operação', icon: LayoutDashboard },
                 { id: 'finance', label: 'Financeiro', icon: Wallet },
                 { id: 'team', label: 'Equipe', icon: Users },
                 { id: 'clients', label: 'Clientes', icon: Users },
