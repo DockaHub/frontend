@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Building2, CheckCircle2, ExternalLink, Mail, RefreshCw, Search, Users, X } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowLeft, Building2, CheckCircle2, HeartPulse, Mail, Package, Phone, RefreshCw, Search, Users, X } from 'lucide-react';
 import api from '../../../../services/api';
 
 interface ProductAccount { id: string; product: string; externalId: string; status: string; metadata?: Record<string, unknown>; lastSyncedAt: string; }
@@ -10,6 +10,16 @@ interface Company {
     _count?: { contacts: number };
 }
 interface RegistryResponse { companies: Company[]; total: number; stats: { active: number; attention: number; byProduct: Record<string, number> }; }
+interface CompanyProfileData {
+    company: Company;
+    summary: { products: number; contacts: number; services: number; activeSubscriptions: number; paidAmount: number; pendingAmount: number };
+    contacts: CompanyContact[];
+    services: any[];
+    contracts: any[];
+    finance: { invoices: any[]; subscriptions: any[]; paidAmount: number; pendingAmount: number };
+    activities: any[];
+    productData: Record<string, any>;
+}
 
 const productStyle: Record<string, string> = {
     ALLYO: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900',
@@ -117,19 +127,67 @@ const DockaClientsView: React.FC = () => {
                     </table></div>
                 </section>
             </main>
-            {selected && <CompanyDrawer company={selected} onClose={() => setSelected(null)} />}
+            {selected && <CompanyProfile company={selected} onClose={() => setSelected(null)} />}
         </div>
     );
 };
 
-const CompanyDrawer = ({ company, onClose }: { company: Company; onClose: () => void }) => (
-    <div className="fixed inset-0 z-50 flex justify-end bg-black/25" onMouseDown={onClose}>
-        <aside className="h-full w-full max-w-lg overflow-y-auto bg-white p-6 shadow-2xl dark:bg-zinc-950" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="mb-8 flex items-start justify-between gap-4"><div><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">ManyCompanyID · {company.id}</span><h2 className="mt-2 text-2xl font-bold text-zinc-900 dark:text-white">{company.name}</h2><p className="text-sm text-zinc-500">{company.legalName || formatDocument(company.document)}</p></div><button onClick={onClose} className="rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"><X size={20} /></button></div>
-            <section className="mb-6 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><h3 className="mb-4 text-sm font-bold text-zinc-900 dark:text-zinc-100">Contato</h3><div className="space-y-2 text-sm text-zinc-600 dark:text-zinc-300"><p>{company.primaryEmail ? <><Mail size={14} className="mr-2 inline" />{company.primaryEmail}</> : 'E-mail não informado'}</p><p>{company.primaryPhone || 'Telefone não informado'}</p>{company.website && <a className="inline-flex items-center gap-1 font-semibold text-emerald-700" href={company.website} target="_blank" rel="noreferrer">Abrir site <ExternalLink size={13} /></a>}</div></section>
-            <section><h3 className="mb-3 text-sm font-bold text-zinc-900 dark:text-zinc-100">Presença no ecossistema</h3><div className="space-y-3">{company.productAccounts.map((account) => <article key={account.id} className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"><div className="mb-3 flex items-center justify-between"><ProductBadge product={account.product} /><span className="text-[10px] text-zinc-400">{account.status}</span></div><p className="text-xs text-zinc-500">ID local</p><code className="text-xs text-zinc-700 dark:text-zinc-300">{account.externalId}</code>{account.metadata && <div className="mt-3 grid grid-cols-2 gap-2">{Object.entries(account.metadata).filter(([, value]) => value !== null && value !== undefined && value !== '').slice(0, 6).map(([key, value]) => <div key={key}><span className="block text-[10px] uppercase text-zinc-400">{key}</span><span className="text-xs text-zinc-700 dark:text-zinc-300">{String(value)}</span></div>)}</div>}</article>)}</div></section>
-        </aside>
-    </div>
-);
+const money = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const statusLabels: Record<string, string> = { PAID: 'Pago', PENDING: 'Pendente', OVERDUE: 'Vencido', ACTIVE: 'Ativo', UNASSESSED: 'Não avaliada' };
+const statusLabel = (value?: string) => statusLabels[String(value || '').toUpperCase()] || value || 'Não informado';
+
+const CompanyProfile = ({ company, onClose }: { company: Company; onClose: () => void }) => {
+    const [profile, setProfile] = useState<CompanyProfileData | null>(null);
+    const [tab, setTab] = useState<'overview' | 'finance' | 'activities' | 'intelligence'>('overview');
+    useEffect(() => { api.get(`/customers/${company.id}`).then((response) => setProfile(response.data)).catch(() => setProfile(null)); }, [company.id]);
+    const current = profile?.company || company;
+
+    return <div className="fixed inset-0 z-50 flex flex-col bg-[#f4f4f2] dark:bg-zinc-950">
+        <header className="flex min-h-20 items-center justify-between border-b border-zinc-200 bg-white px-6 dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="flex items-center gap-4"><button onClick={onClose} className="rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"><ArrowLeft size={20} /></button><div><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">ManyCompanyID · {current.id}</span><h2 className="text-xl font-bold text-zinc-900 dark:text-white">{current.name}</h2></div></div>
+            <div className="flex items-center gap-3"><span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{statusLabel(current.status)}</span><button onClick={onClose} className="rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"><X size={20} /></button></div>
+        </header>
+        <nav className="flex shrink-0 justify-center border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">{[
+            ['overview', 'Visão geral'], ['finance', 'Faturamento'], ['activities', 'Atividades'], ['intelligence', 'Inteligência'],
+        ].map(([id, label]) => <button key={id} onClick={() => setTab(id as any)} className={`min-w-40 border-b-2 px-8 py-4 text-sm font-semibold ${tab === id ? 'border-zinc-900 text-zinc-900 dark:border-white dark:text-white' : 'border-transparent text-zinc-400'}`}>{label}</button>)}</nav>
+        {!profile ? <div className="flex flex-1 items-center justify-center text-sm text-zinc-400">Carregando painel da empresa...</div> : <div className="grid flex-1 grid-cols-1 gap-4 overflow-hidden p-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
+            <aside className="space-y-4 overflow-y-auto">
+                <Panel title="Sobre a empresa"><Info label="Nome" value={current.name} /><Info label="Razão social" value={current.legalName} /><Info label="Documento" value={formatDocument(current.document)} /><Info label="Estágio" value={current.lifecycleStage} /><Info label="Saúde" value={statusLabel(current.healthStatus)} /></Panel>
+                <Panel title="Contato principal"><p className="flex items-center gap-2 text-sm"><Mail size={14} />{current.primaryEmail || 'Não informado'}</p><p className="mt-2 flex items-center gap-2 text-sm"><Phone size={14} />{current.primaryPhone || 'Não informado'}</p></Panel>
+                <Panel title="Presença no ecossistema"><div className="flex flex-wrap gap-2">{current.productAccounts.map((account) => <ProductBadge key={account.id} product={account.product} />)}</div></Panel>
+            </aside>
+            <main className="overflow-y-auto">
+                {tab === 'overview' && <OverviewTab profile={profile} />}
+                {tab === 'finance' && <FinanceTab profile={profile} />}
+                {tab === 'activities' && <ActivitiesTab profile={profile} />}
+                {tab === 'intelligence' && <IntelligenceTab profile={profile} />}
+            </main>
+            <aside className="space-y-4 overflow-y-auto">
+                <Panel title={`Contatos (${profile.contacts.length})`}>{profile.contacts.length ? profile.contacts.map((contact) => <div key={contact.id} className="border-b border-zinc-100 py-3 last:border-0"><strong className="block text-sm">{contact.name}</strong><span className="text-xs text-zinc-500">{contact.jobTitle || 'Cargo não informado'}</span><span className="block text-xs text-zinc-500">{contact.email}</span></div>) : <Empty text="Nenhum contato associado" />}</Panel>
+                <Panel title={`Serviços (${profile.services.length})`}>{profile.services.slice(0, 5).map((service) => <div key={service.id} className="border-b border-zinc-100 py-3 last:border-0"><strong className="block text-sm">{service.brand?.name || 'Serviço'}</strong><span className="text-xs text-zinc-500">{service.inpiProcessNumber || service.status}</span></div>)}{!profile.services.length && <Empty text="Nenhum serviço associado" />}</Panel>
+                <Panel title={`Faturas (${profile.finance.invoices.length})`}>{profile.finance.invoices.slice(0, 4).map((invoice) => <div key={invoice.id} className="border-b border-zinc-100 py-3 last:border-0"><strong className="text-sm">{money(invoice.amount)}</strong><span className="float-right text-xs text-zinc-500">{statusLabel(invoice.status)}</span><span className="block text-xs text-zinc-500">{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span></div>)}{!profile.finance.invoices.length && <Empty text="Nenhuma fatura associada" />}</Panel>
+            </aside>
+        </div>}
+    </div>;
+};
+
+const Panel = ({ title, children }: { title: string; children: React.ReactNode }) => <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"><h3 className="mb-4 font-bold text-zinc-900 dark:text-white">{title}</h3>{children}</section>;
+const Info = ({ label, value }: { label: string; value?: string | null }) => <div className="mb-3"><span className="block text-[10px] font-bold uppercase text-zinc-400">{label}</span><span className="text-sm text-zinc-700 dark:text-zinc-300">{value || 'Não informado'}</span></div>;
+const Empty = ({ text }: { text: string }) => <p className="py-5 text-center text-xs text-zinc-400">{text}</p>;
+
+const OverviewTab = ({ profile }: { profile: CompanyProfileData }) => <div className="space-y-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[
+        ['Saúde', statusLabel(profile.company.healthStatus), HeartPulse], ['Negócios', profile.summary.products, Building2], ['Serviços', profile.summary.services, Package], ['Contatos', profile.summary.contacts, Users],
+    ].map(([label, value, Icon]: any) => <Panel key={label} title={label}><Icon size={18} className="mb-4 text-zinc-400" /><strong className="text-xl">{value}</strong></Panel>)}</div>
+    <Panel title="Saúde da conta"><div className="grid gap-4 md:grid-cols-3"><Info label="Situação" value={statusLabel(profile.company.healthStatus)} /><Info label="Última atualização" value={new Date(profile.company.updatedAt).toLocaleDateString('pt-BR')} /><Info label="Pendências financeiras" value={money(profile.summary.pendingAmount)} /></div></Panel>
+    <Panel title="Especificações por negócio"><div className="grid gap-3 md:grid-cols-2">{profile.company.productAccounts.map((account) => <article key={account.id} className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800"><ProductBadge product={account.product} /><div className="mt-4 grid grid-cols-2 gap-3">{Object.entries(account.metadata || {}).filter(([, value]) => value !== null && value !== '').map(([key, value]) => <Info key={key} label={key} value={String(value)} />)}</div></article>)}</div></Panel>
+    <Panel title={`Contratos (${profile.contracts.length})`}>{profile.contracts.length ? profile.contracts.map((contract) => <div key={contract.id} className="flex items-center justify-between border-b border-zinc-100 py-3 last:border-0"><div><strong className="block text-sm">{contract.brand?.name}</strong><span className="text-xs text-zinc-500">{contract.planType || 'Plano não informado'}</span></div><span className="text-xs font-semibold">{statusLabel(contract.contractSignStatus)}</span></div>) : <Empty text="Nenhum contrato associado" />}</Panel>
+</div>;
+
+const FinanceTab = ({ profile }: { profile: CompanyProfileData }) => <div className="space-y-4"><div className="grid grid-cols-2 gap-3"><Panel title="Recebido"><strong className="text-2xl">{money(profile.finance.paidAmount)}</strong></Panel><Panel title="Pendente"><strong className="text-2xl">{money(profile.finance.pendingAmount)}</strong></Panel></div><Panel title={`Faturas (${profile.finance.invoices.length})`}>{profile.finance.invoices.map((invoice) => <div key={invoice.id} className="grid grid-cols-[1fr_auto_auto] gap-4 border-b border-zinc-100 py-3 text-sm last:border-0"><span>{invoice.description || invoice.type}</span><span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span><strong>{money(invoice.amount)} · {statusLabel(invoice.status)}</strong></div>)}{!profile.finance.invoices.length && <Empty text="Nenhuma fatura associada" />}</Panel><Panel title={`Assinaturas (${profile.finance.subscriptions.length})`}>{profile.finance.subscriptions.map((subscription) => <div key={subscription.id} className="flex justify-between border-b border-zinc-100 py-3 text-sm last:border-0"><span>{subscription.description}</span><strong>{money(subscription.amount)} · {statusLabel(subscription.status)}</strong></div>)}{!profile.finance.subscriptions.length && <Empty text="Nenhuma assinatura associada" />}</Panel></div>;
+
+const ActivitiesTab = ({ profile }: { profile: CompanyProfileData }) => <Panel title={`Linha do tempo (${profile.activities.length})`}>{profile.activities.map((activity) => <div key={activity.id} className="flex gap-3 border-b border-zinc-100 py-4 last:border-0"><Activity size={16} className="mt-1 text-zinc-400" /><div><strong className="block text-sm">{activity.eventName || activity.type}</strong><p className="text-sm text-zinc-600">{activity.content}</p><span className="text-xs text-zinc-400">{new Date(activity.createdAt).toLocaleString('pt-BR')}</span></div></div>)}{!profile.activities.length && <Empty text="Nenhuma atividade registrada" />}</Panel>;
+
+const IntelligenceTab = ({ profile }: { profile: CompanyProfileData }) => <div className="space-y-4"><Panel title="Leitura consolidada"><div className="grid gap-3 md:grid-cols-3"><Info label="Negócios ativos" value={String(profile.summary.products)} /><Info label="Serviços contratados" value={String(profile.summary.services)} /><Info label="Assinaturas ativas" value={String(profile.summary.activeSubscriptions)} /></div></Panel><Panel title="Qualidade dos dados"><p className="text-sm text-zinc-600 dark:text-zinc-300">A inteligência usará somente dados reais dos negócios vinculados. A próxima etapa adicionará avaliação de saúde, riscos e oportunidades com histórico auditável.</p></Panel></div>;
 
 export default DockaClientsView;
