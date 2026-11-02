@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, AlertTriangle, ArrowLeft, Building2, CheckCircle2, HeartPulse, Mail, Package, Phone, RefreshCw, Search, Users, X } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowLeft, Building2, CheckCircle2, ChevronRight, ExternalLink, HeartPulse, Mail, Package, Phone, RefreshCw, Search, Users, X } from 'lucide-react';
 import api from '../../../../services/api';
 
 interface ProductAccount { id: string; product: string; externalId: string; status: string; metadata?: Record<string, unknown>; lastSyncedAt: string; }
@@ -22,6 +22,8 @@ interface CompanyProfileData {
     activitySummary: Record<string, number>;
     productData: Record<string, any>;
 }
+type DetailKind = 'contact' | 'service' | 'contract' | 'invoice' | 'subscription' | 'deal' | 'activity';
+type DetailSelection = { kind: DetailKind; title: string; data: any };
 
 const productStyle: Record<string, string> = {
     ALLYO: 'bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900',
@@ -141,6 +143,7 @@ const statusLabel = (value?: string) => statusLabels[String(value || '').toUpper
 const CompanyProfile = ({ company, onClose }: { company: Company; onClose: () => void }) => {
     const [profile, setProfile] = useState<CompanyProfileData | null>(null);
     const [tab, setTab] = useState<'overview' | 'finance' | 'activities' | 'intelligence'>('overview');
+    const [detail, setDetail] = useState<DetailSelection | null>(null);
     useEffect(() => { api.get(`/customers/${company.id}`).then((response) => setProfile(response.data)).catch(() => setProfile(null)); }, [company.id]);
     const current = profile?.company || company;
 
@@ -159,44 +162,46 @@ const CompanyProfile = ({ company, onClose }: { company: Company; onClose: () =>
                 <Panel title="Presença no ecossistema"><div className="flex flex-wrap gap-2">{current.productAccounts.map((account) => <ProductBadge key={account.id} product={account.product} />)}</div></Panel>
             </aside>
             <main className="overflow-y-auto">
-                {tab === 'overview' && <OverviewTab profile={profile} />}
-                {tab === 'finance' && <FinanceTab profile={profile} />}
-                {tab === 'activities' && <ActivitiesTab profile={profile} />}
+                {tab === 'overview' && <OverviewTab profile={profile} onOpen={setDetail} />}
+                {tab === 'finance' && <FinanceTab profile={profile} onOpen={setDetail} />}
+                {tab === 'activities' && <ActivitiesTab profile={profile} onOpen={setDetail} />}
                 {tab === 'intelligence' && <IntelligenceTab profile={profile} />}
             </main>
             <aside className="space-y-4 overflow-y-auto">
-                <Panel title={`Contatos (${profile.contacts.length})`}>{profile.contacts.length ? profile.contacts.map((contact) => <div key={contact.id} className="border-b border-zinc-100 py-3 last:border-0"><strong className="block text-sm">{contact.name}</strong><span className="text-xs text-zinc-500">{contact.jobTitle || 'Cargo não informado'}</span><span className="block text-xs text-zinc-500">{contact.email}</span></div>) : <Empty text="Nenhum contato associado" />}</Panel>
-                <Panel title={`Serviços (${profile.services.length})`}>{profile.services.slice(0, 5).map((service) => <div key={service.id} className="border-b border-zinc-100 py-3 last:border-0"><strong className="block text-sm">{service.brand?.name || 'Serviço'}</strong><span className="text-xs text-zinc-500">{service.inpiProcessNumber || service.status}</span></div>)}{!profile.services.length && <Empty text="Nenhum serviço associado" />}</Panel>
-                <Panel title={`Negócios (${profile.operational.deals.length})`}>{profile.operational.deals.slice(0, 5).map((deal) => <div key={deal.id} className="border-b border-zinc-100 py-3 last:border-0"><strong className="block text-sm">{deal.title}</strong><span className="text-xs text-zinc-500">{statusLabel(deal.status)}{deal.value !== null ? ` · ${money(deal.value)}` : ''}</span></div>)}{!profile.operational.deals.length && <Empty text="Nenhum negócio associado" />}</Panel>
-                <Panel title={`Faturas (${profile.finance.invoices.length})`}>{profile.finance.invoices.slice(0, 4).map((invoice) => <div key={invoice.id} className="border-b border-zinc-100 py-3 last:border-0"><strong className="text-sm">{money(invoice.amount)}</strong><span className="float-right text-xs text-zinc-500">{statusLabel(invoice.status)}</span><span className="block text-xs text-zinc-500">{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span></div>)}{!profile.finance.invoices.length && <Empty text="Nenhuma fatura associada" />}</Panel>
+                <Panel title={`Contatos (${profile.contacts.length})`}>{profile.contacts.length ? profile.contacts.map((contact) => <RecordButton key={contact.id} onClick={() => setDetail({ kind: 'contact', title: contact.name, data: contact })}><strong className="block text-sm">{contact.name}</strong><span className="text-xs text-zinc-500">{contact.jobTitle || 'Cargo não informado'}</span><span className="block text-xs text-zinc-500">{contact.email}</span></RecordButton>) : <Empty text="Nenhum contato associado" />}</Panel>
+                <Panel title={`Serviços (${profile.services.length})`}>{profile.services.slice(0, 5).map((service) => <RecordButton key={service.id} onClick={() => setDetail({ kind: 'service', title: service.brand?.name || 'Serviço', data: service })}><strong className="block text-sm">{service.brand?.name || 'Serviço'}</strong><span className="text-xs text-zinc-500">{service.inpiProcessNumber || service.status}</span></RecordButton>)}{!profile.services.length && <Empty text="Nenhum serviço associado" />}</Panel>
+                <Panel title={`Negócios (${profile.operational.deals.length})`}>{profile.operational.deals.slice(0, 5).map((deal) => <RecordButton key={deal.id} onClick={() => setDetail({ kind: 'deal', title: deal.title, data: deal })}><strong className="block text-sm">{deal.title}</strong><span className="text-xs text-zinc-500">{statusLabel(deal.status)}{deal.value !== null ? ` · ${money(deal.value)}` : ''}</span></RecordButton>)}{!profile.operational.deals.length && <Empty text="Nenhum negócio associado" />}</Panel>
+                <Panel title={`Faturas (${profile.finance.invoices.length})`}>{profile.finance.invoices.slice(0, 4).map((invoice) => <RecordButton key={invoice.id} onClick={() => setDetail({ kind: 'invoice', title: invoice.description || `Fatura ${invoice.id.slice(0, 8)}`, data: invoice })}><strong className="text-sm">{money(invoice.amount)}</strong><span className="float-right text-xs text-zinc-500">{statusLabel(invoice.status)}</span><span className="block text-xs text-zinc-500">{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span></RecordButton>)}{!profile.finance.invoices.length && <Empty text="Nenhuma fatura associada" />}</Panel>
             </aside>
         </div>}
+        {detail && <DetailDrawer detail={detail} onClose={() => setDetail(null)} />}
     </div>;
 };
 
 const Panel = ({ title, children }: { title: string; children: React.ReactNode }) => <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"><h3 className="mb-4 font-bold text-zinc-900 dark:text-white">{title}</h3>{children}</section>;
 const Info = ({ label, value }: { label: string; value?: string | null }) => <div className="mb-3"><span className="block text-[10px] font-bold uppercase text-zinc-400">{label}</span><span className="text-sm text-zinc-700 dark:text-zinc-300">{value || 'Não informado'}</span></div>;
 const Empty = ({ text }: { text: string }) => <p className="py-5 text-center text-xs text-zinc-400">{text}</p>;
+const RecordButton = ({ children, onClick }: { children: React.ReactNode; onClick: () => void }) => <button type="button" onClick={onClick} className="group flex w-full items-center justify-between border-b border-zinc-100 py-3 text-left last:border-0 hover:text-zinc-950 dark:border-zinc-800 dark:hover:text-white"><span className="min-w-0 flex-1">{children}</span><ChevronRight size={15} className="ml-2 shrink-0 text-zinc-300 transition-transform group-hover:translate-x-0.5" /></button>;
 
-const OverviewTab = ({ profile }: { profile: CompanyProfileData }) => <div className="space-y-4">
+const OverviewTab = ({ profile, onOpen }: { profile: CompanyProfileData; onOpen: (detail: DetailSelection) => void }) => <div className="space-y-4">
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">{[
         ['Saúde', statusLabel(profile.company.healthStatus), HeartPulse], ['Negócios', profile.summary.products, Building2], ['Serviços', profile.summary.services, Package], ['Contatos', profile.summary.contacts, Users],
     ].map(([label, value, Icon]: any) => <Panel key={label} title={label}><Icon size={18} className="mb-4 text-zinc-400" /><strong className="text-xl">{value}</strong></Panel>)}</div>
     <Panel title="Saúde da conta"><div className="grid gap-4 md:grid-cols-3"><Info label="Situação" value={statusLabel(profile.company.healthStatus)} /><Info label="Última atualização" value={new Date(profile.company.updatedAt).toLocaleDateString('pt-BR')} /><Info label="Pendências financeiras" value={money(profile.summary.pendingAmount)} /></div></Panel>
     <Panel title="Especificações por negócio"><div className="grid gap-3 md:grid-cols-2">{profile.company.productAccounts.map((account) => <article key={account.id} className="rounded-lg bg-zinc-50 p-4 dark:bg-zinc-800"><ProductBadge product={account.product} /><div className="mt-4 grid grid-cols-2 gap-3">{Object.entries(account.metadata || {}).filter(([, value]) => value !== null && value !== '').map(([key, value]) => <Info key={key} label={key} value={String(value)} />)}</div></article>)}</div></Panel>
-    <Panel title={`Contratos (${profile.contracts.length})`}>{profile.contracts.length ? profile.contracts.map((contract) => <div key={contract.id} className="flex items-center justify-between border-b border-zinc-100 py-3 last:border-0"><div><strong className="block text-sm">{contract.brand?.name}</strong><span className="text-xs text-zinc-500">{contract.planType || 'Plano não informado'}</span></div><span className="text-xs font-semibold">{statusLabel(contract.contractSignStatus)}</span></div>) : <Empty text="Nenhum contrato associado" />}</Panel>
+    <Panel title={`Contratos (${profile.contracts.length})`}>{profile.contracts.length ? profile.contracts.map((contract) => <RecordButton key={contract.id} onClick={() => onOpen({ kind: 'contract', title: contract.brand?.name || 'Contrato', data: contract })}><span className="flex items-center justify-between"><span><strong className="block text-sm">{contract.brand?.name}</strong><span className="text-xs text-zinc-500">{contract.planType || 'Plano não informado'}</span></span><span className="text-xs font-semibold">{statusLabel(contract.contractSignStatus)}</span></span></RecordButton>) : <Empty text="Nenhum contrato associado" />}</Panel>
     <Panel title="Operação conectada"><div className="grid grid-cols-2 gap-3 md:grid-cols-5">{[
         ['E-mails', profile.operational.emails.length], ['Tarefas', profile.operational.tasks.length], ['Reuniões', profile.operational.meetings.length], ['Negócios', profile.operational.deals.length], ['Observações', profile.operational.notes.length],
     ].map(([label, value]) => <div key={String(label)} className="rounded-lg bg-zinc-50 p-3 text-center dark:bg-zinc-800"><strong className="block text-lg">{value}</strong><span className="text-xs text-zinc-500">{label}</span></div>)}</div></Panel>
 </div>;
 
-const FinanceTab = ({ profile }: { profile: CompanyProfileData }) => <div className="space-y-4"><div className="grid grid-cols-2 gap-3"><Panel title="Recebido"><strong className="text-2xl">{money(profile.finance.paidAmount)}</strong></Panel><Panel title="Pendente"><strong className="text-2xl">{money(profile.finance.pendingAmount)}</strong></Panel></div><Panel title={`Faturas (${profile.finance.invoices.length})`}>{profile.finance.invoices.map((invoice) => <div key={invoice.id} className="grid grid-cols-[1fr_auto_auto] gap-4 border-b border-zinc-100 py-3 text-sm last:border-0"><span>{invoice.description || invoice.type}</span><span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span><strong>{money(invoice.amount)} · {statusLabel(invoice.status)}</strong></div>)}{!profile.finance.invoices.length && <Empty text="Nenhuma fatura associada" />}</Panel><Panel title={`Assinaturas (${profile.finance.subscriptions.length})`}>{profile.finance.subscriptions.map((subscription) => <div key={subscription.id} className="flex justify-between border-b border-zinc-100 py-3 text-sm last:border-0"><span>{subscription.description}</span><strong>{money(subscription.amount)} · {statusLabel(subscription.status)}</strong></div>)}{!profile.finance.subscriptions.length && <Empty text="Nenhuma assinatura associada" />}</Panel></div>;
+const FinanceTab = ({ profile, onOpen }: { profile: CompanyProfileData; onOpen: (detail: DetailSelection) => void }) => <div className="space-y-4"><div className="grid grid-cols-2 gap-3"><Panel title="Recebido"><strong className="text-2xl">{money(profile.finance.paidAmount)}</strong></Panel><Panel title="Pendente"><strong className="text-2xl">{money(profile.finance.pendingAmount)}</strong></Panel></div><Panel title={`Faturas (${profile.finance.invoices.length})`}>{profile.finance.invoices.map((invoice) => <RecordButton key={invoice.id} onClick={() => onOpen({ kind: 'invoice', title: invoice.description || `Fatura ${invoice.id.slice(0, 8)}`, data: invoice })}><span className="grid grid-cols-[1fr_auto_auto] gap-4 text-sm"><span>{invoice.description || invoice.type}</span><span>{new Date(invoice.dueDate).toLocaleDateString('pt-BR')}</span><strong>{money(invoice.amount)} · {statusLabel(invoice.status)}</strong></span></RecordButton>)}{!profile.finance.invoices.length && <Empty text="Nenhuma fatura associada" />}</Panel><Panel title={`Assinaturas (${profile.finance.subscriptions.length})`}>{profile.finance.subscriptions.map((subscription) => <RecordButton key={subscription.id} onClick={() => onOpen({ kind: 'subscription', title: subscription.description || 'Assinatura', data: subscription })}><span className="flex justify-between text-sm"><span>{subscription.description}</span><strong>{money(subscription.amount)} · {statusLabel(subscription.status)}</strong></span></RecordButton>)}{!profile.finance.subscriptions.length && <Empty text="Nenhuma assinatura associada" />}</Panel></div>;
 
 const activityFilters = [
     ['ALL', 'Todas'], ['NOTE', 'Observações'], ['EMAIL', 'E-mails'], ['TASK', 'Tarefas'], ['MEETING', 'Reuniões'], ['DEAL', 'Negócios'], ['INVOICE', 'Financeiro'],
 ];
 
-const ActivitiesTab = ({ profile }: { profile: CompanyProfileData }) => {
+const ActivitiesTab = ({ profile, onOpen }: { profile: CompanyProfileData; onOpen: (detail: DetailSelection) => void }) => {
     const [filter, setFilter] = useState('ALL');
     const items = filter === 'ALL' ? profile.activities : profile.activities.filter((activity) => activity.category === filter);
     return <div className="space-y-4">
@@ -204,7 +209,44 @@ const ActivitiesTab = ({ profile }: { profile: CompanyProfileData }) => {
             const count = id === 'ALL' ? profile.activities.length : (profile.activitySummary[id] || 0);
             return <button key={id} onClick={() => setFilter(id)} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold ${filter === id ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}>{label} · {count}</button>;
         })}</div>
-        <Panel title={`Linha do tempo (${items.length})`}>{items.map((activity) => <div key={activity.id} className="flex gap-3 border-b border-zinc-100 py-4 last:border-0"><Activity size={16} className="mt-1 shrink-0 text-zinc-400" /><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><strong className="block text-sm">{activity.title || activity.type}</strong><span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800">{activity.category}</span>{activity.status && <span className="text-[10px] font-semibold text-zinc-400">{statusLabel(activity.status)}</span>}</div><p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{activity.content}</p><span className="text-xs text-zinc-400">{new Date(activity.occurredAt).toLocaleString('pt-BR')}{activity.actor ? ` · ${activity.actor}` : ''} · {activity.source}</span></div></div>)}{!items.length && <Empty text="Nenhum registro nesta categoria" />}</Panel>
+        <Panel title={`Linha do tempo (${items.length})`}>{items.map((activity) => <button type="button" key={activity.id} onClick={() => onOpen({ kind: 'activity', title: activity.title || activity.type, data: activity })} className="flex w-full gap-3 border-b border-zinc-100 py-4 text-left last:border-0 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:bg-zinc-800/50"><Activity size={16} className="mt-1 shrink-0 text-zinc-400" /><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><strong className="block text-sm">{activity.title || activity.type}</strong><span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-500 dark:bg-zinc-800">{activity.category}</span>{activity.status && <span className="text-[10px] font-semibold text-zinc-400">{statusLabel(activity.status)}</span>}</div><p className="mt-1 text-sm text-zinc-600 dark:text-zinc-300">{activity.content}</p><span className="text-xs text-zinc-400">{new Date(activity.occurredAt).toLocaleString('pt-BR')}{activity.actor ? ` · ${activity.actor}` : ''} · {activity.source}</span></div><ChevronRight size={15} className="mt-1 shrink-0 text-zinc-300" /></button>)}{!items.length && <Empty text="Nenhum registro nesta categoria" />}</Panel>
+    </div>;
+};
+
+const dateValue = (value?: string | Date | null) => value ? new Date(value).toLocaleString('pt-BR') : 'Não informado';
+const amountValue = (value?: number | null) => value === null || value === undefined ? 'Não informado' : money(Number(value));
+const detailLabels: Record<DetailKind, string> = { contact: 'Contato', service: 'Serviço', contract: 'Contrato', invoice: 'Fatura', subscription: 'Assinatura', deal: 'Negócio', activity: 'Atividade' };
+
+const detailRows = ({ kind, data }: DetailSelection): Array<[string, React.ReactNode]> => {
+    if (kind === 'contact') return [['Nome', data.name], ['Cargo', data.jobTitle], ['E-mail', data.email], ['Telefone', data.phone], ['Contato principal', data.isPrimary ? 'Sim' : 'Não'], ['Atualização', dateValue(data.updatedAt)]];
+    if (kind === 'contract') return [['Marca/serviço', data.brand?.name], ['Plano', data.planType], ['Status da assinatura', statusLabel(data.contractSignStatus)], ['Data da assinatura', dateValue(data.contractSignDate)], ['Modelo de cobrança', data.billingMode], ['Valor recorrente', amountValue(data.recurringAmount)], ['Taxa inicial', amountValue(data.initialFeeAmount)], ['Primeiro pagamento', amountValue(data.firstPaymentAmount)], ['Validade/expiração', dateValue(data.expirationDate)], ['Processo INPI', data.inpiProcessNumber]];
+    if (kind === 'invoice') return [['Identificador', data.id], ['Status', statusLabel(data.status)], ['Valor', amountValue(data.amount)], ['Valor líquido', amountValue(data.netValue)], ['Vencimento', dateValue(data.dueDate)], ['Pagamento', dateValue(data.paidAt)], ['Forma de pagamento', data.paymentMethod || data.billingType], ['Tipo', data.type], ['Descrição', data.description], ['Competência', data.billingPeriod], ['Falha', data.failureReason], ['Itens', data.items ? JSON.stringify(data.items) : null]];
+    if (kind === 'subscription') return [['Status', statusLabel(data.status)], ['Descrição', data.description], ['Valor', amountValue(data.amount)], ['Primeiro pagamento', amountValue(data.firstPaymentAmount)], ['Taxa inicial', amountValue(data.initialFeeAmount)], ['Próximo vencimento', dateValue(data.nextDueDate)], ['Ciclo', data.cycle], ['Forma de pagamento', data.paymentMethod], ['Último pagamento', dateValue(data.lastPaymentAt)], ['Status do último pagamento', statusLabel(data.lastPaymentStatus)], ['Última falha', data.lastFailureReason]];
+    if (kind === 'service') return [['Marca', data.brand?.name], ['Tipo da marca', data.brand?.type], ['Processo INPI', data.inpiProcessNumber], ['Status', statusLabel(data.status)], ['Plano', data.planType], ['Cobrança', data.billingMode], ['Pagamento', statusLabel(data.paymentStatus)], ['Valor recorrente', amountValue(data.recurringAmount)], ['Taxa inicial', amountValue(data.initialFeeAmount)], ['Protocolo', dateValue(data.filingDate)], ['Concessão', dateValue(data.concessionDate)], ['Expiração', dateValue(data.expirationDate)]];
+    if (kind === 'deal') return [['Título', data.title], ['Status', statusLabel(data.status)], ['Prioridade', data.priority], ['Valor', amountValue(data.value)], ['Descrição', data.description || data.subtitle], ['Contato', data.contactName], ['E-mail', data.contactEmail], ['Telefone', data.contactPhone], ['Plano', data.planType], ['Cobrança', data.billingMode], ['Fechamento', dateValue(data.closedAt)], ['Atualização', dateValue(data.updatedAt)]];
+    return [['Categoria', data.category], ['Tipo', data.type], ['Status', statusLabel(data.status)], ['Descrição', data.content], ['Responsável', data.actor], ['Origem', data.source], ['Data', dateValue(data.occurredAt)], ['Valor', data.amount === null || data.amount === undefined ? null : amountValue(data.amount)], ['Vencimento', data.dueDate ? dateValue(data.dueDate) : null]];
+};
+
+const detailLinks = ({ kind, data }: DetailSelection) => {
+    const candidates: Array<[string, unknown]> = kind === 'invoice' ? [
+        ['Abrir fatura', data.invoiceUrl], ['Boleto', data.officialBoletoUrl], ['Comprovante', data.receiptUrl || data.transactionReceiptUrl], ['Nota fiscal', data.fiscalInvoiceUrl],
+    ] : (kind === 'contract' || kind === 'service') ? [
+        ['Abrir contrato', data.contractUrl], ['Procuração', data.proxySignedUrl || data.proxyUrl], ['Protocolo', data.protocolReceiptUrl], ['Certificado', data.certificateUrl],
+    ] : [];
+    return candidates.filter((entry): entry is [string, string] => typeof entry[1] === 'string' && /^https?:\/\//i.test(entry[1]));
+};
+
+const DetailDrawer = ({ detail, onClose }: { detail: DetailSelection; onClose: () => void }) => {
+    const rows = detailRows(detail).filter(([, value]) => value !== null && value !== undefined && value !== '');
+    const links = detailLinks(detail);
+    return <div className="fixed inset-0 z-[70] bg-black/30" onMouseDown={onClose}>
+        <aside className="ml-auto flex h-full w-full max-w-[520px] flex-col bg-white shadow-2xl dark:bg-zinc-950" onMouseDown={(event) => event.stopPropagation()}>
+            <header className="flex items-start justify-between border-b border-zinc-200 p-6 dark:border-zinc-800"><div><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">{detailLabels[detail.kind]}</span><h3 className="mt-1 text-xl font-bold text-zinc-900 dark:text-white">{detail.title}</h3></div><button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800"><X size={20} /></button></header>
+            <div className="flex-1 overflow-y-auto p-6">
+                {links.length > 0 && <div className="mb-6 flex flex-wrap gap-2">{links.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-full border border-zinc-300 px-3 py-2 text-xs font-semibold hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-900">{label}<ExternalLink size={13} /></a>)}</div>}
+                <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 px-5 dark:divide-zinc-800 dark:border-zinc-800">{rows.map(([label, value]) => <div key={label} className="py-4"><span className="block text-[10px] font-bold uppercase tracking-wide text-zinc-400">{label}</span><div className="mt-1 break-words text-sm text-zinc-800 dark:text-zinc-200">{value || 'Não informado'}</div></div>)}</div>
+            </div>
+        </aside>
     </div>;
 };
 
