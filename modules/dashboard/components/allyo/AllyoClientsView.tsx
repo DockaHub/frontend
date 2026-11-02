@@ -249,8 +249,7 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
             setForm(emptyClientForm);
             return;
         }
-        const availableUsers = clientTeamUsers(client, users);
-        setForm(clientToForm(client, availableUsers));
+        setForm(clientToForm(client, users));
     }, [client, isOpen, users]);
 
     const update = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [field]: value }));
@@ -364,7 +363,7 @@ const ClientFormModal = ({ isOpen, client, users, onClose, onSaved }: { isOpen: 
 
                 <FormSection title="Equipe padrão para novas demandas" description="Esta equipe será usada somente em projetos e tarefas criados depois desta alteração. Projetos e tarefas existentes não serão modificados; neles, a troca continua sendo manual.">
                     <AllyoField label="Responsáveis internos padrão" required hint="busque pelo nome cadastrado">
-                        <AllyoUserPicker users={clientTeamUsers(client, users)} selectedIds={form.teamMemberIds} onChange={(ids) => update('teamMemberIds', ids)} placeholder="Busque Art Director, Copywriter, Motion Designer…" />
+                        <AllyoUserPicker users={users} selectedIds={form.teamMemberIds} onChange={(ids) => update('teamMemberIds', ids)} placeholder="Busque Art Director, Copywriter, Motion Designer…" />
                     </AllyoField>
                 </FormSection>
 
