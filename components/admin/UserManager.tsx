@@ -18,7 +18,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
     const [newUserEmail, setNewUserEmail] = useState('');
     const [newUserFirstName, setNewUserFirstName] = useState('');
     const [newUserLastName, setNewUserLastName] = useState('');
-    const [newUserSelectedOrgs, setNewUserSelectedOrgs] = useState<string[]>(organizations[0] ? [organizations[0].id] : []);
+    const [newUserSelectedOrgs, setNewUserSelectedOrgs] = useState<string[]>([]);
     const [newUserRole, setNewUserRole] = useState('MEMBER');
     const [isInviting, setIsInviting] = useState(false);
     const [generatedPassword, setGeneratedPassword] = useState<string | null>(null);
@@ -100,6 +100,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
             setNewUserEmail('');
             setNewUserFirstName('');
             setNewUserLastName('');
+            setNewUserSelectedOrgs([]);
             loadMembers();
         } catch (error: any) {
             console.error("Failed to invite user", error);
@@ -154,6 +155,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
         try {
             const orgs = await organizationService.getOrganizationsForUser(user.id);
             setUserOrgs(orgs);
+            setOrgToAdd(organizations.find(o => !orgs.some(uo => uo.id === o.id))?.id || '');
         } catch (error) {
             console.error("Failed to load user orgs", error);
             addToast({ type: 'error', title: 'Erro ao carregar organizações do usuário', duration: 3000 });
@@ -176,6 +178,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
             // Reload user orgs
             const orgs = await organizationService.getOrganizationsForUser(selectedUser.id);
             setUserOrgs(orgs);
+            setOrgToAdd(organizations.find(o => !orgs.some(uo => uo.id === o.id))?.id || '');
         } catch (error) {
             console.error("Failed to add user to org", error);
             addToast({ type: 'error', title: 'Erro ao adicionar usuário à organização', duration: 3000 });
@@ -306,7 +309,7 @@ const UserManager: React.FC<UserManagerProps> = ({ organizations }) => {
                         ))}
                     </select>
                     <button
-                        onClick={() => setIsInviteModalOpen(true)}
+                        onClick={() => { setNewUserSelectedOrgs([]); setNewUserRole('MEMBER'); setGeneratedPassword(null); setIsInviteModalOpen(true); }}
                         className="flex items-center px-3 py-1.5 text-sm bg-docka-900 text-white rounded-md hover:bg-docka-800 transition-colors shadow-sm"
                     >
                         <Plus size={16} className="mr-2" /> Convidar Usuário
