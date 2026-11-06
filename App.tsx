@@ -72,12 +72,14 @@ const AppContent: React.FC = () => {
   // Domain Routing State
   const [isTenantDomain, setIsTenantDomain] = useState(false);
   const [resolvingDomain, setResolvingDomain] = useState(true);
+  const [tenantOrg, setTenantOrg] = useState<Pick<Organization, 'slug' | 'name'> | null>(null);
 
   // Dynamic Favicon & Title for all Organizations and Pages
   useDynamicFaviconAndTitle({
     currentOrg,
     userOrgs,
     isTenantDomain,
+    tenantOrg,
     resolvingDomain,
     isAuthenticated,
   });
@@ -104,6 +106,7 @@ const AppContent: React.FC = () => {
           // Só considera tenant se a resposta contém um organizationId válido
           if (data && (data.organizationId || data.id || data.slug)) {
             setIsTenantDomain(true);
+            if (data.slug) setTenantOrg({ slug: data.slug, name: data.name || data.slug });
           }
         }
       } catch (error) {

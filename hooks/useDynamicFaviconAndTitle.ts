@@ -7,6 +7,7 @@ interface UseDynamicFaviconAndTitleProps {
     currentOrg?: Organization | null;
     userOrgs?: Organization[];
     isTenantDomain?: boolean;
+    tenantOrg?: Pick<Organization, 'slug' | 'name'> | null;
     resolvingDomain?: boolean;
     isAuthenticated?: boolean;
 }
@@ -15,6 +16,7 @@ export const useDynamicFaviconAndTitle = ({
     currentOrg,
     userOrgs = [],
     isTenantDomain = false,
+    tenantOrg = null,
     resolvingDomain = false,
     isAuthenticated = false,
 }: UseDynamicFaviconAndTitleProps) => {
@@ -28,13 +30,17 @@ export const useDynamicFaviconAndTitle = ({
 
         // Resolve active organization for favicon & title
         const orgIdFromUrl = searchParams.get('org');
-        const activeOrg = (orgIdFromUrl && userOrgs.find(o => o.id === orgIdFromUrl)) || currentOrg;
+        const isPortalSurface = isTenantDomain || pathname.startsWith('/portal');
+        // No portal do cliente a marca vem do domínio (ou Asterysko), nunca da org padrão do ManySpace.
+        const activeOrg = isPortalSurface
+            ? (tenantOrg || { slug: 'asterysko', name: 'Asterysko' })
+            : ((orgIdFromUrl && userOrgs.find(o => o.id === orgIdFromUrl)) || currentOrg);
 
         // 1. Calculate & set the title for the active workspace.
         const newTitle = getPageTitle({
             pathname,
             searchParams,
-            currentOrg: activeOrg,
+            currentOrg: activeOrg as Organization,
             isTenantDomain,
             isAuthenticated,
         });
@@ -47,8 +53,7 @@ export const useDynamicFaviconAndTitle = ({
         const isPlatformSurface = pathname.startsWith('/login') || pathname.startsWith('/auth') || pathname.startsWith('/workspaces') || pathname.startsWith('/admin');
 
         if (isTenantDomain || pathname.startsWith('/portal')) {
-            const tenantOrg = activeOrg || { slug: 'asterysko', name: 'Asterysko' };
-            setDynamicFavicon(getOrgFaviconSvg(tenantOrg));
+            setDynamicFavicon(getOrgFaviconSvg(activeOrg as Organization));
         } else if (isPlatformSurface || !isAuthenticated) {
             setDynamicFavicon(MANYWAYS_FAVICON_SVG);
         } else if (activeOrg) {
@@ -68,6 +73,7 @@ export const useDynamicFaviconAndTitle = ({
         currentOrg?.iconBg,
         userOrgs,
         isTenantDomain,
+        tenantOrg?.slug,
         resolvingDomain,
         isAuthenticated,
     ]);
