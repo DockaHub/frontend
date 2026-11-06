@@ -49,7 +49,7 @@ Estado: implementação concluída; gate persistente isolado pendente por indisp
 33. **Ações:** aceitar, editar e aceitar sem destruir original, rejeitar com motivo, bloquear, desbloquear, reprocessar, abrir website e abrir oportunidade. Nenhuma envia mensagem.
 34. **Unitários:** 41/41 aprovados — normalização, taxonomia, JSON-LD, páginas, histórico, externo, departamento, dedup e resultados.
 35. **Segurança:** 23/23 aprovados — SSRF IPv4/IPv6/metadata/notações, esquema, porta, credenciais, redes sociais, domínio, XSS, CPF e prompt injection.
-36. **Integração persistente:** não executada. O datasource Railway não contém a migration 2.5B e foi preservado; o PostgreSQL efêmero solicitado em `/private/tmp` foi bloqueado pela política de instalação de dependência externa.
+36. **Integração persistente:** não executada. O datasource de produção não contém a migration 2.5B e foi preservado; o PostgreSQL efêmero solicitado em `/private/tmp` foi bloqueado pela política de instalação de dependência externa.
 37. **Concorrência persistente:** implementação coberta estruturalmente por CAS/uniques, mas o teste PostgreSQL `Promise.all` aguarda banco isolado com a migration aplicada.
 38. **Benchmark puro:** 10.000 registros, 530 ms, 18.882 registros/s, zero I/O e zero falhas.
 39. **Benchmark persistente/HTTP:** pendentes pelo mesmo banco isolado. O transporte HTTP compartilhado já tem sua suíte 2.5A; a 2.5B não enfraqueceu as proteções.
@@ -58,11 +58,11 @@ Estado: implementação concluída; gate persistente isolado pendente por indisp
 ## 41–50. Gates finais, delta, flags e riscos
 
 41. **Banco vazio:** não aprovado nesta sessão; nenhum PostgreSQL local estava instalado e a instalação efêmera não recebeu autorização de política.
-42. **Schema drift:** `migrate status` confirmou 2.5B pendente e divergência histórica alheia ao módulo no Railway (migrations legadas de outro produto registradas no mesmo banco). Nenhuma correção destrutiva foi tentada.
+42. **Schema drift:** `migrate status` confirmou 2.5B pendente e divergência histórica alheia ao módulo no banco de dados (migrations legadas de outro produto registradas no mesmo banco). Nenhuma correção destrutiva foi tentada.
 43. **TypeScript backend:** `npx tsc --noEmit` e `npm run build` aprovados.
 44. **Frontend:** `typecheck:asterysko` com zero erros; build Vite aprovado.
 45. **Regressão global:** 197/197 diagnósticos, zero no escopo Asterysko; baseline não foi elevado.
-46. **Delta operacional:** a tabela de decisores ainda não existe no Railway; portanto zero decisores 2.5B aceitos. A fase não criou contatos, leads ou mensagens. A suíte legada limpou fixtures das organizações `org_test_norm_a/b` antes de parar na migration pendente; contadores após cleanup: opportunities 19, contacts 1, deals 9, clients 5, processes 6, invoices 4, activities 33, notifications 12 e messages 15.
+46. **Delta operacional:** a tabela de decisores ainda não existe no banco de dados; portanto zero decisores 2.5B aceitos. A fase não criou contatos, leads ou mensagens. A suíte legada limpou fixtures das organizações `org_test_norm_a/b` antes de parar na migration pendente; contadores após cleanup: opportunities 19, contacts 1, deals 9, clients 5, processes 6, invoices 4, activities 33, notifications 12 e messages 15.
 47. **Cleanup:** não há fixture 2.5B, job, tentativa, candidato, evidência ou cache criado. O diretório efêmero não chegou a receber instalação.
 48. **Flags reais:** enabled=false, dry-run=true, auto-run=false, auto-accept=false, providers/search/LLM=false; limites documentados no `.env.example`. Ausência no ambiente mantém defaults seguros.
 49. **Riscos remanescentes:** aplicar a migration apenas em banco isolado/staging, executar testes persistentes/concorrrentes/HTTP e reconciliar o histórico global de migrations antes de qualquer rollout.

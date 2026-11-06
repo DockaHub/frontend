@@ -184,7 +184,7 @@ const SlackIntegrationSettings: React.FC<{ organization: Organization }> = ({ or
                     <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-200 dark:border-amber-900 bg-amber-50/70 dark:bg-amber-950/20">
                         <Lock size={18} className="text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
                         <div>
-                            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Finalize a variável protegida no Railway</p>
+                            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Finalize a variável protegida no Coolify / servidor</p>
                             <p className="text-xs text-amber-800/80 dark:text-amber-300/80 mt-1 leading-relaxed">
                                 Adicione o Bot User OAuth Token como <code className="font-mono font-bold">SLACK_BOT_TOKEN</code> no serviço do backend e aguarde o redeploy.
                             </p>

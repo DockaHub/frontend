@@ -468,7 +468,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
                 await allyoService.updateTask(task.id, { status: mapped });
             }
         } catch (err) {
-            console.warn('[AllyoTaskDetailView] Erro ao sincronizar status com Railway:', err);
+            console.warn('[AllyoTaskDetailView] Erro ao sincronizar status:', err);
         }
     };
 
@@ -666,7 +666,7 @@ const AllyoTaskDetailViewInner = ({ userName }: { userName?: string }) => {
             addToast({ type: 'success', title: 'Material enviado para revisão', message: `${deliveryVersion} está disponível para o cliente.` });
             return true;
         } catch (err: any) {
-            console.error('[AllyoTaskDetailView] Erro ao enviar revisão para Railway:', err);
+            console.error('[AllyoTaskDetailView] Erro ao enviar revisão:', err);
             const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Erro ao registrar entrega na Allyo Space';
             addToast({ type: 'error', title: 'Não foi possível enviar para revisão', message: msg });
             return false;

@@ -207,7 +207,7 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
         });
         setDraft('');
 
-        // 2. Envio para a API do Allyo Space no Railway
+        // 2. Envio para a API do Allyo Space
         setIsSending(true);
         try {
             const projectId = task.projectId || task.id;
@@ -228,7 +228,7 @@ const AllyoTaskChat = ({ task, userName }: { task: AllyoTask; userName?: string 
                 });
             }
         } catch (err) {
-            console.warn('[AllyoTaskChat] Mensagem salva localmente, mas API Railway retornou:', err);
+            console.warn('[AllyoTaskChat] Mensagem salva localmente, mas API retornou:', err);
         } finally {
             setIsSending(false);
         }
