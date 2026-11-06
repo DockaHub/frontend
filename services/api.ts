@@ -6,7 +6,7 @@ export const getApiBaseUrl = () => {
     }
     const hostname = window.location.hostname;
     const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
-    return isLocal ? 'http://localhost:3002/api' : 'https://backend-production-0647.up.railway.app/api';
+    return isLocal ? 'http://localhost:3002/api' : 'https://api.manyways.com.br/api';
 };
 
 const API_BASE_URL = getApiBaseUrl();

@@ -13,7 +13,7 @@ class SocketService {
 
         const hostname = window.location.hostname;
         const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
-        const apiUrl = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3002' : 'https://backend-production-0647.up.railway.app');
+        const apiUrl = import.meta.env.VITE_API_URL || (isLocal ? 'http://localhost:3002' : 'https://api.manyways.com.br');
         const socketUrl = apiUrl.replace(/\/api$/, '');
 
         this.socket = io(socketUrl, {
