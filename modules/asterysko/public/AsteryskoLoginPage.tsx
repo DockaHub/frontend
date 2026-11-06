@@ -242,7 +242,7 @@ export const AsteryskoLoginPage: React.FC<AsteryskoLoginPageProps> = () => {
                             </button>
                         </div>
 
-                        <a className="ast-register-choice" href="https://asterysko.com/nova-marca" target="_blank" rel="noreferrer">
+                        <a className="ast-register-choice" href="https://asterysko.com/?origem=Login%20do%20Portal%20-%20Registrar%20marca#atendimento-modal" target="_blank" rel="noreferrer">
                             <img src={`${ASSET_ROOT}/login-imgBoxiconsRegistered.svg`} alt="" />
                             <span>Registrar minha marca</span>
                         </a>
